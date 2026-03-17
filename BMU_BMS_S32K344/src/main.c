@@ -1060,7 +1060,7 @@ static void BMU_ProtocolTask(void *pvParameters)
         case PROTO_STATE_RESYNC:
             BMU_SendResyncRequest();
             g_cmac_fail_count = 0U;
-            g_expected_fc = 0U;
+            g_expected_fc = 0U;  /* Temporary reset; BMU_HandleKeyExchange() will set to 1 */
             if (BMU_ImportSymKey(HSE_PSK_KEY_HANDLE, PreSharedKey, AES_KEY_BITS)
                 != HSE_SRV_RSP_OK)
             {

@@ -758,23 +758,31 @@ static void CMU_ProtocolTask(void *pvParameters)
         case PROTO_STATE_OPERATIONAL:
         {
             /* Check for resync request from BMU (quick non-blocking poll) */
-            FlexCAN_Ip_Receive(INST_FLEXCAN_0, 2U, &rxMsg, TRUE);
+            FlexCAN_Ip_Receive(INST_FLEXCAN_0, CAN_RX_MB_CTRL, &rxMsg, TRUE);
             {
                 volatile uint32 chk = TIMEOUT_RESYNC_CHECK;
-                while ((FlexCAN_Ip_GetTransferStatus(INST_FLEXCAN_0, 2U)
+                while ((FlexCAN_Ip_GetTransferStatus(INST_FLEXCAN_0, CAN_RX_MB_CTRL)
                         == FLEXCAN_STATUS_BUSY) && (chk > 0U))
                 {
-                    FlexCAN_Ip_MainFunctionRead(INST_FLEXCAN_0, 2U);
+                    FlexCAN_Ip_MainFunctionRead(INST_FLEXCAN_0, CAN_RX_MB_CTRL);
                     chk--;
                 }
             }
-            if (FlexCAN_Ip_GetTransferStatus(INST_FLEXCAN_0, 2U)
+            if (FlexCAN_Ip_GetTransferStatus(INST_FLEXCAN_0, CAN_RX_MB_CTRL)
                 == FLEXCAN_STATUS_SUCCESS)
             {
                 /* Reload PSK for Resync CMAC verification (session key may be invalid) */
-                Csec_Ip_LoadPlainKey(PreSharedKey);
+                if (Csec_Ip_LoadPlainKey(PreSharedKey) != CSEC_IP_ERC_NO_ERROR)
+                {
+                    g_proto_state = PROTO_STATE_ERROR;
+                    break;
+                }
                 uint8 expected_mac[CMAC_TAG_SIZE];
-                CMU_GenerateCmac(rxMsg.data, CTRL_DATA_SIZE * 8U, expected_mac);
+                Csec_Ip_ErrorCodeType cmacR = CMU_GenerateCmac(rxMsg.data, CTRL_DATA_SIZE * 8U, expected_mac);
+                if (cmacR != CSEC_IP_ERC_NO_ERROR)
+                {
+                    break;  /* CMAC generation failed — ignore this frame */
+                }
                 if (memcmp(expected_mac, &rxMsg.data[CTRL_DATA_SIZE], CMAC_TAG_SIZE) == 0)
                 {
                     /* Authenticated resync request */
@@ -840,7 +848,7 @@ static void CMU_ProtocolTask(void *pvParameters)
             GPIOD_PTOR = (1u << LED_RED_PIN);
             txCount++;
 
-            g_lastCanStatus = FlexCAN_Ip_GetTransferStatus(INST_FLEXCAN_0, 0U);
+            g_lastCanStatus = FlexCAN_Ip_GetTransferStatus(INST_FLEXCAN_0, CAN_TX_MB_IDX);
             g_lastESR1 = IP_FLEXCAN0->ESR1;
             g_lastECR  = IP_FLEXCAN0->ECR;
 
