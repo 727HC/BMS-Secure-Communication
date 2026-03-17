@@ -112,21 +112,35 @@ ser.close()
 "
 }
 
+do_blockchain_bridge() {
+    echo ""
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo " [4/4] 블록체인 브릿지"
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo "  BMU Serial($BMU_COM) → BMS Agent(http://localhost:3000)"
+    echo ""
+    sleep 3
+    cd "$BMS_DIR/firmware/tools"
+    python -u serial_to_agent.py --port $BMU_COM --baud $BMU_BAUD --agent http://localhost:3000
+}
+
 echo "╔══════════════════════════════════════╗"
 echo "║  BMS Secure Communication System    ║"
 echo "║  AES-128 CMAC + CAN-FD + KDF       ║"
 echo "╚══════════════════════════════════════╝"
 
 case "${1:-full}" in
-    full)    do_build_flash; do_simulator; do_monitor ;;
-    nosim)   do_build_flash; do_monitor ;;
-    simonly) do_simulator; do_monitor ;;
-    matlab)  do_build_flash; do_matlab_bridge; do_monitor ;;
+    full)      do_build_flash; do_simulator; do_monitor ;;
+    nosim)     do_build_flash; do_monitor ;;
+    simonly)   do_simulator; do_monitor ;;
+    matlab)    do_build_flash; do_matlab_bridge; do_monitor ;;
+    blockchain) do_build_flash; do_simulator; do_blockchain_bridge ;;
     *)
         echo "사용법:"
         echo "  ./start.sh              전체 실행"
         echo "  ./start.sh nosim        시뮬레이터 없이"
         echo "  ./start.sh simonly      시뮬레이터+모니터만"
         echo "  ./start.sh matlab       MATLAB 연결 모드"
+        echo "  ./start.sh blockchain   시뮬레이터+블록체인 브릿지"
         ;;
 esac
