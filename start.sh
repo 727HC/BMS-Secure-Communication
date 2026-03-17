@@ -32,11 +32,13 @@ do_build_flash() {
     echo " [1/4] 빌드"
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     cd "$BMS_DIR/BMU_BMS_S32K344/Debug_FLASH"
+    find . \( -name "*.o" -o -name "*.d" -o -name "*.elf" -o -name "*.map" -o -name "*.siz" \) -delete
     if ! make -j8 all CFLAGS_EXTRA="-D${BMS_MODE}" 2>&1 | tee "$LOG_DIR/build_bmu.log" ; then
         echo "!!! BMU 빌드 실패 — $LOG_DIR/build_bmu.log 확인"
         exit 1
     fi
     cd "$BMS_DIR/CMU_BMS_S32K144/Debug_FLASH"
+    find . \( -name "*.o" -o -name "*.d" -o -name "*.elf" -o -name "*.map" -o -name "*.siz" \) -delete
     if ! make -j8 all CFLAGS_EXTRA="-D${BMS_MODE}" 2>&1 | tee "$LOG_DIR/build_cmu.log" ; then
         echo "!!! CMU 빌드 실패 — $LOG_DIR/build_cmu.log 확인"
         exit 1
