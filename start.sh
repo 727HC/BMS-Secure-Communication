@@ -124,11 +124,11 @@ do_blockchain_bridge() {
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     echo " [4/4] 블록체인 브릿지"
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo "  BMU Serial($BMU_COM) → BMS Agent(http://localhost:3000)"
+    echo "  BMU Serial($BMU_COM) → BMS Agent(http://localhost:3001)"
     echo ""
     sleep 3
     cd "$BMS_DIR/firmware/tools"
-    python -u serial_to_agent.py --port $BMU_COM --baud $BMU_BAUD --agent http://localhost:3000
+    python -u serial_to_agent.py --port $BMU_COM --baud $BMU_BAUD --agent http://localhost:3001
 }
 
 echo "╔══════════════════════════════════════╗"
