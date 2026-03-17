@@ -121,7 +121,8 @@ def compress_to_battery_data(parsed: dict, timestamp_ms: int) -> bytes:
     data += struct.pack("<H", timestamp_ms % 65536)     # 2B timestamp
     data += struct.pack("B", 0x00)                       # 1B status_flags
     data += struct.pack("B", NUM_CELLS)                  # 1B cell_count
-    data += b"\x00" * 8                                  # 8B reserved
+    data += struct.pack("<I", 0)                           # 4B freshness_counter placeholder (CMU will overwrite)
+    data += b"\x00" * 4                                    # 4B reserved[4]
 
     assert len(data) == BATTERY_DATA_SIZE
     return data
@@ -173,7 +174,7 @@ def main():
 
     try:
         while True:
-            data, addr = sock.recvfrom(1024)
+            data, addr = sock.recvfrom(SIMULINK_PACKET_SIZE)
 
             if len(data) != SIMULINK_PACKET_SIZE:
                 print(f"WARN: Invalid packet size {len(data)} from {addr}")
