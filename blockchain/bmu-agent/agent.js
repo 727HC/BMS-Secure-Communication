@@ -12,6 +12,7 @@ const fs = require('fs')
 const ACA_PY_URL = process.env.ACA_PY_URL || 'http://localhost:8031'
 const MONGO_URL = process.env.MONGO_URL || 'mongodb://localhost:27017/signatures'
 const PORT = process.env.PORT || 3000
+const FABRIC_IDENTITY = process.env.FABRIC_IDENTITY || 'admin'
 
 const FABRIC_CCP_PATH = process.env.FABRIC_CCP_PATH || path.resolve(
   process.env.HOME,
@@ -24,8 +25,11 @@ const FABRIC_CONTRACT = process.env.FABRIC_CONTRACT || 'bms-contract'
 const app = express()
 app.use(express.json())
 
-// MongoDB 연결
-mongoose.connect(MONGO_URL)
+// [A1-01] MongoDB 연결 + 오류 핸들링
+mongoose.connect(MONGO_URL).catch(err => {
+  console.error('MongoDB 연결 실패:', err.message)
+  process.exit(1)
+})
 const db = mongoose.connection
 db.once('open', () => console.log('MongoDB connected'))
 
@@ -40,22 +44,14 @@ const verifiedmsgSchema = new mongoose.Schema({
 
 const Verifiedmsg = mongoose.model('Verifiedmsg', verifiedmsgSchema)
 
-// Uint8Array → Base58 문자열
 function toBase58(buffer) {
   return bs58.encode(buffer)
 }
 
-// Base58 문자열 → Uint8Array
-function fromBase58(str) {
-  return bs58.decode(str)
-}
-
-// hex 문자열 판별
 function isHex(str) {
   return /^[0-9A-Fa-f]+$/.test(str) && str.length % 2 === 0
 }
 
-// 서명 바이트 디코딩 (hex 우선, fallback base64)
 function decodeSignature(signature) {
   if (isHex(signature)) {
     return Buffer.from(signature, 'hex')
@@ -63,7 +59,7 @@ function decodeSignature(signature) {
   return Buffer.from(signature, 'base64')
 }
 
-//DID 원장 등록 API
+// DID 원장 등록 API
 app.post('/did/register', async (req, res) => {
   const { did, verkey: rawVerkey, role } = req.body
   const verkey = typeof rawVerkey === 'string' ? rawVerkey : toBase58(Uint8Array.from(rawVerkey))
@@ -73,21 +69,19 @@ app.post('/did/register', async (req, res) => {
       verkey,
       role: role || null
     })
-
     res.json({ success: true, ledgerResult: response.data })
   } catch (err) {
     res.status(500).json({ error: err.response?.data || err.message })
   }
 })
 
-// 공개키 조회 (#5 수정: Base58 문자열로 반환)
+// 공개키 조회
 app.get('/verkey/:did', async (req, res) => {
   const { did } = req.params
   try {
     const response = await axios.get(`${ACA_PY_URL}/ledger/did-verkey`, {
       params: { did }
     })
-
     res.json({
       did,
       verkey: response.data.verkey,
@@ -99,7 +93,7 @@ app.get('/verkey/:did', async (req, res) => {
   }
 })
 
-//메시지 서명 검증
+// 메시지 서명 검증
 app.post('/verify-signature', async (req, res) => {
   const { did, msg, signature } = req.body
 
@@ -111,12 +105,10 @@ app.post('/verify-signature', async (req, res) => {
     const verkeyRes = await axios.get(`${ACA_PY_URL}/ledger/did-verkey`, {
       params: { did }
     })
-    const verkey = verkeyRes.data.verkey
-    const publicKey = bs58.decode(verkey)
+    const publicKey = bs58.decode(verkeyRes.data.verkey)
     const msgBytes = Buffer.from(msg)
     const signatureBytes = decodeSignature(signature)
     const valid = nacl.sign.detached.verify(msgBytes, signatureBytes, publicKey)
-
     res.json({ valid })
   } catch (err) {
     console.error('검증 실패:', err.message)
@@ -124,27 +116,30 @@ app.post('/verify-signature', async (req, res) => {
   }
 })
 
-// Fabric 저장 함수 (#1 수정: 체인코드 시그니처와 인자 일치)
+// [A1-02] Fabric 저장 — Gateway를 try/finally로 disconnect 보장
 async function recordToFabric(id, dataHash, did, signature, fc, soc, timestamp) {
   const ccp = JSON.parse(fs.readFileSync(FABRIC_CCP_PATH, 'utf8'))
-
   const wallet = await Wallets.newFileSystemWallet(FABRIC_WALLET_PATH)
   const gateway = new Gateway()
-  await gateway.connect(ccp, {
-    wallet,
-    identity: 'admin',
-    discovery: { enabled: true, asLocalhost: true }
-  })
 
-  const network = await gateway.getNetwork(FABRIC_CHANNEL)
-  const contract = network.getContract(FABRIC_CONTRACT)
+  try {
+    await gateway.connect(ccp, {
+      wallet,
+      identity: FABRIC_IDENTITY,
+      discovery: { enabled: true, asLocalhost: true }
+    })
 
-  await contract.submitTransaction(
-    'RecordBMSData', id, dataHash, did, signature,
-    String(fc), String(soc), timestamp
-  )
-  console.log('Fabric 저장 완료:', id)
-  await gateway.disconnect()
+    const network = await gateway.getNetwork(FABRIC_CHANNEL)
+    const contract = network.getContract(FABRIC_CONTRACT)
+
+    await contract.submitTransaction(
+      'RecordBMSData', id, dataHash, did, signature,
+      String(fc), String(soc), timestamp
+    )
+    console.log('Fabric 저장 완료:', id)
+  } finally {
+    gateway.disconnect()
+  }
 }
 
 // POST /data
@@ -156,14 +151,10 @@ app.post('/data', async (req, res) => {
   }
 
   try {
-    // 1. verkey 조회
     const verkeyRes = await axios.get(`${ACA_PY_URL}/ledger/did-verkey`, {
       params: { did }
     })
-    const verkey = verkeyRes.data.verkey
-
-    // 2. 서명 검증
-    const publicKey = bs58.decode(verkey)
+    const publicKey = bs58.decode(verkeyRes.data.verkey)
     const signatureBytes = decodeSignature(signature)
     const msgBytes = Buffer.from(msg)
 
@@ -172,19 +163,17 @@ app.post('/data', async (req, res) => {
       return res.status(401).json({ valid: false, error: '서명 검증 실패' })
     }
 
-    // 3. MongoDB 저장
     await Verifiedmsg.create({
-      did,
-      cid,
-      msg,
-      signature,
+      did, cid, msg, signature,
       timestamp: new Date(timestamp)
     })
 
-    // 4. Fabric 저장 (체인코드 인자 7개 일치)
+    // [A1-04] fc/soc=0 유효값 보존
+    const fcVal = (fc !== undefined && fc !== null) ? fc : 0
+    const socVal = (soc !== undefined && soc !== null) ? soc : 0
     const dataHash = crypto.createHash('sha256').update(msg).digest('hex')
     const id = `bms-${Date.now()}-${cid}`
-    await recordToFabric(id, dataHash, did, signature, fc || 0, soc || 0, timestamp)
+    await recordToFabric(id, dataHash, did, signature, fcVal, socVal, timestamp)
 
     res.json({ valid: true, saved: true, onChain: true, id })
   } catch (err) {

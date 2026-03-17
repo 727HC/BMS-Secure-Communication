@@ -1,7 +1,7 @@
 {
   "name": "bmu-agent",
   "version": "1.0.0",
-  "main": "index.js",
+  "main": "agent_bms.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -15,9 +15,7 @@
     "express": "^5.1.0",
     "fabric-ca-client": "^2.2.20",
     "fabric-network": "^2.2.20",
-    "fs": "^0.0.1-security",
     "mongoose": "^8.15.0",
-    "path": "^0.12.7",
     "tweetnacl": "^1.0.3"
   }
 }
