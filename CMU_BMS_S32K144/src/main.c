@@ -827,7 +827,7 @@ static void CMU_ProtocolTask(void *pvParameters)
                  == FLEXCAN_STATUS_SUCCESS)
                 && (rxMsg.data[0] == ACK_MARKER))
             {
-                /* Verify ACK CMAC (PSK-based, 8B data + 16B CMAC) */
+                /* Verify ACK CMAC (PSK-based, 24B = 8B data + 16B CMAC) */
                 {
                     uint8 expected_mac[CMAC_TAG_SIZE];
                     CMU_GenerateCmac(rxMsg.data, CTRL_DATA_SIZE * 8U, expected_mac);
