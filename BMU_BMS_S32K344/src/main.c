@@ -611,7 +611,8 @@ static boolean BMU_HandleKeyExchange(const uint8 *rx_data)
         ack_frame[0] = ACK_MARKER;
         /* CMAC(PSK, ack_data[8]) → append to ack_frame[8..23] */
         uint32 tagLen = CMAC_TAG_SIZE;
-        BMU_CmacGenerate(HSE_SESSION_KEY_HANDLE, ack_frame, CTRL_DATA_SIZE,
+        /* ACK is sent before CMU loads session key, so use PSK for CMAC */
+        BMU_CmacGenerate(HSE_PSK_KEY_HANDLE, ack_frame, CTRL_DATA_SIZE,
                           &ack_frame[CTRL_DATA_SIZE], CMAC_TAG_SIZE);
         Flexcan_Ip_DataInfoType txCtrl = g_canfd_tx_info;
         txCtrl.data_length = CTRL_FRAME_SIZE;
@@ -716,8 +717,8 @@ static void BMU_SendResyncRequest(void)
 {
     uint8 resync_frame[CTRL_FRAME_SIZE] = {0};
     resync_frame[0] = RESYNC_MARKER;
-    /* CMAC(session_key, resync_data[8]) — must match CMU's active key */
-    BMU_CmacGenerate(HSE_SESSION_KEY_HANDLE, resync_frame, CTRL_DATA_SIZE,
+    /* CMAC(PSK, resync_data[8]) — CMU reloads PSK before verifying */
+    BMU_CmacGenerate(HSE_PSK_KEY_HANDLE, resync_frame, CTRL_DATA_SIZE,
                       &resync_frame[CTRL_DATA_SIZE], CMAC_TAG_SIZE);
     Flexcan_Ip_DataInfoType txCtrl = g_canfd_tx_info;
     txCtrl.data_length = CTRL_FRAME_SIZE;

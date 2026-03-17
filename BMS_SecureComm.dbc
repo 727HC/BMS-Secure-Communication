@@ -59,11 +59,13 @@ BO_ 21 KeyExchange: 32 CMU
  SG_ EncryptedUID : 0|128@1+ (1,0) [0|0] "" BMU
  SG_ EncryptedSeed : 128|128@1+ (1,0) [0|0] "" BMU
 
-BO_ 22 KeyACK: 8 BMU
+BO_ 22 KeyACK: 24 BMU
  SG_ ACK_Status : 0|8@1+ (1,0) [0|255] "" CMU
+ SG_ ACK_CMAC : 64|128@1+ (1,0) [0|0] "" CMU
 
-BO_ 23 ResyncRequest: 8 BMU
+BO_ 23 ResyncRequest: 24 BMU
  SG_ Resync_Marker : 0|8@1+ (1,0) [0|255] "" CMU
+ SG_ Resync_CMAC : 64|128@1+ (1,0) [0|0] "" CMU
 
 CM_ BU_ CMU "Cell Monitoring Unit (S32K144) - Battery data collection + CSEc CMAC";
 CM_ BU_ BMU "Battery Management Unit (S32K344) - HSE CMAC verify + EDDSA signing";

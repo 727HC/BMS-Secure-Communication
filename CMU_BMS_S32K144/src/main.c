@@ -885,7 +885,8 @@ static void CMU_ProtocolTask(void *pvParameters)
             if (FlexCAN_Ip_GetTransferStatus(INST_FLEXCAN_0, 2U)
                 == FLEXCAN_STATUS_SUCCESS)
             {
-                /* Verify Resync CMAC before accepting */
+                /* Reload PSK for Resync CMAC verification (session key may be invalid) */
+                Csec_Ip_LoadPlainKey(PreSharedKey);
                 uint8 expected_mac[CMAC_TAG_SIZE];
                 CMU_GenerateCmac(rxMsg.data, CTRL_DATA_SIZE * 8U, expected_mac);
                 if (memcmp(expected_mac, &rxMsg.data[CTRL_DATA_SIZE], CMAC_TAG_SIZE) == 0)

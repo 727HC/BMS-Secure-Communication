@@ -32,12 +32,12 @@ do_build_flash() {
     echo " [1/4] 빌드"
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     cd "$BMS_DIR/BMU_BMS_S32K344/Debug_FLASH"
-    if ! make -j8 all 2>&1 | tee "$LOG_DIR/build_bmu.log" | tail -3; then
+    if ! make -j8 all CFLAGS_EXTRA="-D${BMS_MODE}" 2>&1 | tee "$LOG_DIR/build_bmu.log" ; then
         echo "!!! BMU 빌드 실패 — $LOG_DIR/build_bmu.log 확인"
         exit 1
     fi
     cd "$BMS_DIR/CMU_BMS_S32K144/Debug_FLASH"
-    if ! make -j8 all 2>&1 | tee "$LOG_DIR/build_cmu.log" | tail -3; then
+    if ! make -j8 all CFLAGS_EXTRA="-D${BMS_MODE}" 2>&1 | tee "$LOG_DIR/build_cmu.log" ; then
         echo "!!! CMU 빌드 실패 — $LOG_DIR/build_cmu.log 확인"
         exit 1
     fi
@@ -49,13 +49,13 @@ do_build_flash() {
     "$PEG_PATH" -device=$BMU_DEVICE \
       -interface=$BMU_INTERFACE -port=$BMU_PORT \
       -flashobjectfile="$BMS_DIR/$BMU_ELF" \
-      -runafterprogramming -quitafterprogramming 2>&1 | grep -E "Programmed|reprogram|GO" || true
+      -runafterprogramming -quitafterprogramming 2>&1 | tee -a "$LOG_DIR/flash.log"
     echo "  BMU GO"
 
     "$PEG_PATH" -device=$CMU_DEVICE \
       -interface=$CMU_INTERFACE -port=$CMU_PORT \
       -flashobjectfile="$BMS_DIR/$CMU_ELF" \
-      -runafterprogramming -quitafterprogramming 2>&1 | grep -E "Programmed|reprogram|GO" || true
+      -runafterprogramming -quitafterprogramming 2>&1 | tee -a "$LOG_DIR/flash.log"
     echo "  CMU GO"
 }
 
