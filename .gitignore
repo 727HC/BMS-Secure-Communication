@@ -1,0 +1,50 @@
+# Secrets
+**/secrets.h
+!**/secrets.h.example
+
+# Build outputs
+**/*.o
+**/*.d
+**/*.elf
+**/*.map
+**/*.siz
+
+# IDE / S32DS
+.metadata/
+.s32ds_packages_support/
+RemoteSystemsTempFiles/
+workspace_bmu/
+workspace_cmu/
+workspace/
+
+# Logs
+logs/
+
+# Backups
+*.zip
+
+# Large/external projects
+Electric-Vehicle-Simscape-master/
+FreeRTOS_Toggle_Led_Example_S32K344/
+FreeRTOS_TAD_logs/
+ZephyrRTOS_TAD_logs/
+Can_43_FLEXCAN_TS_T40D34M60I0R0/
+BMU_BMS_FreeRTOS/
+**/debug_t32/
+
+# CANoe temp
+*.cfg.ini
+*.vtcfg.local
+
+# Python
+__pycache__/
+*.pyc
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Misc
+dataProcess.py
+workspaceS32DS.3.6.0.zip
+*.mex
