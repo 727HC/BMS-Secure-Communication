@@ -2,14 +2,16 @@ const nacl = require('tweetnacl')
 const bs58 = require('bs58').default
 const axios = require('axios')
 
-const ACA_PY_URL = 'http://localhost:8031'
-const AGENT_URL = 'http://localhost:3000'
+// [T-01] 환경변수 우선, 기본값 fallback
+const ACA_PY_URL = process.env.ACA_PY_URL || 'http://localhost:8031'
+const AGENT_URL = process.env.AGENT_URL || 'http://localhost:3000'
+const VON_URL = process.env.VON_URL || 'http://localhost:9000'
 
 async function main() {
   console.log('=== DID 기반 서명 검증 E2E 테스트 ===\n')
 
   // 1. 32바이트 seed 생성 → Ed25519 키페어 파생
-  const seedStr = 'TestBMUDevice01VerifySign0000001' // 32 chars
+  const seedStr = process.env.TEST_SEED || 'TestBMUDevice01VerifySign0000001' // 32 chars
   const seed = Buffer.from(seedStr)
   const keyPair = nacl.sign.keyPair.fromSeed(seed)
   const verkey = bs58.encode(keyPair.publicKey)
@@ -21,7 +23,7 @@ async function main() {
   console.log('\n[2] VON 네트워크에 DID 등록...')
   let did
   try {
-    const regRes = await axios.post('http://localhost:9000/register', {
+    const regRes = await axios.post(`${VON_URL}/register`, {
       seed: seedStr,
       role: 'ENDORSER',
       alias: 'test-bmu-device'
@@ -105,7 +107,7 @@ async function main() {
   console.log('\n[7] 잘못된 DID로 검증 (실패해야 정상)')
   try {
     const res = await axios.post(`${AGENT_URL}/verify-signature`, {
-      did: 'MPGsQGEaPz9qcySnxfFt4B',  // ACA-Py DID (다른 키)
+      did: process.env.WRONG_DID || 'MPGsQGEaPz9qcySnxfFt4B',  // ACA-Py DID (다른 키)
       msg: message,
       signature: signatureB64
     })
