@@ -1,0 +1,1007 @@
+/**
+ * @file    main.c
+ * @brief   CMU (Cell Monitoring Unit) - S32K144 Integrated Firmware
+ * @details Secure BMS communication: UART data reception -> AES-CMAC -> CAN-FD
+ *
+ * Base project: FlexCAN_Ip_example_S32K144
+ *
+ * Required S32DS peripheral configuration:
+ *   - Clock:     System clock, FlexCAN clock, LPUART clock
+ *   - Port:      CAN0_TX/RX pins, LPUART1_TX/RX pins, LED/BTN pins
+ *   - FlexCAN0:  CAN-FD enabled, BRS enabled, 64-byte payload, 500kbps/2Mbps
+ *   - CSEc:      Enabled (requires FlexNVM partitioning)
+ *   - LPUART1:   9600 baud (LPUART1 bare-metal, FIRCDIV2=48MHz)
+ *   - IntCtrl:   FlexCAN MB IRQ, LPUART RX IRQ, PORTC IRQ
+ */
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+/*============================================================================
+ *  Includes
+ *============================================================================*/
+#include "Csec_Ip.h"
+#include "OsIf.h"
+#include "Clock_Ip.h"
+#include "FlexCAN_Ip.h"
+#include "IntCtrl_Ip.h"
+#include "Port_Ci_Port_Ip.h"
+#include "Port_Ci_Port_Ip_Cfg.h"
+#include "Gpio_Dio_Ip.h"
+#include "Lpuart_Uart_Ip.h"
+#include "Lpuart_Uart_Ip_Irq.h"
+
+/* LPUART config - extern from generated PBcfg */
+extern const Lpuart_Uart_Ip_UserConfigType Lpuart_Uart_Ip_xHwConfigPB_1;
+#include <stdio.h>
+#include <string.h>
+
+/* FreeRTOS */
+#include "FreeRTOS.h"
+#include "task.h"
+
+/* Protocol definitions shared with BMU */
+#include "common/bms_protocol.h"
+
+/*============================================================================
+ *  Configuration
+ *============================================================================*/
+
+/* Pre-Shared Key — separated into secrets.h (exclude from VCS) */
+#include "common/secrets.h"
+
+/*============================================================================
+ *  S32K144 Register Addresses (not available via CMSIS in bare-metal RTD)
+ *============================================================================*/
+/* PCC (Peripheral Clock Control) */
+#define PCC_PORTD_ADDR              (*(volatile uint32 *)0x40065130u)
+#define PCC_PORTE_ADDR              (*(volatile uint32 *)0x40065124u)
+#define PCC_FLEXCAN0_ADDR           (*(volatile uint32 *)0x40065090u)
+#define PCC_CGC_BIT                 (1u << 30)
+
+/* PORT pin mux */
+#define PORTD_PCR_BASE              ((volatile uint32 *)0x4004C000u)
+#define PORTE_PCR_BASE              ((volatile uint32 *)0x4004D000u)
+#define PORT_MUX_GPIO               (1u << 8)
+
+/* GPIO */
+#define GPIOD_PDDR                  (*(volatile uint32 *)0x400FF0D4u)
+#define GPIOD_PTOR                  (*(volatile uint32 *)0x400FF0CCu)
+#define GPIOE_PDDR                  (*(volatile uint32 *)0x400FF114u)
+#define GPIOE_PDOR                  (*(volatile uint32 *)0x400FF100u)
+
+/* Pin numbers */
+#define LED_RED_PIN                 15u     /* PTD15 = RED LED on S32K144 EVB */
+#define CAN_TRCV_EN_PIN             11u     /* PTE11 = CAN transceiver enable */
+
+/* CSEc timeout (alias to common constant) */
+#define CSEC_TIMEOUT_TICKS          TIMEOUT_CRYPTO_INIT
+
+/* S32K144 LPUART1 bare-metal registers */
+#define LPUART1_BASE_ADDR   0x4006B000U
+#define LPUART1_BAUD_REG    (*(volatile uint32 *)(LPUART1_BASE_ADDR + 0x10U))
+#define LPUART1_STAT_REG    (*(volatile uint32 *)(LPUART1_BASE_ADDR + 0x14U))
+#define LPUART1_CTRL_REG    (*(volatile uint32 *)(LPUART1_BASE_ADDR + 0x18U))
+#define LPUART1_DATA_REG    (*(volatile uint32 *)(LPUART1_BASE_ADDR + 0x1CU))
+#define LPUART_RDRF         (1U << 21U)
+#define LPUART_TDRE         (1U << 23U)
+#define LPUART_CTRL_RE      (1U << 18U)
+#define LPUART_CTRL_TE      (1U << 19U)
+
+/* LPUART1 baud rate: 9615 baud @ FIRCDIV2=48MHz */
+#define LPUART1_OSR_VALUE   15U
+#define LPUART1_SBR_VALUE   312U
+
+/* PCC clock gate bits */
+#define PCC_PCS_FIRCDIV2    (3u << 24)
+
+/* FlexNVM partition settings for CSEc key storage */
+#if defined(S32K148)
+    #define FLEXNVM_DEPART      (0x04U)
+#elif (defined(S32K116) || defined(S32K118))
+    #define FLEXNVM_DEPART      (0x09U)
+#else
+    #define FLEXNVM_DEPART      (0x03U)
+#endif
+
+#if (defined(S32K142W) || defined(S32K144W))
+    #define CSEC_KEY_SIZE_CFG   (0x07U)
+#else
+    #define CSEC_KEY_SIZE_CFG   (0x03U)
+#endif
+
+#if (defined(S32K116) || defined(S32K118))
+    #define FLEXNVM_EEPROM      (0x03U)
+#else
+    #define FLEXNVM_EEPROM      (0x02U)
+#endif
+
+/* CSEc flash register access */
+#if (STD_ON == CSEC_IP_FTFM_MODULE)
+    #define CMU_FCNFG_RAMRDY    FTFM_FCNFG_RAMRDY_MASK
+    #define CMU_FCNFG_EEERDY    FTFM_FCNFG_EEERDY_MASK
+    #define CMU_MGSTAT0_MASK    FTFM_FSTAT_MGSTAT0_MASK
+#else
+    #define CMU_FCNFG_RAMRDY    FTFC_FCNFG_RAMRDY_MASK
+    #define CMU_FCNFG_EEERDY    FTFC_FCNFG_EEERDY_MASK
+    #define CMU_MGSTAT0_MASK    FTFC_FSTAT_MGSTAT0_MASK
+#endif
+
+#define CMU_RAMRDY_SET      ((CSEC_IP_FLASH->FCNFG & CMU_FCNFG_RAMRDY) != 0U)
+#define CMU_EEERDY_SET      ((CSEC_IP_FLASH->FCNFG & CMU_FCNFG_EEERDY) != 0U)
+
+/* Port C instance for button interrupts */
+#define PORTC_INSTANCE      2U
+
+/* UART instance */
+#define UART_INSTANCE       1U
+
+/*============================================================================
+ *  Non-cacheable memory sections for CSEc
+ *============================================================================*/
+#define CRYPTO_43_CSEC_START_SEC_VAR_CLEARED_8_NO_CACHEABLE
+#include "Crypto_43_CSEC_MemMap.h"
+
+static uint8 g_uid[UID_SIZE];
+static uint8 g_seed[SEED_SIZE];
+static uint8 g_session_key[AES_KEY_SIZE];
+static uint8 g_encrypted_uid[UID_SIZE];
+static uint8 g_encrypted_seed[SEED_SIZE];
+static uint8 g_cmac_input[CMAC_INPUT_SIZE];
+static uint8 g_cmac_output[CMAC_TAG_SIZE];
+static uint8 g_kdf_input[KDF_INPUT_SIZE];
+static uint8 g_canfd_payload[CANFD_PAYLOAD_SIZE];
+
+#define CRYPTO_43_CSEC_STOP_SEC_VAR_CLEARED_8_NO_CACHEABLE
+#include "Crypto_43_CSEC_MemMap.h"
+
+/*============================================================================
+ *  State Variables
+ *============================================================================*/
+static Csec_Ip_StateType       g_csec_state;
+static Csec_Ip_ReqType         g_csec_req = { .eReqType = CSEC_IP_REQTYPE_SYNC };
+static ProtocolState_t         g_proto_state = PROTO_STATE_INIT;
+static uint32                  g_freshness_counter = 0U;
+
+/* UART reception */
+static uint8    g_uart_rx_buf[UART_FRAME_TOTAL];
+static uint8    g_battery_data[BATTERY_DATA_SIZE];
+static volatile boolean g_uart_rx_complete = FALSE;
+static volatile boolean g_new_data_ready   = FALSE;
+
+/* CAN flags */
+static volatile boolean g_can_tx_done   = TRUE;
+static volatile boolean g_can_rx_done   = FALSE;
+static Flexcan_Ip_MsgBuffType  g_can_rx_data;
+
+/* Timing */
+static uint32 g_last_tx_time = 0U;
+
+/* === Global debug variables (visible in debugger) === */
+volatile Flexcan_Ip_StatusType g_initStatus = FLEXCAN_STATUS_ERROR;
+volatile uint32 g_maxMbNum = 0U;
+volatile Flexcan_Ip_StatusType g_lastCanStatus = FLEXCAN_STATUS_ERROR;
+volatile uint32 g_lastESR1 = 0U;
+volatile uint32 g_lastECR  = 0U;
+volatile uint32 g_txOkCount = 0U;
+volatile uint32 g_txFailCount = 0U;
+volatile uint32 g_CTRL1 = 0U;
+volatile uint32 g_CBT   = 0U;
+volatile uint32 g_FDCBT = 0U;
+volatile uint32 g_MCR   = 0U;
+volatile uint32 g_PCC   = 0U;
+volatile uint32 g_FDCTRL = 0U;  /* FDCTRL: TDC enable/offset + payload size */
+volatile boolean g_csecInitOk = FALSE;
+volatile uint32  g_csecLoadStatus = 0xFFU;
+volatile uint32  g_csecRngStatus  = 0xFFU;
+volatile uint32  g_csecRamRdy  = 0U;
+volatile uint32  g_csecEeeRdy  = 0U;
+volatile uint32  g_csecFstat   = 0U;
+
+/* FreeRTOS task prototypes */
+static void CMU_ProtocolTask(void *pvParameters);
+static void CMU_MonitorTask(void *pvParameters);
+
+/* Key exchange buffer (reused across retries with same seed) */
+static uint8 g_key_frame_buf[KEY_EXCHANGE_FRAME_SIZE];
+
+/*============================================================================
+ *  CAN-FD TX/RX Configuration
+ *============================================================================*/
+static Flexcan_Ip_DataInfoType g_canfd_tx_info = {
+    .fd_enable   = TRUE,
+    .enable_brs  = TRUE,
+    .msg_id_type = FLEXCAN_MSG_ID_STD,
+    .data_length = CANFD_PAYLOAD_SIZE,
+    .is_polling  = TRUE,
+    .is_remote   = FALSE
+};
+
+static Flexcan_Ip_DataInfoType g_canfd_tx_key_info = {
+    .fd_enable   = TRUE,
+    .enable_brs  = TRUE,
+    .msg_id_type = FLEXCAN_MSG_ID_STD,
+    .data_length = KEY_EXCHANGE_FRAME_SIZE,
+    .is_polling  = TRUE,
+    .is_remote   = FALSE
+};
+
+static Flexcan_Ip_DataInfoType g_canfd_rx_info = {
+    .fd_enable   = TRUE,
+    .enable_brs  = TRUE,
+    .msg_id_type = FLEXCAN_MSG_ID_STD,
+    .data_length = CANFD_PAYLOAD_SIZE,
+    .is_polling  = FALSE,
+    .is_remote   = FALSE
+};
+
+/*============================================================================
+ *  UART Debug Helper
+ *============================================================================*/
+static volatile boolean g_uart_tx_done = TRUE;
+
+static void UART_SendString(const char *msg)
+{
+    if ((msg == NULL) || (*msg == '\0')) return;
+    while (!g_uart_tx_done) { /* wait */ }
+    g_uart_tx_done = FALSE;
+    Lpuart_Uart_Ip_AsyncSend(UART_INSTANCE, (const uint8 *)msg, strlen(msg));
+    while (!g_uart_tx_done) { /* wait */ }
+}
+
+static void UART_SendHex(const uint8 *data, uint32 len)
+{
+    char hex[4];
+    for (uint32 i = 0U; i < len; i++)
+    {
+        snprintf(hex, sizeof(hex), "%02X ", data[i]);
+        UART_SendString(hex);
+    }
+    UART_SendString("\r\n");
+}
+
+/*============================================================================
+ *  Button Callbacks (required by RTD Port_Ci_Icu config)
+ *============================================================================*/
+void PTC12_Callback(void)
+{
+    /* BTN1: reserved for future use */
+}
+
+void PTC13_Callback(void)
+{
+    /* BTN2: reserved for future use */
+}
+
+/*============================================================================
+ *  Callbacks
+ *============================================================================*/
+void UART_Callback(const uint8 HwInstance,
+                   const Lpuart_Uart_Ip_EventType Event,
+                   const void *UserData)
+{
+    (void)UserData;
+    if (HwInstance == UART_INSTANCE)
+    {
+        if (Event == LPUART_UART_IP_EVENT_END_TRANSFER)
+        {
+            g_uart_tx_done = TRUE;
+        }
+        else if (Event == LPUART_UART_IP_EVENT_RX_FULL)
+        {
+            g_uart_rx_complete = TRUE;
+        }
+    }
+}
+
+#if defined(S32K118)
+extern void CAN0_ORED_0_31_MB_IRQHandler(void);
+#else
+extern void CAN0_ORED_0_15_MB_IRQHandler(void);
+#endif
+
+extern ISR(PORT_CI_ICU_IP_C_EXT_IRQ_ISR);
+
+void FlexCAN_CallbackFunction(uint8 instance,
+                               Flexcan_Ip_EventType eventType,
+                               uint32 mbIdx,
+                               const Flexcan_Ip_StateType *flexcanState)
+{
+    (void)instance;
+    (void)mbIdx;
+    (void)flexcanState;
+
+    if (eventType == FLEXCAN_EVENT_TX_COMPLETE)
+    {
+        g_can_tx_done = TRUE;
+    }
+    else if (eventType == FLEXCAN_EVENT_RX_COMPLETE)
+    {
+        g_can_rx_done = TRUE;
+    }
+}
+
+/*============================================================================
+ *  CSEc Hardware Init (FlexNVM Partitioning)
+ *============================================================================*/
+static boolean CMU_InitCsecHw(void)
+{
+    g_csecRamRdy = CMU_RAMRDY_SET ? 1U : 0U;
+    g_csecEeeRdy = CMU_EEERDY_SET ? 1U : 0U;
+
+    /* EEERDY=1 && RAMRDY=0 is the correct state for CSEc mode.
+       (RAMRDY and EEERDY are mutually exclusive) */
+    if (!CMU_RAMRDY_SET && CMU_EEERDY_SET)
+    {
+        return TRUE;  /* Already partitioned for CSEc - ready */
+    }
+
+    /* Need partitioning: Program Partition command */
+    CSEC_IP_FLASH->FCCOB[3] = 0x80U;         /* FCCOB0 = cmd: Program Partition */
+    CSEC_IP_FLASH->FCCOB[2] = CSEC_KEY_SIZE_CFG; /* FCCOB1 = CSEc key size */
+    CSEC_IP_FLASH->FCCOB[1] = 0x00U;         /* FCCOB2 = SFE = 0 */
+    CSEC_IP_FLASH->FCCOB[0] = 0x00U;         /* FCCOB3 = unused */
+    CSEC_IP_FLASH->FCCOB[7] = FLEXNVM_EEPROM;/* FCCOB4 = EEPROM size */
+    CSEC_IP_FLASH->FCCOB[6] = FLEXNVM_DEPART;/* FCCOB5 = FlexNVM partition */
+    CSEC_IP_FLASH->FSTAT    = CSEC_IP_FSTAT_CCIF_MASK;
+
+    while (!(CSEC_IP_FLASH->FSTAT & CSEC_IP_FSTAT_CCIF_MASK)) { /* wait */ }
+
+    g_csecFstat = CSEC_IP_FLASH->FSTAT;
+
+    if ((g_csecFstat & CMU_MGSTAT0_MASK) || (g_csecFstat & CSEC_IP_FSTAT_ACCERR_MASK))
+    {
+        /* Partition failed, but if already configured, accept */
+        if (CMU_EEERDY_SET)
+        {
+            return TRUE;
+        }
+        return FALSE;
+    }
+    return TRUE;
+}
+
+/*============================================================================
+ *  Crypto Wrappers
+ *============================================================================*/
+static Csec_Ip_ErrorCodeType CMU_AesEcbEncrypt(const uint8 *plain,
+                                                uint32 len,
+                                                uint8 *cipher)
+{
+    return Csec_Ip_EncryptEcb(&g_csec_req, CSEC_IP_RAM_KEY, plain, len, cipher);
+}
+
+static Csec_Ip_ErrorCodeType CMU_GenerateCmac(const uint8 *input,
+                                               uint32 bit_len,
+                                               uint8 *cmac_out)
+{
+    return Csec_Ip_GenerateMac(&g_csec_req, CSEC_IP_RAM_KEY,
+                               input, bit_len, cmac_out);
+}
+
+static Csec_Ip_ErrorCodeType CMU_DeriveSessionKey(const uint8 *uid,
+                                                    const uint8 *seed,
+                                                    uint8 *session_key)
+{
+    /* Build KDF input: Label || UID || Seed || Counter (NIST SP 800-108) */
+    BMS_BuildKdfInput(g_kdf_input, uid, seed);
+
+    /* Session key = CMAC(PSK, KDF_input) */
+    return CMU_GenerateCmac(g_kdf_input, KDF_INPUT_BITS, session_key);
+}
+
+/*============================================================================
+ *  UART Data Reception (framed: [0xAA][0x55][LEN][DATA...][XOR])
+ *============================================================================*/
+static boolean CMU_ParseUartFrame(const uint8 *frame, uint32 frame_len,
+                                   uint8 *data_out)
+{
+    if (frame_len < UART_FRAME_TOTAL) return FALSE;
+    if (frame[0] != UART_SYNC_0)     return FALSE;
+    if (frame[1] != UART_SYNC_1)     return FALSE;
+    if (frame[2] != BATTERY_DATA_SIZE) return FALSE;
+
+    /* Verify XOR checksum */
+    uint8 expected_cs = BMS_CalcChecksum(&frame[3], BATTERY_DATA_SIZE);
+    if (frame[3 + BATTERY_DATA_SIZE] != expected_cs) return FALSE;
+
+    /* Extract data */
+    memcpy(data_out, &frame[3], BATTERY_DATA_SIZE);
+    return TRUE;
+}
+
+static uint32 g_uart_rx_idx = 0U;
+
+static void CMU_StartUartReception(void)
+{
+    g_uart_rx_complete = FALSE;
+    g_uart_rx_idx = 0U;
+}
+
+/* Non-blocking bare-metal UART polling */
+#define LPUART_OR   (1U << 19U)  /* Overrun flag */
+#define LPUART_FE   (1U << 17U)  /* Framing Error */
+#define LPUART_NF   (1U << 18U)  /* Noise Flag */
+
+static void CMU_PollUartRx(void)
+{
+    /* Clear overrun/framing/noise errors if any */
+    uint32 stat = LPUART1_STAT_REG;
+    if (stat & (LPUART_OR | LPUART_FE | LPUART_NF))
+    {
+        LPUART1_STAT_REG = stat | (LPUART_OR | LPUART_FE | LPUART_NF); /* W1C */
+        /* Reset reception — frame got corrupted */
+        g_uart_rx_idx = 0U;
+    }
+
+    while ((LPUART1_STAT_REG & LPUART_RDRF) && (g_uart_rx_idx < UART_FRAME_TOTAL))
+    {
+        uint8 byte = (uint8)(LPUART1_DATA_REG & 0xFFU);
+
+        /* Sync to frame start: look for [0xAA][0x55] */
+        if (g_uart_rx_idx == 0U && byte != UART_SYNC_0) continue;
+        if (g_uart_rx_idx == 1U && byte != UART_SYNC_1) { g_uart_rx_idx = 0U; continue; }
+
+        g_uart_rx_buf[g_uart_rx_idx] = byte;
+        g_uart_rx_idx++;
+    }
+    if (g_uart_rx_idx >= UART_FRAME_TOTAL)
+    {
+        g_uart_rx_complete = TRUE;
+    }
+}
+
+/*============================================================================
+ *  Key Exchange: Send encrypted UID + Seed to BMU
+ *============================================================================*/
+static boolean CMU_PerformKeyExchange(void)
+{
+    Csec_Ip_ErrorCodeType result;
+    uint8 challenge[UID_SIZE] = {0};
+    uint8 mac_buf[CMAC_TAG_SIZE];
+    uint8 status;
+
+    UART_SendString("[CMU] Starting key exchange...\r\n");
+
+    /* 1. Generate random seed via CSEc TRNG */
+    result = Csec_Ip_GenerateRnd(&g_csec_req, g_seed);
+    if (result != CSEC_IP_ERC_NO_ERROR)
+    {
+        UART_SendString("[CMU] ERR: RNG failed\r\n");
+        return FALSE;
+    }
+
+    /* 2. Get device UID from CSEc */
+    result = Csec_Ip_GetId(challenge, g_uid, &status, mac_buf);
+    if (result != CSEC_IP_ERC_NO_ERROR)
+    {
+        UART_SendString("[CMU] ERR: GetId failed\r\n");
+        return FALSE;
+    }
+
+    UART_SendString("[CMU] UID: ");
+    UART_SendHex(g_uid, UID_SIZE);
+
+    UART_SendString("[CMU] Seed: ");
+    UART_SendHex(g_seed, SEED_SIZE);
+
+    /* 3. Encrypt UID and Seed with PSK (AES-ECB, 16 bytes each) */
+    result = CMU_AesEcbEncrypt(g_uid, UID_SIZE, g_encrypted_uid);
+    if (result != CSEC_IP_ERC_NO_ERROR)
+    {
+        UART_SendString("[CMU] ERR: Encrypt UID failed\r\n");
+        return FALSE;
+    }
+
+    result = CMU_AesEcbEncrypt(g_seed, SEED_SIZE, g_encrypted_seed);
+    if (result != CSEC_IP_ERC_NO_ERROR)
+    {
+        UART_SendString("[CMU] ERR: Encrypt Seed failed\r\n");
+        return FALSE;
+    }
+
+    /* 4. Build key exchange frame: [encrypted_uid(16B)][encrypted_seed(16B)] */
+    KeyExchangeFrame_t key_frame;
+    memcpy(key_frame.encrypted_uid,  g_encrypted_uid,  UID_SIZE);
+    memcpy(key_frame.encrypted_seed, g_encrypted_seed, SEED_SIZE);
+
+    /* 5. Send via CAN-FD (ID = 0x15) */
+    g_can_tx_done = FALSE;
+    FlexCAN_Ip_Send(INST_FLEXCAN_0, CAN_TX_MB_IDX,
+                    &g_canfd_tx_key_info, CAN_ID_KEY_EXCHANGE,
+                    (uint8 *)&key_frame);
+
+    /* Wait for TX complete */
+    uint32 timeout = 0U;
+    while (!g_can_tx_done && (timeout < CSEC_TIMEOUT_TICKS))
+    {
+        timeout++;
+    }
+
+    if (!g_can_tx_done)
+    {
+        UART_SendString("[CMU] ERR: CAN TX timeout\r\n");
+        return FALSE;
+    }
+
+    UART_SendString("[CMU] Key exchange frame sent\r\n");
+
+    /* 6. Derive session key: CMAC(PSK, Label||UID||Seed||Counter) */
+    result = CMU_DeriveSessionKey(g_uid, g_seed, g_session_key);
+    if (result != CSEC_IP_ERC_NO_ERROR)
+    {
+        UART_SendString("[CMU] ERR: KDF failed\r\n");
+        return FALSE;
+    }
+
+    /* 7. Load session key into CSEc RAM slot (overwrites PSK in RAM key) */
+    result = Csec_Ip_LoadPlainKey(g_session_key);
+    if (result != CSEC_IP_ERC_NO_ERROR)
+    {
+        UART_SendString("[CMU] ERR: Load session key failed\r\n");
+        return FALSE;
+    }
+
+    /* Clear session key from RAM for security */
+    memset(g_session_key, 0, AES_KEY_SIZE);
+
+    UART_SendString("[CMU] Session key derived and loaded\r\n");
+    return TRUE;
+}
+
+/*============================================================================
+ *  Send Secured Battery Data: Data(48B) || CMAC(16B) = 64B CAN-FD
+ *============================================================================*/
+static boolean CMU_SendSecuredData(const uint8 *battery_data)
+{
+    Csec_Ip_ErrorCodeType result;
+
+    /* 1. Increment freshness counter (anti-replay) */
+    g_freshness_counter++;
+
+    /* 2. Build CMAC input: FC(4B) || Data(48B) = 52 bytes */
+    BMS_BuildCmacInput(g_cmac_input, g_freshness_counter, battery_data);
+
+    /* 3. Generate AES-128 CMAC over the input */
+    result = CMU_GenerateCmac(g_cmac_input, CMAC_INPUT_BITS, g_cmac_output);
+    if (result != CSEC_IP_ERC_NO_ERROR)
+    {
+        return FALSE;
+    }
+
+    /* 4. Build CAN-FD payload: Data(48B) || CMAC(16B) = 64B */
+    memcpy(&g_canfd_payload[0],                 battery_data,  BATTERY_DATA_SIZE);
+    /* Embed FC in BatteryData_t.freshness_counter field for BMU to read */
+    {
+        BatteryData_t *pFrame = (BatteryData_t *)&g_canfd_payload[0];
+        pFrame->freshness_counter = g_freshness_counter;
+    }
+    memcpy(&g_canfd_payload[BATTERY_DATA_SIZE], g_cmac_output, CMAC_TAG_SIZE);
+
+    /* 5. Send via CAN-FD (ID = 0x14), polling */
+    FlexCAN_Ip_Send(INST_FLEXCAN_0, CAN_TX_MB_IDX,
+                    &g_canfd_tx_info, CAN_ID_BATTERY_DATA,
+                    g_canfd_payload);
+
+    /* Wait for TX complete (polling) */
+    volatile uint32 timeout = TIMEOUT_CAN_TX;
+    while ((FlexCAN_Ip_GetTransferStatus(INST_FLEXCAN_0, CAN_TX_MB_IDX)
+            == FLEXCAN_STATUS_BUSY) && (timeout > 0U))
+    {
+        FlexCAN_Ip_MainFunctionWrite(INST_FLEXCAN_0, CAN_TX_MB_IDX);
+        timeout--;
+    }
+
+    return (FlexCAN_Ip_GetTransferStatus(INST_FLEXCAN_0, CAN_TX_MB_IDX)
+            == FLEXCAN_STATUS_SUCCESS);
+}
+
+/*============================================================================
+ *  Main
+ *============================================================================*/
+int main(void)
+{
+    uint32 txCount = 0U;
+
+    /* 1. Clock init */
+    Clock_Ip_Init(&Clock_Ip_aClockConfig[0]);
+    OsIf_Init(NULL_PTR);
+
+    /* 2. Pin/Port init */
+    Port_Ci_Port_Ip_Init(NUM_OF_CONFIGURED_PINS_PortContainer_0_BOARD_InitPeripherals,
+                         g_pin_mux_InitConfigArr_PortContainer_0_BOARD_InitPeripherals);
+
+    /* 3. LED setup - PTD15 RED LED */
+    PCC_PORTD_ADDR |= PCC_CGC_BIT;
+    PORTD_PCR_BASE[LED_RED_PIN] = PORT_MUX_GPIO;
+    GPIOD_PDDR |= (1u << LED_RED_PIN);
+
+    /* 3b. CAN transceiver enable */
+    PCC_PORTE_ADDR |= PCC_CGC_BIT;
+    PORTE_PCR_BASE[CAN_TRCV_EN_PIN] = PORT_MUX_GPIO;
+    GPIOE_PDDR |= (1u << CAN_TRCV_EN_PIN);
+    GPIOE_PDOR |= (1u << CAN_TRCV_EN_PIN);
+
+    /* 3c. LPUART1 IRQ — disabled until LPUART1 works */
+    /* (*(volatile uint32 *)0xE000E104U) = (1U << 1U); */
+
+    /* 3d. LPUART1 init (UART RX from Simulink/dataProcess.py) */
+    #define PCC_LPUART1_ADDR (*(volatile uint32 *)0x400651ACu)
+    PCC_LPUART1_ADDR = 0U;
+    PCC_LPUART1_ADDR = PCC_CGC_BIT | PCC_PCS_FIRCDIV2;
+    LPUART1_CTRL_REG = 0U;
+    LPUART1_BAUD_REG = (LPUART1_OSR_VALUE << 24) | LPUART1_SBR_VALUE;
+    LPUART1_CTRL_REG = LPUART_CTRL_RE | LPUART_CTRL_TE;
+
+    /* 4. FlexCAN0 clock enable */
+    PCC_FLEXCAN0_ADDR |= PCC_CGC_BIT;
+
+    /* 5. FlexCAN0 init */
+    g_initStatus = FlexCAN_Ip_Init(INST_FLEXCAN_0, &FlexCAN_State0,
+                                    &FlexCAN_Config0);
+    g_maxMbNum = FlexCAN_State0.u32MaxMbNum;
+    FlexCAN_Ip_SetTDCOffset(INST_FLEXCAN_0, TRUE, CANFD_TDC_OFFSET);
+    FlexCAN_Ip_SetStartMode(INST_FLEXCAN_0);
+
+    /* 6. CSEc Init */
+    g_csecInitOk = CMU_InitCsecHw();       /* 1) FlexNVM partition first */
+
+    if (g_csecInitOk)
+    {
+        Csec_Ip_Init(&g_csec_state);       /* 2) Driver init after partition */
+        g_csecRngStatus  = (uint32)Csec_Ip_InitRng();           /* 3) RNG seed */
+        g_csecLoadStatus = (uint32)Csec_Ip_LoadPlainKey(PreSharedKey); /* 4) PSK */
+    }
+
+    /* 7. TX info - CAN-FD, BRS, polling */
+    /* txKeyInfo moved to global g_canfd_tx_key_info */
+
+    /* 8. RX MBs for BMU responses (polling) */
+    Flexcan_Ip_DataInfoType rxInfo;
+    rxInfo.fd_enable   = TRUE;
+    rxInfo.enable_brs  = TRUE;
+    rxInfo.msg_id_type = FLEXCAN_MSG_ID_STD;
+    rxInfo.data_length = CANFD_RX_DATA_LENGTH;
+    rxInfo.is_polling  = TRUE;
+    rxInfo.is_remote   = FALSE;
+
+    /* MB1: ACK from BMU (ID 0x16) */
+    FlexCAN_Ip_ConfigRxMb(INST_FLEXCAN_0, CAN_RX_MB_DATA, &rxInfo, CAN_ID_KEY_ACK);
+
+    /* MB2: Resync from BMU (ID 0x17) */
+    FlexCAN_Ip_ConfigRxMb(INST_FLEXCAN_0, CAN_RX_MB_CTRL, &rxInfo, CAN_ID_RESYNC_REQ);
+
+    Flexcan_Ip_MsgBuffType rxMsg;
+
+    /* Capture debug registers */
+    g_CTRL1  = IP_FLEXCAN0->CTRL1;
+    g_CBT    = IP_FLEXCAN0->CBT;
+    g_FDCBT  = IP_FLEXCAN0->FDCBT;
+    g_MCR    = IP_FLEXCAN0->MCR;
+    g_FDCTRL = IP_FLEXCAN0->FDCTRL;
+    g_PCC    = PCC_FLEXCAN0_ADDR;
+    g_lastESR1 = IP_FLEXCAN0->ESR1;
+    g_lastECR  = IP_FLEXCAN0->ECR;
+
+    /* 9. Set initial state */
+    if (g_csecInitOk &&
+        (g_csecLoadStatus == (uint32)CSEC_IP_ERC_NO_ERROR) &&
+        (g_csecRngStatus  == (uint32)CSEC_IP_ERC_NO_ERROR))
+    {
+        g_proto_state = PROTO_STATE_INIT;
+    }
+    else
+    {
+        g_proto_state = PROTO_STATE_ERROR;
+    }
+
+    /* 10. Start UART reception for battery data from Simulink */
+    CMU_StartUartReception();
+
+    /* 11. Create FreeRTOS tasks */
+    xTaskCreate(CMU_ProtocolTask, "Protocol",
+                configMINIMAL_STACK_SIZE + TASK_PROTOCOL_STACK, NULL,
+                tskIDLE_PRIORITY + TASK_PROTOCOL_PRIORITY, NULL);
+
+    xTaskCreate(CMU_MonitorTask, "Monitor",
+                configMINIMAL_STACK_SIZE + TASK_MONITOR_STACK, NULL,
+                tskIDLE_PRIORITY + TASK_MONITOR_PRIORITY, NULL);
+
+    vTaskStartScheduler();
+    for (;;) {}
+
+    return 0;
+}
+
+/*============================================================================
+ *  FreeRTOS Task: CMU Protocol State Machine
+ *============================================================================*/
+static void CMU_ProtocolTask(void *pvParameters)
+{
+    (void)pvParameters;
+    uint32 txCount = 0U;
+    Flexcan_Ip_MsgBuffType rxMsg;
+
+    while (1)
+    {
+        g_lastESR1 = IP_FLEXCAN0->ESR1;
+        g_lastECR  = IP_FLEXCAN0->ECR;
+
+        switch (g_proto_state)
+        {
+        /*--- INIT: Generate seed, encrypt UID+Seed, prepare key frame ---*/
+        case PROTO_STATE_INIT:
+        {
+            Csec_Ip_ErrorCodeType result;
+            uint8 challenge[UID_SIZE] = {0};
+            uint8 mac_buf[CMAC_TAG_SIZE];
+            uint8 uid_status;
+
+            /* Generate random seed */
+            result = Csec_Ip_GenerateRnd(&g_csec_req, g_seed);
+            if (result != CSEC_IP_ERC_NO_ERROR)
+            {
+                g_proto_state = PROTO_STATE_ERROR;
+                break;
+            }
+
+            /* Get device UID */
+            result = Csec_Ip_GetId(challenge, g_uid, &uid_status, mac_buf);
+            if (result != CSEC_IP_ERC_NO_ERROR)
+            {
+                g_proto_state = PROTO_STATE_ERROR;
+                break;
+            }
+
+            /* Encrypt UID and Seed with PSK */
+            result = CMU_AesEcbEncrypt(g_uid, UID_SIZE, g_encrypted_uid);
+            if (result != CSEC_IP_ERC_NO_ERROR)
+            {
+                g_proto_state = PROTO_STATE_ERROR;
+                break;
+            }
+
+            result = CMU_AesEcbEncrypt(g_seed, SEED_SIZE, g_encrypted_seed);
+            if (result != CSEC_IP_ERC_NO_ERROR)
+            {
+                g_proto_state = PROTO_STATE_ERROR;
+                break;
+            }
+
+            /* Build key exchange frame buffer */
+            memcpy(&g_key_frame_buf[0], g_encrypted_uid, UID_SIZE);
+            memcpy(&g_key_frame_buf[UID_SIZE], g_encrypted_seed, SEED_SIZE);
+
+            g_proto_state = PROTO_STATE_KEY_EXCHANGE;
+            break;
+        }
+
+        /*--- KEY_EXCHANGE: Send key frame, wait for ACK ---*/
+        case PROTO_STATE_KEY_EXCHANGE:
+        {
+            /* Send key exchange frame on CAN ID 0x15 */
+            FlexCAN_Ip_Send(INST_FLEXCAN_0, 0U, &g_canfd_tx_key_info,
+                            CAN_ID_KEY_EXCHANGE, g_key_frame_buf);
+
+            {
+                volatile uint32 timeout = TIMEOUT_CAN_TX;
+                while ((FlexCAN_Ip_GetTransferStatus(INST_FLEXCAN_0, CAN_TX_MB_IDX)
+                        == FLEXCAN_STATUS_BUSY) && (timeout > 0U))
+                {
+                    FlexCAN_Ip_MainFunctionWrite(INST_FLEXCAN_0, 0U);
+                    timeout--;
+                }
+            }
+
+            g_lastCanStatus = FlexCAN_Ip_GetTransferStatus(INST_FLEXCAN_0, 0U);
+
+            if (g_lastCanStatus != FLEXCAN_STATUS_SUCCESS)
+            {
+                /* TX failed (no ACK on bus?), retry after delay */
+                g_txFailCount++;
+                for (volatile uint32 d = 0U; d < DELAY_KEY_RETRY; d++) {}
+                break;
+            }
+
+            g_txOkCount++;
+            g_proto_state = PROTO_STATE_WAIT_ACK;
+            break;
+        }
+
+        /*--- WAIT_ACK: Wait for ACK from BMU on ID 0x16 ---*/
+        case PROTO_STATE_WAIT_ACK:
+        {
+            /* Poll MB1 for ACK */
+            FlexCAN_Ip_Receive(INST_FLEXCAN_0, 1U, &rxMsg, TRUE);
+
+            volatile uint32 timeout = TIMEOUT_ACK_WAIT;
+            while ((FlexCAN_Ip_GetTransferStatus(INST_FLEXCAN_0, 1U)
+                    == FLEXCAN_STATUS_BUSY) && (timeout > 0U))
+            {
+                FlexCAN_Ip_MainFunctionRead(INST_FLEXCAN_0, 1U);
+                timeout--;
+            }
+
+            if ((FlexCAN_Ip_GetTransferStatus(INST_FLEXCAN_0, 1U)
+                 == FLEXCAN_STATUS_SUCCESS)
+                && (rxMsg.data[0] == ACK_MARKER))
+            {
+                /* Verify ACK CMAC (PSK-based, 8B data + 16B CMAC) */
+                {
+                    uint8 expected_mac[CMAC_TAG_SIZE];
+                    CMU_GenerateCmac(rxMsg.data, CTRL_DATA_SIZE * 8U, expected_mac);
+                    if (memcmp(expected_mac, &rxMsg.data[CTRL_DATA_SIZE], CMAC_TAG_SIZE) != 0)
+                    {
+                        /* CMAC mismatch — ACK might be spoofed */
+                        break;
+                    }
+                }
+
+                /* ACK verified - derive session key */
+                Csec_Ip_ErrorCodeType result;
+                result = CMU_DeriveSessionKey(g_uid, g_seed, g_session_key);
+                if (result != CSEC_IP_ERC_NO_ERROR)
+                {
+                    g_proto_state = PROTO_STATE_ERROR;
+                    break;
+                }
+
+                /* Load session key into CSEc RAM (overwrites PSK) */
+                result = Csec_Ip_LoadPlainKey(g_session_key);
+                memset(g_session_key, 0, AES_KEY_SIZE);
+
+                if (result != CSEC_IP_ERC_NO_ERROR)
+                {
+                    g_proto_state = PROTO_STATE_ERROR;
+                    break;
+                }
+
+                g_freshness_counter = 0U;
+                g_proto_state = PROTO_STATE_OPERATIONAL;
+            }
+            else
+            {
+                /* Timeout - resend key exchange */
+                g_proto_state = PROTO_STATE_KEY_EXCHANGE;
+            }
+            break;
+        }
+
+        /*--- OPERATIONAL: Send CMAC-authenticated battery data ---*/
+        case PROTO_STATE_OPERATIONAL:
+        {
+            /* Check for resync request from BMU (quick non-blocking poll) */
+            FlexCAN_Ip_Receive(INST_FLEXCAN_0, 2U, &rxMsg, TRUE);
+            {
+                volatile uint32 chk = TIMEOUT_RESYNC_CHECK;
+                while ((FlexCAN_Ip_GetTransferStatus(INST_FLEXCAN_0, 2U)
+                        == FLEXCAN_STATUS_BUSY) && (chk > 0U))
+                {
+                    FlexCAN_Ip_MainFunctionRead(INST_FLEXCAN_0, 2U);
+                    chk--;
+                }
+            }
+            if (FlexCAN_Ip_GetTransferStatus(INST_FLEXCAN_0, 2U)
+                == FLEXCAN_STATUS_SUCCESS)
+            {
+                /* Verify Resync CMAC before accepting */
+                uint8 expected_mac[CMAC_TAG_SIZE];
+                CMU_GenerateCmac(rxMsg.data, CTRL_DATA_SIZE * 8U, expected_mac);
+                if (memcmp(expected_mac, &rxMsg.data[CTRL_DATA_SIZE], CMAC_TAG_SIZE) == 0)
+                {
+                    /* Authenticated resync request */
+                    g_proto_state = PROTO_STATE_RESYNC;
+                }
+                /* else: ignore spoofed resync */
+                break;
+            }
+
+            /* Poll UART for incoming data */
+            CMU_PollUartRx();
+
+            /* Use UART-received battery data, or fallback to simulated */
+            const uint8 *tx_data;
+
+            if (g_uart_rx_complete)
+            {
+                /* Parse UART frame from Simulink/dataProcess.py */
+                if (CMU_ParseUartFrame(g_uart_rx_buf, UART_FRAME_TOTAL, g_battery_data))
+                {
+                    g_new_data_ready = TRUE;
+                }
+                /* Restart UART reception for next frame */
+                CMU_StartUartReception();
+            }
+
+            if (g_new_data_ready)
+            {
+                tx_data = g_battery_data;  /* Use real data from Simulink */
+            }
+            else
+            {
+                /* Fallback: simulated data if no UART connected */
+                static BatteryData_t simData;
+                memset(&simData, 0, sizeof(simData));
+                simData.current_A        = 2.5f + (float)(txCount % 10) * 0.1f;
+                simData.voltage_V        = 3.7f + (float)(txCount % 5) * 0.05f;
+                simData.soc_u16          = (uint16_t)(65535U - (txCount % 100) * 655U);
+                simData.discharge_cycles = (uint16_t)(txCount / 100U);
+                simData.temperature_u16  = 2981U;
+                simData.cell_count       = NUM_CELLS_PARALLEL;
+                simData.timestamp_ms     = (uint16_t)(txCount * 500U);
+                simData.status_flags     = 0x00U;
+                for (uint32 c = 0U; c < NUM_CELLS_PARALLEL; c++)
+                {
+                    simData.cell_voltage[c] = (uint8)(180U + (txCount + c) % 20U);
+                    simData.cell_soc[c]     = (uint8)(200U - (txCount % 50U));
+                }
+                tx_data = (const uint8 *)&simData;
+            }
+
+            /* Send with CMAC authentication */
+            if (CMU_SendSecuredData(tx_data))
+            {
+                g_txOkCount++;
+            }
+            else
+            {
+                g_txFailCount++;
+            }
+
+            /* Toggle RED LED */
+            GPIOD_PTOR = (1u << LED_RED_PIN);
+            txCount++;
+
+            g_lastCanStatus = FlexCAN_Ip_GetTransferStatus(INST_FLEXCAN_0, 0U);
+            g_lastESR1 = IP_FLEXCAN0->ESR1;
+            g_lastECR  = IP_FLEXCAN0->ECR;
+
+            /* Delay ~500ms with periodic UART RX polling */
+            for (volatile uint32 d = 0U; d < DELAY_OPERATIONAL_LOOP; d++)
+            {
+                if ((d & 0xFFU) == 0U) { CMU_PollUartRx(); }
+            }
+            break;
+        }
+
+        /*--- RESYNC: Re-initialize keys ---*/
+        case PROTO_STATE_RESYNC:
+            /* Reload PSK */
+            Csec_Ip_LoadPlainKey(PreSharedKey);
+            g_freshness_counter = 0U;
+            g_proto_state = PROTO_STATE_INIT;
+            break;
+
+        /*--- ERROR: Crypto failure ---*/
+        case PROTO_STATE_ERROR:
+            /* Toggle LED fast to indicate error */
+            GPIOD_PTOR = (1u << LED_RED_PIN);
+            for (volatile uint32 d = 0U; d < DELAY_ERROR_BLINK; d++) {}
+            break;
+
+        default:
+            g_proto_state = PROTO_STATE_ERROR;
+            break;
+        }
+        vTaskDelay(pdMS_TO_TICKS(TASK_PROTOCOL_DELAY_MS));
+    }
+}
+
+/*============================================================================
+ *  FreeRTOS Task: CMU System Monitor
+ *============================================================================*/
+static void CMU_MonitorTask(void *pvParameters)
+{
+    (void)pvParameters;
+    for (;;)
+    {
+        g_lastESR1 = IP_FLEXCAN0->ESR1;
+        g_lastECR  = IP_FLEXCAN0->ECR;
+        vTaskDelay(pdMS_TO_TICKS(TASK_MONITOR_DELAY_MS));
+    }
+}
+
+#ifdef __cplusplus
+}
+#endif
