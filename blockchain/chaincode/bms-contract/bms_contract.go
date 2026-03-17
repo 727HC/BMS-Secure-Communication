@@ -105,14 +105,14 @@ func (c *BMSContract) QueryBMSData(ctx contractapi.TransactionContextInterface,
 	return &record, nil
 }
 
-// QueryAllBMSData returns all battery data records (#7 수정: pagination 지원)
-func (c *BMSContract) QueryAllBMSData(ctx contractapi.TransactionContextInterface) ([]*BMSData, error) {
+// QueryAllBMSData returns all battery data records (기본 100건)
+func (c *BMSContract) QueryAllBMSData(ctx contractapi.TransactionContextInterface) (*PaginatedResult, error) {
 	return c.QueryBMSDataWithPagination(ctx, 100, "")
 }
 
-// QueryBMSDataWithPagination returns paginated battery data records
+// QueryBMSDataWithPagination returns paginated battery data records with bookmark
 func (c *BMSContract) QueryBMSDataWithPagination(ctx contractapi.TransactionContextInterface,
-	pageSize int32, bookmark string) ([]*BMSData, error) {
+	pageSize int32, bookmark string) (*PaginatedResult, error) {
 
 	resultsIterator, responseMetadata, err := ctx.GetStub().GetStateByRangeWithPagination("", "", pageSize, bookmark)
 	if err != nil {
@@ -135,10 +135,11 @@ func (c *BMSContract) QueryBMSDataWithPagination(ctx contractapi.TransactionCont
 		records = append(records, &record)
 	}
 
-	// bookmark를 마지막 레코드의 metadata로 전달 (클라이언트가 다음 페이지 요청 시 사용)
-	_ = responseMetadata
-
-	return records, nil
+	return &PaginatedResult{
+		Records:  records,
+		Bookmark: responseMetadata.GetBookmark(),
+		Count:    int(responseMetadata.GetFetchedRecordsCount()),
+	}, nil
 }
 
 // GetHistoryForKey returns the history of a battery data record
