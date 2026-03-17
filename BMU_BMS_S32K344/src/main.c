@@ -1046,6 +1046,14 @@ static void BMU_ProtocolTask(void *pvParameters)
                         if (sigResp == HSE_SRV_RSP_OK)
                         {
                             g_eddsaSignCount++;
+                            /* Output signature for BMS Agent → Blockchain */
+                            UART_SendString("[SIGN] FC=");
+                            UART_SendUint(g_expected_fc - 1U);
+                            UART_SendString(" R=");
+                            UART_SendHex(g_eddsa_signR, EDDSA_SIGN_SIZE);
+                            UART_SendString(" S=");
+                            UART_SendHex(g_eddsa_signS, EDDSA_SIGN_SIZE);
+                            UART_SendString("\r\n");
                         }
                     }
                     #endif
