@@ -4,10 +4,10 @@ Reads EDDSA signatures from BMU serial output and sends to blockchain agent.
 
 BMU output format:
   [BMU] OK FC=N SOC=... T=... Cyc=... Cells=11
-  [SIGN] FC=N R=<64hex> S=<64hex>
+  [SIGN] FC=N R=<64hex> S=<64hex> DATA=<96hex>
 
 Usage:
-  python serial_to_agent.py --port COM4 --baud 28800 --agent http://localhost:3000
+  python serial_to_agent.py --port COM4 --baud 28800 --agent http://localhost:3001 --did <DID>
 """
 
 import serial
@@ -35,14 +35,16 @@ def parse_bmu_line(line):
         result['cells'] = int(bmu_match.group(5))
         return result
 
-    # [SIGN] FC=42 R=AABB...  S=CCDD...
+    # [SIGN] FC=42 R=AABB...  S=CCDD... DATA=EEFF...
     sign_match = re.match(
-        r'\[SIGN\] FC=(\d+) R=([0-9A-Fa-f ]+) S=([0-9A-Fa-f ]+)', line)
+        r'\[SIGN\] FC=(\d+) R=([0-9A-Fa-f ]+) S=([0-9A-Fa-f ]+)(?: DATA=([0-9A-Fa-f ]+))?', line)
     if sign_match:
         result['type'] = 'sign'
         result['fc'] = int(sign_match.group(1))
         result['signR'] = sign_match.group(2).replace(' ', '')
         result['signS'] = sign_match.group(3).replace(' ', '')
+        if sign_match.group(4):
+            result['rawPayload'] = sign_match.group(4).replace(' ', '')
         return result
 
     return None
@@ -63,6 +65,8 @@ def send_to_agent(agent_url, data_record, sign_record, did=None):
     }
     if did:
         payload['did'] = did
+    if 'rawPayload' in sign_record:
+        payload['rawPayload'] = sign_record['rawPayload']
 
     try:
         resp = requests.post(f"{agent_url}/data", json=payload, timeout=5)
