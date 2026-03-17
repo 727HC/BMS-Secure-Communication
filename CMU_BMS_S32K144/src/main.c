@@ -804,18 +804,18 @@ static void CMU_ProtocolTask(void *pvParameters)
                 /* Fallback: simulated data if no UART connected */
                 static BatteryData_t simData;
                 memset(&simData, 0, sizeof(simData));
-                simData.current_A        = 2.5f + (float)(txCount % 10) * 0.1f;
-                simData.voltage_V        = 3.7f + (float)(txCount % 5) * 0.05f;
-                simData.soc_u16          = (uint16_t)(65535U - (txCount % 100) * 655U);
-                simData.discharge_cycles = (uint16_t)(txCount / 100U);
-                simData.temperature_u16  = 2981U;
+                simData.current_A        = SIM_CURRENT_BASE + (float)(txCount % SIM_CURRENT_MOD) * SIM_CURRENT_STEP;
+                simData.voltage_V        = SIM_VOLTAGE_BASE + (float)(txCount % SIM_VOLTAGE_MOD) * SIM_VOLTAGE_STEP;
+                simData.soc_u16          = (uint16_t)(SIM_SOC_MAX - (txCount % SIM_SOC_MOD) * SIM_SOC_STEP);
+                simData.discharge_cycles = (uint16_t)(txCount / SIM_CYCLES_DIV);
+                simData.temperature_u16  = SIM_TEMP_DEFAULT;
                 simData.cell_count       = NUM_CELLS_PARALLEL;
-                simData.timestamp_ms     = (uint16_t)(txCount * 500U);
+                simData.timestamp_ms     = (uint16_t)(txCount * SIM_TX_PERIOD_MS);
                 simData.status_flags     = 0x00U;
                 for (uint32 c = 0U; c < NUM_CELLS_PARALLEL; c++)
                 {
-                    simData.cell_voltage[c] = (uint8)(180U + (txCount + c) % 20U);
-                    simData.cell_soc[c]     = (uint8)(200U - (txCount % 50U));
+                    simData.cell_voltage[c] = (uint8)(SIM_CELL_VOLT_BASE + (txCount + c) % SIM_CELL_VOLT_MOD);
+                    simData.cell_soc[c]     = (uint8)(SIM_CELL_SOC_BASE - (txCount % SIM_CELL_SOC_MOD));
                 }
                 tx_data = (const uint8 *)&simData;
             }

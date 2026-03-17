@@ -110,6 +110,26 @@ extern "C" {
 #define DELAY_ERROR_BLINK           ((uint32)500000U)   /* Error LED blink     */
 
 /*============================================================================
+ *  Fallback Simulation Constants (when no UART data available)
+ *============================================================================*/
+#define SIM_CURRENT_BASE            2.5f
+#define SIM_CURRENT_STEP            0.1f
+#define SIM_CURRENT_MOD             10U
+#define SIM_VOLTAGE_BASE            3.7f
+#define SIM_VOLTAGE_STEP            0.05f
+#define SIM_VOLTAGE_MOD             5U
+#define SIM_SOC_MAX                 65535U
+#define SIM_SOC_STEP                655U
+#define SIM_SOC_MOD                 100U
+#define SIM_TEMP_DEFAULT            2981U   /* ~25°C encoded */
+#define SIM_CYCLES_DIV              100U
+#define SIM_TX_PERIOD_MS            500U
+#define SIM_CELL_VOLT_BASE          180U
+#define SIM_CELL_VOLT_MOD           20U
+#define SIM_CELL_SOC_BASE           200U
+#define SIM_CELL_SOC_MOD            50U
+
+/*============================================================================
  *  FreeRTOS Task Configuration
  *============================================================================*/
 #define TASK_PROTOCOL_STACK         512U    /* Protocol task extra stack      */
