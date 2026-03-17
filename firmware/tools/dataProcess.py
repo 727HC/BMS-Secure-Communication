@@ -143,10 +143,10 @@ def build_uart_frame(battery_bytes: bytes) -> bytes:
 # ============================================================================
 def main():
     parser = argparse.ArgumentParser(description="Simulink UDP to UART Bridge")
-    parser.add_argument("--port", type=str, default="COM3",
-                        help="UART serial port (default: COM3)")
-    parser.add_argument("--baud", type=int, default=115200,
-                        help="Baud rate (default: 115200)")
+    parser.add_argument("--port", type=str, default="COM5",
+                        help="UART serial port (default: COM5, matches config.env CMU_COM)")
+    parser.add_argument("--baud", type=int, default=9600,
+                        help="Baud rate (default: 9600, matches config.env CMU_UART_BAUD)")
     parser.add_argument("--udp-ip", type=str, default=SIMULINK_UDP_IP,
                         help=f"UDP listen IP (default: {SIMULINK_UDP_IP})")
     parser.add_argument("--udp-port", type=int, default=SIMULINK_UDP_PORT,

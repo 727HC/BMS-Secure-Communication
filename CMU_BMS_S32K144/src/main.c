@@ -79,6 +79,7 @@ extern const Lpuart_Uart_Ip_UserConfigType Lpuart_Uart_Ip_xHwConfigPB_1;
 #define CSEC_TIMEOUT_TICKS          TIMEOUT_CRYPTO_INIT
 
 /* S32K144 LPUART1 bare-metal registers */
+#define PCC_LPUART1_ADDR    (*(volatile uint32 *)0x400651ACu)  /* moved from main() */
 #define LPUART1_BASE_ADDR   0x4006B000U
 #define LPUART1_BAUD_REG    (*(volatile uint32 *)(LPUART1_BASE_ADDR + 0x10U))
 #define LPUART1_STAT_REG    (*(volatile uint32 *)(LPUART1_BASE_ADDR + 0x14U))
@@ -509,7 +510,6 @@ int main(void)
     /* (*(volatile uint32 *)0xE000E104U) = (1U << 1U); */
 
     /* 3d. LPUART1 init (UART RX from Simulink/dataProcess.py) */
-    #define PCC_LPUART1_ADDR (*(volatile uint32 *)0x400651ACu)
     PCC_LPUART1_ADDR = 0U;
     PCC_LPUART1_ADDR = PCC_CGC_BIT | PCC_PCS_FIRCDIV2;
     LPUART1_CTRL_REG = 0U;
@@ -661,7 +661,7 @@ static void CMU_ProtocolTask(void *pvParameters)
         case PROTO_STATE_KEY_EXCHANGE:
         {
             /* Send key exchange frame on CAN ID 0x15 */
-            FlexCAN_Ip_Send(INST_FLEXCAN_0, 0U, &g_canfd_tx_key_info,
+            FlexCAN_Ip_Send(INST_FLEXCAN_0, CAN_TX_MB_IDX, &g_canfd_tx_key_info,
                             CAN_ID_KEY_EXCHANGE, g_key_frame_buf);
 
             {
@@ -669,18 +669,18 @@ static void CMU_ProtocolTask(void *pvParameters)
                 while ((FlexCAN_Ip_GetTransferStatus(INST_FLEXCAN_0, CAN_TX_MB_IDX)
                         == FLEXCAN_STATUS_BUSY) && (timeout > 0U))
                 {
-                    FlexCAN_Ip_MainFunctionWrite(INST_FLEXCAN_0, 0U);
+                    FlexCAN_Ip_MainFunctionWrite(INST_FLEXCAN_0, CAN_TX_MB_IDX);
                     timeout--;
                 }
             }
 
-            g_lastCanStatus = FlexCAN_Ip_GetTransferStatus(INST_FLEXCAN_0, 0U);
+            g_lastCanStatus = FlexCAN_Ip_GetTransferStatus(INST_FLEXCAN_0, CAN_TX_MB_IDX);
 
             if (g_lastCanStatus != FLEXCAN_STATUS_SUCCESS)
             {
                 /* TX failed (no ACK on bus?), retry after delay */
                 g_txFailCount++;
-                for (volatile uint32 d = 0U; d < DELAY_KEY_RETRY; d++) {}
+                vTaskDelay(pdMS_TO_TICKS(KEY_EXCHANGE_TIMEOUT_MS));
                 break;
             }
 
@@ -692,18 +692,18 @@ static void CMU_ProtocolTask(void *pvParameters)
         /*--- WAIT_ACK: Wait for ACK from BMU on ID 0x16 ---*/
         case PROTO_STATE_WAIT_ACK:
         {
-            /* Poll MB1 for ACK */
-            FlexCAN_Ip_Receive(INST_FLEXCAN_0, 1U, &rxMsg, TRUE);
+            /* Poll CAN_RX_MB_DATA for ACK */
+            FlexCAN_Ip_Receive(INST_FLEXCAN_0, CAN_RX_MB_DATA, &rxMsg, TRUE);
 
             volatile uint32 timeout = TIMEOUT_ACK_WAIT;
-            while ((FlexCAN_Ip_GetTransferStatus(INST_FLEXCAN_0, 1U)
+            while ((FlexCAN_Ip_GetTransferStatus(INST_FLEXCAN_0, CAN_RX_MB_DATA)
                     == FLEXCAN_STATUS_BUSY) && (timeout > 0U))
             {
-                FlexCAN_Ip_MainFunctionRead(INST_FLEXCAN_0, 1U);
+                FlexCAN_Ip_MainFunctionRead(INST_FLEXCAN_0, CAN_RX_MB_DATA);
                 timeout--;
             }
 
-            if ((FlexCAN_Ip_GetTransferStatus(INST_FLEXCAN_0, 1U)
+            if ((FlexCAN_Ip_GetTransferStatus(INST_FLEXCAN_0, CAN_RX_MB_DATA)
                  == FLEXCAN_STATUS_SUCCESS)
                 && (rxMsg.data[0] == ACK_MARKER))
             {
