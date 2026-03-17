@@ -65,7 +65,7 @@ do_simulator() {
     echo " [3/4] 배터리 시뮬레이터 시작"
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     cd "$BMS_DIR/firmware/tools"
-    python -u dataProcess.py --port $CMU_COM --baud $CMU_UART_BAUD > /dev/null 2>&1 &
+    python -u dataProcess.py --port $CMU_COM --baud $CMU_UART_BAUD > "$LOG_DIR/dataProcess.log" 2>&1 &
     BRIDGE_PID=$!
     echo "  dataProcess.py (PID=$BRIDGE_PID) → $CMU_COM @ $CMU_UART_BAUD"
     sleep 1
@@ -80,7 +80,7 @@ do_matlab_bridge() {
     echo " [3/4] MATLAB 브릿지 시작"
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     cd "$BMS_DIR/firmware/tools"
-    python -u dataProcess.py --port $CMU_COM --baud $CMU_UART_BAUD > /dev/null 2>&1 &
+    python -u dataProcess.py --port $CMU_COM --baud $CMU_UART_BAUD > "$LOG_DIR/dataProcess.log" 2>&1 &
     BRIDGE_PID=$!
     echo "  dataProcess.py (PID=$BRIDGE_PID) → $CMU_COM @ $CMU_UART_BAUD"
     echo "  MATLAB에서: run_bms_simulation"
