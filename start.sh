@@ -11,6 +11,13 @@
 
 set -e
 BMS_DIR="$(cd "$(dirname "$0")" && pwd)"
+
+if [ ! -f "$BMS_DIR/config.env" ]; then
+    echo "!!! config.env 파일이 없습니다."
+    echo "    config.env.example을 복사하여 환경에 맞게 수정하세요:"
+    echo "    cp config.env.example config.env"
+    exit 1
+fi
 source "$BMS_DIR/config.env"
 
 export PATH="$TOOLCHAIN_PATH:$MAKE_PATH:$PATH"

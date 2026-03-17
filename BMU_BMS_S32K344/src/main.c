@@ -584,8 +584,13 @@ static boolean BMU_HandleKeyExchange(const uint8 *rx_data)
         /* CMAC(PSK, ack_data[8]) → append to ack_frame[8..23] */
         uint32 ackTagLen = CMAC_TAG_SIZE;
         /* ACK is sent before CMU loads session key, so use PSK for CMAC */
-        BMU_CmacGenerate(HSE_PSK_KEY_HANDLE, ack_frame, CTRL_DATA_SIZE,
-                          &ack_frame[CTRL_DATA_SIZE], &ackTagLen);
+        hse_resp = BMU_CmacGenerate(HSE_PSK_KEY_HANDLE, ack_frame, CTRL_DATA_SIZE,
+                                    &ack_frame[CTRL_DATA_SIZE], &ackTagLen);
+        if (hse_resp != HSE_SRV_RSP_OK)
+        {
+            UART_SendString("[BMU] ERR: ACK CMAC generate failed\r\n");
+            return FALSE;
+        }
         Flexcan_Ip_DataInfoType txCtrl = g_canfd_tx_info;
         txCtrl.data_length = CTRL_FRAME_SIZE;
         FlexCAN_Ip_Send(INST_FLEXCAN_0, CAN_TX_MB_IDX,
@@ -619,8 +624,9 @@ static boolean BMU_VerifySecuredData(const uint8 *rx_payload)
     /* Read FC from payload (embedded in BatteryData_t.freshness_counter) */
     uint32 rx_fc = pFrame->freshness_counter;
 
-    /* Check FC is within acceptable window */
-    if (rx_fc < g_expected_fc || rx_fc >= (g_expected_fc + FC_WINDOW_SIZE))
+    /* Check FC is within acceptable window.
+     * Use subtraction to avoid uint32 overflow when g_expected_fc is near UINT32_MAX. */
+    if (rx_fc < g_expected_fc || (rx_fc - g_expected_fc) >= FC_WINDOW_SIZE)
     {
         g_cmac_fail_count++;
         UART_SendString("[BMU] WARN: FC out of window\r\n");
@@ -691,8 +697,15 @@ static void BMU_SendResyncRequest(void)
     resync_frame[0] = RESYNC_MARKER;
     /* CMAC(PSK, resync_data[8]) — CMU reloads PSK before verifying */
     uint32 resyncTagLen = CMAC_TAG_SIZE;
-    BMU_CmacGenerate(HSE_PSK_KEY_HANDLE, resync_frame, CTRL_DATA_SIZE,
-                      &resync_frame[CTRL_DATA_SIZE], &resyncTagLen);
+    hseSrvResponse_t resyncResp = BMU_CmacGenerate(HSE_PSK_KEY_HANDLE, resync_frame,
+                                                    CTRL_DATA_SIZE,
+                                                    &resync_frame[CTRL_DATA_SIZE],
+                                                    &resyncTagLen);
+    if (resyncResp != HSE_SRV_RSP_OK)
+    {
+        UART_SendString("[BMU] ERR: Resync CMAC generate failed\r\n");
+        return;
+    }
     Flexcan_Ip_DataInfoType txCtrl = g_canfd_tx_info;
     txCtrl.data_length = CTRL_FRAME_SIZE;
     FlexCAN_Ip_Send(INST_FLEXCAN_0, CAN_TX_MB_IDX,
@@ -876,11 +889,11 @@ int main(void)
     rxInfo.is_polling  = TRUE;
     rxInfo.is_remote   = FALSE;
 
-    /* MB1: Key Exchange from CMU (ID 0x15) */
-    FlexCAN_Ip_ConfigRxMb(INST_FLEXCAN_0, 1U, &rxInfo, CAN_ID_KEY_EXCHANGE);
+    /* MB(CAN_RX_MB_DATA): Key Exchange from CMU (ID 0x15) */
+    FlexCAN_Ip_ConfigRxMb(INST_FLEXCAN_0, CAN_RX_MB_DATA, &rxInfo, CAN_ID_KEY_EXCHANGE);
 
-    /* MB2: Battery Data from CMU (ID 0x14) */
-    FlexCAN_Ip_ConfigRxMb(INST_FLEXCAN_0, 2U, &rxInfo, CAN_ID_BATTERY_DATA);
+    /* MB(CAN_RX_MB_CTRL): Battery Data from CMU (ID 0x14) */
+    FlexCAN_Ip_ConfigRxMb(INST_FLEXCAN_0, CAN_RX_MB_CTRL, &rxInfo, CAN_ID_BATTERY_DATA);
 
     /*--- 6. Set initial protocol state ---*/
     if (g_hseReady && (g_hseImportStatus == (uint32)HSE_SRV_RSP_OK))
@@ -931,17 +944,17 @@ static void BMU_ProtocolTask(void *pvParameters)
         /*--- INIT: Wait for key exchange from CMU ---*/
         case PROTO_STATE_INIT:
         {
-            FlexCAN_Ip_Receive(INST_FLEXCAN_0, 1U, &rxMsg, TRUE);
+            FlexCAN_Ip_Receive(INST_FLEXCAN_0, CAN_RX_MB_DATA, &rxMsg, TRUE);
 
             volatile uint32 timeout = TIMEOUT_CAN_RX_POLL;
-            while ((FlexCAN_Ip_GetTransferStatus(INST_FLEXCAN_0, 1U)
+            while ((FlexCAN_Ip_GetTransferStatus(INST_FLEXCAN_0, CAN_RX_MB_DATA)
                     == FLEXCAN_STATUS_BUSY) && (timeout > 0U))
             {
-                FlexCAN_Ip_MainFunctionRead(INST_FLEXCAN_0, 1U);
+                FlexCAN_Ip_MainFunctionRead(INST_FLEXCAN_0, CAN_RX_MB_DATA);
                 timeout--;
             }
 
-            if (FlexCAN_Ip_GetTransferStatus(INST_FLEXCAN_0, 1U)
+            if (FlexCAN_Ip_GetTransferStatus(INST_FLEXCAN_0, CAN_RX_MB_DATA)
                 == FLEXCAN_STATUS_SUCCESS)
             {
                 g_rxCount++;
@@ -968,17 +981,17 @@ static void BMU_ProtocolTask(void *pvParameters)
         /*--- OPERATIONAL: Receive + verify secured battery data ---*/
         case PROTO_STATE_OPERATIONAL:
         {
-            FlexCAN_Ip_Receive(INST_FLEXCAN_0, 2U, &rxMsg, TRUE);
+            FlexCAN_Ip_Receive(INST_FLEXCAN_0, CAN_RX_MB_CTRL, &rxMsg, TRUE);
 
             volatile uint32 timeout = TIMEOUT_CAN_RX_POLL;
-            while ((FlexCAN_Ip_GetTransferStatus(INST_FLEXCAN_0, 2U)
+            while ((FlexCAN_Ip_GetTransferStatus(INST_FLEXCAN_0, CAN_RX_MB_CTRL)
                     == FLEXCAN_STATUS_BUSY) && (timeout > 0U))
             {
-                FlexCAN_Ip_MainFunctionRead(INST_FLEXCAN_0, 2U);
+                FlexCAN_Ip_MainFunctionRead(INST_FLEXCAN_0, CAN_RX_MB_CTRL);
                 timeout--;
             }
 
-            if (FlexCAN_Ip_GetTransferStatus(INST_FLEXCAN_0, 2U)
+            if (FlexCAN_Ip_GetTransferStatus(INST_FLEXCAN_0, CAN_RX_MB_CTRL)
                 == FLEXCAN_STATUS_SUCCESS)
             {
                 g_rxCount++;

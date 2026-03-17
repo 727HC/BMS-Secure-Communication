@@ -1,6 +1,8 @@
-# Secrets
+# Secrets & Environment
 **/secrets.h
 !**/secrets.h.example
+config.env
+!config.env.example
 
 # Build outputs
 **/*.o
