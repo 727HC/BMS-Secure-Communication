@@ -14,6 +14,9 @@ app.use(express.json());
 // 설정 (환경변수 우선)
 const ACA_PY_URL = process.env.ACA_PY_URL || "http://localhost:8031";
 const DEFAULT_BMU_DID = process.env.DEFAULT_BMU_DID || null;
+const FABRIC_IDENTITY = process.env.FABRIC_IDENTITY || "admin";
+// [A2-01] CA 패스워드 환경변수 분리
+const FABRIC_ADMIN_SECRET = process.env.FABRIC_ADMIN_SECRET || "REMOVED_SECRET_ROTATED_2026_04_18";
 const CCP_PATH = process.env.FABRIC_CCP_PATH || path.resolve(
   process.env.HOME,
   "bms-blockchain/fabric-samples/test-network/organizations/peerOrganizations/org1.example.com/connection-org1.json"
@@ -32,24 +35,23 @@ async function connectFabric() {
   const ccp = JSON.parse(fs.readFileSync(CCP_PATH, "utf8"));
   const wallet = await Wallets.newFileSystemWallet(WALLET_PATH);
 
-  const adminIdentity = await wallet.get("admin");
+  const adminIdentity = await wallet.get(FABRIC_IDENTITY);
   if (!adminIdentity) {
-    console.log("Enrolling admin...");
+    console.log(`Enrolling ${FABRIC_IDENTITY}...`);
     const caInfo = ccp.certificateAuthorities
       ? ccp.certificateAuthorities[CA_HOSTNAME]
       : null;
 
     if (caInfo) {
-      // CA 모드: fabric-ca-client로 admin enroll
+      // [A2-02] TLS 검증: 개발 환경에서만 비활성화
       const caTLSCACerts = caInfo.tlsCACerts?.pem;
-      const ca = new FabricCAServices(
-        caInfo.url,
-        caTLSCACerts ? { trustedRoots: caTLSCACerts, verify: false } : undefined,
-        caInfo.caName
-      );
+      const tlsOptions = caTLSCACerts
+        ? { trustedRoots: caTLSCACerts, verify: process.env.NODE_ENV === "production" }
+        : undefined;
+      const ca = new FabricCAServices(caInfo.url, tlsOptions, caInfo.caName);
       const enrollment = await ca.enroll({
-        enrollmentID: "admin",
-        enrollmentSecret: "REMOVED_SECRET_ROTATED_2026_04_18",
+        enrollmentID: FABRIC_IDENTITY,
+        enrollmentSecret: FABRIC_ADMIN_SECRET,
       });
       const identity = {
         credentials: {
@@ -59,10 +61,10 @@ async function connectFabric() {
         mspId: MSP,
         type: "X.509",
       };
-      await wallet.put("admin", identity);
-      console.log("Admin enrolled via CA");
+      await wallet.put(FABRIC_IDENTITY, identity);
+      console.log(`${FABRIC_IDENTITY} enrolled via CA`);
     } else {
-      // cryptogen 모드: 직접 인증서 로드
+      // [A2-03] cryptogen 모드: keystore에서 첫 번째 키 파일 자동 선택
       const orgPath = path.dirname(path.dirname(CCP_PATH));
       const certPath = path.join(
         orgPath,
@@ -72,7 +74,8 @@ async function connectFabric() {
         orgPath,
         "users/Admin@org1.example.com/msp/keystore"
       );
-      const keyPath = path.join(keyDir, "priv_sk");
+      const keyFiles = fs.readdirSync(keyDir);
+      const keyPath = path.join(keyDir, keyFiles[0]);
 
       const certificate = fs.readFileSync(certPath, "utf8");
       const privateKey = fs.readFileSync(keyPath, "utf8");
@@ -82,7 +85,7 @@ async function connectFabric() {
         mspId: MSP,
         type: "X.509",
       };
-      await wallet.put("admin", identity);
+      await wallet.put(FABRIC_IDENTITY, identity);
       console.log("Admin identity loaded from cryptogen certs");
     }
   }
@@ -90,7 +93,7 @@ async function connectFabric() {
   gateway = new Gateway();
   await gateway.connect(ccp, {
     wallet,
-    identity: "admin",
+    identity: FABRIC_IDENTITY,
     discovery: { enabled: true, asLocalhost: true },
   });
 
@@ -99,12 +102,10 @@ async function connectFabric() {
   console.log(`Connected to Fabric: ${CHANNEL}/${CONTRACT}`);
 }
 
-// hex 문자열 판별
 function isHex(str) {
   return /^[0-9A-Fa-f]+$/.test(str) && str.length % 2 === 0;
 }
 
-// 서명 바이트 디코딩 (hex 우선, fallback base64)
 function decodeSignature(signature) {
   if (isHex(signature)) {
     return Buffer.from(signature, "hex");
@@ -112,7 +113,6 @@ function decodeSignature(signature) {
   return Buffer.from(signature, "base64");
 }
 
-// 서명 검증 (rawPayload 우선, fallback dataHash)
 async function verifySignature(did, verifyTarget, signature) {
   const verkeyRes = await axios.get(`${ACA_PY_URL}/ledger/did-verkey`, {
     params: { did },
@@ -126,8 +126,6 @@ async function verifySignature(did, verifyTarget, signature) {
 // POST /data — BMU 배터리 데이터 기록
 app.post("/data", async (req, res) => {
   const { fc, soc, temperature, dataHash, signature, rawPayload } = req.body;
-
-  // did: 요청에서 받거나 → 환경변수 기본값
   const did = req.body.did || DEFAULT_BMU_DID;
 
   if (fc === undefined || fc === null || !dataHash) {
@@ -141,39 +139,29 @@ app.post("/data", async (req, res) => {
   }
 
   try {
-    // 서명 검증
     if (signature && signature !== "none") {
-      // rawPayload가 있으면 BMU 원본 데이터로 검증 (정확한 검증)
-      // 없으면 dataHash로 fallback (호환 모드)
       const verifyTarget = rawPayload
         ? Buffer.from(rawPayload, "hex")
         : dataHash;
-
       const isValid = await verifySignature(did, verifyTarget, signature);
       if (!isValid) {
         return res.status(401).json({ error: "signature verification failed" });
       }
     }
 
-    // dataHash: rawPayload가 있으면 거기서 계산, 없으면 요청값 사용
     const finalHash = rawPayload
       ? crypto.createHash("sha256").update(Buffer.from(rawPayload, "hex")).digest("hex")
       : dataHash;
 
     const id = `bms-${Date.now()}-${fc}`;
     const sig = signature || "none";
-    const socVal = soc || 0;
+    // [A2-04] soc=0 유효값 보존
+    const socVal = (soc !== undefined && soc !== null) ? soc : 0;
     const timestamp = new Date().toISOString();
 
     await contract.submitTransaction(
-      "RecordBMSData",
-      id,
-      finalHash,
-      did,
-      sig,
-      String(fc),
-      String(socVal),
-      timestamp
+      "RecordBMSData", id, finalHash, did, sig,
+      String(fc), String(socVal), timestamp
     );
 
     console.log(`Recorded: ${id} FC=${fc} SOC=${socVal}`);
@@ -184,20 +172,15 @@ app.post("/data", async (req, res) => {
   }
 });
 
-// GET /query/:id — 데이터 조회
 app.get("/query/:id", async (req, res) => {
   try {
-    const result = await contract.evaluateTransaction(
-      "QueryBMSData",
-      req.params.id
-    );
+    const result = await contract.evaluateTransaction("QueryBMSData", req.params.id);
     res.json(JSON.parse(result.toString()));
   } catch (err) {
     res.status(404).json({ error: err.message });
   }
 });
 
-// GET /query-all — 전체 조회
 app.get("/query-all", async (req, res) => {
   try {
     const result = await contract.evaluateTransaction("QueryAllBMSData");
@@ -207,7 +190,6 @@ app.get("/query-all", async (req, res) => {
   }
 });
 
-// GET /status
 app.get("/status", (req, res) => {
   res.json({
     fabric: contract ? "connected" : "disconnected",
@@ -215,6 +197,16 @@ app.get("/status", (req, res) => {
     contract: CONTRACT,
   });
 });
+
+// [A2-05] 프로세스 종료 시 Gateway 정리
+async function shutdown() {
+  if (gateway) {
+    await gateway.disconnect();
+  }
+  process.exit(0);
+}
+process.on("SIGINT", shutdown);
+process.on("SIGTERM", shutdown);
 
 // 서버 시작
 const PORT = process.env.PORT || 3001;
