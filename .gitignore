@@ -38,6 +38,11 @@ BMU_BMS_FreeRTOS/
 *.cfg.ini
 *.vtcfg.local
 
+# Blockchain / Node.js
+**/node_modules/
+**/wallet/
+blockchain/fabric-samples/
+
 # Python
 __pycache__/
 *.pyc
