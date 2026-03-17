@@ -50,6 +50,19 @@ function fromBase58(str) {
   return bs58.decode(str)
 }
 
+// hex 문자열 판별
+function isHex(str) {
+  return /^[0-9A-Fa-f]+$/.test(str) && str.length % 2 === 0
+}
+
+// 서명 바이트 디코딩 (hex 우선, fallback base64)
+function decodeSignature(signature) {
+  if (isHex(signature)) {
+    return Buffer.from(signature, 'hex')
+  }
+  return Buffer.from(signature, 'base64')
+}
+
 //DID 원장 등록 API
 app.post('/did/register', async (req, res) => {
   const { did, verkey: rawVerkey, role } = req.body
@@ -101,7 +114,7 @@ app.post('/verify-signature', async (req, res) => {
     const verkey = verkeyRes.data.verkey
     const publicKey = bs58.decode(verkey)
     const msgBytes = Buffer.from(msg)
-    const signatureBytes = Buffer.from(signature, 'base64')
+    const signatureBytes = decodeSignature(signature)
     const valid = nacl.sign.detached.verify(msgBytes, signatureBytes, publicKey)
 
     res.json({ valid })
@@ -151,7 +164,7 @@ app.post('/data', async (req, res) => {
 
     // 2. 서명 검증
     const publicKey = bs58.decode(verkey)
-    const signatureBytes = Buffer.from(signature, 'base64')
+    const signatureBytes = decodeSignature(signature)
     const msgBytes = Buffer.from(msg)
 
     const isValid = nacl.sign.detached.verify(msgBytes, signatureBytes, publicKey)

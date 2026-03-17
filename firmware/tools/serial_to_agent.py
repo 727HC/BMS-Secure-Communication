@@ -48,7 +48,7 @@ def parse_bmu_line(line):
     return None
 
 
-def send_to_agent(agent_url, data_record, sign_record):
+def send_to_agent(agent_url, data_record, sign_record, did=None):
     """Send verified + signed data to BMS Agent."""
     data_str = f"FC={data_record['fc']},SOC={data_record['soc']},T={data_record['temperature']}"
     data_hash = hashlib.sha256(data_str.encode()).hexdigest()
@@ -61,6 +61,8 @@ def send_to_agent(agent_url, data_record, sign_record):
         'dataHash': data_hash,
         'signature': signature,
     }
+    if did:
+        payload['did'] = did
 
     try:
         resp = requests.post(f"{agent_url}/data", json=payload, timeout=5)
@@ -79,8 +81,10 @@ def main():
     parser = argparse.ArgumentParser(description="BMU Serial → BMS Agent Bridge")
     parser.add_argument("--port", default="COM4", help="Serial port (default: COM4)")
     parser.add_argument("--baud", type=int, default=28800, help="Baud rate (default: 28800)")
-    parser.add_argument("--agent", default="http://localhost:3000",
-                        help="BMS Agent URL (default: http://localhost:3000)")
+    parser.add_argument("--agent", default="http://localhost:3001",
+                        help="BMS Agent URL (default: http://localhost:3001)")
+    parser.add_argument("--did", default=None,
+                        help="BMU DID for signature verification (e.g. MPGsQGEaPz9qcySnxfFt4B)")
     args = parser.parse_args()
 
     print(f"BMU Serial → Agent Bridge")
@@ -112,7 +116,7 @@ def main():
 
             elif parsed['type'] == 'sign' and last_data:
                 print(f"[SIGN] FC={parsed['fc']} R={parsed['signR'][:16]}... S={parsed['signS'][:16]}...")
-                send_to_agent(args.agent, last_data, parsed)
+                send_to_agent(args.agent, last_data, parsed, did=args.did)
                 sent_count += 1
                 if sent_count % 10 == 0:
                     print(f"  Total sent: {sent_count}")
