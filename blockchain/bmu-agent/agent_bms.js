@@ -13,6 +13,7 @@ app.use(express.json());
 
 // 설정 (환경변수 우선)
 const ACA_PY_URL = process.env.ACA_PY_URL || "http://localhost:8031";
+const DEFAULT_BMU_DID = process.env.DEFAULT_BMU_DID || null;
 const CCP_PATH = process.env.FABRIC_CCP_PATH || path.resolve(
   process.env.HOME,
   "bms-blockchain/fabric-samples/test-network/organizations/peerOrganizations/org1.example.com/connection-org1.json"
@@ -26,7 +27,7 @@ const CA_HOSTNAME = process.env.FABRIC_CA_HOSTNAME || "ca.org1.example.com";
 let gateway = null;
 let contract = null;
 
-// Fabric 연결 (#3 수정: CA enroll 경로 추가)
+// Fabric 연결
 async function connectFabric() {
   const ccp = JSON.parse(fs.readFileSync(CCP_PATH, "utf8"));
   const wallet = await Wallets.newFileSystemWallet(WALLET_PATH);
@@ -98,38 +99,66 @@ async function connectFabric() {
   console.log(`Connected to Fabric: ${CHANNEL}/${CONTRACT}`);
 }
 
-// 서명 검증 헬퍼 (#2 수정: 서명 검증 후 저장)
-async function verifySignature(did, dataHash, signature) {
+// hex 문자열 판별
+function isHex(str) {
+  return /^[0-9A-Fa-f]+$/.test(str) && str.length % 2 === 0;
+}
+
+// 서명 바이트 디코딩 (hex 우선, fallback base64)
+function decodeSignature(signature) {
+  if (isHex(signature)) {
+    return Buffer.from(signature, "hex");
+  }
+  return Buffer.from(signature, "base64");
+}
+
+// 서명 검증 (rawPayload 우선, fallback dataHash)
+async function verifySignature(did, verifyTarget, signature) {
   const verkeyRes = await axios.get(`${ACA_PY_URL}/ledger/did-verkey`, {
     params: { did },
   });
   const publicKey = bs58.decode(verkeyRes.data.verkey);
-  const msgBytes = Buffer.from(dataHash);
-  const sigBytes = Buffer.from(signature, "base64");
+  const msgBytes = Buffer.isBuffer(verifyTarget) ? verifyTarget : Buffer.from(verifyTarget);
+  const sigBytes = decodeSignature(signature);
   return nacl.sign.detached.verify(msgBytes, sigBytes, publicKey);
 }
 
 // POST /data — BMU 배터리 데이터 기록
 app.post("/data", async (req, res) => {
-  const { did, fc, soc, temperature, dataHash, signature } = req.body;
+  const { fc, soc, temperature, dataHash, signature, rawPayload } = req.body;
 
-  // #4 수정: fc=0 허용, undefined/null만 거부
+  // did: 요청에서 받거나 → 환경변수 기본값
+  const did = req.body.did || DEFAULT_BMU_DID;
+
   if (fc === undefined || fc === null || !dataHash) {
     return res.status(400).json({ error: "fc, dataHash required" });
   }
 
   if (!did) {
-    return res.status(400).json({ error: "did required" });
+    return res.status(400).json({
+      error: "did required (set DEFAULT_BMU_DID env or send did in request)"
+    });
   }
 
   try {
-    // 서명 검증 (signature가 있으면 반드시 검증)
+    // 서명 검증
     if (signature && signature !== "none") {
-      const isValid = await verifySignature(did, dataHash, signature);
+      // rawPayload가 있으면 BMU 원본 데이터로 검증 (정확한 검증)
+      // 없으면 dataHash로 fallback (호환 모드)
+      const verifyTarget = rawPayload
+        ? Buffer.from(rawPayload, "hex")
+        : dataHash;
+
+      const isValid = await verifySignature(did, verifyTarget, signature);
       if (!isValid) {
         return res.status(401).json({ error: "signature verification failed" });
       }
     }
+
+    // dataHash: rawPayload가 있으면 거기서 계산, 없으면 요청값 사용
+    const finalHash = rawPayload
+      ? crypto.createHash("sha256").update(Buffer.from(rawPayload, "hex")).digest("hex")
+      : dataHash;
 
     const id = `bms-${Date.now()}-${fc}`;
     const sig = signature || "none";
@@ -139,7 +168,7 @@ app.post("/data", async (req, res) => {
     await contract.submitTransaction(
       "RecordBMSData",
       id,
-      dataHash,
+      finalHash,
       did,
       sig,
       String(fc),
