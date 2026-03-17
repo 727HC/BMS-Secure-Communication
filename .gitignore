@@ -1,0 +1,12 @@
+node_modules/
+wallet/
+*.log
+
+# Third-party (submodules or manually cloned)
+fabric-samples/
+von-network/
+
+# OS / IDE
+.DS_Store
+.vscode/
+.idea/
