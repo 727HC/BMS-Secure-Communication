@@ -7,6 +7,12 @@
 
 BMS_DIR="$(cd "$(dirname "$0")" && pwd)"
 
+if [ ! -f "$BMS_DIR/config.env" ]; then
+    echo "!!! config.env 파일이 없습니다. config.env.example을 복사하세요: cp config.env.example config.env"
+    exit 1
+fi
+source "$BMS_DIR/config.env"
+
 case "${1:-full}" in
     full)
         echo "=============================="
@@ -24,10 +30,10 @@ case "${1:-full}" in
         ;;
 
     monitor)
-        echo "=== BMU 시리얼 모니터 (COM4, 28800) — Ctrl+C로 종료 ==="
+        echo "=== BMU 시리얼 모니터 ($BMU_COM, $BMU_BAUD) — Ctrl+C로 종료 ==="
         python -c "
 import serial, sys
-ser = serial.Serial('COM4', 28800, timeout=1)
+ser = serial.Serial('$BMU_COM', $BMU_BAUD, timeout=1)
 try:
     while True:
         data = ser.read(200)
@@ -42,10 +48,10 @@ ser.close()
         ;;
 
     matlab)
-        echo "=== dataProcess.py 시작 (COM5, 9600) ==="
+        echo "=== dataProcess.py 시작 ($CMU_COM, $CMU_UART_BAUD) ==="
         echo "MATLAB에서 실행: run_bms_simulation 또는 replay_bev_data(simOut)"
         cd "$BMS_DIR/firmware/tools"
-        python -u dataProcess.py --port COM5 --baud 9600
+        python -u dataProcess.py --port $CMU_COM --baud $CMU_UART_BAUD
         ;;
 
     *)

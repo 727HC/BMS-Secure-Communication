@@ -69,7 +69,7 @@ BMS/
 │   └── ElectricVehicleSimscape.prj # Simulink 프로젝트 파일
 │
 ├── blockchain/
-│   ├── fabric-samples/       # Hyperledger Fabric 네트워크 샘플
+│   ├── fabric-samples/       # Hyperledger Fabric (install-fabric.sh로 설치됨, ZIP 미포함)
 │   ├── install-fabric.sh     # Fabric 바이너리 설치 스크립트
 │   └── start_fabric.sh       # Fabric 네트워크 시작 스크립트
 │
@@ -420,3 +420,4 @@ BMU UART (COM4, 28800 baud)에서 확인할 수 있는 정상 동작 출력:
 - CMU 보드의 **FlexNVM 파티셔닝**은 최초 1회만 필요합니다. 재파티셔닝 시 CSEc 키가 초기화됩니다.
 - BMU HSE 키 카탈로그 포맷은 이미 포맷된 경우 `HSE_SRV_RSP_NOT_ALLOWED`를 반환하며, 이는 정상 동작입니다.
 - `BMS_MODE` 변경 시 반드시 **클린 빌드**를 수행하십시오 (`build.sh`는 자동으로 오브젝트 파일을 삭제합니다).
+- **빌드 모드 전환은 반드시 `build.sh` 또는 `start.sh`를 사용하십시오.** S32DS IDE에서 직접 빌드하면 `CFLAGS_EXTRA`가 전달되지 않아 기본 모드로 빌드됩니다.

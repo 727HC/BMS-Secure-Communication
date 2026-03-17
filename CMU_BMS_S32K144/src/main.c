@@ -710,7 +710,13 @@ static void CMU_ProtocolTask(void *pvParameters)
                 /* Verify ACK CMAC (PSK-based, 24B = 8B data + 16B CMAC) */
                 {
                     uint8 expected_mac[CMAC_TAG_SIZE];
-                    CMU_GenerateCmac(rxMsg.data, CTRL_DATA_SIZE * 8U, expected_mac);
+                    Csec_Ip_ErrorCodeType cmacResult;
+                    cmacResult = CMU_GenerateCmac(rxMsg.data, CTRL_DATA_SIZE * 8U, expected_mac);
+                    if (cmacResult != CSEC_IP_ERC_NO_ERROR)
+                    {
+                        g_proto_state = PROTO_STATE_ERROR;
+                        break;
+                    }
                     if (memcmp(expected_mac, &rxMsg.data[CTRL_DATA_SIZE], CMAC_TAG_SIZE) != 0)
                     {
                         /* CMAC mismatch — ACK might be spoofed */
@@ -838,10 +844,14 @@ static void CMU_ProtocolTask(void *pvParameters)
             g_lastESR1 = IP_FLEXCAN0->ESR1;
             g_lastECR  = IP_FLEXCAN0->ECR;
 
-            /* Delay ~500ms with periodic UART RX polling */
-            for (volatile uint32 d = 0U; d < DELAY_OPERATIONAL_LOOP; d++)
+            /* Delay ~500ms with periodic UART RX polling (non-blocking) */
             {
-                if ((d & 0xFFU) == 0U) { CMU_PollUartRx(); }
+                uint32 polls;
+                for (polls = 0U; polls < 50U; polls++)
+                {
+                    CMU_PollUartRx();
+                    vTaskDelay(pdMS_TO_TICKS(10U));
+                }
             }
             break;
         }
@@ -849,7 +859,11 @@ static void CMU_ProtocolTask(void *pvParameters)
         /*--- RESYNC: Re-initialize keys ---*/
         case PROTO_STATE_RESYNC:
             /* Reload PSK */
-            Csec_Ip_LoadPlainKey(PreSharedKey);
+            if (Csec_Ip_LoadPlainKey(PreSharedKey) != CSEC_IP_ERC_NO_ERROR)
+            {
+                g_proto_state = PROTO_STATE_ERROR;
+                break;
+            }
             g_freshness_counter = 0U;
             g_proto_state = PROTO_STATE_INIT;
             break;

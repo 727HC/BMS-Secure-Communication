@@ -122,7 +122,7 @@ static Flexcan_Ip_DataInfoType g_canfd_tx_info = {
     .fd_enable   = TRUE,
     .enable_brs  = TRUE,
     .msg_id_type = FLEXCAN_MSG_ID_STD,
-    .data_length = 8U,
+    .data_length = CANFD_RX_DATA_LENGTH,
     .is_polling  = TRUE,
     .is_remote   = FALSE
 };
@@ -185,10 +185,12 @@ volatile uint32 g_lpuartCtrl = 0U;
 /* LPUART6 = PRTN1_COFB2_REQ80 → bit (80-64) = bit 16 in COFB2 */
 #define MC_ME_LPUART6_REQ_BIT   (1U << 16U)
 
+/* MC_ME PRTN1 registers (must be at file scope — preprocessor ignores function scope) */
+#define MC_ME_PRTN1_PCONF (*(volatile uint32 *)(MC_ME_BASE + 0x300U))
+
 static void BMU_InitLpuart6(void)
 {
     /* 0. Enable LPUART6 clock via MC_ME (PRTN1_COFB2, REQ80) */
-    #define MC_ME_PRTN1_PCONF (*(volatile uint32 *)(MC_ME_BASE + 0x300U))
     MC_ME_PRTN1_COFB2_CLKEN |= MC_ME_LPUART6_REQ_BIT;
     MC_ME_PRTN1_PCONF |= 1U;
     MC_ME_PRTN1_PUPD  |= 1U;
@@ -373,7 +375,8 @@ static hseSrvResponse_t BMU_ImportSymKey(hseKeyHandle_t keyHandle,
 /** AES-128 ECB Decrypt */
 static hseSrvResponse_t BMU_AesEcbDecrypt(hseKeyHandle_t keyHandle,
                                             const uint8 *cipher,
-                                            uint8 *plain)
+                                            uint8 *plain,
+                                            uint32 inputLen)
 {
     uint8 ch = Hse_Ip_GetFreeChannel(HSE_MU_INSTANCE);
     hseSrvDescriptor_t *pDesc = &g_hse_srv_desc[ch];
@@ -387,7 +390,7 @@ static hseSrvResponse_t BMU_AesEcbDecrypt(hseKeyHandle_t keyHandle,
     pCipher->cipherBlockMode = HSE_CIPHER_BLOCK_MODE_ECB;
     pCipher->cipherDir      = HSE_CIPHER_DIR_DECRYPT;
     pCipher->keyHandle      = keyHandle;
-    pCipher->inputLength    = AES_KEY_SIZE;
+    pCipher->inputLength    = inputLen;
     pCipher->pInput         = (HOST_ADDR)cipher;
     pCipher->pOutput        = (HOST_ADDR)plain;
     pCipher->sgtOption      = HSE_SGT_OPTION_NONE;
@@ -483,7 +486,7 @@ static boolean BMU_HandleKeyExchange(const uint8 *rx_data)
     const uint8 *enc_seed = &rx_data[UID_SIZE];
 
     /* 2. Decrypt UID using PSK */
-    hse_resp = BMU_AesEcbDecrypt(HSE_PSK_KEY_HANDLE, enc_uid, g_decrypted_uid);
+    hse_resp = BMU_AesEcbDecrypt(HSE_PSK_KEY_HANDLE, enc_uid, g_decrypted_uid, UID_SIZE);
     if (hse_resp != HSE_SRV_RSP_OK)
     {
         UART_SendString("[BMU] ERR: Decrypt UID failed\r\n");
@@ -491,7 +494,7 @@ static boolean BMU_HandleKeyExchange(const uint8 *rx_data)
     }
 
     /* 3. Decrypt Seed using PSK */
-    hse_resp = BMU_AesEcbDecrypt(HSE_PSK_KEY_HANDLE, enc_seed, g_decrypted_seed);
+    hse_resp = BMU_AesEcbDecrypt(HSE_PSK_KEY_HANDLE, enc_seed, g_decrypted_seed, SEED_SIZE);
     if (hse_resp != HSE_SRV_RSP_OK)
     {
         UART_SendString("[BMU] ERR: Decrypt Seed failed\r\n");
@@ -1056,8 +1059,16 @@ static void BMU_ProtocolTask(void *pvParameters)
             BMU_SendResyncRequest();
             g_cmac_fail_count = 0U;
             g_expected_fc = 0U;
-            BMU_ImportSymKey(HSE_PSK_KEY_HANDLE, PreSharedKey, AES_KEY_BITS);
-            g_proto_state = PROTO_STATE_INIT;
+            if (BMU_ImportSymKey(HSE_PSK_KEY_HANDLE, PreSharedKey, AES_KEY_BITS)
+                != HSE_SRV_RSP_OK)
+            {
+                UART_SendString("[BMU] ERR: PSK re-import failed\r\n");
+                g_proto_state = PROTO_STATE_ERROR;
+            }
+            else
+            {
+                g_proto_state = PROTO_STATE_INIT;
+            }
             break;
 
         /*--- ERROR ---*/
