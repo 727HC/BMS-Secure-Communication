@@ -172,11 +172,6 @@ static volatile boolean g_new_data_ready   = FALSE;
 
 /* CAN flags */
 static volatile boolean g_can_tx_done   = TRUE;
-static volatile boolean g_can_rx_done   = FALSE;
-static Flexcan_Ip_MsgBuffType  g_can_rx_data;
-
-/* Timing */
-static uint32 g_last_tx_time = 0U;
 
 /* === Global debug variables (visible in debugger) === */
 volatile Flexcan_Ip_StatusType g_initStatus = FLEXCAN_STATUS_ERROR;
@@ -224,15 +219,6 @@ static Flexcan_Ip_DataInfoType g_canfd_tx_key_info = {
     .msg_id_type = FLEXCAN_MSG_ID_STD,
     .data_length = KEY_EXCHANGE_FRAME_SIZE,
     .is_polling  = TRUE,
-    .is_remote   = FALSE
-};
-
-static Flexcan_Ip_DataInfoType g_canfd_rx_info = {
-    .fd_enable   = TRUE,
-    .enable_brs  = TRUE,
-    .msg_id_type = FLEXCAN_MSG_ID_STD,
-    .data_length = CANFD_PAYLOAD_SIZE,
-    .is_polling  = FALSE,
     .is_remote   = FALSE
 };
 
@@ -315,10 +301,6 @@ void FlexCAN_CallbackFunction(uint8 instance,
     if (eventType == FLEXCAN_EVENT_TX_COMPLETE)
     {
         g_can_tx_done = TRUE;
-    }
-    else if (eventType == FLEXCAN_EVENT_RX_COMPLETE)
-    {
-        g_can_rx_done = TRUE;
     }
 }
 
@@ -453,104 +435,6 @@ static void CMU_PollUartRx(void)
 }
 
 /*============================================================================
- *  Key Exchange: Send encrypted UID + Seed to BMU
- *============================================================================*/
-static boolean CMU_PerformKeyExchange(void)
-{
-    Csec_Ip_ErrorCodeType result;
-    uint8 challenge[UID_SIZE] = {0};
-    uint8 mac_buf[CMAC_TAG_SIZE];
-    uint8 status;
-
-    UART_SendString("[CMU] Starting key exchange...\r\n");
-
-    /* 1. Generate random seed via CSEc TRNG */
-    result = Csec_Ip_GenerateRnd(&g_csec_req, g_seed);
-    if (result != CSEC_IP_ERC_NO_ERROR)
-    {
-        UART_SendString("[CMU] ERR: RNG failed\r\n");
-        return FALSE;
-    }
-
-    /* 2. Get device UID from CSEc */
-    result = Csec_Ip_GetId(challenge, g_uid, &status, mac_buf);
-    if (result != CSEC_IP_ERC_NO_ERROR)
-    {
-        UART_SendString("[CMU] ERR: GetId failed\r\n");
-        return FALSE;
-    }
-
-    UART_SendString("[CMU] UID: ");
-    UART_SendHex(g_uid, UID_SIZE);
-
-    UART_SendString("[CMU] Seed: ");
-    UART_SendHex(g_seed, SEED_SIZE);
-
-    /* 3. Encrypt UID and Seed with PSK (AES-ECB, 16 bytes each) */
-    result = CMU_AesEcbEncrypt(g_uid, UID_SIZE, g_encrypted_uid);
-    if (result != CSEC_IP_ERC_NO_ERROR)
-    {
-        UART_SendString("[CMU] ERR: Encrypt UID failed\r\n");
-        return FALSE;
-    }
-
-    result = CMU_AesEcbEncrypt(g_seed, SEED_SIZE, g_encrypted_seed);
-    if (result != CSEC_IP_ERC_NO_ERROR)
-    {
-        UART_SendString("[CMU] ERR: Encrypt Seed failed\r\n");
-        return FALSE;
-    }
-
-    /* 4. Build key exchange frame: [encrypted_uid(16B)][encrypted_seed(16B)] */
-    KeyExchangeFrame_t key_frame;
-    memcpy(key_frame.encrypted_uid,  g_encrypted_uid,  UID_SIZE);
-    memcpy(key_frame.encrypted_seed, g_encrypted_seed, SEED_SIZE);
-
-    /* 5. Send via CAN-FD (ID = 0x15) */
-    g_can_tx_done = FALSE;
-    FlexCAN_Ip_Send(INST_FLEXCAN_0, CAN_TX_MB_IDX,
-                    &g_canfd_tx_key_info, CAN_ID_KEY_EXCHANGE,
-                    (uint8 *)&key_frame);
-
-    /* Wait for TX complete */
-    uint32 timeout = 0U;
-    while (!g_can_tx_done && (timeout < CSEC_TIMEOUT_TICKS))
-    {
-        timeout++;
-    }
-
-    if (!g_can_tx_done)
-    {
-        UART_SendString("[CMU] ERR: CAN TX timeout\r\n");
-        return FALSE;
-    }
-
-    UART_SendString("[CMU] Key exchange frame sent\r\n");
-
-    /* 6. Derive session key: CMAC(PSK, Label||UID||Seed||Counter) */
-    result = CMU_DeriveSessionKey(g_uid, g_seed, g_session_key);
-    if (result != CSEC_IP_ERC_NO_ERROR)
-    {
-        UART_SendString("[CMU] ERR: KDF failed\r\n");
-        return FALSE;
-    }
-
-    /* 7. Load session key into CSEc RAM slot (overwrites PSK in RAM key) */
-    result = Csec_Ip_LoadPlainKey(g_session_key);
-    if (result != CSEC_IP_ERC_NO_ERROR)
-    {
-        UART_SendString("[CMU] ERR: Load session key failed\r\n");
-        return FALSE;
-    }
-
-    /* Clear session key from RAM for security */
-    memset(g_session_key, 0, AES_KEY_SIZE);
-
-    UART_SendString("[CMU] Session key derived and loaded\r\n");
-    return TRUE;
-}
-
-/*============================================================================
  *  Send Secured Battery Data: Data(48B) || CMAC(16B) = 64B CAN-FD
  *============================================================================*/
 static boolean CMU_SendSecuredData(const uint8 *battery_data)
@@ -602,8 +486,6 @@ static boolean CMU_SendSecuredData(const uint8 *battery_data)
  *============================================================================*/
 int main(void)
 {
-    uint32 txCount = 0U;
-
     /* 1. Clock init */
     Clock_Ip_Init(&Clock_Ip_aClockConfig[0]);
     OsIf_Init(NULL_PTR);
@@ -671,8 +553,6 @@ int main(void)
 
     /* MB2: Resync from BMU (ID 0x17) */
     FlexCAN_Ip_ConfigRxMb(INST_FLEXCAN_0, CAN_RX_MB_CTRL, &rxInfo, CAN_ID_RESYNC_REQ);
-
-    Flexcan_Ip_MsgBuffType rxMsg;
 
     /* Capture debug registers */
     g_CTRL1  = IP_FLEXCAN0->CTRL1;

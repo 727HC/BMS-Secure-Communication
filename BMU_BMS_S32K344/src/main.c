@@ -39,7 +39,6 @@ extern "C" {
 /* FreeRTOS */
 #include "FreeRTOS.h"
 #include "task.h"
-#include "queue.h"
 
 /* Protocol definitions shared with CMU */
 #include "common/bms_protocol.h"
@@ -76,9 +75,6 @@ static uint8 g_whitelistCount = 0U;  /* Number of registered UIDs */
    TRUE  = enforcement mode (reject unknown UIDs) */
 static boolean g_whitelistEnforced = FALSE;
 volatile uint8 g_lastUid[UID_SIZE];  /* Last received UID (visible in debugger) */
-
-/* UART instance for debug */
-#define UART_INSTANCE           0U
 
 
 /*============================================================================
@@ -117,31 +113,11 @@ static void BMU_ProtocolTask(void *pvParameters);
 static void BMU_MonitorTask(void *pvParameters);
 
 /* CAN reception */
-static volatile boolean g_can_rx_done = FALSE;
 static volatile boolean g_can_tx_done = TRUE;
-static Flexcan_Ip_MsgBuffType g_can_rx_msg;
 
 /*============================================================================
  *  CAN-FD Configuration
  *============================================================================*/
-static Flexcan_Ip_DataInfoType g_canfd_rx_info_64 = {
-    .fd_enable   = TRUE,
-    .enable_brs  = TRUE,
-    .msg_id_type = FLEXCAN_MSG_ID_STD,
-    .data_length = CANFD_PAYLOAD_SIZE,
-    .is_polling  = FALSE,
-    .is_remote   = FALSE
-};
-
-static Flexcan_Ip_DataInfoType g_canfd_rx_info_32 = {
-    .fd_enable   = TRUE,
-    .enable_brs  = TRUE,
-    .msg_id_type = FLEXCAN_MSG_ID_STD,
-    .data_length = KEY_EXCHANGE_FRAME_SIZE,
-    .is_polling  = FALSE,
-    .is_remote   = FALSE
-};
-
 static Flexcan_Ip_DataInfoType g_canfd_tx_info = {
     .fd_enable   = TRUE,
     .enable_brs  = TRUE,
@@ -152,9 +128,9 @@ static Flexcan_Ip_DataInfoType g_canfd_tx_info = {
 };
 
 /*============================================================================
- *  LPUART0 Debug Output (bare-metal, no RTD driver)
- *  S32K3X4EVB-Q257: LPUART0 TX = PTA1, RX = PTA0 → OpenSDA Virtual COM
- *  Clock source: FIRC 48MHz → LPUART0
+ *  LPUART6 Debug Output (bare-metal, no RTD driver)
+ *  S32K3X4EVB-Q172: LPUART6 TX = PTA16 → OpenSDA Virtual COM
+ *  Clock source: FIRC 48MHz → LPUART6
  *============================================================================*/
 
 /* LPUART6 registers (OpenSDA UART on S32K3X4EVB-Q172) */
@@ -276,11 +252,7 @@ void FlexCAN_Callback(uint8 instance,
     (void)mbIdx;
     (void)state;
 
-    if (eventType == FLEXCAN_EVENT_RX_COMPLETE)
-    {
-        g_can_rx_done = TRUE;
-    }
-    else if (eventType == FLEXCAN_EVENT_TX_COMPLETE)
+    if (eventType == FLEXCAN_EVENT_TX_COMPLETE)
     {
         g_can_tx_done = TRUE;
     }
@@ -610,10 +582,10 @@ static boolean BMU_HandleKeyExchange(const uint8 *rx_data)
         uint8 ack_frame[CTRL_FRAME_SIZE] = {0};
         ack_frame[0] = ACK_MARKER;
         /* CMAC(PSK, ack_data[8]) → append to ack_frame[8..23] */
-        uint32 tagLen = CMAC_TAG_SIZE;
+        uint32 ackTagLen = CMAC_TAG_SIZE;
         /* ACK is sent before CMU loads session key, so use PSK for CMAC */
         BMU_CmacGenerate(HSE_PSK_KEY_HANDLE, ack_frame, CTRL_DATA_SIZE,
-                          &ack_frame[CTRL_DATA_SIZE], CMAC_TAG_SIZE);
+                          &ack_frame[CTRL_DATA_SIZE], &ackTagLen);
         Flexcan_Ip_DataInfoType txCtrl = g_canfd_tx_info;
         txCtrl.data_length = CTRL_FRAME_SIZE;
         FlexCAN_Ip_Send(INST_FLEXCAN_0, CAN_TX_MB_IDX,
@@ -718,8 +690,9 @@ static void BMU_SendResyncRequest(void)
     uint8 resync_frame[CTRL_FRAME_SIZE] = {0};
     resync_frame[0] = RESYNC_MARKER;
     /* CMAC(PSK, resync_data[8]) — CMU reloads PSK before verifying */
+    uint32 resyncTagLen = CMAC_TAG_SIZE;
     BMU_CmacGenerate(HSE_PSK_KEY_HANDLE, resync_frame, CTRL_DATA_SIZE,
-                      &resync_frame[CTRL_DATA_SIZE], CMAC_TAG_SIZE);
+                      &resync_frame[CTRL_DATA_SIZE], &resyncTagLen);
     Flexcan_Ip_DataInfoType txCtrl = g_canfd_tx_info;
     txCtrl.data_length = CTRL_FRAME_SIZE;
     FlexCAN_Ip_Send(INST_FLEXCAN_0, CAN_TX_MB_IDX,
@@ -807,13 +780,6 @@ static hseSrvResponse_t BMU_EddsaSign(const uint8 *data, uint32 dataLen)
                                  }, pDesc);
 }
 
-static void BMU_RearmCanRx(void)
-{
-    g_can_rx_done = FALSE;
-    FlexCAN_Ip_Receive(INST_FLEXCAN_0, CAN_RX_MB_DATA,  &g_can_rx_msg, FALSE);
-    FlexCAN_Ip_Receive(INST_FLEXCAN_0, CAN_RX_MB_CTRL,  &g_can_rx_msg, FALSE);
-}
-
 /*============================================================================
  *  Main
  *============================================================================*/
@@ -865,7 +831,7 @@ int main(void)
 
     /*--- 2b. LPUART6 Debug Init (OpenSDA UART on Q172 EVB) ---*/
     BMU_InitLpuart6();
-    UART_SendString("\r\n[BMU] Boot: LPUART0 OK\r\n");
+    UART_SendString("\r\n[BMU] Boot: LPUART6 OK\r\n");
 
     /*--- 3. FlexCAN0 Init (Clock_Ip_Init handles gate via RTD) ---*/
     g_bmu_initStatus = FlexCAN_Ip_Init(INST_FLEXCAN_0, &FlexCAN_State0, &FlexCAN_Config0);
@@ -915,8 +881,6 @@ int main(void)
 
     /* MB2: Battery Data from CMU (ID 0x14) */
     FlexCAN_Ip_ConfigRxMb(INST_FLEXCAN_0, 2U, &rxInfo, CAN_ID_BATTERY_DATA);
-
-    Flexcan_Ip_MsgBuffType rxMsg;
 
     /*--- 6. Set initial protocol state ---*/
     if (g_hseReady && (g_hseImportStatus == (uint32)HSE_SRV_RSP_OK))
