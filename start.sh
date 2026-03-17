@@ -127,8 +127,11 @@ do_blockchain_bridge() {
     echo "  BMU Serial($BMU_COM) → BMS Agent(http://localhost:3001)"
     echo ""
     sleep 3
+    if [ -z "$BMU_DID" ]; then
+        echo "  ⚠ BMU_DID not set in config.env — signature verification will use DEFAULT_BMU_DID env"
+    fi
     cd "$BMS_DIR/firmware/tools"
-    python -u serial_to_agent.py --port $BMU_COM --baud $BMU_BAUD --agent http://localhost:3001
+    python -u serial_to_agent.py --port $BMU_COM --baud $BMU_BAUD --agent http://localhost:3001 ${BMU_DID:+--did $BMU_DID}
 }
 
 echo "╔══════════════════════════════════════╗"

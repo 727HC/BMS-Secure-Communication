@@ -70,8 +70,14 @@ BMS/
 │
 ├── blockchain/
 │   ├── fabric-samples/       # Hyperledger Fabric (install-fabric.sh로 설치됨, ZIP 미포함)
+│   ├── chaincode/
+│   │   └── bms-contract/     # Go 체인코드 (RecordBMSData, QueryBMSData 등)
+│   ├── bmu-agent/
+│   │   ├── agent_bms.js      # BMU serial 데이터 수신 + 서명 검증 + Fabric 저장 (포트 3001)
+│   │   ├── agent.js          # DID/서명 검증 범용 API + MongoDB + Fabric (포트 3000)
+│   │   └── test-verify.js    # E2E 서명 검증 테스트
 │   ├── install-fabric.sh     # Fabric 바이너리 설치 스크립트
-│   └── start_fabric.sh       # Fabric 네트워크 시작 스크립트
+│   └── start_fabric.sh       # Fabric 네트워크 시작 + 체인코드 배포
 │
 ├── canoe/
 │   ├── BMS_Test.cfg          # Vector CANoe 프로젝트 설정
@@ -82,8 +88,7 @@ BMS/
 ├── build.sh                  # 빌드 스크립트
 ├── flash.sh                  # 플래시 스크립트 (PEmicro)
 ├── run.sh                    # 빌드+플래시+실행 원스탑
-├── start.sh                  # 전체 시스템 원스탑 실행 (시뮬레이터 포함)
-└── dataProcess.py            # (루트 레벨 복사본)
+└── start.sh                  # 전체 시스템 원스탑 실행 (시뮬레이터 포함)
 ```
 
 ---
@@ -365,9 +370,9 @@ pip install pyserial
 cd firmware/tools
 python battery_simulator.py --udp
 
-# 블록체인 에이전트 브릿지
+# 블록체인 에이전트 브릿지 (agent_bms.js 포트 3001 사용)
 cd firmware/tools
-python serial_to_agent.py --port COM4 --baud 28800 --agent http://localhost:3001
+python serial_to_agent.py --port COM4 --baud 28800 --agent http://localhost:3001 --did <BMU_DID>
 ```
 
 ### Hyperledger Fabric 블록체인 구동
@@ -375,8 +380,17 @@ python serial_to_agent.py --port COM4 --baud 28800 --agent http://localhost:3001
 ```bash
 cd blockchain
 ./install-fabric.sh    # Fabric 바이너리 최초 설치
-./start_fabric.sh      # 네트워크 시작
+./start_fabric.sh      # 네트워크 시작 + 체인코드 배포
+
+# BMU serial 데이터 수신 에이전트 실행
+cd bmu-agent
+npm install
+node agent_bms.js      # 포트 3001 (BMU serial path용)
 ```
+
+> **에이전트 역할 분리:**
+> - `agent_bms.js` (포트 3001): **BMU serial 데이터 경로 전용.** `serial_to_agent.py`에서 전송하는 FC/SOC/dataHash/signature/rawPayload를 수신하여 Ed25519 서명 검증 후 Fabric에 기록합니다. `./start.sh blockchain` 모드에서 사용됩니다.
+> - `agent.js` (포트 3000): **범용 DID/서명 검증 API.** MongoDB 저장 + Fabric 기록. ACA-Py 연동 테스트 또는 REST API 검증 시 사용합니다.
 
 ---
 
