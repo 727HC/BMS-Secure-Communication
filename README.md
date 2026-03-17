@@ -367,7 +367,7 @@ python battery_simulator.py --udp
 
 # 블록체인 에이전트 브릿지
 cd firmware/tools
-python serial_to_agent.py --port COM4 --baud 28800 --agent http://localhost:3000
+python serial_to_agent.py --port COM4 --baud 28800 --agent http://localhost:3001
 ```
 
 ### Hyperledger Fabric 블록체인 구동
