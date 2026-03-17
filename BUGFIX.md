@@ -244,12 +244,32 @@ parser.add_argument("--baud", type=int, default=9600,
 
 ---
 
-## 수정하지 않은 항목 (검토 필요)
+---
 
-아래는 코드 구조상 잠재적 위험이 있으나 의도적 설계로 판단하여 수정을 보류한 항목입니다.
+## 추가 수정 (2026-03-17, GPT/Cowork 리뷰 반영)
+
+총 **14건** 추가 수정
+
+| # | 파일 | 심각도 | 설명 | 출처 |
+|---|------|--------|------|------|
+| 10 | BMU/main.c | 🔴 High | `BMU_InitLpuart6()` 내부 `#define MC_ME_PRTN1_PCONF` → 함수 밖으로 이동 | Cowork A-1 |
+| 11 | BMU/main.c | 🔴 High | RESYNC PSK 재임포트 반환값 미검사 → 실패 시 ERROR 전환 | Cowork A-2 |
+| 12 | BMU/main.c | 🔴 High | `BMU_AesEcbDecrypt` inputLength에 `AES_KEY_SIZE` → `UID_SIZE`/`SEED_SIZE` 명시 | Cowork A-3 |
+| 13 | BMU/main.c | 🟡 Medium | `g_canfd_tx_info.data_length = 8U` → `CANFD_RX_DATA_LENGTH` 상수 | Cowork A-4 |
+| 14 | CMU/main.c | 🟡 Medium | WAIT_ACK CMU_GenerateCmac 반환값 미검사 → 에러 처리 추가 | Cowork B-1 |
+| 15 | CMU/main.c | 🟡 Medium | OPERATIONAL busy-wait → vTaskDelay(10ms) × 50 폴링 루프 | Cowork B-2 |
+| 16 | CMU/main.c | 🟡 Medium | RESYNC PSK 재로드 반환값 미검사 → 실패 시 ERROR 전환 | Cowork 추가 |
+| 17 | dataProcess.py | 🟡 Medium | reserved 8B → freshness_counter(4B) + reserved(4B) 명시 분리 | Cowork C-1 |
+| 18 | dataProcess.py | 🟢 Low | `recvfrom(1024)` → `recvfrom(SIMULINK_PACKET_SIZE)` | Cowork C-2 |
+| 19 | run.sh | 🟡 Medium | config.env 미로드 + COM/baud 하드코딩 → 변수 치환 | Cowork D-1 |
+| 20 | flash.sh | 🟢 Low | config.env 존재 확인 누락 → 검증 추가 | Cowork D-2 |
+| 21 | 루트 | 🟡 Medium | 루트 dataProcess.py 중복 → 삭제 (firmware/tools/ 만 유지) | GPT 5 |
+| 22 | README.md | 🟢 Low | fabric-samples 설명 수정 (ZIP 미포함, 스크립트로 설치) | GPT 6 |
+| 23 | README.md | 🟢 Low | 빌드 모드 전환은 build.sh/start.sh 필수 명시 | GPT 7 |
+
+## 수정하지 않은 항목 (검토 필요)
 
 | 항목 | 파일 | 판단 근거 |
 |------|------|-----------|
-| `g_hseFormatStatus` 오류 무시 | BMU/main.c L852 | 이미 포맷된 경우 `NOT_ALLOWED` 반환이 정상. 주석으로 명시됨 |
-| `BMU_AesEcbDecrypt` 입력 길이 `AES_KEY_SIZE` | BMU/main.c L390 | UID_SIZE=SEED_SIZE=AES_KEY_SIZE=16 으로 일치. 단, 상수명이 의미적으로 부정확 |
-| CMU OPERATIONAL 루프 내 `for` 지연 | CMU/main.c | 주기적 UART 폴링 포함(`(d & 0xFFU) == 0U`)이 있어 단순 바쁜 대기는 아님. 단, vTaskDelay 기반으로 재설계를 권장 |
+| `g_hseFormatStatus` 오류 무시 | BMU/main.c | 이미 포맷된 경우 `NOT_ALLOWED` 반환이 정상. 주석으로 명시됨 |
+| EDDSA 서명 UART 출력 부하 | BMU/main.c | 28800 baud에서 50ms 주기 출력은 현재 동작함. 필요시 보레이트 상향 검토 |
