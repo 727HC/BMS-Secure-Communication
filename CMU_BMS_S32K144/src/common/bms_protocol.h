@@ -26,7 +26,7 @@ extern "C" {
  *  Default: BMS_MODE_EDDSA (full security)
  *============================================================================*/
 #if !defined(BMS_MODE_PLAIN_CAN) && !defined(BMS_MODE_CMAC) && !defined(BMS_MODE_EDDSA)
-    #define BMS_MODE_EDDSA
+    #define BMS_MODE_CMAC  /* Default to CMAC until EDDSA HSE provisioning is ready */
 #endif
 
 /*============================================================================
