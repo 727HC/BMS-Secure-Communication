@@ -41,6 +41,7 @@ extern const Lpuart_Uart_Ip_UserConfigType Lpuart_Uart_Ip_xHwConfigPB_1;
 #include "FreeRTOS.h"
 #include "task.h"
 #include "queue.h"
+#include "semphr.h"
 
 /* Protocol definitions shared with BMU */
 #include "common/bms_protocol.h"
@@ -170,7 +171,7 @@ static uint32                  g_freshness_counter = 0U;
 static uint8    g_uart_rx_buf[UART_FRAME_TOTAL];
 static uint8    g_battery_data[BATTERY_DATA_SIZE];
 static volatile boolean g_uart_rx_complete = FALSE;
-static volatile boolean g_new_data_ready   = FALSE;
+/* g_new_data_ready removed — data flow now via txDataQueue */
 
 /* CAN flags */
 static volatile boolean g_can_tx_done   = TRUE;
@@ -204,6 +205,10 @@ static void CMU_MonitorTask(void *pvParameters);
 
 /* FreeRTOS queues */
 static QueueHandle_t txDataQueue;   /* UartRxTask → CanTxTask (battery data ready) */
+
+/* CSEc mutex — protects RAM KEY slot against concurrent access
+ * between ProtocolTask (PSK reload for Resync) and CanTxTask (session key CMAC) */
+static SemaphoreHandle_t csecMutex;
 
 /* Key exchange buffer (reused across retries with same seed) */
 static uint8 g_key_frame_buf[KEY_EXCHANGE_FRAME_SIZE];
@@ -587,23 +592,24 @@ int main(void)
 
     /* 11. Create FreeRTOS queues */
     txDataQueue = xQueueCreate(1U, BATTERY_DATA_SIZE);  /* depth=1, xQueueOverwrite used */
+    csecMutex   = xSemaphoreCreateMutex();
 
     /* 12. Create FreeRTOS tasks */
-    xTaskCreate(CMU_UartRxTask, "UartRx",
-                configMINIMAL_STACK_SIZE + TASK_CANRX_STACK, NULL,
-                tskIDLE_PRIORITY + TASK_CANRX_PRIORITY, NULL);
-
-    xTaskCreate(CMU_ProtocolTask, "Protocol",
-                configMINIMAL_STACK_SIZE + TASK_PROTOCOL_STACK, NULL,
-                tskIDLE_PRIORITY + TASK_PROTOCOL_PRIORITY, NULL);
-
-    xTaskCreate(CMU_CanTxTask, "CanTx",
-                configMINIMAL_STACK_SIZE + TASK_DATAPROC_STACK, NULL,
-                tskIDLE_PRIORITY + TASK_DATAPROC_PRIORITY, NULL);
-
-    xTaskCreate(CMU_MonitorTask, "Monitor",
-                configMINIMAL_STACK_SIZE + TASK_MONITOR_STACK, NULL,
-                tskIDLE_PRIORITY + TASK_MONITOR_PRIORITY, NULL);
+    if (xTaskCreate(CMU_UartRxTask, "UartRx",
+                    configMINIMAL_STACK_SIZE + TASK_CANRX_STACK, NULL,
+                    tskIDLE_PRIORITY + TASK_CANRX_PRIORITY, NULL) != pdPASS ||
+        xTaskCreate(CMU_ProtocolTask, "Protocol",
+                    configMINIMAL_STACK_SIZE + TASK_PROTOCOL_STACK, NULL,
+                    tskIDLE_PRIORITY + TASK_PROTOCOL_PRIORITY, NULL) != pdPASS ||
+        xTaskCreate(CMU_CanTxTask, "CanTx",
+                    configMINIMAL_STACK_SIZE + TASK_DATAPROC_STACK, NULL,
+                    tskIDLE_PRIORITY + TASK_DATAPROC_PRIORITY, NULL) != pdPASS ||
+        xTaskCreate(CMU_MonitorTask, "Monitor",
+                    configMINIMAL_STACK_SIZE + TASK_MONITOR_STACK, NULL,
+                    tskIDLE_PRIORITY + TASK_MONITOR_PRIORITY, NULL) != pdPASS)
+    {
+        for (;;) {}  /* Task creation failed — halt */
+    }
 
     vTaskStartScheduler();
     for (;;) {}
@@ -628,7 +634,6 @@ static void CMU_UartRxTask(void *pvParameters)
         {
             if (CMU_ParseUartFrame(g_uart_rx_buf, UART_FRAME_TOTAL, g_battery_data))
             {
-                g_new_data_ready = TRUE;
                 xQueueOverwrite(txDataQueue, g_battery_data);
             }
             CMU_StartUartReception();
@@ -816,14 +821,18 @@ static void CMU_ProtocolTask(void *pvParameters)
             if (FlexCAN_Ip_GetTransferStatus(INST_FLEXCAN_0, CAN_RX_MB_CTRL)
                 == FLEXCAN_STATUS_SUCCESS)
             {
-                /* Reload PSK for Resync CMAC verification */
-                if (Csec_Ip_LoadPlainKey(PreSharedKey) != CSEC_IP_ERC_NO_ERROR)
+                /* Reload PSK for Resync CMAC verification — mutex protects CSEc RAM KEY */
+                xSemaphoreTake(csecMutex, portMAX_DELAY);
+                Csec_Ip_ErrorCodeType pskResult = Csec_Ip_LoadPlainKey(PreSharedKey);
+                if (pskResult != CSEC_IP_ERC_NO_ERROR)
                 {
+                    xSemaphoreGive(csecMutex);
                     g_proto_state = PROTO_STATE_ERROR;
                     break;
                 }
                 uint8 expected_mac[CMAC_TAG_SIZE];
                 Csec_Ip_ErrorCodeType cmacR = CMU_GenerateCmac(rxMsg.data, CTRL_DATA_SIZE * 8U, expected_mac);
+                xSemaphoreGive(csecMutex);
                 if (cmacR != CSEC_IP_ERC_NO_ERROR)
                 {
                     break;
@@ -919,8 +928,11 @@ static void CMU_CanTxTask(void *pvParameters)
             tx_data = (const uint8 *)&simData;
         }
 
-        /* Send with CMAC authentication */
-        if (CMU_SendSecuredData(tx_data))
+        /* Send with CMAC authentication — mutex protects CSEc RAM KEY */
+        xSemaphoreTake(csecMutex, portMAX_DELAY);
+        boolean txResult = CMU_SendSecuredData(tx_data);
+        xSemaphoreGive(csecMutex);
+        if (txResult)
         {
             g_txOkCount++;
         }
@@ -936,7 +948,7 @@ static void CMU_CanTxTask(void *pvParameters)
         g_lastCanStatus = FlexCAN_Ip_GetTransferStatus(INST_FLEXCAN_0, CAN_TX_MB_IDX);
 
         /* TX interval ~500ms */
-        vTaskDelay(pdMS_TO_TICKS(500U));
+        vTaskDelay(pdMS_TO_TICKS(CMU_TX_PERIOD_MS));
     }
 }
 

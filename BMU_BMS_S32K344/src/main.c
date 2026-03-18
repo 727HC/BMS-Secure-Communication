@@ -952,21 +952,22 @@ int main(void)
     /*--- 8. Create FreeRTOS tasks ---*/
     UART_SendString("[BMU] Creating FreeRTOS tasks...\r\n");
 
-    xTaskCreate(BMU_CanRxTask, "CanRx",
-                configMINIMAL_STACK_SIZE + TASK_CANRX_STACK, NULL,
-                tskIDLE_PRIORITY + TASK_CANRX_PRIORITY, NULL);
-
-    xTaskCreate(BMU_ProtocolTask, "Protocol",
-                configMINIMAL_STACK_SIZE + TASK_PROTOCOL_STACK, NULL,
-                tskIDLE_PRIORITY + TASK_PROTOCOL_PRIORITY, NULL);
-
-    xTaskCreate(BMU_DataProcessTask, "DataProc",
-                configMINIMAL_STACK_SIZE + TASK_DATAPROC_STACK, NULL,
-                tskIDLE_PRIORITY + TASK_DATAPROC_PRIORITY, NULL);
-
-    xTaskCreate(BMU_MonitorTask, "Monitor",
-                configMINIMAL_STACK_SIZE + TASK_MONITOR_STACK, NULL,
-                tskIDLE_PRIORITY + TASK_MONITOR_PRIORITY, NULL);
+    if (xTaskCreate(BMU_CanRxTask, "CanRx",
+                    configMINIMAL_STACK_SIZE + TASK_CANRX_STACK, NULL,
+                    tskIDLE_PRIORITY + TASK_CANRX_PRIORITY, NULL) != pdPASS ||
+        xTaskCreate(BMU_ProtocolTask, "Protocol",
+                    configMINIMAL_STACK_SIZE + TASK_PROTOCOL_STACK, NULL,
+                    tskIDLE_PRIORITY + TASK_PROTOCOL_PRIORITY, NULL) != pdPASS ||
+        xTaskCreate(BMU_DataProcessTask, "DataProc",
+                    configMINIMAL_STACK_SIZE + TASK_DATAPROC_STACK, NULL,
+                    tskIDLE_PRIORITY + TASK_DATAPROC_PRIORITY, NULL) != pdPASS ||
+        xTaskCreate(BMU_MonitorTask, "Monitor",
+                    configMINIMAL_STACK_SIZE + TASK_MONITOR_STACK, NULL,
+                    tskIDLE_PRIORITY + TASK_MONITOR_PRIORITY, NULL) != pdPASS)
+    {
+        UART_SendString("[BMU] ERR: Task creation failed\r\n");
+        for (;;) {}
+    }
 
     UART_SendString("[BMU] Starting FreeRTOS scheduler\r\n");
     vTaskStartScheduler();
