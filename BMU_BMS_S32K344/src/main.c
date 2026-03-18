@@ -487,7 +487,16 @@ static boolean BMU_HandleKeyExchange(const uint8 *rx_data)
     hse_resp = BMU_AesEcbDecrypt(HSE_PSK_KEY_HANDLE, enc_uid, g_decrypted_uid);
     if (hse_resp != HSE_SRV_RSP_OK)
     {
-        UART_SendString("[BMU] ERR: Decrypt UID failed\r\n");
+        UART_SendString("[BMU] ERR: Decrypt UID resp=0x");
+        {
+            static const char hx[] = "0123456789ABCDEF";
+            uint32 v = (uint32)hse_resp;
+            int i;
+            for (i = 28; i >= 0; i -= 4) {
+                UART_SendChar(hx[(v >> i) & 0xF]);
+            }
+        }
+        UART_SendString("\r\n");
         return FALSE;
     }
 
