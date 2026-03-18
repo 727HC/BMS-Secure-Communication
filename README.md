@@ -413,7 +413,10 @@ BMU UART (COM4, 28800 baud)에서 확인할 수 있는 정상 동작 출력:
 ```
 [BMU] Boot: LPUART6 OK
 [BMU] Ed25519 key generated
+[BMU] Creating FreeRTOS tasks...
+[Task] CanRx started
 [Task] Protocol started
+[Task] DataProcess started
 [Task] Monitor started
 [BMU] Processing key exchange...
 [BMU] Decrypted UID: 01 23 45 67 89 AB CD EF 01 23 45 67 89 AB CD EF
@@ -421,9 +424,9 @@ BMU UART (COM4, 28800 baud)에서 확인할 수 있는 정상 동작 출력:
 [BMU] Session key derived and imported
 [Task] Key exchange OK -> OPERATIONAL
 [BMU] OK FC=1 SOC=52428 T=2981 Cyc=0 Cells=11
-[SIGN] FC=1 R=A1B2C3... S=D4E5F6...
+[SIGN] FC=1 R=A1B2C3... S=D4E5F6... DATA=AABB...
 [BMU] OK FC=2 SOC=52100 T=2982 Cyc=0 Cells=11
-[SIGN] FC=2 R=... S=...
+[SIGN] FC=2 R=... S=... DATA=...
 ```
 
 ---

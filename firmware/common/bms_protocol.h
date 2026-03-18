@@ -132,7 +132,7 @@ extern "C" {
 /*============================================================================
  *  FreeRTOS Task Configuration
  *============================================================================*/
-#define TASK_CANRX_STACK            256U    /* CAN RX task extra stack       */
+#define TASK_CANRX_STACK            512U    /* CAN RX task extra stack       */
 #define TASK_PROTOCOL_STACK         512U    /* Protocol task extra stack      */
 #define TASK_DATAPROC_STACK         512U    /* Data process task extra stack  */
 #define TASK_MONITOR_STACK          128U    /* Monitor task extra stack       */
