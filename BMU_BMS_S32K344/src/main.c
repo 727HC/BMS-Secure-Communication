@@ -55,15 +55,15 @@ extern "C" {
 /* HSE MU instance */
 #define HSE_MU_INSTANCE         HSE_IP_MU_0
 
-/* HSE key handles */
+/* HSE key handles — use SHE RAM key slot (group 0, compatible with existing catalog) */
 #define HSE_PSK_KEY_HANDLE      ((hseKeyHandle_t)GET_KEY_HANDLE(HSE_KEY_CATALOG_ID_RAM, 0U, 0U))
-#define HSE_SESSION_KEY_HANDLE  ((hseKeyHandle_t)GET_KEY_HANDLE(HSE_KEY_CATALOG_ID_RAM, 0U, 1U))
+#define HSE_SESSION_KEY_HANDLE  ((hseKeyHandle_t)GET_KEY_HANDLE(HSE_KEY_CATALOG_ID_RAM, 0U, 0U))
 
-/* EDDSA (Ed25519) key handle — NVM catalog, group 1, slot 0 */
+/* EDDSA (Ed25519) key handle — NVM catalog, group 1 (ECC_PAIR), slot 0 */
 #define HSE_ECC_KEY_HANDLE      ((hseKeyHandle_t)GET_KEY_HANDLE(HSE_KEY_CATALOG_ID_NVM, 1U, 0U))
 
 /* HSE Timeout */
-#define HSE_TIMEOUT_TICKS       TIMEOUT_CRYPTO_INIT
+#define HSE_TIMEOUT_TICKS       ((uint32)10000000U)  /* Increased for 48MHz FIRC mode */
 
 /* S32K344 FlexCAN0 register addresses */
 #define S32K344_FLEXCAN0_ESR1   (*(volatile uint32 *)0x40304020U)
@@ -346,29 +346,21 @@ static hseSrvResponse_t BMU_FormatKeyCatalogs(void)
                                  }, pDesc);
 }
 
-/** Import a symmetric key into HSE RAM catalog */
+/** Load a symmetric key into HSE SHE RAM KEY slot
+ *  Uses HSE_SRV_ID_SHE_LOAD_PLAIN_KEY (same as FreeRTOS example App_SheLoadPlainRamKey) */
 static hseSrvResponse_t BMU_ImportSymKey(hseKeyHandle_t keyHandle,
                                           const uint8 *keyData,
                                           uint16 keyBitLen)
 {
+    (void)keyHandle;  /* SHE RAM KEY is always the same slot */
+    (void)keyBitLen;  /* SHE keys are always 128-bit */
+
     uint8 ch = Hse_Ip_GetFreeChannel(HSE_MU_INSTANCE);
     hseSrvDescriptor_t *pDesc = &g_hse_srv_desc[ch];
 
     memset(pDesc, 0, sizeof(hseSrvDescriptor_t));
-    pDesc->srvId = HSE_SRV_ID_IMPORT_KEY;
-
-    hseImportKeySrv_t *pImport = &pDesc->hseSrv.importKeyReq;
-    pImport->pKeyInfo = (HOST_ADDR)&(hseKeyInfo_t){
-        .keyFlags  = HSE_KF_USAGE_ENCRYPT | HSE_KF_USAGE_DECRYPT |
-                     HSE_KF_USAGE_SIGN    | HSE_KF_USAGE_VERIFY,
-        .keyBitLen = keyBitLen,
-        .keyType   = HSE_KEY_TYPE_AES
-    };
-    pImport->targetKeyHandle = keyHandle;
-    pImport->pKey[2]         = (HOST_ADDR)keyData;
-    pImport->keyLen[2]       = keyBitLen / 8U;
-    pImport->cipher.cipherKeyHandle = HSE_INVALID_KEY_HANDLE;
-    pImport->keyContainer.authKeyHandle = HSE_INVALID_KEY_HANDLE;
+    pDesc->srvId = HSE_SRV_ID_SHE_LOAD_PLAIN_KEY;
+    pDesc->hseSrv.sheLoadPlainKeyReq.pKey = (HOST_ADDR)keyData;
 
     return Hse_Ip_ServiceRequest(HSE_MU_INSTANCE, ch,
                                  &(Hse_Ip_ReqType){
@@ -862,6 +854,14 @@ int main(void)
     /*--- 4b. HSE Init ---*/
     Hse_Ip_Init(HSE_MU_INSTANCE, &g_hse_mu_state);
     g_hseReady = BMU_WaitHseReady();
+    {
+        uint16 hseStatus = Hse_Ip_GetHseStatus(0U);
+        UART_SendString("[BMU] HSE status=");
+        UART_SendUint((uint32)hseStatus);
+        UART_SendString(" ready=");
+        UART_SendUint((uint32)g_hseReady);
+        UART_SendString("\r\n");
+    }
 
     if (g_hseReady)
     {
