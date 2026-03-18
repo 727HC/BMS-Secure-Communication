@@ -99,6 +99,10 @@ static uint8 g_session_key[AES_KEY_SIZE];
 static uint8 g_cmac_input[CMAC_INPUT_SIZE];
 static uint8 g_kdf_input[KDF_INPUT_SIZE];
 
+/* HSE DMA-safe input buffers (global BSS, not FreeRTOS task stack) */
+static uint8 g_dec_input_uid[AES_KEY_SIZE];
+static uint8 g_dec_input_seed[AES_KEY_SIZE];
+
 /* EDDSA (Ed25519) buffers */
 static uint8 g_eddsa_signR[EDDSA_SIGN_SIZE];
 static uint8 g_eddsa_signS[EDDSA_SIGN_SIZE];
@@ -479,12 +483,12 @@ static boolean BMU_HandleKeyExchange(const uint8 *rx_data)
 
     UART_SendString("[BMU] Processing key exchange...\r\n");
 
-    /* 1. Extract encrypted UID and Seed */
-    const uint8 *enc_uid  = &rx_data[0];
-    const uint8 *enc_seed = &rx_data[UID_SIZE];
+    /* 1. Copy encrypted UID and Seed to global buffers (HSE DMA-safe) */
+    memcpy(g_dec_input_uid,  &rx_data[0],        AES_KEY_SIZE);
+    memcpy(g_dec_input_seed, &rx_data[UID_SIZE],  AES_KEY_SIZE);
 
     /* 2. Decrypt UID using PSK */
-    hse_resp = BMU_AesEcbDecrypt(HSE_PSK_KEY_HANDLE, enc_uid, g_decrypted_uid);
+    hse_resp = BMU_AesEcbDecrypt(HSE_PSK_KEY_HANDLE, g_dec_input_uid, g_decrypted_uid);
     if (hse_resp != HSE_SRV_RSP_OK)
     {
         UART_SendString("[BMU] ERR: Decrypt UID resp=0x");
@@ -501,7 +505,7 @@ static boolean BMU_HandleKeyExchange(const uint8 *rx_data)
     }
 
     /* 3. Decrypt Seed using PSK */
-    hse_resp = BMU_AesEcbDecrypt(HSE_PSK_KEY_HANDLE, enc_seed, g_decrypted_seed);
+    hse_resp = BMU_AesEcbDecrypt(HSE_PSK_KEY_HANDLE, g_dec_input_seed, g_decrypted_seed);
     if (hse_resp != HSE_SRV_RSP_OK)
     {
         UART_SendString("[BMU] ERR: Decrypt Seed failed\r\n");
