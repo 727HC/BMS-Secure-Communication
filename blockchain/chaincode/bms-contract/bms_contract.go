@@ -45,9 +45,9 @@ func (c *BMSContract) RecordBMSData(ctx contractapi.TransactionContextInterface,
 	id string, dataHash string, did string, signature string,
 	fc string, soc string, timestamp string) error {
 
-	// [G-03] 필수 파라미터 빈 값 검증
-	if id == "" || dataHash == "" || did == "" {
-		return fmt.Errorf("id, dataHash, did must not be empty")
+	// [G-03, BC-06] 필수 파라미터 빈 값 검증
+	if id == "" || dataHash == "" || did == "" || timestamp == "" {
+		return fmt.Errorf("id, dataHash, did, timestamp must not be empty")
 	}
 
 	// 중복 ID 체크
