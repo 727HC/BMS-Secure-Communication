@@ -40,6 +40,7 @@ extern "C" {
 #include "FreeRTOS.h"
 #include "task.h"
 #include "queue.h"
+#include "semphr.h"
 
 /* Protocol definitions shared with CMU */
 #include "common/bms_protocol.h"
@@ -118,6 +119,13 @@ static void BMU_MonitorTask(void *pvParameters);
 /* FreeRTOS queues */
 static QueueHandle_t rxQueue;    /* CanRxTask → ProtocolTask */
 static QueueHandle_t procQueue;  /* ProtocolTask → DataProcessTask */
+
+/* UART mutex for thread-safe debug output */
+static SemaphoreHandle_t uartMutex;
+
+/* Queue drop counters (visible in debugger) */
+volatile uint32 g_rxQueueDropCount  = 0U;
+volatile uint32 g_procQueueDropCount = 0U;
 
 /* CAN reception */
 static volatile boolean g_can_tx_done = TRUE;
@@ -225,6 +233,17 @@ static void UART_SendChar(char c)
 {
     while (!(LPUART6_STAT & LPUART_STAT_TDRE)) { /* wait */ }
     LPUART6_DATA = (uint32)(uint8)c;
+}
+
+/* Mutex-protected UART output to prevent interleaving between tasks */
+static inline void UART_Lock(void)
+{
+    if (uartMutex != NULL) { xSemaphoreTake(uartMutex, portMAX_DELAY); }
+}
+
+static inline void UART_Unlock(void)
+{
+    if (uartMutex != NULL) { xSemaphoreGive(uartMutex); }
 }
 
 static void UART_SendString(const char *msg)
@@ -685,6 +704,7 @@ static void BMU_ProcessBatteryData(const uint8 *raw_data)
 {
     const BatteryData_t *batt = (const BatteryData_t *)raw_data;
 
+    UART_Lock();
     UART_SendString("[BMU] OK FC=");
     UART_SendUint(g_expected_fc - 1U);
     UART_SendString(" SOC=");
@@ -696,6 +716,7 @@ static void BMU_ProcessBatteryData(const uint8 *raw_data)
     UART_SendString(" Cells=");
     UART_SendUint(batt->cell_count);
     UART_SendString("\r\n");
+    UART_Unlock();
 }
 
 /*============================================================================
@@ -917,13 +938,14 @@ int main(void)
         g_debugMarker = DBG_MARKER_CRYPTO_FAIL;
     }
 
-    /*--- 7. Create FreeRTOS queues ---*/
+    /*--- 7. Create FreeRTOS queues and mutex ---*/
     rxQueue   = xQueueCreate(RX_QUEUE_LENGTH,   sizeof(CanRxItem_t));
     procQueue = xQueueCreate(PROC_QUEUE_LENGTH,  sizeof(CanRxItem_t));
+    uartMutex = xSemaphoreCreateMutex();
 
-    if ((rxQueue == NULL) || (procQueue == NULL))
+    if ((rxQueue == NULL) || (procQueue == NULL) || (uartMutex == NULL))
     {
-        UART_SendString("[BMU] ERR: Queue creation failed\r\n");
+        UART_SendString("[BMU] ERR: Queue/mutex creation failed\r\n");
         for (;;) {}
     }
 
@@ -987,7 +1009,10 @@ static void BMU_CanRxTask(void *pvParameters)
             item.msgId   = rxMsg.msgId;
             item.dataLen = rxMsg.dataLen;
             item.fc      = 0U;
-            xQueueSend(rxQueue, &item, 0U);
+            if (xQueueSend(rxQueue, &item, 0U) != pdPASS)
+            {
+                g_rxQueueDropCount++;
+            }
         }
 
         /* Poll MB for Battery Data (ID 0x14) */
@@ -1009,7 +1034,10 @@ static void BMU_CanRxTask(void *pvParameters)
             item.msgId   = rxMsg.msgId;
             item.dataLen = rxMsg.dataLen;
             item.fc      = 0U;
-            xQueueSend(rxQueue, &item, 0U);
+            if (xQueueSend(rxQueue, &item, 0U) != pdPASS)
+            {
+                g_rxQueueDropCount++;
+            }
         }
 
         vTaskDelay(pdMS_TO_TICKS(TASK_CANRX_DELAY_MS));
@@ -1092,7 +1120,10 @@ static void BMU_ProtocolTask(void *pvParameters)
 
                         /* Forward to DataProcessTask for EDDSA signing */
                         item.fc = g_expected_fc - 1U;
-                        xQueueSend(procQueue, &item, 0U);
+                        if (xQueueSend(procQueue, &item, 0U) != pdPASS)
+                        {
+                            g_procQueueDropCount++;
+                        }
                     }
                     else
                     {
@@ -1112,6 +1143,7 @@ static void BMU_ProtocolTask(void *pvParameters)
         /*--- RESYNC ---*/
         case PROTO_STATE_RESYNC:
             BMU_SendResyncRequest();
+            xQueueReset(rxQueue);   /* Flush stale frames from previous session */
             g_cmac_fail_count = 0U;
             g_expected_fc = 0U;  /* Temporary reset; BMU_HandleKeyExchange() will set to 1 */
             if (BMU_ImportSymKey(HSE_PSK_KEY_HANDLE, PreSharedKey, AES_KEY_BITS)
@@ -1161,6 +1193,7 @@ static void BMU_DataProcessTask(void *pvParameters)
                 if (sigResp == HSE_SRV_RSP_OK)
                 {
                     g_eddsaSignCount++;
+                    UART_Lock();
                     UART_SendString("[SIGN] FC=");
                     UART_SendUint(item.fc);
                     UART_SendString(" R=");
@@ -1170,6 +1203,7 @@ static void BMU_DataProcessTask(void *pvParameters)
                     UART_SendString(" DATA=");
                     UART_SendHex(item.data, BATTERY_DATA_SIZE);
                     UART_SendString("\r\n");
+                    UART_Unlock();
                 }
             }
             #endif
