@@ -42,7 +42,7 @@
  *----------------------------------------------------------*/
 
 
-#define configCPU_CLOCK_HZ                          ( 48000000UL )  /* FIRC-only */
+#define configCPU_CLOCK_HZ                          ( 160000000UL )
 #define configTICK_RATE_HZ                          ((TickType_t) 1000 )
 #define configMAX_PRIORITIES                        5
 #define configMINIMAL_STACK_SIZE                    ((unsigned short) 90 )
@@ -72,7 +72,7 @@ PRIORITY THAN THIS! (higher priorities are lower numeric values. */
 /* Memory allocation related definitions. */
 #define configSUPPORT_STATIC_ALLOCATION             0
 #define configSUPPORT_DYNAMIC_ALLOCATION            1
-#define configTOTAL_HEAP_SIZE                       (( size_t ) 16384 )
+#define configTOTAL_HEAP_SIZE                       (( size_t ) 8192 )
 #define configAPPLICATION_ALLOCATED_HEAP            0
 /*Symmetric Multiprocessing definitions. */
 
@@ -178,7 +178,7 @@ See http://www.FreeRTOS.org/RTOS-Cortex-M3-M4.html. */
 
 /* Definitions that map the FreeRTOS port interrupt handlers to their CMSIS
 standard names. */
-#define vPortSVCHandler                             SVC_Handler
+//#define vPortSVCHandler                             SVC_Handler
 #define xPortPendSVHandler                          PendSV_Handler
 #define xPortSysTickHandler                         SysTick_Handler
 
