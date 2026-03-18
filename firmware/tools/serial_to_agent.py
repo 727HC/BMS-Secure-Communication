@@ -52,21 +52,22 @@ def parse_bmu_line(line):
 
 def send_to_agent(agent_url, data_record, sign_record, did=None):
     """Send verified + signed data to BMS Agent."""
-    data_str = f"FC={data_record['fc']},SOC={data_record['soc']},T={data_record['temperature']}"
-    data_hash = hashlib.sha256(data_str.encode()).hexdigest()
     signature = sign_record['signR'] + sign_record['signS']
 
     payload = {
         'fc': data_record['fc'],
         'soc': data_record['soc'],
         'temperature': data_record['temperature'],
-        'dataHash': data_hash,
         'signature': signature,
     }
     if did:
         payload['did'] = did
     if 'rawPayload' in sign_record:
         payload['rawPayload'] = sign_record['rawPayload']
+    else:
+        # rawPayload 없을 때만 fallback으로 dataHash 전송
+        data_str = f"FC={data_record['fc']},SOC={data_record['soc']},T={data_record['temperature']}"
+        payload['dataHash'] = hashlib.sha256(data_str.encode()).hexdigest()
 
     try:
         resp = requests.post(f"{agent_url}/data", json=payload, timeout=5)
@@ -97,7 +98,7 @@ def main():
     print(f"  Press Ctrl+C to stop\n")
 
     ser = serial.Serial(args.port, args.baud, timeout=1)
-    last_data = None
+    pending_data_by_fc = {}
     sent_count = 0
 
     try:
@@ -115,16 +116,22 @@ def main():
                 continue
 
             if parsed['type'] == 'data':
-                last_data = parsed
+                pending_data_by_fc[parsed['fc']] = parsed
                 print(f"[DATA] FC={parsed['fc']} SOC={parsed['soc']} T={parsed['temperature']}")
+                # 오래된 pending 항목 정리 (최근 50개만 유지)
+                if len(pending_data_by_fc) > 50:
+                    oldest = sorted(pending_data_by_fc.keys())[:-50]
+                    for k in oldest:
+                        del pending_data_by_fc[k]
 
-            elif parsed['type'] == 'sign' and last_data:
-                # FC 매칭 검증: DATA와 SIGN의 FC가 일치해야 전송
-                if parsed['fc'] != last_data['fc']:
-                    print(f"  [WARN] FC mismatch: DATA FC={last_data['fc']} != SIGN FC={parsed['fc']}, skipping")
+            elif parsed['type'] == 'sign':
+                fc = parsed['fc']
+                if fc not in pending_data_by_fc:
+                    print(f"  [WARN] No matching DATA for SIGN FC={fc}, skipping")
                     continue
-                print(f"[SIGN] FC={parsed['fc']} R={parsed['signR'][:16]}... S={parsed['signS'][:16]}...")
-                send_to_agent(args.agent, last_data, parsed, did=args.did)
+                data_record = pending_data_by_fc.pop(fc)
+                print(f"[SIGN] FC={fc} R={parsed['signR'][:16]}... S={parsed['signS'][:16]}...")
+                send_to_agent(args.agent, data_record, parsed, did=args.did)
                 sent_count += 1
                 if sent_count % 10 == 0:
                     print(f"  Total sent: {sent_count}")

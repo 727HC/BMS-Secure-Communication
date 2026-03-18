@@ -27,8 +27,8 @@ mkdir -p "$LOG_DIR"
 cleanup() {
     echo ""
     echo "=== 종료 중... ==="
-    kill $SIM_PID $BRIDGE_PID 2>/dev/null
-    wait $SIM_PID $BRIDGE_PID 2>/dev/null
+    kill $SIM_PID $BRIDGE_PID $WATCHDOG_PID 2>/dev/null
+    wait $SIM_PID $BRIDGE_PID $WATCHDOG_PID 2>/dev/null
     echo "=== 완료 ==="
     exit 0
 }
@@ -118,13 +118,47 @@ do_blockchain_bridge() {
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     echo "  BMU Serial($BMU_COM) → BMS Agent(http://localhost:3001)"
     echo ""
-    sleep 3
     if [ -z "$BMU_DID" ]; then
         echo "!!! BMU_DID가 config.env에 설정되지 않았습니다."
         echo "    블록체인 모드에서는 BMU_DID가 필수입니다."
         echo "    config.env에 BMU_DID=<your-did> 를 추가하세요."
         exit 1
     fi
+
+    # Agent health check (최대 30초 대기)
+    echo "  Agent 연결 확인 중..."
+    for i in $(seq 1 6); do
+        if curl -s -o /dev/null -w '' http://localhost:3001/status 2>/dev/null; then
+            echo "  Agent 연결 확인 완료"
+            break
+        fi
+        if [ $i -eq 6 ]; then
+            echo "!!! BMS Agent(http://localhost:3001)에 연결할 수 없습니다."
+            echo "    node agent_ingest_bmu.js 가 실행 중인지 확인하세요."
+            exit 1
+        fi
+        echo "  Agent 대기 중... ($i/6)"
+        sleep 5
+    done
+
+    # 백그라운드 프로세스 감시 (시뮬레이터/dataProcess 죽음 감지)
+    if [ -n "$SIM_PID" ] || [ -n "$BRIDGE_PID" ]; then
+        (
+            while true; do
+                sleep 30
+                if [ -n "$SIM_PID" ] && ! kill -0 $SIM_PID 2>/dev/null; then
+                    echo "  [WARN] battery_simulator.py (PID=$SIM_PID) 종료됨"
+                    SIM_PID=""
+                fi
+                if [ -n "$BRIDGE_PID" ] && ! kill -0 $BRIDGE_PID 2>/dev/null; then
+                    echo "  [WARN] dataProcess.py (PID=$BRIDGE_PID) 종료됨"
+                    BRIDGE_PID=""
+                fi
+            done
+        ) &
+        WATCHDOG_PID=$!
+    fi
+
     cd "$BMS_DIR/firmware/tools"
     python -u serial_to_agent.py --port $BMU_COM --baud $BMU_BAUD --agent http://localhost:3001 ${BMU_DID:+--did $BMU_DID}
 }
