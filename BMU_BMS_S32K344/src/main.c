@@ -195,7 +195,8 @@ volatile uint32 g_lpuartCtrl = 0U;
 #define MC_ME_PRTN1_COFB2_STAT  (*(volatile uint32 *)(MC_ME_BASE + 0x318U))
 #define MC_ME_PRTN1_PUPD        (*(volatile uint32 *)(MC_ME_BASE + 0x304U))
 #define MC_ME_CTL_KEY           (*(volatile uint32 *)(MC_ME_BASE + 0x000U))
-#define MC_ME_CTL_KEY_INV       (*(volatile uint32 *)(MC_ME_BASE + 0x004U))
+/* S32K344: CTL_KEY_INV is written to the SAME register (offset 0x000), NOT 0x004 */
+#define MC_ME_CTL_KEY_INV       (*(volatile uint32 *)(MC_ME_BASE + 0x000U))
 
 /* LPUART6 = PRTN1_COFB2_REQ80 → bit (80-64) = bit 16 in COFB2 */
 #define MC_ME_LPUART6_REQ_BIT   (1U << 16U)
@@ -865,18 +866,12 @@ int main(void)
     /*--- 1. Clock Init ---*/
     /* After .mex fix: FIRC-only mode (no PLL), so this should succeed */
     g_clkStatus = Clock_Ip_Init(&Clock_Ip_aClockConfig[0]);
-    g_debugAfterClk = DBG_MARKER_CLK_OK;
-
-    /*--- 2. Port Init ---*/
     Siul2_Port_Ip_Init(NUM_OF_CONFIGURED_PINS_PortContainer_0_BOARD_InitPeripherals,
                        g_pin_mux_InitConfigArr_PortContainer_0_BOARD_InitPeripherals);
-
     OsIf_Init(NULL_PTR);
-
-    /*--- 2b. LPUART6 Debug Init (OpenSDA UART on Q172 EVB) ---*/
     BMU_InitLpuart6();
-    UART_SendString("\r\n[BMU] Boot: LPUART6 OK\r\n");
 
+    UART_SendString("\r\n[BMU] Boot: LPUART6 OK\r\n");
     /*--- 3. FlexCAN0 Init (Clock_Ip_Init handles gate via RTD) ---*/
     g_bmu_initStatus = FlexCAN_Ip_Init(INST_FLEXCAN_0, &FlexCAN_State0, &FlexCAN_Config0);
 
