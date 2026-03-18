@@ -867,6 +867,15 @@ int main(void)
 {
     g_debugMarker = DBG_MARKER_BOOT;
 
+    /* Disable D-Cache to ensure HSE MU descriptors are coherent.
+     * SCB->CCR bit 16 = DC (Data Cache Enable). Clear it. */
+    {
+        volatile uint32 *SCB_CCR = (volatile uint32 *)0xE000ED14U;
+        *SCB_CCR &= ~(1U << 16U);  /* Disable D-Cache */
+        __asm volatile("dsb");
+        __asm volatile("isb");
+    }
+
     /*--- 1. Clock Init ---*/
     /* After .mex fix: FIRC-only mode (no PLL), so this should succeed */
     g_clkStatus = Clock_Ip_Init(&Clock_Ip_aClockConfig[0]);
