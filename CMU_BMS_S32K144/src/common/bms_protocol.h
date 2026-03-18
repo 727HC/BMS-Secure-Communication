@@ -132,14 +132,32 @@ extern "C" {
 /*============================================================================
  *  FreeRTOS Task Configuration
  *============================================================================*/
+#define TASK_CANRX_STACK            256U    /* CAN RX task extra stack       */
 #define TASK_PROTOCOL_STACK         512U    /* Protocol task extra stack      */
+#define TASK_DATAPROC_STACK         512U    /* Data process task extra stack  */
 #define TASK_MONITOR_STACK          128U    /* Monitor task extra stack       */
+#define TASK_CANRX_PRIORITY         3U      /* CAN RX task priority (highest) */
 #define TASK_PROTOCOL_PRIORITY      2U      /* Protocol task priority         */
+#define TASK_DATAPROC_PRIORITY      1U      /* Data process task priority     */
 #define TASK_MONITOR_PRIORITY       1U      /* Monitor task priority          */
+#define TASK_CANRX_DELAY_MS         5U      /* CAN RX polling interval       */
 #define TASK_PROTOCOL_DELAY_MS      10U     /* Protocol polling interval     */
 #define TASK_MONITOR_DELAY_MS       500U    /* Monitor reporting interval    */
 #define TASK_ERROR_DELAY_MS         1000U   /* Error state delay             */
 #define DELAY_KEY_RETRY             ((uint32)2000000U)  /* Key exchange retry  */
+
+#define RX_QUEUE_LENGTH             4U      /* CAN RX queue depth            */
+#define PROC_QUEUE_LENGTH           4U      /* Processing queue depth        */
+
+/*============================================================================
+ *  Inter-task Queue Item
+ *============================================================================*/
+typedef struct {
+    uint8  data[64];        /* CAN-FD payload (up to 64B)    */
+    uint32 msgId;           /* CAN message ID                */
+    uint32 fc;              /* Freshness counter at RX time  */
+    uint8  dataLen;         /* Actual data length            */
+} CanRxItem_t;
 
 /*============================================================================
  *  Protocol Frame Markers
