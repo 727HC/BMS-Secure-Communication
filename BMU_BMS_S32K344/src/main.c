@@ -55,9 +55,11 @@ extern "C" {
 /* HSE MU instance */
 #define HSE_MU_INSTANCE         HSE_IP_MU_0
 
-/* HSE key handles — use SHE RAM key slot (group 0, compatible with existing catalog) */
-#define HSE_PSK_KEY_HANDLE      ((hseKeyHandle_t)GET_KEY_HANDLE(HSE_KEY_CATALOG_ID_RAM, 0U, 0U))
-#define HSE_SESSION_KEY_HANDLE  ((hseKeyHandle_t)GET_KEY_HANDLE(HSE_KEY_CATALOG_ID_RAM, 0U, 0U))
+/* HSE key handles — existing HSE NVM has FreeRTOS example format:
+ *   RAM: group0=SHE(1), group1=ECC_PUB(10), group2=AES(2)
+ * AES keys must go to group 2 */
+#define HSE_PSK_KEY_HANDLE      ((hseKeyHandle_t)GET_KEY_HANDLE(HSE_KEY_CATALOG_ID_RAM, 2U, 0U))
+#define HSE_SESSION_KEY_HANDLE  ((hseKeyHandle_t)GET_KEY_HANDLE(HSE_KEY_CATALOG_ID_RAM, 2U, 1U))
 
 /* EDDSA (Ed25519) key handle — NVM catalog, group 1 (ECC_PAIR), slot 0 */
 #define HSE_ECC_KEY_HANDLE      ((hseKeyHandle_t)GET_KEY_HANDLE(HSE_KEY_CATALOG_ID_NVM, 1U, 0U))
@@ -306,24 +308,40 @@ static boolean BMU_WaitHseReady(void)
     return FALSE;
 }
 
-/** Format HSE key catalogs — must match FreeRTOS example structure
- *  (HSE NVM retains format across mass erase, so structure must be consistent) */
+/** Format HSE key catalogs (RAM + NVM) */
 static hseSrvResponse_t BMU_FormatKeyCatalogs(void)
 {
-    /* RAM catalog: SHE + ECC_PUB + AES (matching FreeRTOS example) */
+    /* RAM catalog: 1 group of AES-128 keys with 4 slots */
     static const hseKeyGroupCfgEntry_t ramCatalog[] = {
-        {HSE_MU0_MASK, HSE_KEY_OWNER_ANY,  HSE_KEY_TYPE_SHE,     1U,  128U,            {0U, 0U}},
-        {HSE_MU0_MASK, HSE_KEY_OWNER_ANY,  HSE_KEY_TYPE_ECC_PUB, 10U, HSE_KEY521_BITS, {0U, 0U}},
-        {HSE_MU0_MASK, HSE_KEY_OWNER_ANY,  HSE_KEY_TYPE_AES,     2U,  HSE_KEY128_BITS, {0U, 0U}},
-        {0U, 0U, 0U, 0U, 0U, {0U, 0U}}  /* Terminator */
+        {
+            .muMask       = HSE_MU0_MASK,
+            .groupOwner   = HSE_KEY_OWNER_ANY,
+            .keyType      = HSE_KEY_TYPE_AES,
+            .numOfKeySlots = 4U,
+            .maxKeyBitLen = AES_KEY_BITS,
+            .hseReserved  = {0U, 0U}
+        },
+        {0U, 0U, 0U, 0U, 0U, {0U, 0U}}
     };
 
-    /* NVM catalog: SHE + ECC_PAIR + AES (matching FreeRTOS example) */
+    /* NVM catalog: AES group + ECC group (for Ed25519 EDDSA) */
     static const hseKeyGroupCfgEntry_t nvmCatalog[] = {
-        {HSE_MU0_MASK, HSE_KEY_OWNER_ANY,  HSE_KEY_TYPE_SHE,      1U,  128U,            {0U, 0U}},
-        {HSE_MU0_MASK, HSE_KEY_OWNER_CUST, HSE_KEY_TYPE_ECC_PAIR, 10U, HSE_KEY256_BITS, {0U, 0U}},
-        {HSE_MU0_MASK, HSE_KEY_OWNER_CUST, HSE_KEY_TYPE_AES,      10U, HSE_KEY128_BITS, {0U, 0U}},
-        /* Terminator */
+        {
+            .muMask       = HSE_MU0_MASK,
+            .groupOwner   = HSE_KEY_OWNER_ANY,
+            .keyType      = HSE_KEY_TYPE_AES,
+            .numOfKeySlots = 1U,
+            .maxKeyBitLen = AES_KEY_BITS,
+            .hseReserved  = {0U, 0U}
+        },
+        {
+            .muMask       = HSE_MU0_MASK,
+            .groupOwner   = HSE_KEY_OWNER_CUST,
+            .keyType      = HSE_KEY_TYPE_ECC_PAIR,
+            .numOfKeySlots = 2U,
+            .maxKeyBitLen = HSE_KEY256_BITS,
+            .hseReserved  = {0U, 0U}
+        },
         {0U, 0U, 0U, 0U, 0U, {0U, 0U}}
     };
 
@@ -346,21 +364,29 @@ static hseSrvResponse_t BMU_FormatKeyCatalogs(void)
                                  }, pDesc);
 }
 
-/** Load a symmetric key into HSE SHE RAM KEY slot
- *  Uses HSE_SRV_ID_SHE_LOAD_PLAIN_KEY (same as FreeRTOS example App_SheLoadPlainRamKey) */
+/** Import a symmetric key into HSE RAM catalog */
 static hseSrvResponse_t BMU_ImportSymKey(hseKeyHandle_t keyHandle,
                                           const uint8 *keyData,
                                           uint16 keyBitLen)
 {
-    (void)keyHandle;  /* SHE RAM KEY is always the same slot */
-    (void)keyBitLen;  /* SHE keys are always 128-bit */
-
     uint8 ch = Hse_Ip_GetFreeChannel(HSE_MU_INSTANCE);
     hseSrvDescriptor_t *pDesc = &g_hse_srv_desc[ch];
 
     memset(pDesc, 0, sizeof(hseSrvDescriptor_t));
-    pDesc->srvId = HSE_SRV_ID_SHE_LOAD_PLAIN_KEY;
-    pDesc->hseSrv.sheLoadPlainKeyReq.pKey = (HOST_ADDR)keyData;
+    pDesc->srvId = HSE_SRV_ID_IMPORT_KEY;
+
+    hseImportKeySrv_t *pImport = &pDesc->hseSrv.importKeyReq;
+    pImport->pKeyInfo = (HOST_ADDR)&(hseKeyInfo_t){
+        .keyFlags  = HSE_KF_USAGE_ENCRYPT | HSE_KF_USAGE_DECRYPT |
+                     HSE_KF_USAGE_SIGN    | HSE_KF_USAGE_VERIFY,
+        .keyBitLen = keyBitLen,
+        .keyType   = HSE_KEY_TYPE_AES
+    };
+    pImport->targetKeyHandle = keyHandle;
+    pImport->pKey[2]         = (HOST_ADDR)keyData;
+    pImport->keyLen[2]       = keyBitLen / 8U;
+    pImport->cipher.cipherKeyHandle = HSE_INVALID_KEY_HANDLE;
+    pImport->keyContainer.authKeyHandle = HSE_INVALID_KEY_HANDLE;
 
     return Hse_Ip_ServiceRequest(HSE_MU_INSTANCE, ch,
                                  &(Hse_Ip_ReqType){
@@ -485,6 +511,12 @@ static boolean BMU_HandleKeyExchange(const uint8 *rx_data)
     const uint8 *enc_seed = &rx_data[UID_SIZE];
 
     /* 2. Decrypt UID using PSK */
+    {
+        uint8 dbgCh = Hse_Ip_GetFreeChannel(HSE_MU_INSTANCE);
+        UART_SendString("[DBG] ch=");
+        UART_SendChar('0' + dbgCh);
+        UART_SendString(" Decrypt...\r\n");
+    }
     hse_resp = BMU_AesEcbDecrypt(HSE_PSK_KEY_HANDLE, enc_uid, g_decrypted_uid, UID_SIZE);
     if (hse_resp != HSE_SRV_RSP_OK)
     {
