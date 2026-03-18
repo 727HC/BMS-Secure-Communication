@@ -11,6 +11,10 @@ async function main() {
   console.log('=== DID 기반 서명 검증 E2E 테스트 ===\n')
 
   // 1. 32바이트 seed 생성 → Ed25519 키페어 파생
+  // [B-04] 환경변수 미설정 시 경고
+  if (!process.env.TEST_SEED) {
+    console.warn('[WARN] TEST_SEED not set — using default seed (not secure for production)')
+  }
   const seedStr = process.env.TEST_SEED || 'TestBMUDevice01VerifySign0000001' // 32 chars
   const seed = Buffer.from(seedStr)
   const keyPair = nacl.sign.keyPair.fromSeed(seed)

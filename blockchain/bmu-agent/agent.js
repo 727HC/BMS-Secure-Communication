@@ -22,6 +22,9 @@ const FABRIC_WALLET_PATH = process.env.FABRIC_WALLET_PATH || path.join(__dirname
 const FABRIC_CHANNEL = process.env.FABRIC_CHANNEL || 'bmschannel'
 const FABRIC_CONTRACT = process.env.FABRIC_CONTRACT || 'bms-contract'
 
+let fabricGateway = null
+let fabricContract = null
+
 const app = express()
 app.use(express.json())
 
@@ -116,30 +119,27 @@ app.post('/verify-signature', async (req, res) => {
   }
 })
 
-// [A1-02] Fabric 저장 — Gateway를 try/finally로 disconnect 보장
-async function recordToFabric(id, dataHash, did, signature, fc, soc, timestamp) {
+// [B-03] Fabric Gateway 모듈 레벨 재사용 (매 요청마다 재생성 제거)
+async function connectFabric() {
   const ccp = JSON.parse(fs.readFileSync(FABRIC_CCP_PATH, 'utf8'))
   const wallet = await Wallets.newFileSystemWallet(FABRIC_WALLET_PATH)
-  const gateway = new Gateway()
+  fabricGateway = new Gateway()
+  await fabricGateway.connect(ccp, {
+    wallet,
+    identity: FABRIC_IDENTITY,
+    discovery: { enabled: true, asLocalhost: true }
+  })
+  const network = await fabricGateway.getNetwork(FABRIC_CHANNEL)
+  fabricContract = network.getContract(FABRIC_CONTRACT)
+  console.log(`Fabric connected: ${FABRIC_CHANNEL}/${FABRIC_CONTRACT}`)
+}
 
-  try {
-    await gateway.connect(ccp, {
-      wallet,
-      identity: FABRIC_IDENTITY,
-      discovery: { enabled: true, asLocalhost: true }
-    })
-
-    const network = await gateway.getNetwork(FABRIC_CHANNEL)
-    const contract = network.getContract(FABRIC_CONTRACT)
-
-    await contract.submitTransaction(
-      'RecordBMSData', id, dataHash, did, signature,
-      String(fc), String(soc), timestamp
-    )
-    console.log('Fabric 저장 완료:', id)
-  } finally {
-    gateway.disconnect()
-  }
+async function recordToFabric(id, dataHash, did, signature, fc, soc, timestamp) {
+  await fabricContract.submitTransaction(
+    'RecordBMSData', id, dataHash, did, signature,
+    String(fc), String(soc), timestamp
+  )
+  console.log('Fabric 저장 완료:', id)
 }
 
 // POST /data
@@ -193,6 +193,16 @@ app.get('/status', async (req, res) => {
 })
 
 // 서버 시작
-app.listen(PORT, () => {
-  console.log(`Agent Proxy Server running at http://localhost:${PORT}`)
-})
+connectFabric()
+  .then(() => {
+    app.listen(PORT, () => {
+      console.log(`Agent Proxy Server running at http://localhost:${PORT}`)
+    })
+  })
+  .catch(err => {
+    console.error('Fabric connection failed:', err.message)
+    console.log('Starting without Fabric (DID/signature API only)')
+    app.listen(PORT, () => {
+      console.log(`Agent Proxy Server running at http://localhost:${PORT} (no Fabric)`)
+    })
+  })
