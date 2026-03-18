@@ -306,43 +306,23 @@ static boolean BMU_WaitHseReady(void)
     return FALSE;
 }
 
-/** Format HSE key catalogs (RAM only — NVM left as-is) */
+/** Format HSE key catalogs — must match FreeRTOS example structure
+ *  (HSE NVM retains format across mass erase, so structure must be consistent) */
 static hseSrvResponse_t BMU_FormatKeyCatalogs(void)
 {
-    /* RAM catalog: 1 group of AES-128 keys with 4 slots */
+    /* RAM catalog: SHE + ECC_PUB + AES (matching FreeRTOS example) */
     static const hseKeyGroupCfgEntry_t ramCatalog[] = {
-        {
-            .muMask       = HSE_MU0_MASK,
-            .groupOwner   = HSE_KEY_OWNER_ANY,
-            .keyType      = HSE_KEY_TYPE_AES,
-            .numOfKeySlots = 4U,
-            .maxKeyBitLen = AES_KEY_BITS,
-            .hseReserved  = {0U, 0U}
-        },
-        /* Terminator entry (all zeros) */
-        {0U, 0U, 0U, 0U, 0U, {0U, 0U}}
+        {HSE_MU0_MASK, HSE_KEY_OWNER_ANY,  HSE_KEY_TYPE_SHE,     1U,  128U,            {0U, 0U}},
+        {HSE_MU0_MASK, HSE_KEY_OWNER_ANY,  HSE_KEY_TYPE_ECC_PUB, 10U, HSE_KEY521_BITS, {0U, 0U}},
+        {HSE_MU0_MASK, HSE_KEY_OWNER_ANY,  HSE_KEY_TYPE_AES,     2U,  HSE_KEY128_BITS, {0U, 0U}},
+        {0U, 0U, 0U, 0U, 0U, {0U, 0U}}  /* Terminator */
     };
 
-    /* NVM catalog: AES group + ECC group (for Ed25519 EDDSA) */
+    /* NVM catalog: SHE + ECC_PAIR + AES (matching FreeRTOS example) */
     static const hseKeyGroupCfgEntry_t nvmCatalog[] = {
-        /* Group 0: AES keys */
-        {
-            .muMask       = HSE_MU0_MASK,
-            .groupOwner   = HSE_KEY_OWNER_ANY,
-            .keyType      = HSE_KEY_TYPE_AES,
-            .numOfKeySlots = 1U,
-            .maxKeyBitLen = AES_KEY_BITS,
-            .hseReserved  = {0U, 0U}
-        },
-        /* Group 1: ECC key pairs (Ed25519, 256-bit) */
-        {
-            .muMask       = HSE_MU0_MASK,
-            .groupOwner   = HSE_KEY_OWNER_CUST,
-            .keyType      = HSE_KEY_TYPE_ECC_PAIR,
-            .numOfKeySlots = 2U,
-            .maxKeyBitLen = HSE_KEY256_BITS,
-            .hseReserved  = {0U, 0U}
-        },
+        {HSE_MU0_MASK, HSE_KEY_OWNER_ANY,  HSE_KEY_TYPE_SHE,      1U,  128U,            {0U, 0U}},
+        {HSE_MU0_MASK, HSE_KEY_OWNER_CUST, HSE_KEY_TYPE_ECC_PAIR, 10U, HSE_KEY256_BITS, {0U, 0U}},
+        {HSE_MU0_MASK, HSE_KEY_OWNER_CUST, HSE_KEY_TYPE_AES,      10U, HSE_KEY128_BITS, {0U, 0U}},
         /* Terminator */
         {0U, 0U, 0U, 0U, 0U, {0U, 0U}}
     };
@@ -887,9 +867,15 @@ int main(void)
     {
         /* Format key catalogs (required once, may return NOT_ALLOWED if already formatted) */
         g_hseFormatStatus = (uint32)BMU_FormatKeyCatalogs();
+        UART_SendString("[BMU] Format status=");
+        UART_SendUint(g_hseFormatStatus);
+        UART_SendString("\r\n");
 
         /* Import PSK into HSE RAM key slot (try regardless of format result) */
         g_hseImportStatus = (uint32)BMU_ImportSymKey(HSE_PSK_KEY_HANDLE, PreSharedKey, AES_KEY_BITS);
+        UART_SendString("[BMU] Import status=");
+        UART_SendUint(g_hseImportStatus);
+        UART_SendString("\r\n");
 
         #ifdef BMS_MODE_EDDSA
         /* Generate Ed25519 key pair for EDDSA signing */
