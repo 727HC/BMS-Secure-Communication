@@ -99,10 +99,6 @@ static uint8 g_session_key[AES_KEY_SIZE];
 static uint8 g_cmac_input[CMAC_INPUT_SIZE];
 static uint8 g_kdf_input[KDF_INPUT_SIZE];
 
-/* HSE DMA-safe input buffers (global BSS, not FreeRTOS task stack) */
-static uint8 g_dec_input_uid[AES_KEY_SIZE];
-static uint8 g_dec_input_seed[AES_KEY_SIZE];
-
 /* EDDSA (Ed25519) buffers */
 static uint8 g_eddsa_signR[EDDSA_SIGN_SIZE];
 static uint8 g_eddsa_signS[EDDSA_SIGN_SIZE];
@@ -223,8 +219,6 @@ static void UART_SendChar(char c)
     LPUART6_DATA = (uint32)(uint8)c;
 }
 
-static void UART_SendUint(uint32 val);  /* forward declaration */
-
 static void UART_SendString(const char *msg)
 {
     if ((msg == NULL) || (*msg == '\0')) return;
@@ -268,22 +262,6 @@ void FlexCAN_Callback(uint8 instance,
 /*============================================================================
  *  HSE Helpers
  *============================================================================*/
-
-/** HSE service request wrapper — disables interrupts during sync polling
- *  to prevent FreeRTOS SysTick from corrupting the DUMMY counter loop */
-static hseSrvResponse_t BMU_HseRequest(uint8 ch, hseSrvDescriptor_t *pDesc)
-{
-    Hse_Ip_ReqType req = {
-        .eReqType       = HSE_IP_REQTYPE_SYNC,
-        .pfCallback      = NULL_PTR,
-        .pCallbackParam  = NULL_PTR,
-        .u32Timeout      = HSE_TIMEOUT_TICKS
-    };
-    __asm volatile("cpsid i");
-    hseSrvResponse_t resp = Hse_Ip_ServiceRequest(HSE_MU_INSTANCE, ch, &req, pDesc);
-    __asm volatile("cpsie i");
-    return resp;
-}
 
 /** Wait for HSE firmware initialization */
 static boolean BMU_WaitHseReady(void)
@@ -351,7 +329,13 @@ static hseSrvResponse_t BMU_FormatKeyCatalogs(void)
     pFmt->pNvmKeyCatalogCfg = (HOST_ADDR)nvmCatalog;
     pFmt->pRamKeyCatalogCfg = (HOST_ADDR)ramCatalog;
 
-    return BMU_HseRequest(ch, pDesc);
+    return Hse_Ip_ServiceRequest(HSE_MU_INSTANCE, ch,
+                                 &(Hse_Ip_ReqType){
+                                     .eReqType       = HSE_IP_REQTYPE_SYNC,
+                                     .pfCallback      = NULL_PTR,
+                                     .pCallbackParam  = NULL_PTR,
+                                     .u32Timeout      = HSE_TIMEOUT_TICKS
+                                 }, pDesc);
 }
 
 /** Import a symmetric key into HSE RAM catalog */
@@ -378,7 +362,13 @@ static hseSrvResponse_t BMU_ImportSymKey(hseKeyHandle_t keyHandle,
     pImport->cipher.cipherKeyHandle = HSE_INVALID_KEY_HANDLE;
     pImport->keyContainer.authKeyHandle = HSE_INVALID_KEY_HANDLE;
 
-    return BMU_HseRequest(ch, pDesc);
+    return Hse_Ip_ServiceRequest(HSE_MU_INSTANCE, ch,
+                                 &(Hse_Ip_ReqType){
+                                     .eReqType       = HSE_IP_REQTYPE_SYNC,
+                                     .pfCallback      = NULL_PTR,
+                                     .pCallbackParam  = NULL_PTR,
+                                     .u32Timeout      = HSE_TIMEOUT_TICKS
+                                 }, pDesc);
 }
 
 /** AES-128 ECB Decrypt */
@@ -403,7 +393,13 @@ static hseSrvResponse_t BMU_AesEcbDecrypt(hseKeyHandle_t keyHandle,
     pCipher->pOutput        = (HOST_ADDR)plain;
     pCipher->sgtOption      = HSE_SGT_OPTION_NONE;
 
-    return BMU_HseRequest(ch, pDesc);
+    return Hse_Ip_ServiceRequest(HSE_MU_INSTANCE, ch,
+                                 &(Hse_Ip_ReqType){
+                                     .eReqType       = HSE_IP_REQTYPE_SYNC,
+                                     .pfCallback      = NULL_PTR,
+                                     .pCallbackParam  = NULL_PTR,
+                                     .u32Timeout      = HSE_TIMEOUT_TICKS
+                                 }, pDesc);
 }
 
 /** AES-128 CMAC Generate (for KDF) */
@@ -431,7 +427,13 @@ static hseSrvResponse_t BMU_CmacGenerate(hseKeyHandle_t keyHandle,
     pMac->pTag        = (HOST_ADDR)tag;
     pMac->pTagLength  = (HOST_ADDR)tagLen;
 
-    return BMU_HseRequest(ch, pDesc);
+    return Hse_Ip_ServiceRequest(HSE_MU_INSTANCE, ch,
+                                 &(Hse_Ip_ReqType){
+                                     .eReqType       = HSE_IP_REQTYPE_SYNC,
+                                     .pfCallback      = NULL_PTR,
+                                     .pCallbackParam  = NULL_PTR,
+                                     .u32Timeout      = HSE_TIMEOUT_TICKS
+                                 }, pDesc);
 }
 
 /** AES-128 CMAC Verify */
@@ -459,7 +461,13 @@ static hseSrvResponse_t BMU_CmacVerify(hseKeyHandle_t keyHandle,
     pMac->pTag        = (HOST_ADDR)tag;
     pMac->pTagLength  = (HOST_ADDR)&tagLen;
 
-    return BMU_HseRequest(ch, pDesc);
+    return Hse_Ip_ServiceRequest(HSE_MU_INSTANCE, ch,
+                                 &(Hse_Ip_ReqType){
+                                     .eReqType       = HSE_IP_REQTYPE_SYNC,
+                                     .pfCallback      = NULL_PTR,
+                                     .pCallbackParam  = NULL_PTR,
+                                     .u32Timeout      = HSE_TIMEOUT_TICKS
+                                 }, pDesc);
 }
 
 /*============================================================================
@@ -471,29 +479,20 @@ static boolean BMU_HandleKeyExchange(const uint8 *rx_data)
 
     UART_SendString("[BMU] Processing key exchange...\r\n");
 
-    /* 1. Copy encrypted UID and Seed to global buffers (HSE DMA-safe) */
-    memcpy(g_dec_input_uid,  &rx_data[0],        AES_KEY_SIZE);
-    memcpy(g_dec_input_seed, &rx_data[UID_SIZE],  AES_KEY_SIZE);
+    /* 1. Extract encrypted UID and Seed */
+    const uint8 *enc_uid  = &rx_data[0];
+    const uint8 *enc_seed = &rx_data[UID_SIZE];
 
     /* 2. Decrypt UID using PSK */
-    hse_resp = BMU_AesEcbDecrypt(HSE_PSK_KEY_HANDLE, g_dec_input_uid, g_decrypted_uid);
+    hse_resp = BMU_AesEcbDecrypt(HSE_PSK_KEY_HANDLE, enc_uid, g_decrypted_uid);
     if (hse_resp != HSE_SRV_RSP_OK)
     {
-        UART_SendString("[BMU] ERR: Decrypt UID resp=0x");
-        {
-            static const char hx[] = "0123456789ABCDEF";
-            uint32 v = (uint32)hse_resp;
-            int i;
-            for (i = 28; i >= 0; i -= 4) {
-                UART_SendChar(hx[(v >> i) & 0xF]);
-            }
-        }
-        UART_SendString("\r\n");
+        UART_SendString("[BMU] ERR: Decrypt UID failed\r\n");
         return FALSE;
     }
 
     /* 3. Decrypt Seed using PSK */
-    hse_resp = BMU_AesEcbDecrypt(HSE_PSK_KEY_HANDLE, g_dec_input_seed, g_decrypted_seed);
+    hse_resp = BMU_AesEcbDecrypt(HSE_PSK_KEY_HANDLE, enc_seed, g_decrypted_seed);
     if (hse_resp != HSE_SRV_RSP_OK)
     {
         UART_SendString("[BMU] ERR: Decrypt Seed failed\r\n");
@@ -621,15 +620,11 @@ static boolean BMU_VerifySecuredData(const uint8 *rx_payload)
     /* Read FC from payload (embedded in BatteryData_t.freshness_counter) */
     uint32 rx_fc = pFrame->freshness_counter;
 
-    /* Check FC is within acceptable window (subtraction avoids uint32 overflow) */
-    if (rx_fc < g_expected_fc || (rx_fc - g_expected_fc) >= FC_WINDOW_SIZE)
+    /* Check FC is within acceptable window */
+    if (rx_fc < g_expected_fc || rx_fc >= (g_expected_fc + FC_WINDOW_SIZE))
     {
         g_cmac_fail_count++;
-        UART_SendString("[BMU] WARN: FC rx=");
-        UART_SendUint(rx_fc);
-        UART_SendString(" exp=");
-        UART_SendUint(g_expected_fc);
-        UART_SendString("\r\n");
+        UART_SendString("[BMU] WARN: FC out of window\r\n");
         return FALSE;
     }
 
@@ -741,7 +736,11 @@ static hseSrvResponse_t BMU_GenerateEddsaKey(void)
     pGen->targetKeyHandle    = HSE_ECC_KEY_HANDLE;
     pGen->sch.eccKey.pPubKey = (HOST_ADDR)g_eddsa_pubkey;
 
-    return BMU_HseRequest(ch, pDesc);
+    return Hse_Ip_ServiceRequest(HSE_MU_INSTANCE, ch,
+                                 &(Hse_Ip_ReqType){
+                                     .eReqType  = HSE_IP_REQTYPE_SYNC,
+                                     .u32Timeout = HSE_TIMEOUT_TICKS
+                                 }, pDesc);
 }
 
 static hseSrvResponse_t BMU_EddsaSign(const uint8 *data, uint32 dataLen)
@@ -775,7 +774,11 @@ static hseSrvResponse_t BMU_EddsaSign(const uint8 *data, uint32 dataLen)
     pSign->pSignature[1]       = (HOST_ADDR)g_eddsa_signS;
     pSign->pSignatureLength[1] = (HOST_ADDR)&g_eddsa_signSLen;
 
-    return BMU_HseRequest(ch, pDesc);
+    return Hse_Ip_ServiceRequest(HSE_MU_INSTANCE, ch,
+                                 &(Hse_Ip_ReqType){
+                                     .eReqType  = HSE_IP_REQTYPE_SYNC,
+                                     .u32Timeout = HSE_TIMEOUT_TICKS
+                                 }, pDesc);
 }
 
 /*============================================================================
@@ -846,15 +849,9 @@ int main(void)
     {
         /* Format key catalogs (required once, may return NOT_ALLOWED if already formatted) */
         g_hseFormatStatus = (uint32)BMU_FormatKeyCatalogs();
-        UART_SendString("[BMU] Fmt=");
-        UART_SendUint(g_hseFormatStatus);
-        UART_SendString("\r\n");
 
         /* Import PSK into HSE RAM key slot (try regardless of format result) */
         g_hseImportStatus = (uint32)BMU_ImportSymKey(HSE_PSK_KEY_HANDLE, PreSharedKey, AES_KEY_BITS);
-        UART_SendString("[BMU] Imp=");
-        UART_SendUint(g_hseImportStatus);
-        UART_SendString("\r\n");
 
         #ifdef BMS_MODE_EDDSA
         /* Generate Ed25519 key pair for EDDSA signing */
