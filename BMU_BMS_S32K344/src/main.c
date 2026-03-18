@@ -267,6 +267,22 @@ void FlexCAN_Callback(uint8 instance,
  *  HSE Helpers
  *============================================================================*/
 
+/** HSE service request wrapper — disables interrupts during sync polling
+ *  to prevent FreeRTOS SysTick from corrupting the DUMMY counter loop */
+static hseSrvResponse_t BMU_HseRequest(uint8 ch, hseSrvDescriptor_t *pDesc)
+{
+    Hse_Ip_ReqType req = {
+        .eReqType       = HSE_IP_REQTYPE_SYNC,
+        .pfCallback      = NULL_PTR,
+        .pCallbackParam  = NULL_PTR,
+        .u32Timeout      = HSE_TIMEOUT_TICKS
+    };
+    __asm volatile("cpsid i");
+    hseSrvResponse_t resp = Hse_Ip_ServiceRequest(HSE_MU_INSTANCE, ch, &req, pDesc);
+    __asm volatile("cpsie i");
+    return resp;
+}
+
 /** Wait for HSE firmware initialization */
 static boolean BMU_WaitHseReady(void)
 {
@@ -333,13 +349,7 @@ static hseSrvResponse_t BMU_FormatKeyCatalogs(void)
     pFmt->pNvmKeyCatalogCfg = (HOST_ADDR)nvmCatalog;
     pFmt->pRamKeyCatalogCfg = (HOST_ADDR)ramCatalog;
 
-    return Hse_Ip_ServiceRequest(HSE_MU_INSTANCE, ch,
-                                 &(Hse_Ip_ReqType){
-                                     .eReqType       = HSE_IP_REQTYPE_SYNC,
-                                     .pfCallback      = NULL_PTR,
-                                     .pCallbackParam  = NULL_PTR,
-                                     .u32Timeout      = HSE_TIMEOUT_TICKS
-                                 }, pDesc);
+    return BMU_HseRequest(ch, pDesc);
 }
 
 /** Import a symmetric key into HSE RAM catalog */
@@ -366,13 +376,7 @@ static hseSrvResponse_t BMU_ImportSymKey(hseKeyHandle_t keyHandle,
     pImport->cipher.cipherKeyHandle = HSE_INVALID_KEY_HANDLE;
     pImport->keyContainer.authKeyHandle = HSE_INVALID_KEY_HANDLE;
 
-    return Hse_Ip_ServiceRequest(HSE_MU_INSTANCE, ch,
-                                 &(Hse_Ip_ReqType){
-                                     .eReqType       = HSE_IP_REQTYPE_SYNC,
-                                     .pfCallback      = NULL_PTR,
-                                     .pCallbackParam  = NULL_PTR,
-                                     .u32Timeout      = HSE_TIMEOUT_TICKS
-                                 }, pDesc);
+    return BMU_HseRequest(ch, pDesc);
 }
 
 /** AES-128 ECB Decrypt */
@@ -397,13 +401,7 @@ static hseSrvResponse_t BMU_AesEcbDecrypt(hseKeyHandle_t keyHandle,
     pCipher->pOutput        = (HOST_ADDR)plain;
     pCipher->sgtOption      = HSE_SGT_OPTION_NONE;
 
-    return Hse_Ip_ServiceRequest(HSE_MU_INSTANCE, ch,
-                                 &(Hse_Ip_ReqType){
-                                     .eReqType       = HSE_IP_REQTYPE_SYNC,
-                                     .pfCallback      = NULL_PTR,
-                                     .pCallbackParam  = NULL_PTR,
-                                     .u32Timeout      = HSE_TIMEOUT_TICKS
-                                 }, pDesc);
+    return BMU_HseRequest(ch, pDesc);
 }
 
 /** AES-128 CMAC Generate (for KDF) */
@@ -431,13 +429,7 @@ static hseSrvResponse_t BMU_CmacGenerate(hseKeyHandle_t keyHandle,
     pMac->pTag        = (HOST_ADDR)tag;
     pMac->pTagLength  = (HOST_ADDR)tagLen;
 
-    return Hse_Ip_ServiceRequest(HSE_MU_INSTANCE, ch,
-                                 &(Hse_Ip_ReqType){
-                                     .eReqType       = HSE_IP_REQTYPE_SYNC,
-                                     .pfCallback      = NULL_PTR,
-                                     .pCallbackParam  = NULL_PTR,
-                                     .u32Timeout      = HSE_TIMEOUT_TICKS
-                                 }, pDesc);
+    return BMU_HseRequest(ch, pDesc);
 }
 
 /** AES-128 CMAC Verify */
@@ -465,13 +457,7 @@ static hseSrvResponse_t BMU_CmacVerify(hseKeyHandle_t keyHandle,
     pMac->pTag        = (HOST_ADDR)tag;
     pMac->pTagLength  = (HOST_ADDR)&tagLen;
 
-    return Hse_Ip_ServiceRequest(HSE_MU_INSTANCE, ch,
-                                 &(Hse_Ip_ReqType){
-                                     .eReqType       = HSE_IP_REQTYPE_SYNC,
-                                     .pfCallback      = NULL_PTR,
-                                     .pCallbackParam  = NULL_PTR,
-                                     .u32Timeout      = HSE_TIMEOUT_TICKS
-                                 }, pDesc);
+    return BMU_HseRequest(ch, pDesc);
 }
 
 /*============================================================================
@@ -749,11 +735,7 @@ static hseSrvResponse_t BMU_GenerateEddsaKey(void)
     pGen->targetKeyHandle    = HSE_ECC_KEY_HANDLE;
     pGen->sch.eccKey.pPubKey = (HOST_ADDR)g_eddsa_pubkey;
 
-    return Hse_Ip_ServiceRequest(HSE_MU_INSTANCE, ch,
-                                 &(Hse_Ip_ReqType){
-                                     .eReqType  = HSE_IP_REQTYPE_SYNC,
-                                     .u32Timeout = HSE_TIMEOUT_TICKS
-                                 }, pDesc);
+    return BMU_HseRequest(ch, pDesc);
 }
 
 static hseSrvResponse_t BMU_EddsaSign(const uint8 *data, uint32 dataLen)
@@ -787,11 +769,7 @@ static hseSrvResponse_t BMU_EddsaSign(const uint8 *data, uint32 dataLen)
     pSign->pSignature[1]       = (HOST_ADDR)g_eddsa_signS;
     pSign->pSignatureLength[1] = (HOST_ADDR)&g_eddsa_signSLen;
 
-    return Hse_Ip_ServiceRequest(HSE_MU_INSTANCE, ch,
-                                 &(Hse_Ip_ReqType){
-                                     .eReqType  = HSE_IP_REQTYPE_SYNC,
-                                     .u32Timeout = HSE_TIMEOUT_TICKS
-                                 }, pDesc);
+    return BMU_HseRequest(ch, pDesc);
 }
 
 /*============================================================================
