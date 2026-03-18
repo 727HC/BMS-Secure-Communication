@@ -62,8 +62,12 @@ function decodeSignature(signature) {
   return Buffer.from(signature, 'base64')
 }
 
-// DID 원장 등록 API
+// [BC-10] DID 등록 API — ADMIN_API_KEY 설정 시 인증 필수
 app.post('/did/register', async (req, res) => {
+  const adminKey = process.env.ADMIN_API_KEY
+  if (adminKey && req.headers['x-api-key'] !== adminKey) {
+    return res.status(403).json({ error: 'Forbidden: invalid or missing x-api-key' })
+  }
   const { did, verkey: rawVerkey, role } = req.body
   const verkey = typeof rawVerkey === 'string' ? rawVerkey : toBase58(Uint8Array.from(rawVerkey))
   try {

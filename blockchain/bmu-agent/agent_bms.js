@@ -131,8 +131,8 @@ app.post("/data", async (req, res) => {
   const { fc, soc, temperature, dataHash, signature, rawPayload } = req.body;
   const did = req.body.did || DEFAULT_BMU_DID;
 
-  if (fc === undefined || fc === null || (!dataHash && !rawPayload)) {
-    return res.status(400).json({ error: "fc and (dataHash or rawPayload) required" });
+  if (fc === undefined || fc === null || !rawPayload) {
+    return res.status(400).json({ error: "fc, rawPayload required" });
   }
 
   if (!did) {
