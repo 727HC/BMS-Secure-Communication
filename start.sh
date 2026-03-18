@@ -3,10 +3,12 @@
 #  BMS 보안 통신 시스템 — 원스탑 실행 스크립트
 # ===========================================
 #  사용법:
-#    ./start.sh              전체 실행 (빌드+플래싱+시뮬레이터+모니터)
-#    ./start.sh nosim        빌드+플래싱+모니터만 (시뮬레이터 없이)
-#    ./start.sh simonly      시뮬레이터+모니터만 (빌드/플래싱 생략)
-#    ./start.sh matlab       빌드+플래싱+MATLAB용 브릿지+모니터
+#    ./start.sh                  전체 실행 (빌드+플래싱+시뮬레이터+모니터)
+#    ./start.sh nosim            빌드+플래싱+모니터만 (시뮬레이터 없이)
+#    ./start.sh simonly          시뮬레이터+모니터만 (빌드/플래싱 생략)
+#    ./start.sh matlab           빌드+플래싱+MATLAB용 브릿지+모니터
+#    ./start.sh blockchain       시뮬레이터+블록체인 브릿지 (Agent 수동 실행 필요)
+#    ./start.sh blockchain-full  Fabric+Agent+빌드+플래싱+시뮬레이터+브릿지 원스탑
 #  종료: Ctrl+C
 
 set -e
@@ -27,8 +29,8 @@ mkdir -p "$LOG_DIR"
 cleanup() {
     echo ""
     echo "=== 종료 중... ==="
-    kill $SIM_PID $BRIDGE_PID $WATCHDOG_PID 2>/dev/null
-    wait $SIM_PID $BRIDGE_PID $WATCHDOG_PID 2>/dev/null
+    kill $SIM_PID $BRIDGE_PID $WATCHDOG_PID $AGENT_PID 2>/dev/null
+    wait $SIM_PID $BRIDGE_PID $WATCHDOG_PID $AGENT_PID 2>/dev/null
     echo "=== 완료 ==="
     exit 0
 }
@@ -111,6 +113,52 @@ ser.close()
 "
 }
 
+do_fabric_setup() {
+    echo ""
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo " [0/4] Fabric 네트워크 + Agent 시작"
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+    # Fabric 네트워크 시작 + 체인코드 배포
+    echo "  Fabric 네트워크 시작 중... (Docker)"
+    if ! "$BMS_DIR/blockchain/start_fabric.sh" 2>&1 | tee "$LOG_DIR/fabric.log"; then
+        echo "!!! Fabric 네트워크 시작 실패 — $LOG_DIR/fabric.log 확인"
+        exit 1
+    fi
+    echo "  Fabric 네트워크 준비 완료"
+
+    # npm install (node_modules 없을 때만)
+    cd "$BMS_DIR/blockchain/bmu-agent"
+    if [ ! -d "node_modules" ]; then
+        echo "  npm install 실행 중..."
+        npm install > "$LOG_DIR/npm_install.log" 2>&1
+    fi
+
+    # Agent 백그라운드 실행
+    echo "  Agent 시작 중 (agent_ingest_bmu.js → 포트 3001)..."
+    node agent_ingest_bmu.js > "$LOG_DIR/agent.log" 2>&1 &
+    AGENT_PID=$!
+    echo "  Agent (PID=$AGENT_PID) 시작됨"
+
+    # Agent 준비 대기 (최대 60초 — Fabric 연결 포함)
+    echo "  Agent Fabric 연결 대기 중..."
+    for i in $(seq 1 12); do
+        if curl -s http://localhost:3001/status 2>/dev/null | grep -q '"fabric":"connected"'; then
+            echo "  Agent + Fabric 연결 확인 완료"
+            return 0
+        fi
+        if ! kill -0 $AGENT_PID 2>/dev/null; then
+            echo "!!! Agent가 비정상 종료됨 — $LOG_DIR/agent.log 확인"
+            exit 1
+        fi
+        echo "  대기 중... ($i/12)"
+        sleep 5
+    done
+    echo "!!! Agent가 60초 내에 Fabric에 연결되지 않았습니다."
+    echo "    $LOG_DIR/agent.log 를 확인하세요."
+    exit 1
+}
+
 do_blockchain_bridge() {
     echo ""
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
@@ -173,13 +221,15 @@ case "${1:-full}" in
     nosim)     do_build_flash; do_monitor ;;
     simonly)   do_simulator; do_monitor ;;
     matlab)    do_build_flash; do_matlab_bridge; do_monitor ;;
-    blockchain) do_build_flash; do_simulator; do_blockchain_bridge ;;
+    blockchain)      do_build_flash; do_simulator; do_blockchain_bridge ;;
+    blockchain-full) do_fabric_setup; do_build_flash; do_simulator; do_blockchain_bridge ;;
     *)
         echo "사용법:"
-        echo "  ./start.sh              전체 실행"
-        echo "  ./start.sh nosim        시뮬레이터 없이"
-        echo "  ./start.sh simonly      시뮬레이터+모니터만"
-        echo "  ./start.sh matlab       MATLAB 연결 모드"
-        echo "  ./start.sh blockchain   시뮬레이터+블록체인 브릿지"
+        echo "  ./start.sh                  전체 실행"
+        echo "  ./start.sh nosim            시뮬레이터 없이"
+        echo "  ./start.sh simonly          시뮬레이터+모니터만"
+        echo "  ./start.sh matlab           MATLAB 연결 모드"
+        echo "  ./start.sh blockchain       시뮬레이터+블록체인 브릿지 (Agent 수동)"
+        echo "  ./start.sh blockchain-full  Fabric+Agent+빌드+시뮬+브릿지 원스탑"
         ;;
 esac
