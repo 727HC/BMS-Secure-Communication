@@ -223,6 +223,8 @@ static void UART_SendChar(char c)
     LPUART6_DATA = (uint32)(uint8)c;
 }
 
+static void UART_SendUint(uint32 val);  /* forward declaration */
+
 static void UART_SendString(const char *msg)
 {
     if ((msg == NULL) || (*msg == '\0')) return;
@@ -619,11 +621,15 @@ static boolean BMU_VerifySecuredData(const uint8 *rx_payload)
     /* Read FC from payload (embedded in BatteryData_t.freshness_counter) */
     uint32 rx_fc = pFrame->freshness_counter;
 
-    /* Check FC is within acceptable window */
-    if (rx_fc < g_expected_fc || rx_fc >= (g_expected_fc + FC_WINDOW_SIZE))
+    /* Check FC is within acceptable window (subtraction avoids uint32 overflow) */
+    if (rx_fc < g_expected_fc || (rx_fc - g_expected_fc) >= FC_WINDOW_SIZE)
     {
         g_cmac_fail_count++;
-        UART_SendString("[BMU] WARN: FC out of window\r\n");
+        UART_SendString("[BMU] WARN: FC rx=");
+        UART_SendUint(rx_fc);
+        UART_SendString(" exp=");
+        UART_SendUint(g_expected_fc);
+        UART_SendString("\r\n");
         return FALSE;
     }
 
