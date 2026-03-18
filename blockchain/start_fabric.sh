@@ -12,7 +12,7 @@ echo "=== Fabric Network Down ==="
 ./network.sh down 2>&1 | tail -3
 
 echo "=== Fabric Network Up ==="
-./network.sh up createChannel -c bmschannel 2>&1 | tail -20
+./network.sh up createChannel -ca -c bmschannel 2>&1 | tail -20
 
 # [S-01] 체인코드 배포
 echo "=== Deploy BMS Chaincode ==="
