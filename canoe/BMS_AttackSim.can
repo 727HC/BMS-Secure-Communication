@@ -3,33 +3,28 @@
  *  File:    BMS_AttackSim.can
  *  Purpose: Simulate CAN bus attacks to verify BMU/CMU security mechanisms
  *
- *  Usage:   Load in CANoe as a CAPL node. Use Panel buttons or keyboard
- *           shortcuts to trigger individual attack scenarios.
- *
  *  Attack Scenarios:
  *    [1] Replay Attack      — Re-send captured frame with old FC
  *    [2] CMAC Spoofing      — Send BatteryData with forged CMAC
  *    [3] FC Manipulation    — Send frame with out-of-window FC
  *    [4] Resync Flooding    — Flood fake Resync requests
  *    [5] KeyExchange Spoof  — Inject fake key exchange frame
- *
- *  Expected Results:
- *    All attacks should be rejected by BMU. CMAC fail count should
- *    increment, and after 3 consecutive failures, Resync should trigger.
+ *    [9] Automated sequence — All 5 attacks with 3s intervals
+ *    [0] Stop all attacks
  *============================================================================*/
 
 variables
 {
-    /* CAN IDs — must match bms_protocol.h */
+    /* CAN IDs */
     const dword CAN_ID_BATTERY_DATA  = 0x14;
     const dword CAN_ID_KEY_EXCHANGE  = 0x15;
     const dword CAN_ID_KEY_ACK       = 0x16;
     const dword CAN_ID_RESYNC_REQ    = 0x17;
 
     /* Frame sizes */
-    const int BATTERY_FRAME_SIZE     = 64;   /* 48B data + 16B CMAC */
-    const int KEY_EXCHANGE_SIZE      = 32;   /* 16B UID + 16B Seed */
-    const int CTRL_FRAME_SIZE        = 24;   /* 8B data + 16B CMAC */
+    const int BATTERY_FRAME_SIZE     = 64;
+    const int KEY_EXCHANGE_SIZE      = 32;
+    const int CTRL_FRAME_SIZE        = 24;
 
     /* Protocol constants */
     const byte ACK_MARKER            = 0x01;
@@ -38,20 +33,28 @@ variables
 
     /* Attack state */
     int gAttackRunning               = 0;
-    int gReplayFC                    = 0;    /* Captured FC for replay */
-    byte gCapturedFrame[64];                 /* Captured frame buffer */
+    int gReplayFC                    = 0;
+    byte gCapturedFrame[64];
     int gCapturedLen                 = 0;
     dword gFloodCount                = 0;
 
     /* Timers */
     msTimer tFloodTimer;
-    msTimer tReplayTimer;
+    msTimer tAutoTest;
+
+    /* Auto test state */
+    int gAutoStep                    = 0;
 
     /* Statistics */
     dword gAttacksSent               = 0;
     dword gReplaysAttempted          = 0;
     dword gSpoofsSent               = 0;
     dword gFloodsSent                = 0;
+
+    /* Reusable message variables for auto test */
+    message 0x14 gAutoMsg64;
+    message 0x17 gAutoMsgCtrl;
+    message 0x15 gAutoMsgKey;
 }
 
 /*============================================================================
@@ -60,30 +63,28 @@ variables
 on start
 {
     write("=== BMS Attack Simulator Loaded ===");
-    write("Press keys to trigger attacks:");
     write("  [1] Replay Attack");
     write("  [2] CMAC Spoofing Attack");
     write("  [3] FC Manipulation Attack");
-    write("  [4] Resync Flood Attack (hold)");
+    write("  [4] Resync Flood Attack");
     write("  [5] Key Exchange Spoofing");
+    write("  [9] Auto sequence (all 5)");
     write("  [0] Stop all attacks");
-    write("  [C] Capture current frame for replay");
+    write("  [C] Capture frame for replay");
     write("===================================");
 }
 
 /*============================================================================
- *  Frame Capture — Capture legitimate BatteryData for replay
+ *  Frame Capture
  *============================================================================*/
-on message CAN_ID_BATTERY_DATA
+on message 0x14
 {
     int i;
-    /* Always capture the latest frame for potential replay */
     gCapturedLen = this.dlc;
     for (i = 0; i < this.dlc && i < 64; i++)
     {
         gCapturedFrame[i] = this.byte(i);
     }
-    /* Extract FC from offset 40 (little-endian uint32) */
     gReplayFC = this.byte(40) |
                 (this.byte(41) << 8) |
                 (this.byte(42) << 16) |
@@ -98,32 +99,27 @@ on key 'c'
     }
     else
     {
-        write("[CAPTURE] No frame captured yet — wait for BatteryData");
+        write("[CAPTURE] No frame yet - wait for BatteryData on bus");
     }
 }
 
 /*============================================================================
  *  Attack 1: Replay Attack
- *  Re-send a previously captured frame. BMU should reject because
- *  the FC is now behind g_expected_fc.
  *============================================================================*/
-on key '1'
+void doReplayAttack()
 {
-    message CAN_ID_BATTERY_DATA replayMsg;
+    message 0x14 replayMsg;
     int i;
 
     if (gCapturedLen == 0)
     {
-        write("[REPLAY] ERROR: No captured frame. Press [C] first.");
+        write("[REPLAY] No captured frame. Press [C] first.");
         return;
     }
 
-    write("[ATTACK 1] Replay Attack — sending captured FC=%d", gReplayFC);
-    write("  Expected: BMU rejects (FC out of window)");
-
     replayMsg.dlc = gCapturedLen;
-    replayMsg.FDF = 1;   /* CAN-FD */
-    replayMsg.BRS = 1;   /* Bit Rate Switch */
+    replayMsg.FDF = 1;
+    replayMsg.BRS = 1;
 
     for (i = 0; i < gCapturedLen; i++)
     {
@@ -133,110 +129,98 @@ on key '1'
     output(replayMsg);
     gReplaysAttempted++;
     gAttacksSent++;
-    write("[REPLAY] Sent. Total attacks: %d", gAttacksSent);
+    write("[REPLAY] Sent captured FC=%d. Total: %d", gReplayFC, gAttacksSent);
+}
+
+on key '1'
+{
+    write("[ATTACK 1] Replay Attack");
+    write("  Expected: BMU rejects (FC out of window)");
+    doReplayAttack();
 }
 
 /*============================================================================
  *  Attack 2: CMAC Spoofing
- *  Send a BatteryData frame with random/zero CMAC tag.
- *  BMU should reject due to CMAC verification failure.
  *============================================================================*/
-on key '2'
+void doCmacSpoofAttack()
 {
-    message CAN_ID_BATTERY_DATA spoofMsg;
+    message 0x14 spoofMsg;
     int i;
-
-    write("[ATTACK 2] CMAC Spoofing — sending frame with forged CMAC");
-    write("  Expected: BMU CMAC verification fails");
 
     spoofMsg.dlc = BATTERY_FRAME_SIZE;
     spoofMsg.FDF = 1;
     spoofMsg.BRS = 1;
 
-    /* Fill data portion with plausible battery data */
-    /* Current = 10.0A (IEEE 754: 0x41200000) */
-    spoofMsg.byte(0) = 0x00;
-    spoofMsg.byte(1) = 0x00;
-    spoofMsg.byte(2) = 0x20;
-    spoofMsg.byte(3) = 0x41;
-
-    /* Voltage = 400.0V (IEEE 754: 0x43C80000) */
-    spoofMsg.byte(4) = 0x00;
-    spoofMsg.byte(5) = 0x00;
-    spoofMsg.byte(6) = 0xC8;
-    spoofMsg.byte(7) = 0x43;
-
-    /* SOC = 50000 */
-    spoofMsg.byte(8) = 0x50;
-    spoofMsg.byte(9) = 0xC3;
-
-    /* Fill FC with a high value to try to look legitimate */
-    spoofMsg.byte(40) = 0xFF;
-    spoofMsg.byte(41) = 0x00;
-    spoofMsg.byte(42) = 0x00;
-    spoofMsg.byte(43) = 0x00;
-
-    /* CMAC tag: all zeros (forged) — bytes 48~63 */
-    for (i = 48; i < 64; i++)
+    for (i = 0; i < 64; i++)
     {
         spoofMsg.byte(i) = 0x00;
     }
 
+    /* Plausible battery data */
+    spoofMsg.byte(0) = 0x00; spoofMsg.byte(1) = 0x00;
+    spoofMsg.byte(2) = 0x20; spoofMsg.byte(3) = 0x41;  /* 10.0A */
+    spoofMsg.byte(4) = 0x00; spoofMsg.byte(5) = 0x00;
+    spoofMsg.byte(6) = 0xC8; spoofMsg.byte(7) = 0x43;  /* 400.0V */
+    spoofMsg.byte(8) = 0x50; spoofMsg.byte(9) = 0xC3;  /* SOC=50000 */
+    spoofMsg.byte(40) = 0xFF;  /* FC=255 */
+
+    /* CMAC: all zeros (forged) — bytes 48~63 already 0x00 */
+
     output(spoofMsg);
     gSpoofsSent++;
     gAttacksSent++;
-    write("[SPOOF] Sent forged frame. Total attacks: %d", gAttacksSent);
+    write("[SPOOF] Sent forged CMAC. Total: %d", gAttacksSent);
+}
+
+on key '2'
+{
+    write("[ATTACK 2] CMAC Spoofing");
+    write("  Expected: BMU CMAC verification fails");
+    doCmacSpoofAttack();
 }
 
 /*============================================================================
  *  Attack 3: FC Manipulation
- *  Send frame with FC far outside the acceptance window.
- *  Tests both past (FC=0) and future (FC=0xFFFFFFFF) values.
  *============================================================================*/
-on key '3'
+void doFcAttack()
 {
-    message CAN_ID_BATTERY_DATA fcMsg;
+    message 0x14 fcMsg;
     int i;
-
-    write("[ATTACK 3] FC Manipulation — sending FC=0 and FC=0xFFFFFFFF");
-    write("  Expected: BMU rejects (FC out of window, size=%d)", FC_WINDOW_SIZE);
 
     fcMsg.dlc = BATTERY_FRAME_SIZE;
     fcMsg.FDF = 1;
     fcMsg.BRS = 1;
 
-    /* Zero all bytes */
     for (i = 0; i < 64; i++)
     {
         fcMsg.byte(i) = 0x00;
     }
 
-    /* Attempt 1: FC = 0 (past) */
-    fcMsg.byte(40) = 0x00;
-    fcMsg.byte(41) = 0x00;
-    fcMsg.byte(42) = 0x00;
-    fcMsg.byte(43) = 0x00;
+    /* FC = 0 (past) */
     output(fcMsg);
-    write("  [FC=0] Sent (past FC)");
+    write("  [FC=0] Sent (past)");
 
-    /* Attempt 2: FC = 0xFFFFFFFF (far future) */
+    /* FC = 0xFFFFFFFF (far future) */
     fcMsg.byte(40) = 0xFF;
     fcMsg.byte(41) = 0xFF;
     fcMsg.byte(42) = 0xFF;
     fcMsg.byte(43) = 0xFF;
     output(fcMsg);
-    write("  [FC=MAX] Sent (far future FC)");
+    write("  [FC=MAX] Sent (far future)");
 
     gAttacksSent += 2;
-    write("[FC ATTACK] Total attacks: %d", gAttacksSent);
+}
+
+on key '3'
+{
+    write("[ATTACK 3] FC Manipulation");
+    write("  Expected: BMU rejects (FC out of window=%d)", FC_WINDOW_SIZE);
+    doFcAttack();
+    write("[FC] Total: %d", gAttacksSent);
 }
 
 /*============================================================================
  *  Attack 4: Resync Flooding
- *  Send rapid fake Resync requests to BMU's CAN RX.
- *  Since Resync is BMU→CMU direction (ID 0x17), we send it on the bus
- *  to see if CMU incorrectly processes it without CMAC verification.
- *  Also tests BMU behavior when receiving unexpected Resync on its RX.
  *============================================================================*/
 on key '4'
 {
@@ -246,17 +230,17 @@ on key '4'
         return;
     }
 
-    write("[ATTACK 4] Resync Flood — sending 50 fake Resync requests");
+    write("[ATTACK 4] Resync Flood - 50 fake requests");
     write("  Expected: CMU verifies CMAC and rejects all");
 
     gAttackRunning = 1;
     gFloodCount = 0;
-    setTimer(tFloodTimer, 20);  /* 20ms interval = 50 req/sec */
+    setTimer(tFloodTimer, 20);
 }
 
 on timer tFloodTimer
 {
-    message CAN_ID_RESYNC_REQ floodMsg;
+    message 0x17 floodMsg;
     int i;
 
     if (!gAttackRunning || gFloodCount >= 50)
@@ -270,10 +254,7 @@ on timer tFloodTimer
     floodMsg.FDF = 1;
     floodMsg.BRS = 1;
 
-    /* Resync marker */
     floodMsg.byte(0) = RESYNC_MARKER;
-
-    /* Fake CMAC (all 0xAA) — bytes 8~23 */
     for (i = 1; i < 8; i++)
     {
         floodMsg.byte(i) = 0x00;
@@ -293,30 +274,20 @@ on timer tFloodTimer
 
 /*============================================================================
  *  Attack 5: Key Exchange Spoofing
- *  Inject fake KeyExchange frame (ID 0x15) with random UID/Seed.
- *  BMU should either:
- *    a) Ignore if already in OPERATIONAL state, or
- *    b) Reject if UID is not in whitelist (enforcement mode)
  *============================================================================*/
-on key '5'
+void doKeyExchangeSpoof()
 {
-    message CAN_ID_KEY_EXCHANGE keyMsg;
+    message 0x15 keyMsg;
     int i;
-
-    write("[ATTACK 5] Key Exchange Spoofing — sending fake UID+Seed");
-    write("  Expected: BMU rejects (unknown UID / wrong encryption)");
 
     keyMsg.dlc = KEY_EXCHANGE_SIZE;
     keyMsg.FDF = 1;
     keyMsg.BRS = 1;
 
-    /* Fake encrypted UID (random-looking bytes) */
     for (i = 0; i < 16; i++)
     {
         keyMsg.byte(i) = (byte)(0xDE + i);
     }
-
-    /* Fake encrypted Seed */
     for (i = 16; i < 32; i++)
     {
         keyMsg.byte(i) = (byte)(0xAD + i);
@@ -324,7 +295,14 @@ on key '5'
 
     output(keyMsg);
     gAttacksSent++;
-    write("[KEY SPOOF] Sent fake key exchange. Total attacks: %d", gAttacksSent);
+    write("[KEY SPOOF] Sent fake key exchange. Total: %d", gAttacksSent);
+}
+
+on key '5'
+{
+    write("[ATTACK 5] Key Exchange Spoofing");
+    write("  Expected: BMU rejects (unknown UID / wrong encryption)");
+    doKeyExchangeSpoof();
 }
 
 /*============================================================================
@@ -333,162 +311,96 @@ on key '5'
 on key '0'
 {
     gAttackRunning = 0;
+    gAutoStep = 0;
     cancelTimer(tFloodTimer);
-    cancelTimer(tReplayTimer);
+    cancelTimer(tAutoTest);
     write("[STOP] All attacks stopped.");
-    write("  Statistics:");
-    write("    Total attacks sent:    %d", gAttacksSent);
-    write("    Replay attempts:       %d", gReplaysAttempted);
-    write("    CMAC spoofs:           %d", gSpoofsSent);
-    write("    Resync floods:         %d", gFloodsSent);
+    write("  Total attacks:    %d", gAttacksSent);
+    write("  Replay attempts:  %d", gReplaysAttempted);
+    write("  CMAC spoofs:      %d", gSpoofsSent);
+    write("  Resync floods:    %d", gFloodsSent);
 }
 
 /*============================================================================
- *  Monitor: Log BMU responses (KeyACK, Resync)
+ *  Monitor: Log BMU responses
  *============================================================================*/
-on message CAN_ID_KEY_ACK
+on message 0x16
 {
-    write("[MONITOR] KeyACK received — Status=0x%02X", this.byte(0));
+    write("[MONITOR] KeyACK - Status=0x%02X", this.byte(0));
     if (this.byte(0) == ACK_MARKER)
     {
         write("  -> Legitimate ACK (session established)");
     }
-    else
-    {
-        write("  -> Unexpected ACK status");
-    }
 }
 
-on message CAN_ID_RESYNC_REQ
+on message 0x17
 {
-    write("[MONITOR] Resync request detected on bus — Marker=0x%02X", this.byte(0));
+    write("[MONITOR] Resync on bus - Marker=0x%02X", this.byte(0));
 }
 
 /*============================================================================
- *  Automated Test Sequence
- *  Press [9] to run all attacks in sequence with delays
+ *  Automated Test Sequence [9]
+ *  Runs all 5 attacks with 3-second intervals using helper functions
  *============================================================================*/
-msTimer tAutoTest;
-int gAutoStep = 0;
-
 on key '9'
 {
-    write("=== AUTOMATED ATTACK SEQUENCE START ===");
-    write("Running all 5 attacks with 3-second intervals...");
+    write("=== AUTO ATTACK SEQUENCE START ===");
     gAutoStep = 1;
     setTimer(tAutoTest, 1000);
 }
 
 on timer tAutoTest
 {
-    switch (gAutoStep)
+    int i;
+
+    if (gAutoStep == 1)
     {
-        case 1:
-            write("\n--- Step 1/5: Capture + Replay ---");
-            /* Capture is automatic; trigger replay */
-            if (gCapturedLen > 0)
-            {
-                message CAN_ID_BATTERY_DATA rm;
-                int i;
-                rm.dlc = gCapturedLen;
-                rm.FDF = 1;
-                rm.BRS = 1;
-                for (i = 0; i < gCapturedLen; i++)
-                {
-                    rm.byte(i) = gCapturedFrame[i];
-                }
-                output(rm);
-                gReplaysAttempted++;
-                gAttacksSent++;
-                write("[AUTO] Replay sent FC=%d", gReplayFC);
-            }
-            else
-            {
-                write("[AUTO] No frame captured — skipping replay");
-            }
-            gAutoStep = 2;
-            setTimer(tAutoTest, 3000);
-            break;
-
-        case 2:
-            write("\n--- Step 2/5: CMAC Spoofing ---");
-            {
-                message CAN_ID_BATTERY_DATA sm;
-                int i;
-                sm.dlc = BATTERY_FRAME_SIZE;
-                sm.FDF = 1;
-                sm.BRS = 1;
-                for (i = 0; i < 64; i++) sm.byte(i) = 0x00;
-                sm.byte(40) = 0x01;  /* FC=1 */
-                output(sm);
-                gSpoofsSent++;
-                gAttacksSent++;
-                write("[AUTO] CMAC spoof sent");
-            }
-            gAutoStep = 3;
-            setTimer(tAutoTest, 3000);
-            break;
-
-        case 3:
-            write("\n--- Step 3/5: FC Manipulation ---");
-            {
-                message CAN_ID_BATTERY_DATA fm;
-                int i;
-                fm.dlc = BATTERY_FRAME_SIZE;
-                fm.FDF = 1;
-                fm.BRS = 1;
-                for (i = 0; i < 64; i++) fm.byte(i) = 0x00;
-                fm.byte(40) = 0xFF;
-                fm.byte(41) = 0xFF;
-                fm.byte(42) = 0xFF;
-                fm.byte(43) = 0xFF;
-                output(fm);
-                gAttacksSent++;
-                write("[AUTO] FC=0xFFFFFFFF sent");
-            }
-            gAutoStep = 4;
-            setTimer(tAutoTest, 3000);
-            break;
-
-        case 4:
-            write("\n--- Step 4/5: Resync Flood (10 frames) ---");
-            {
-                message CAN_ID_RESYNC_REQ rf;
-                int i, j;
-                rf.dlc = CTRL_FRAME_SIZE;
-                rf.FDF = 1;
-                rf.BRS = 1;
-                rf.byte(0) = RESYNC_MARKER;
-                for (i = 1; i < 24; i++) rf.byte(i) = 0xBB;
-                for (j = 0; j < 10; j++)
-                {
-                    output(rf);
-                    gFloodsSent++;
-                    gAttacksSent++;
-                }
-                write("[AUTO] 10 Resync floods sent");
-            }
-            gAutoStep = 5;
-            setTimer(tAutoTest, 3000);
-            break;
-
-        case 5:
-            write("\n--- Step 5/5: Key Exchange Spoofing ---");
-            {
-                message CAN_ID_KEY_EXCHANGE km;
-                int i;
-                km.dlc = KEY_EXCHANGE_SIZE;
-                km.FDF = 1;
-                km.BRS = 1;
-                for (i = 0; i < 32; i++) km.byte(i) = (byte)(0xCA + i);
-                output(km);
-                gAttacksSent++;
-                write("[AUTO] Fake key exchange sent");
-            }
-            gAutoStep = 0;
-            write("\n=== AUTOMATED ATTACK SEQUENCE COMPLETE ===");
-            write("Total attacks sent: %d", gAttacksSent);
-            write("Check BMU serial output for rejection logs.");
-            break;
+        write("--- Step 1/5: Replay ---");
+        doReplayAttack();
+        gAutoStep = 2;
+        setTimer(tAutoTest, 3000);
+    }
+    else if (gAutoStep == 2)
+    {
+        write("--- Step 2/5: CMAC Spoofing ---");
+        doCmacSpoofAttack();
+        gAutoStep = 3;
+        setTimer(tAutoTest, 3000);
+    }
+    else if (gAutoStep == 3)
+    {
+        write("--- Step 3/5: FC Manipulation ---");
+        doFcAttack();
+        gAutoStep = 4;
+        setTimer(tAutoTest, 3000);
+    }
+    else if (gAutoStep == 4)
+    {
+        write("--- Step 4/5: Resync Flood (10x) ---");
+        gAutoMsgCtrl.dlc = CTRL_FRAME_SIZE;
+        gAutoMsgCtrl.FDF = 1;
+        gAutoMsgCtrl.BRS = 1;
+        gAutoMsgCtrl.byte(0) = RESYNC_MARKER;
+        for (i = 1; i < 24; i++)
+        {
+            gAutoMsgCtrl.byte(i) = 0xBB;
+        }
+        for (i = 0; i < 10; i++)
+        {
+            output(gAutoMsgCtrl);
+            gFloodsSent++;
+            gAttacksSent++;
+        }
+        write("[AUTO] 10 Resync floods sent");
+        gAutoStep = 5;
+        setTimer(tAutoTest, 3000);
+    }
+    else if (gAutoStep == 5)
+    {
+        write("--- Step 5/5: Key Exchange Spoofing ---");
+        doKeyExchangeSpoof();
+        gAutoStep = 0;
+        write("=== AUTO ATTACK SEQUENCE COMPLETE ===");
+        write("Total attacks: %d", gAttacksSent);
     }
 }
