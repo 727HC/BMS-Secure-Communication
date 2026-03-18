@@ -13,8 +13,11 @@ async function main() {
   // 1. 32바이트 seed 생성 → Ed25519 키페어 파생
   // [BC-08] 환경변수 미설정 시 기본 시드 사용 (테스트 전용)
   if (!process.env.TEST_SEED) {
+    if (process.env.NODE_ENV === 'production') {
+      console.error('[ERROR] TEST_SEED is required in production. Exiting.')
+      process.exit(1)
+    }
     console.warn('[WARN] TEST_SEED not set — using default seed (test only, not for production)')
-    console.warn('       Set TEST_SEED env var for secure testing')
   }
   const seedStr = process.env.TEST_SEED || 'TestBMUDevice01VerifySign0000001' // 32 chars
   const seed = Buffer.from(seedStr)
