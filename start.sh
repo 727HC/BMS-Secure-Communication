@@ -120,7 +120,10 @@ do_blockchain_bridge() {
     echo ""
     sleep 3
     if [ -z "$BMU_DID" ]; then
-        echo "  ⚠ BMU_DID not set in config.env — signature verification will use DEFAULT_BMU_DID env"
+        echo "!!! BMU_DID가 config.env에 설정되지 않았습니다."
+        echo "    블록체인 모드에서는 BMU_DID가 필수입니다."
+        echo "    config.env에 BMU_DID=<your-did> 를 추가하세요."
+        exit 1
     fi
     cd "$BMS_DIR/firmware/tools"
     python -u serial_to_agent.py --port $BMU_COM --baud $BMU_BAUD --agent http://localhost:3001 ${BMU_DID:+--did $BMU_DID}

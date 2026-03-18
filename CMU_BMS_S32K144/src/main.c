@@ -590,9 +590,14 @@ int main(void)
     /* 10. Start UART reception for battery data from Simulink */
     CMU_StartUartReception();
 
-    /* 11. Create FreeRTOS queues */
+    /* 11. Create FreeRTOS queues and mutex */
     txDataQueue = xQueueCreate(1U, BATTERY_DATA_SIZE);  /* depth=1, xQueueOverwrite used */
     csecMutex   = xSemaphoreCreateMutex();
+
+    if ((txDataQueue == NULL) || (csecMutex == NULL))
+    {
+        for (;;) {}  /* Queue/mutex creation failed — halt */
+    }
 
     /* 12. Create FreeRTOS tasks */
     if (xTaskCreate(CMU_UartRxTask, "UartRx",
