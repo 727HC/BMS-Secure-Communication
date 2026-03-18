@@ -43,10 +43,10 @@ async function connectFabric() {
       : null;
 
     if (caInfo) {
-      // [A2-02] TLS 검증: 개발 환경에서만 비활성화
+      // [B-01] TLS 검증: 기본 활성화, 개발 시에만 FABRIC_TLS_VERIFY=false로 비활성화
       const caTLSCACerts = caInfo.tlsCACerts?.pem;
       const tlsOptions = caTLSCACerts
-        ? { trustedRoots: caTLSCACerts, verify: process.env.NODE_ENV === "production" }
+        ? { trustedRoots: caTLSCACerts, verify: process.env.FABRIC_TLS_VERIFY !== "false" }
         : undefined;
       const ca = new FabricCAServices(caInfo.url, tlsOptions, caInfo.caName);
       const enrollment = await ca.enroll({
@@ -155,14 +155,23 @@ app.post("/data", async (req, res) => {
 
     const id = `bms-${Date.now()}-${fc}`;
     const sig = signature || "none";
-    // [A2-04] soc=0 유효값 보존
     const socVal = (soc !== undefined && soc !== null) ? soc : 0;
     const timestamp = new Date().toISOString();
 
-    await contract.submitTransaction(
-      "RecordBMSData", id, finalHash, did, sig,
-      String(fc), String(socVal), timestamp
-    );
+    // [B-02] Fabric 연결 끊김 시 1회 재연결 시도
+    try {
+      await contract.submitTransaction(
+        "RecordBMSData", id, finalHash, did, sig,
+        String(fc), String(socVal), timestamp
+      );
+    } catch (txErr) {
+      console.warn("Fabric TX failed, attempting reconnect:", txErr.message);
+      await connectFabric();
+      await contract.submitTransaction(
+        "RecordBMSData", id, finalHash, did, sig,
+        String(fc), String(socVal), timestamp
+      );
+    }
 
     console.log(`Recorded: ${id} FC=${fc} SOC=${socVal}`);
     res.json({ success: true, id, onChain: true });
