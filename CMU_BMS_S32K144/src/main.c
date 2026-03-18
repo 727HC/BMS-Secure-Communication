@@ -40,6 +40,7 @@ extern const Lpuart_Uart_Ip_UserConfigType Lpuart_Uart_Ip_xHwConfigPB_1;
 /* FreeRTOS */
 #include "FreeRTOS.h"
 #include "task.h"
+#include "queue.h"
 
 /* Protocol definitions shared with BMU */
 #include "common/bms_protocol.h"
@@ -196,8 +197,13 @@ volatile uint32  g_csecEeeRdy  = 0U;
 volatile uint32  g_csecFstat   = 0U;
 
 /* FreeRTOS task prototypes */
+static void CMU_UartRxTask(void *pvParameters);
 static void CMU_ProtocolTask(void *pvParameters);
+static void CMU_CanTxTask(void *pvParameters);
 static void CMU_MonitorTask(void *pvParameters);
+
+/* FreeRTOS queues */
+static QueueHandle_t txDataQueue;   /* UartRxTask → CanTxTask (battery data ready) */
 
 /* Key exchange buffer (reused across retries with same seed) */
 static uint8 g_key_frame_buf[KEY_EXCHANGE_FRAME_SIZE];
@@ -579,10 +585,21 @@ int main(void)
     /* 10. Start UART reception for battery data from Simulink */
     CMU_StartUartReception();
 
-    /* 11. Create FreeRTOS tasks */
+    /* 11. Create FreeRTOS queues */
+    txDataQueue = xQueueCreate(1U, BATTERY_DATA_SIZE);  /* depth=1, xQueueOverwrite used */
+
+    /* 12. Create FreeRTOS tasks */
+    xTaskCreate(CMU_UartRxTask, "UartRx",
+                configMINIMAL_STACK_SIZE + TASK_CANRX_STACK, NULL,
+                tskIDLE_PRIORITY + TASK_CANRX_PRIORITY, NULL);
+
     xTaskCreate(CMU_ProtocolTask, "Protocol",
                 configMINIMAL_STACK_SIZE + TASK_PROTOCOL_STACK, NULL,
                 tskIDLE_PRIORITY + TASK_PROTOCOL_PRIORITY, NULL);
+
+    xTaskCreate(CMU_CanTxTask, "CanTx",
+                configMINIMAL_STACK_SIZE + TASK_DATAPROC_STACK, NULL,
+                tskIDLE_PRIORITY + TASK_DATAPROC_PRIORITY, NULL);
 
     xTaskCreate(CMU_MonitorTask, "Monitor",
                 configMINIMAL_STACK_SIZE + TASK_MONITOR_STACK, NULL,
@@ -595,12 +612,40 @@ int main(void)
 }
 
 /*============================================================================
+ *  FreeRTOS Task: UART RX (highest priority)
+ *  Polls UART for incoming battery data from Simulink/dataProcess.py.
+ *  When a complete frame is received, enqueues it to txDataQueue.
+ *============================================================================*/
+static void CMU_UartRxTask(void *pvParameters)
+{
+    (void)pvParameters;
+
+    for (;;)
+    {
+        CMU_PollUartRx();
+
+        if (g_uart_rx_complete)
+        {
+            if (CMU_ParseUartFrame(g_uart_rx_buf, UART_FRAME_TOTAL, g_battery_data))
+            {
+                g_new_data_ready = TRUE;
+                xQueueOverwrite(txDataQueue, g_battery_data);
+            }
+            CMU_StartUartReception();
+        }
+
+        vTaskDelay(pdMS_TO_TICKS(TASK_CANRX_DELAY_MS));
+    }
+}
+
+/*============================================================================
  *  FreeRTOS Task: CMU Protocol State Machine
+ *  Handles: INIT, KEY_EXCHANGE, WAIT_ACK, RESYNC, ERROR states.
+ *  OPERATIONAL state is handled by CanTxTask.
  *============================================================================*/
 static void CMU_ProtocolTask(void *pvParameters)
 {
     (void)pvParameters;
-    uint32 txCount = 0U;
     Flexcan_Ip_MsgBuffType rxMsg;
 
     while (1)
@@ -754,7 +799,7 @@ static void CMU_ProtocolTask(void *pvParameters)
             break;
         }
 
-        /*--- OPERATIONAL: Send CMAC-authenticated battery data ---*/
+        /*--- OPERATIONAL: Check for Resync from BMU ---*/
         case PROTO_STATE_OPERATIONAL:
         {
             /* Check for resync request from BMU (quick non-blocking poll) */
@@ -771,7 +816,7 @@ static void CMU_ProtocolTask(void *pvParameters)
             if (FlexCAN_Ip_GetTransferStatus(INST_FLEXCAN_0, CAN_RX_MB_CTRL)
                 == FLEXCAN_STATUS_SUCCESS)
             {
-                /* Reload PSK for Resync CMAC verification (session key may be invalid) */
+                /* Reload PSK for Resync CMAC verification */
                 if (Csec_Ip_LoadPlainKey(PreSharedKey) != CSEC_IP_ERC_NO_ERROR)
                 {
                     g_proto_state = PROTO_STATE_ERROR;
@@ -781,86 +826,17 @@ static void CMU_ProtocolTask(void *pvParameters)
                 Csec_Ip_ErrorCodeType cmacR = CMU_GenerateCmac(rxMsg.data, CTRL_DATA_SIZE * 8U, expected_mac);
                 if (cmacR != CSEC_IP_ERC_NO_ERROR)
                 {
-                    break;  /* CMAC generation failed — ignore this frame */
+                    break;
                 }
                 if (memcmp(expected_mac, &rxMsg.data[CTRL_DATA_SIZE], CMAC_TAG_SIZE) == 0)
                 {
-                    /* Authenticated resync request */
                     g_proto_state = PROTO_STATE_RESYNC;
                 }
-                /* else: ignore spoofed resync */
                 break;
             }
 
-            /* Poll UART for incoming data */
-            CMU_PollUartRx();
-
-            /* Use UART-received battery data, or fallback to simulated */
-            const uint8 *tx_data;
-
-            if (g_uart_rx_complete)
-            {
-                /* Parse UART frame from Simulink/dataProcess.py */
-                if (CMU_ParseUartFrame(g_uart_rx_buf, UART_FRAME_TOTAL, g_battery_data))
-                {
-                    g_new_data_ready = TRUE;
-                }
-                /* Restart UART reception for next frame */
-                CMU_StartUartReception();
-            }
-
-            if (g_new_data_ready)
-            {
-                tx_data = g_battery_data;  /* Use real data from Simulink */
-            }
-            else
-            {
-                /* Fallback: simulated data if no UART connected */
-                static BatteryData_t simData;
-                memset(&simData, 0, sizeof(simData));
-                simData.current_A        = SIM_CURRENT_BASE + (float)(txCount % SIM_CURRENT_MOD) * SIM_CURRENT_STEP;
-                simData.voltage_V        = SIM_VOLTAGE_BASE + (float)(txCount % SIM_VOLTAGE_MOD) * SIM_VOLTAGE_STEP;
-                simData.soc_u16          = (uint16_t)(SIM_SOC_MAX - (txCount % SIM_SOC_MOD) * SIM_SOC_STEP);
-                simData.discharge_cycles = (uint16_t)(txCount / SIM_CYCLES_DIV);
-                simData.temperature_u16  = SIM_TEMP_DEFAULT;
-                simData.cell_count       = NUM_CELLS_PARALLEL;
-                simData.timestamp_ms     = (uint16_t)(txCount * SIM_TX_PERIOD_MS);
-                simData.status_flags     = 0x00U;
-                for (uint32 c = 0U; c < NUM_CELLS_PARALLEL; c++)
-                {
-                    simData.cell_voltage[c] = (uint8)(SIM_CELL_VOLT_BASE + (txCount + c) % SIM_CELL_VOLT_MOD);
-                    simData.cell_soc[c]     = (uint8)(SIM_CELL_SOC_BASE - (txCount % SIM_CELL_SOC_MOD));
-                }
-                tx_data = (const uint8 *)&simData;
-            }
-
-            /* Send with CMAC authentication */
-            if (CMU_SendSecuredData(tx_data))
-            {
-                g_txOkCount++;
-            }
-            else
-            {
-                g_txFailCount++;
-            }
-
-            /* Toggle RED LED */
-            GPIOD_PTOR = (1u << LED_RED_PIN);
-            txCount++;
-
-            g_lastCanStatus = FlexCAN_Ip_GetTransferStatus(INST_FLEXCAN_0, CAN_TX_MB_IDX);
-            g_lastESR1 = IP_FLEXCAN0->ESR1;
-            g_lastECR  = IP_FLEXCAN0->ECR;
-
-            /* Delay ~500ms with periodic UART RX polling (non-blocking) */
-            {
-                uint32 polls;
-                for (polls = 0U; polls < 50U; polls++)
-                {
-                    CMU_PollUartRx();
-                    vTaskDelay(pdMS_TO_TICKS(10U));
-                }
-            }
+            /* No resync — just yield; CanTxTask handles data transmission */
+            vTaskDelay(pdMS_TO_TICKS(TASK_PROTOCOL_DELAY_MS));
             break;
         }
 
@@ -878,9 +854,8 @@ static void CMU_ProtocolTask(void *pvParameters)
 
         /*--- ERROR: Crypto failure ---*/
         case PROTO_STATE_ERROR:
-            /* Toggle LED fast to indicate error */
             GPIOD_PTOR = (1u << LED_RED_PIN);
-            for (volatile uint32 d = 0U; d < DELAY_ERROR_BLINK; d++) {}
+            vTaskDelay(pdMS_TO_TICKS(TASK_ERROR_DELAY_MS));
             break;
 
         default:
@@ -888,6 +863,80 @@ static void CMU_ProtocolTask(void *pvParameters)
             break;
         }
         vTaskDelay(pdMS_TO_TICKS(TASK_PROTOCOL_DELAY_MS));
+    }
+}
+
+/*============================================================================
+ *  FreeRTOS Task: CAN TX (data transmission)
+ *  Periodically sends CMAC-authenticated battery data via CAN-FD.
+ *  Uses data from txDataQueue (real UART data) or simulated fallback.
+ *============================================================================*/
+static void CMU_CanTxTask(void *pvParameters)
+{
+    (void)pvParameters;
+    uint32 txCount = 0U;
+    uint8 latestData[BATTERY_DATA_SIZE];
+    boolean hasRealData = FALSE;
+
+    for (;;)
+    {
+        /* Only transmit in OPERATIONAL state */
+        if (g_proto_state != PROTO_STATE_OPERATIONAL)
+        {
+            vTaskDelay(pdMS_TO_TICKS(TASK_PROTOCOL_DELAY_MS));
+            continue;
+        }
+
+        /* Check for new real data from UartRxTask */
+        if (xQueueReceive(txDataQueue, latestData, 0U) == pdPASS)
+        {
+            hasRealData = TRUE;
+        }
+
+        const uint8 *tx_data;
+        if (hasRealData)
+        {
+            tx_data = latestData;
+        }
+        else
+        {
+            /* Fallback: simulated data if no UART connected */
+            static BatteryData_t simData;
+            memset(&simData, 0, sizeof(simData));
+            simData.current_A        = SIM_CURRENT_BASE + (float)(txCount % SIM_CURRENT_MOD) * SIM_CURRENT_STEP;
+            simData.voltage_V        = SIM_VOLTAGE_BASE + (float)(txCount % SIM_VOLTAGE_MOD) * SIM_VOLTAGE_STEP;
+            simData.soc_u16          = (uint16_t)(SIM_SOC_MAX - (txCount % SIM_SOC_MOD) * SIM_SOC_STEP);
+            simData.discharge_cycles = (uint16_t)(txCount / SIM_CYCLES_DIV);
+            simData.temperature_u16  = SIM_TEMP_DEFAULT;
+            simData.cell_count       = NUM_CELLS_PARALLEL;
+            simData.timestamp_ms     = (uint16_t)(txCount * SIM_TX_PERIOD_MS);
+            simData.status_flags     = 0x00U;
+            for (uint32 c = 0U; c < NUM_CELLS_PARALLEL; c++)
+            {
+                simData.cell_voltage[c] = (uint8)(SIM_CELL_VOLT_BASE + (txCount + c) % SIM_CELL_VOLT_MOD);
+                simData.cell_soc[c]     = (uint8)(SIM_CELL_SOC_BASE - (txCount % SIM_CELL_SOC_MOD));
+            }
+            tx_data = (const uint8 *)&simData;
+        }
+
+        /* Send with CMAC authentication */
+        if (CMU_SendSecuredData(tx_data))
+        {
+            g_txOkCount++;
+        }
+        else
+        {
+            g_txFailCount++;
+        }
+
+        /* Toggle RED LED */
+        GPIOD_PTOR = (1u << LED_RED_PIN);
+        txCount++;
+
+        g_lastCanStatus = FlexCAN_Ip_GetTransferStatus(INST_FLEXCAN_0, CAN_TX_MB_IDX);
+
+        /* TX interval ~500ms */
+        vTaskDelay(pdMS_TO_TICKS(500U));
     }
 }
 
