@@ -186,7 +186,6 @@ typedef struct {
 #define UART_SYNC_1                 0x55U
 #define UART_FRAME_OVERHEAD         4U      /* 2 sync + 1 len + 1 checksum       */
 #define UART_FRAME_TOTAL            (UART_FRAME_OVERHEAD + BATTERY_DATA_SIZE) /* 52 bytes */
-#define UART_BAUD_RATE              115200U
 
 /*============================================================================
  *  Parallel Assembly Configuration
