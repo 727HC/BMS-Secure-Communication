@@ -75,6 +75,9 @@ async function connectFabric() {
         "users/Admin@org1.example.com/msp/keystore"
       );
       const keyFiles = fs.readdirSync(keyDir);
+      if (!keyFiles || keyFiles.length === 0) {
+        throw new Error("keystore empty: " + keyDir);
+      }
       const keyPath = path.join(keyDir, keyFiles[0]);
 
       const certificate = fs.readFileSync(certPath, "utf8");
@@ -128,8 +131,8 @@ app.post("/data", async (req, res) => {
   const { fc, soc, temperature, dataHash, signature, rawPayload } = req.body;
   const did = req.body.did || DEFAULT_BMU_DID;
 
-  if (fc === undefined || fc === null || !dataHash) {
-    return res.status(400).json({ error: "fc, dataHash required" });
+  if (fc === undefined || fc === null || (!dataHash && !rawPayload)) {
+    return res.status(400).json({ error: "fc and (dataHash or rawPayload) required" });
   }
 
   if (!did) {

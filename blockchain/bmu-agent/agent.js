@@ -134,11 +134,21 @@ async function connectFabric() {
   console.log(`Fabric connected: ${FABRIC_CHANNEL}/${FABRIC_CONTRACT}`)
 }
 
+// [BC-05] Fabric 재연결 로직 포함
 async function recordToFabric(id, dataHash, did, signature, fc, soc, timestamp) {
-  await fabricContract.submitTransaction(
-    'RecordBMSData', id, dataHash, did, signature,
-    String(fc), String(soc), timestamp
-  )
+  try {
+    await fabricContract.submitTransaction(
+      'RecordBMSData', id, dataHash, did, signature,
+      String(fc), String(soc), timestamp
+    )
+  } catch (txErr) {
+    console.warn('Fabric TX failed, reconnecting:', txErr.message)
+    await connectFabric()
+    await fabricContract.submitTransaction(
+      'RecordBMSData', id, dataHash, did, signature,
+      String(fc), String(soc), timestamp
+    )
+  }
   console.log('Fabric 저장 완료:', id)
 }
 
@@ -148,6 +158,11 @@ app.post('/data', async (req, res) => {
 
   if (!did || !cid || !msg || !signature || !timestamp) {
     return res.status(400).json({ error: 'did, cid, msg, signature, timestamp 모두 필요함' })
+  }
+
+  // [BC-03] Fabric 미연결 시 요청 거부 (DB/원장 불일치 방지)
+  if (!fabricContract) {
+    return res.status(503).json({ error: 'Fabric not connected' })
   }
 
   try {
@@ -163,17 +178,17 @@ app.post('/data', async (req, res) => {
       return res.status(401).json({ valid: false, error: '서명 검증 실패' })
     }
 
-    await Verifiedmsg.create({
-      did, cid, msg, signature,
-      timestamp: new Date(timestamp)
-    })
-
-    // [A1-04] fc/soc=0 유효값 보존
+    // Fabric 저장 먼저 시도 (실패 시 MongoDB도 저장하지 않음)
     const fcVal = (fc !== undefined && fc !== null) ? fc : 0
     const socVal = (soc !== undefined && soc !== null) ? soc : 0
     const dataHash = crypto.createHash('sha256').update(msg).digest('hex')
     const id = `bms-${Date.now()}-${cid}`
     await recordToFabric(id, dataHash, did, signature, fcVal, socVal, timestamp)
+
+    await Verifiedmsg.create({
+      did, cid, msg, signature,
+      timestamp: new Date(timestamp)
+    })
 
     res.json({ valid: true, saved: true, onChain: true, id })
   } catch (err) {
@@ -191,6 +206,14 @@ app.get('/status', async (req, res) => {
     res.status(500).json({ error: 'ACA-Py 연결 실패' })
   }
 })
+
+// [BC-04] 프로세스 종료 시 Gateway 정리
+async function shutdown() {
+  if (fabricGateway) await fabricGateway.disconnect()
+  process.exit(0)
+}
+process.on('SIGINT', shutdown)
+process.on('SIGTERM', shutdown)
 
 // 서버 시작
 connectFabric()
