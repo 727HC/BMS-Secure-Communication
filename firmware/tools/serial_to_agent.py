@@ -119,6 +119,10 @@ def main():
                 print(f"[DATA] FC={parsed['fc']} SOC={parsed['soc']} T={parsed['temperature']}")
 
             elif parsed['type'] == 'sign' and last_data:
+                # FC 매칭 검증: DATA와 SIGN의 FC가 일치해야 전송
+                if parsed['fc'] != last_data['fc']:
+                    print(f"  [WARN] FC mismatch: DATA FC={last_data['fc']} != SIGN FC={parsed['fc']}, skipping")
+                    continue
                 print(f"[SIGN] FC={parsed['fc']} R={parsed['signR'][:16]}... S={parsed['signS'][:16]}...")
                 send_to_agent(args.agent, last_data, parsed, did=args.did)
                 sent_count += 1
