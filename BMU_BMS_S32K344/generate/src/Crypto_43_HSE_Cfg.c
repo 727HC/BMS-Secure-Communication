@@ -210,8 +210,10 @@ const Crypto_43_HSE_ObjectType Crypto_43_HSE_aDriverObjectList[CRYPTO_43_HSE_NUM
 /* Table containing NVM key catalog entries */
 const hseKeyGroupCfgEntry_t aHseNvmKeyCatalog[] =
 {
-    /* NvmKeyGroup_0 */
+    /* NvmKeyGroup_0: AES keys */
     {(HSE_MU0_MASK), HSE_KEY_OWNER_CUST, HSE_KEY_TYPE_AES, 10U, 128U, {0U, 0U}},
+    /* NvmKeyGroup_1: ECC key pairs (Ed25519, 256-bit) for EDDSA */
+    {(HSE_MU0_MASK), HSE_KEY_OWNER_CUST, HSE_KEY_TYPE_ECC_PAIR, 2U, HSE_KEY256_BITS, {0U, 0U}},
     /* Marker to end the key catalog */
     {0U, 0U, 0U, 0U, 0U, {0U, 0U}}
 };
@@ -219,8 +221,10 @@ const hseKeyGroupCfgEntry_t aHseNvmKeyCatalog[] =
 /* Table containing RAM key catalog entries */
 const hseKeyGroupCfgEntry_t aHseRamKeyCatalog[] =
 {
-    /* RamKeyGroup_0 */
+    /* RamKeyGroup_0: AES keys */
     {(HSE_MU0_MASK), HSE_KEY_OWNER_ANY, HSE_KEY_TYPE_AES, 10U, 128U, {0U, 0U}},
+    /* RamKeyGroup_1: ECC public keys (for signature verification) */
+    {(HSE_MU0_MASK), HSE_KEY_OWNER_ANY, HSE_KEY_TYPE_ECC_PUB, 2U, HSE_KEY256_BITS, {0U, 0U}},
     /* Marker to end the key catalog */
     {0U, 0U, 0U, 0U, 0U, {0U, 0U}}
 };
