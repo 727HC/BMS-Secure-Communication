@@ -5,15 +5,18 @@
 # Add inputs and outputs from these tool invocations to the build variables 
 C_SRCS += \
 ../src/main.c \
-../src/system_stub.c 
+../src/system_stub.c \
+../src/tweetnacl.c
 
 OBJS += \
 ./src/main.o \
-./src/system_stub.o 
+./src/system_stub.o \
+./src/tweetnacl.o
 
 C_DEPS += \
 ./src/main.d \
-./src/system_stub.d 
+./src/system_stub.d \
+./src/tweetnacl.d
 
 
 # Each subdirectory must supply rules for building sources it contributes
