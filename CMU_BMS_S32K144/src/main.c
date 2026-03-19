@@ -782,7 +782,7 @@ static void CMU_ProtocolTask(void *pvParameters)
         {
             FlexCAN_Ip_Receive(INST_FLEXCAN_0, CAN_RX_MB_CTRL, &rxMsg, TRUE);
             {
-                volatile uint32 chk = 1000U;
+                volatile uint32 chk = TIMEOUT_CAN_RX_SHORT;
                 while ((FlexCAN_Ip_GetTransferStatus(INST_FLEXCAN_0, CAN_RX_MB_CTRL)
                         == FLEXCAN_STATUS_BUSY) && (chk > 0U))
                 {
