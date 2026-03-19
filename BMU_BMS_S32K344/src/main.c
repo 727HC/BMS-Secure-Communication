@@ -50,15 +50,32 @@ extern "C" {
 #include "tweetnacl.h"
 
 /* randombytes() implementation for TweetNaCl — fixed seed for deterministic keys */
-static uint32 g_rng_state = 0x12345678U;
+/* Fixed seed matching blockchain DID registration */
+static const uint8 g_bmu_ed25519_seed[32] = {
+    'B','M','U','D','e','v','i','c','e','0','1','S','e','c','u','r',
+    'e','C','o','m','m','0','0','0','0','0','0','0','0','0','0','1'
+};
+static boolean g_seed_used = FALSE;
+
 void randombytes(unsigned char *x, unsigned long long xlen)
 {
-    for (unsigned long long i = 0; i < xlen; i++)
+    if (!g_seed_used && xlen == 32U)
     {
-        g_rng_state ^= (g_rng_state << 13);
-        g_rng_state ^= (g_rng_state >> 17);
-        g_rng_state ^= (g_rng_state << 5);
-        x[i] = (unsigned char)(g_rng_state & 0xFF);
+        /* First call from crypto_sign_keypair — use fixed DID seed */
+        memcpy(x, g_bmu_ed25519_seed, 32U);
+        g_seed_used = TRUE;
+    }
+    else
+    {
+        /* Subsequent calls — simple PRNG */
+        static uint32 rng = 0x12345678U;
+        for (unsigned long long i = 0; i < xlen; i++)
+        {
+            rng ^= (rng << 13);
+            rng ^= (rng >> 17);
+            rng ^= (rng << 5);
+            x[i] = (unsigned char)(rng & 0xFF);
+        }
     }
 }
 
