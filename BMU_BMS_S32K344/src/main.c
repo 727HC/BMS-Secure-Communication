@@ -308,47 +308,13 @@ static boolean BMU_WaitHseReady(void)
     return FALSE;
 }
 
-/** Format HSE key catalogs (RAM only — NVM left as-is) */
+/** Format HSE key catalogs — uses generated config from Crypto_43_HSE_Cfg.c
+ *  (includes AES + ECC_PAIR groups for EDDSA support) */
+extern const hseKeyGroupCfgEntry_t aHseNvmKeyCatalog[];
+extern const hseKeyGroupCfgEntry_t aHseRamKeyCatalog[];
+
 static hseSrvResponse_t BMU_FormatKeyCatalogs(void)
 {
-    /* RAM catalog: 1 group of AES-128 keys with 4 slots */
-    static const hseKeyGroupCfgEntry_t ramCatalog[] = {
-        {
-            .muMask       = HSE_MU0_MASK,
-            .groupOwner   = HSE_KEY_OWNER_ANY,
-            .keyType      = HSE_KEY_TYPE_AES,
-            .numOfKeySlots = 4U,
-            .maxKeyBitLen = AES_KEY_BITS,
-            .hseReserved  = {0U, 0U}
-        },
-        /* Terminator entry (all zeros) */
-        {0U, 0U, 0U, 0U, 0U, {0U, 0U}}
-    };
-
-    /* NVM catalog: AES group + ECC group (for Ed25519 EDDSA) */
-    static const hseKeyGroupCfgEntry_t nvmCatalog[] = {
-        /* Group 0: AES keys */
-        {
-            .muMask       = HSE_MU0_MASK,
-            .groupOwner   = HSE_KEY_OWNER_ANY,
-            .keyType      = HSE_KEY_TYPE_AES,
-            .numOfKeySlots = 1U,
-            .maxKeyBitLen = AES_KEY_BITS,
-            .hseReserved  = {0U, 0U}
-        },
-        /* Group 1: ECC key pairs (Ed25519, 256-bit) */
-        {
-            .muMask       = HSE_MU0_MASK,
-            .groupOwner   = HSE_KEY_OWNER_CUST,
-            .keyType      = HSE_KEY_TYPE_ECC_PAIR,
-            .numOfKeySlots = 2U,
-            .maxKeyBitLen = HSE_KEY256_BITS,
-            .hseReserved  = {0U, 0U}
-        },
-        /* Terminator */
-        {0U, 0U, 0U, 0U, 0U, {0U, 0U}}
-    };
-
     uint8 ch = Hse_Ip_GetFreeChannel(HSE_MU_INSTANCE);
     hseSrvDescriptor_t *pDesc = &g_hse_srv_desc[ch];
 
@@ -356,8 +322,8 @@ static hseSrvResponse_t BMU_FormatKeyCatalogs(void)
     pDesc->srvId = HSE_SRV_ID_FORMAT_KEY_CATALOGS;
 
     hseFormatKeyCatalogsSrv_t *pFmt = &pDesc->hseSrv.formatKeyCatalogsReq;
-    pFmt->pNvmKeyCatalogCfg = (HOST_ADDR)nvmCatalog;
-    pFmt->pRamKeyCatalogCfg = (HOST_ADDR)ramCatalog;
+    pFmt->pNvmKeyCatalogCfg = (HOST_ADDR)aHseNvmKeyCatalog;
+    pFmt->pRamKeyCatalogCfg = (HOST_ADDR)aHseRamKeyCatalog;
 
     return Hse_Ip_ServiceRequest(HSE_MU_INSTANCE, ch,
                                  &(Hse_Ip_ReqType){
