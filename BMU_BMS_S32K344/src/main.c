@@ -332,8 +332,8 @@ static boolean BMU_WaitHseReady(void)
 
 /** Format HSE key catalogs — uses generated config from Crypto_43_HSE_Cfg.c
  *  (includes AES + ECC_PAIR groups for EDDSA support) */
-extern const hseKeyGroupCfgEntry_t aHseNvmKeyCatalog[];
-extern const hseKeyGroupCfgEntry_t aHseRamKeyCatalog[];
+extern hseKeyGroupCfgEntry_t aHseNvmKeyCatalog[];
+extern hseKeyGroupCfgEntry_t aHseRamKeyCatalog[];
 
 static hseSrvResponse_t BMU_FormatKeyCatalogs(void)
 {
@@ -921,9 +921,12 @@ int main(void)
             UART_SendString("\r\n");
         }
 
-        /* FormatKeyCatalogs skipped — causes NOT_ALLOWED on this board
-         * and NVM Erase + Format attempts have corrupted HSE state.
-         * Use existing catalog as-is. */
+        /* Format key catalogs (SRAM-resident for HSE DMA access) */
+        g_hseFormatStatus = (uint32)BMU_FormatKeyCatalogs();
+        UART_SendString("[HSE] Fmt=0x");
+        { static const char hx[]="0123456789ABCDEF"; uint32 v=g_hseFormatStatus;
+          int i; for(i=28;i>=0;i-=4) UART_SendChar(hx[(v>>i)&0xF]); }
+        UART_SendString("\r\n");
 
         /* Import PSK into HSE RAM key slot (try regardless of format result) */
         g_hseImportStatus = (uint32)BMU_ImportSymKey(HSE_PSK_KEY_HANDLE, PreSharedKey, AES_KEY_BITS);

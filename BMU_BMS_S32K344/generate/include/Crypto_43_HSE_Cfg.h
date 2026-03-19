@@ -332,8 +332,8 @@ extern const Crypto_43_HSE_PartitionToMuMappingType Crypto_43_HSE_aPartitionToMu
 #include "Crypto_43_HSE_MemMap.h"
 
 /* Variables related to Hse KeyCatalog feature */
-extern const hseKeyGroupCfgEntry_t aHseNvmKeyCatalog[2U];
-extern const hseKeyGroupCfgEntry_t aHseRamKeyCatalog[2U];
+extern hseKeyGroupCfgEntry_t aHseNvmKeyCatalog[];
+extern hseKeyGroupCfgEntry_t aHseRamKeyCatalog[];
 
 #define CRYPTO_43_HSE_STOP_SEC_CONST_UNSPECIFIED
 #include "Crypto_43_HSE_MemMap.h"
