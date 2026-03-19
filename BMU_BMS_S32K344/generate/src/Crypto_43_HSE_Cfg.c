@@ -208,15 +208,15 @@ const Crypto_43_HSE_ObjectType Crypto_43_HSE_aDriverObjectList[CRYPTO_43_HSE_NUM
 };
 
 /* Table containing NVM key catalog entries */
-/* CQC Demo compatible format — exact same structure that NXP uses */
-const hseKeyGroupCfgEntry_t aHseNvmKeyCatalog[] =
+/* SRAM-resident catalogs (const removed for HSE DMA access) */
+hseKeyGroupCfgEntry_t aHseNvmKeyCatalog[] =
 {
     {(HSE_MU0_MASK), HSE_KEY_OWNER_CUST, HSE_KEY_TYPE_AES,      10U, 128U           , {0U, 0U}},
     {(HSE_MU0_MASK), HSE_KEY_OWNER_CUST, HSE_KEY_TYPE_ECC_PAIR, 10U, HSE_KEY256_BITS , {0U, 0U}},
     {0U, 0U, 0U, 0U, 0U, {0U, 0U}}
 };
 
-const hseKeyGroupCfgEntry_t aHseRamKeyCatalog[] =
+hseKeyGroupCfgEntry_t aHseRamKeyCatalog[] =
 {
     {(HSE_MU0_MASK), HSE_KEY_OWNER_ANY,  HSE_KEY_TYPE_AES,      10U, 128U           , {0U, 0U}},
     {(HSE_MU0_MASK), HSE_KEY_OWNER_ANY,  HSE_KEY_TYPE_ECC_PUB,  10U, HSE_KEY256_BITS , {0U, 0U}},
