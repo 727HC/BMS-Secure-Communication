@@ -39,6 +39,8 @@ extern "C" {
 /* FreeRTOS */
 #include "FreeRTOS.h"
 #include "task.h"
+#include "queue.h"
+#include "semphr.h"
 
 /* Protocol definitions shared with CMU */
 #include "common/bms_protocol.h"
@@ -108,9 +110,24 @@ static uint8 g_eddsa_pubkey[EDDSA_PUBKEY_SIZE];  /* Ed25519 public key */
 volatile boolean g_eddsaReady = FALSE;
 volatile uint32 g_eddsaSignCount = 0U;
 
+/* HSE DMA-safe input buffers (global BSS, not FreeRTOS task stack) */
+static uint8 g_dec_input_uid[AES_KEY_SIZE];
+static uint8 g_dec_input_seed[AES_KEY_SIZE];
+
 /* FreeRTOS task prototypes */
+static void BMU_CanRxTask(void *pvParameters);
 static void BMU_ProtocolTask(void *pvParameters);
+static void BMU_DataProcessTask(void *pvParameters);
 static void BMU_MonitorTask(void *pvParameters);
+
+/* FreeRTOS queues and mutex */
+static QueueHandle_t rxQueue;
+static QueueHandle_t procQueue;
+static SemaphoreHandle_t uartMutex;
+
+/* Queue drop counters */
+volatile uint32 g_rxQueueDropCount  = 0U;
+volatile uint32 g_procQueueDropCount = 0U;
 
 /* CAN reception */
 static volatile boolean g_can_tx_done = TRUE;
@@ -122,7 +139,7 @@ static Flexcan_Ip_DataInfoType g_canfd_tx_info = {
     .fd_enable   = TRUE,
     .enable_brs  = TRUE,
     .msg_id_type = FLEXCAN_MSG_ID_STD,
-    .data_length = 8U,
+    .data_length = CANFD_RX_DATA_LENGTH,
     .is_polling  = TRUE,
     .is_remote   = FALSE
 };
@@ -217,6 +234,18 @@ static void UART_SendChar(char c)
 {
     while (!(LPUART6_STAT & LPUART_STAT_TDRE)) { /* wait */ }
     LPUART6_DATA = (uint32)(uint8)c;
+}
+
+static void UART_SendUint(uint32 val);  /* forward declaration */
+
+/* Mutex-protected UART output to prevent interleaving between tasks */
+static inline void UART_Lock(void)
+{
+    if (uartMutex != NULL) { xSemaphoreTake(uartMutex, portMAX_DELAY); }
+}
+static inline void UART_Unlock(void)
+{
+    if (uartMutex != NULL) { xSemaphoreGive(uartMutex); }
 }
 
 static void UART_SendString(const char *msg)
@@ -480,8 +509,11 @@ static boolean BMU_HandleKeyExchange(const uint8 *rx_data)
     UART_SendString("[BMU] Processing key exchange...\r\n");
 
     /* 1. Extract encrypted UID and Seed */
-    const uint8 *enc_uid  = &rx_data[0];
-    const uint8 *enc_seed = &rx_data[UID_SIZE];
+    /* Copy to global buffers for HSE DMA access (not FreeRTOS task stack) */
+    memcpy(g_dec_input_uid,  &rx_data[0],        AES_KEY_SIZE);
+    memcpy(g_dec_input_seed, &rx_data[UID_SIZE],  AES_KEY_SIZE);
+    const uint8 *enc_uid  = g_dec_input_uid;
+    const uint8 *enc_seed = g_dec_input_seed;
 
     /* 2. Decrypt UID using PSK */
     hse_resp = BMU_AesEcbDecrypt(HSE_PSK_KEY_HANDLE, enc_uid, g_decrypted_uid);
@@ -620,8 +652,14 @@ static boolean BMU_VerifySecuredData(const uint8 *rx_payload)
     /* Read FC from payload (embedded in BatteryData_t.freshness_counter) */
     uint32 rx_fc = pFrame->freshness_counter;
 
-    /* Check FC is within acceptable window */
-    if (rx_fc < g_expected_fc || rx_fc >= (g_expected_fc + FC_WINDOW_SIZE))
+    /* Sync FC on first frame after key exchange (queue may introduce delay) */
+    if (g_expected_fc <= 1U && rx_fc > 0U)
+    {
+        g_expected_fc = rx_fc;
+    }
+
+    /* Check FC is within acceptable window (subtraction avoids overflow) */
+    if (rx_fc < g_expected_fc || (rx_fc - g_expected_fc) >= FC_WINDOW_SIZE)
     {
         g_cmac_fail_count++;
         UART_SendString("[BMU] WARN: FC out of window\r\n");
@@ -666,12 +704,13 @@ static void UART_SendUint(uint32 val)
     UART_SendString(&buf[i]);
 }
 
-static void BMU_ProcessBatteryData(const uint8 *raw_data)
+static void BMU_ProcessBatteryData(const uint8 *raw_data, uint32 fc)
 {
     const BatteryData_t *batt = (const BatteryData_t *)raw_data;
 
+    UART_Lock();
     UART_SendString("[BMU] OK FC=");
-    UART_SendUint(g_expected_fc - 1U);
+    UART_SendUint(fc);
     UART_SendString(" SOC=");
     UART_SendUint(batt->soc_u16);
     UART_SendString(" T=");
@@ -681,6 +720,7 @@ static void BMU_ProcessBatteryData(const uint8 *raw_data)
     UART_SendString(" Cells=");
     UART_SendUint(batt->cell_count);
     UART_SendString("\r\n");
+    UART_Unlock();
 }
 
 /*============================================================================
@@ -878,10 +918,10 @@ int main(void)
     rxInfo.is_remote   = FALSE;
 
     /* MB1: Key Exchange from CMU (ID 0x15) */
-    FlexCAN_Ip_ConfigRxMb(INST_FLEXCAN_0, 1U, &rxInfo, CAN_ID_KEY_EXCHANGE);
+    FlexCAN_Ip_ConfigRxMb(INST_FLEXCAN_0, CAN_RX_MB_DATA, &rxInfo, CAN_ID_KEY_EXCHANGE);
 
-    /* MB2: Battery Data from CMU (ID 0x14) */
-    FlexCAN_Ip_ConfigRxMb(INST_FLEXCAN_0, 2U, &rxInfo, CAN_ID_BATTERY_DATA);
+    /* MB(CAN_RX_MB_CTRL): Battery Data from CMU (ID 0x14) */
+    FlexCAN_Ip_ConfigRxMb(INST_FLEXCAN_0, CAN_RX_MB_CTRL, &rxInfo, CAN_ID_BATTERY_DATA);
 
     /*--- 6. Set initial protocol state ---*/
     if (g_hseReady && (g_hseImportStatus == (uint32)HSE_SRV_RSP_OK))
@@ -895,16 +935,36 @@ int main(void)
         g_debugMarker = DBG_MARKER_CRYPTO_FAIL;
     }
 
-    /*--- 7. Create FreeRTOS tasks ---*/
+    /*--- 7. Create FreeRTOS queues and mutex ---*/
+    rxQueue   = xQueueCreate(RX_QUEUE_LENGTH,   sizeof(CanRxItem_t));
+    procQueue = xQueueCreate(PROC_QUEUE_LENGTH,  sizeof(CanRxItem_t));
+    uartMutex = xSemaphoreCreateMutex();
+
+    if ((rxQueue == NULL) || (procQueue == NULL) || (uartMutex == NULL))
+    {
+        UART_SendString("[BMU] ERR: Queue/mutex creation failed\r\n");
+        for (;;) {}
+    }
+
+    /*--- 8. Create FreeRTOS tasks ---*/
     UART_SendString("[BMU] Creating FreeRTOS tasks...\r\n");
 
-    xTaskCreate(BMU_ProtocolTask, "Protocol",
-                configMINIMAL_STACK_SIZE + TASK_PROTOCOL_STACK, NULL,
-                tskIDLE_PRIORITY + TASK_PROTOCOL_PRIORITY, NULL);
-
-    xTaskCreate(BMU_MonitorTask, "Monitor",
-                configMINIMAL_STACK_SIZE + TASK_MONITOR_STACK, NULL,
-                tskIDLE_PRIORITY + TASK_MONITOR_PRIORITY, NULL);
+    if (xTaskCreate(BMU_CanRxTask, "CanRx",
+                    configMINIMAL_STACK_SIZE + TASK_CANRX_STACK, NULL,
+                    tskIDLE_PRIORITY + TASK_CANRX_PRIORITY, NULL) != pdPASS ||
+        xTaskCreate(BMU_ProtocolTask, "Protocol",
+                    configMINIMAL_STACK_SIZE + TASK_PROTOCOL_STACK, NULL,
+                    tskIDLE_PRIORITY + TASK_PROTOCOL_PRIORITY, NULL) != pdPASS ||
+        xTaskCreate(BMU_DataProcessTask, "DataProc",
+                    configMINIMAL_STACK_SIZE + TASK_DATAPROC_STACK, NULL,
+                    tskIDLE_PRIORITY + TASK_DATAPROC_PRIORITY, NULL) != pdPASS ||
+        xTaskCreate(BMU_MonitorTask, "Monitor",
+                    configMINIMAL_STACK_SIZE + TASK_MONITOR_STACK, NULL,
+                    tskIDLE_PRIORITY + TASK_MONITOR_PRIORITY, NULL) != pdPASS)
+    {
+        UART_SendString("[BMU] ERR: Task creation failed\r\n");
+        for (;;) {}
+    }
 
     UART_SendString("[BMU] Starting FreeRTOS scheduler\r\n");
     vTaskStartScheduler();
@@ -915,13 +975,76 @@ int main(void)
 }
 
 /*============================================================================
+ *  FreeRTOS Task: CAN RX (highest priority)
+ *  Polls both CAN MBs and enqueues received frames to rxQueue.
+ *============================================================================*/
+static void BMU_CanRxTask(void *pvParameters)
+{
+    (void)pvParameters;
+    Flexcan_Ip_MsgBuffType rxMsg;
+    CanRxItem_t item;
+
+    UART_SendString("[Task] CanRx started\r\n");
+
+    for (;;)
+    {
+        /* Poll MB for Key Exchange (ID 0x15) */
+        FlexCAN_Ip_Receive(INST_FLEXCAN_0, CAN_RX_MB_DATA, &rxMsg, TRUE);
+        {
+            volatile uint32 timeout = TIMEOUT_CAN_RX_POLL;
+            while ((FlexCAN_Ip_GetTransferStatus(INST_FLEXCAN_0, CAN_RX_MB_DATA)
+                    == FLEXCAN_STATUS_BUSY) && (timeout > 0U))
+            {
+                FlexCAN_Ip_MainFunctionRead(INST_FLEXCAN_0, CAN_RX_MB_DATA);
+                timeout--;
+            }
+        }
+        if (FlexCAN_Ip_GetTransferStatus(INST_FLEXCAN_0, CAN_RX_MB_DATA)
+            == FLEXCAN_STATUS_SUCCESS)
+        {
+            memset(&item, 0, sizeof(item));
+            memcpy(item.data, rxMsg.data, sizeof(item.data));
+            item.msgId   = rxMsg.msgId;
+            item.dataLen = rxMsg.dataLen;
+            if (xQueueSend(rxQueue, &item, 0U) != pdPASS) { g_rxQueueDropCount++; }
+        }
+
+        /* Poll MB for Battery Data (ID 0x14) — only in OPERATIONAL state */
+        if (g_proto_state == PROTO_STATE_OPERATIONAL)
+        {
+            FlexCAN_Ip_Receive(INST_FLEXCAN_0, CAN_RX_MB_CTRL, &rxMsg, TRUE);
+            {
+                volatile uint32 timeout = TIMEOUT_CAN_RX_POLL;
+                while ((FlexCAN_Ip_GetTransferStatus(INST_FLEXCAN_0, CAN_RX_MB_CTRL)
+                        == FLEXCAN_STATUS_BUSY) && (timeout > 0U))
+                {
+                    FlexCAN_Ip_MainFunctionRead(INST_FLEXCAN_0, CAN_RX_MB_CTRL);
+                    timeout--;
+                }
+            }
+            if (FlexCAN_Ip_GetTransferStatus(INST_FLEXCAN_0, CAN_RX_MB_CTRL)
+                == FLEXCAN_STATUS_SUCCESS)
+            {
+                memset(&item, 0, sizeof(item));
+                memcpy(item.data, rxMsg.data, sizeof(item.data));
+                item.msgId   = rxMsg.msgId;
+                item.dataLen = rxMsg.dataLen;
+                if (xQueueSend(rxQueue, &item, 0U) != pdPASS) { g_rxQueueDropCount++; }
+            }
+        }
+
+        vTaskDelay(pdMS_TO_TICKS(TASK_CANRX_DELAY_MS));
+    }
+}
+
+/*============================================================================
  *  FreeRTOS Task: Protocol State Machine
- *  Handles: Key Exchange, CMAC Verification, Resync
+ *  Reads from rxQueue, handles Key Exchange / CMAC verify / Resync.
  *============================================================================*/
 static void BMU_ProtocolTask(void *pvParameters)
 {
     (void)pvParameters;
-    Flexcan_Ip_MsgBuffType rxMsg;
+    CanRxItem_t item;
 
     UART_SendString("[Task] Protocol started\r\n");
 
@@ -929,126 +1052,94 @@ static void BMU_ProtocolTask(void *pvParameters)
     {
         switch (g_proto_state)
         {
-        /*--- INIT: Wait for key exchange from CMU ---*/
         case PROTO_STATE_INIT:
         {
-            FlexCAN_Ip_Receive(INST_FLEXCAN_0, 1U, &rxMsg, TRUE);
-
-            volatile uint32 timeout = TIMEOUT_CAN_RX_POLL;
-            while ((FlexCAN_Ip_GetTransferStatus(INST_FLEXCAN_0, 1U)
-                    == FLEXCAN_STATUS_BUSY) && (timeout > 0U))
+            if (xQueueReceive(rxQueue, &item,
+                              pdMS_TO_TICKS(TASK_PROTOCOL_DELAY_MS)) == pdPASS)
             {
-                FlexCAN_Ip_MainFunctionRead(INST_FLEXCAN_0, 1U);
-                timeout--;
-            }
-
-            if (FlexCAN_Ip_GetTransferStatus(INST_FLEXCAN_0, 1U)
-                == FLEXCAN_STATUS_SUCCESS)
-            {
-                g_rxCount++;
-                g_rxId  = rxMsg.msgId;
-                g_rxLen = rxMsg.dataLen;
-
-                if (BMU_HandleKeyExchange(rxMsg.data))
+                if (item.msgId == CAN_ID_KEY_EXCHANGE)
                 {
-                    g_proto_state = PROTO_STATE_OPERATIONAL;
-                    g_debugMarker = DBG_MARKER_CAN_OK;
-                    UART_SendString("[Task] Key exchange OK -> OPERATIONAL\r\n");
-                }
-                else
-                {
-                    g_debugMarker = DBG_MARKER_KEY_FAIL;
-                    UART_SendString("[Task] Key exchange FAILED\r\n");
+                    g_rxCount++;
+                    if (BMU_HandleKeyExchange(item.data))
+                    {
+                        xQueueReset(rxQueue);
+                        g_proto_state = PROTO_STATE_OPERATIONAL;
+                        g_debugMarker = DBG_MARKER_CAN_OK;
+                        UART_SendString("[Task] Key exchange OK -> OPERATIONAL\r\n");
+                    }
+                    else
+                    {
+                        g_debugMarker = DBG_MARKER_KEY_FAIL;
+                        UART_SendString("[Task] Key exchange FAILED\r\n");
+                    }
                 }
             }
-
-            vTaskDelay(pdMS_TO_TICKS(TASK_PROTOCOL_DELAY_MS));
             break;
         }
 
-        /*--- OPERATIONAL: Receive + verify secured battery data ---*/
         case PROTO_STATE_OPERATIONAL:
         {
-            FlexCAN_Ip_Receive(INST_FLEXCAN_0, 2U, &rxMsg, TRUE);
-
-            volatile uint32 timeout = TIMEOUT_CAN_RX_POLL;
-            while ((FlexCAN_Ip_GetTransferStatus(INST_FLEXCAN_0, 2U)
-                    == FLEXCAN_STATUS_BUSY) && (timeout > 0U))
+            if (xQueueReceive(rxQueue, &item,
+                              pdMS_TO_TICKS(TASK_PROTOCOL_DELAY_MS)) == pdPASS)
             {
-                FlexCAN_Ip_MainFunctionRead(INST_FLEXCAN_0, 2U);
-                timeout--;
-            }
-
-            if (FlexCAN_Ip_GetTransferStatus(INST_FLEXCAN_0, 2U)
-                == FLEXCAN_STATUS_SUCCESS)
-            {
-                g_rxCount++;
-                g_rxId  = rxMsg.msgId;
-                g_rxLen = rxMsg.dataLen;
-
-                if (BMU_VerifySecuredData(rxMsg.data))
+                if (item.msgId == CAN_ID_BATTERY_DATA)
                 {
-                    g_verifiedCount++;
-
-                    const BatteryData_t *batt = (const BatteryData_t *)rxMsg.data;
-                    g_batt_current = batt->current_A;
-                    g_batt_voltage = batt->voltage_V;
-                    g_batt_soc     = batt->soc_u16;
-                    g_batt_temp    = batt->temperature_u16;
-                    g_batt_cycles  = batt->discharge_cycles;
-                    g_batt_cells   = batt->cell_count;
-                    g_batt_flags   = batt->status_flags;
-                    g_batt_cellV0  = batt->cell_voltage[0];
-                    g_batt_cellV1  = batt->cell_voltage[1];
-
-                    BMU_ProcessBatteryData(rxMsg.data);
-
-                    #ifdef BMS_MODE_EDDSA
-                    /* EDDSA: Sign verified data for blockchain */
-                    if (g_eddsaReady)
+                    g_rxCount++;
+                    if (BMU_VerifySecuredData(item.data))
                     {
-                        hseSrvResponse_t sigResp = BMU_EddsaSign(rxMsg.data, BATTERY_DATA_SIZE);
-                        if (sigResp == HSE_SRV_RSP_OK)
+                        g_verifiedCount++;
+                        const BatteryData_t *batt = (const BatteryData_t *)item.data;
+                        g_batt_current = batt->current_A;
+                        g_batt_voltage = batt->voltage_V;
+                        g_batt_soc     = batt->soc_u16;
+                        g_batt_temp    = batt->temperature_u16;
+                        g_batt_cycles  = batt->discharge_cycles;
+                        g_batt_cells   = batt->cell_count;
+                        g_batt_flags   = batt->status_flags;
+                        g_batt_cellV0  = batt->cell_voltage[0];
+                        g_batt_cellV1  = batt->cell_voltage[1];
+
+                        BMU_ProcessBatteryData(item.data, g_expected_fc - 1U);
+
+                        /* Forward to DataProcessTask for EDDSA signing */
+                        item.fc = g_expected_fc - 1U;
+                        if (xQueueSend(procQueue, &item, 0U) != pdPASS)
                         {
-                            g_eddsaSignCount++;
-                            /* Output signature for BMS Agent → Blockchain */
-                            UART_SendString("[SIGN] FC=");
-                            UART_SendUint(g_expected_fc - 1U);
-                            UART_SendString(" R=");
-                            UART_SendHex(g_eddsa_signR, EDDSA_SIGN_SIZE);
-                            UART_SendString(" S=");
-                            UART_SendHex(g_eddsa_signS, EDDSA_SIGN_SIZE);
-                            UART_SendString("\r\n");
+                            g_procQueueDropCount++;
                         }
                     }
-                    #endif
-                }
-                else
-                {
-                    g_cmacFailTotal++;
-                    UART_SendString("[Task] CMAC FAIL\r\n");
-                    if (g_cmac_fail_count >= MAX_CMAC_FAIL_COUNT)
+                    else
                     {
-                        g_proto_state = PROTO_STATE_RESYNC;
-                        g_debugMarker = DBG_MARKER_RESYNC;
+                        g_cmacFailTotal++;
+                        UART_SendString("[Task] CMAC FAIL\r\n");
+                        if (g_cmac_fail_count >= MAX_CMAC_FAIL_COUNT)
+                        {
+                            g_proto_state = PROTO_STATE_RESYNC;
+                            g_debugMarker = DBG_MARKER_RESYNC;
+                        }
                     }
                 }
             }
-
-            vTaskDelay(pdMS_TO_TICKS(TASK_PROTOCOL_DELAY_MS));
             break;
         }
 
-        /*--- RESYNC ---*/
         case PROTO_STATE_RESYNC:
             BMU_SendResyncRequest();
+            xQueueReset(rxQueue);
             g_cmac_fail_count = 0U;
             g_expected_fc = 0U;
-            BMU_ImportSymKey(HSE_PSK_KEY_HANDLE, PreSharedKey, AES_KEY_BITS);
-            g_proto_state = PROTO_STATE_INIT;
+            if (BMU_ImportSymKey(HSE_PSK_KEY_HANDLE, PreSharedKey, AES_KEY_BITS)
+                != HSE_SRV_RSP_OK)
+            {
+                UART_SendString("[BMU] ERR: PSK re-import failed\r\n");
+                g_proto_state = PROTO_STATE_ERROR;
+            }
+            else
+            {
+                g_proto_state = PROTO_STATE_INIT;
+            }
             break;
 
-        /*--- ERROR ---*/
         case PROTO_STATE_ERROR:
             vTaskDelay(pdMS_TO_TICKS(TASK_ERROR_DELAY_MS));
             break;
@@ -1056,6 +1147,45 @@ static void BMU_ProtocolTask(void *pvParameters)
         default:
             g_proto_state = PROTO_STATE_ERROR;
             break;
+        }
+    }
+}
+
+/*============================================================================
+ *  FreeRTOS Task: Data Processing (EDDSA signing + UART output)
+ *============================================================================*/
+static void BMU_DataProcessTask(void *pvParameters)
+{
+    (void)pvParameters;
+    CanRxItem_t item;
+
+    UART_SendString("[Task] DataProcess started\r\n");
+
+    for (;;)
+    {
+        if (xQueueReceive(procQueue, &item, portMAX_DELAY) == pdPASS)
+        {
+            #ifdef BMS_MODE_EDDSA
+            if (g_eddsaReady)
+            {
+                hseSrvResponse_t sigResp = BMU_EddsaSign(item.data, BATTERY_DATA_SIZE);
+                if (sigResp == HSE_SRV_RSP_OK)
+                {
+                    g_eddsaSignCount++;
+                    UART_Lock();
+                    UART_SendString("[SIGN] FC=");
+                    UART_SendUint(item.fc);
+                    UART_SendString(" R=");
+                    UART_SendHex(g_eddsa_signR, EDDSA_SIGN_SIZE);
+                    UART_SendString(" S=");
+                    UART_SendHex(g_eddsa_signS, EDDSA_SIGN_SIZE);
+                    UART_SendString(" DATA=");
+                    UART_SendHex(item.data, BATTERY_DATA_SIZE);
+                    UART_SendString("\r\n");
+                    UART_Unlock();
+                }
+            }
+            #endif
         }
     }
 }
