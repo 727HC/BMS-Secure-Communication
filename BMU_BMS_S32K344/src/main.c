@@ -889,29 +889,40 @@ int main(void)
 
     if (g_hseReady)
     {
-        /* Try format first; if NOT_ALLOWED, erase NVM data and retry */
-        g_hseFormatStatus = (uint32)BMU_FormatKeyCatalogs();
-        if (g_hseFormatStatus == (uint32)HSE_SRV_RSP_NOT_ALLOWED)
+        /* Diagnose HSE state before Format */
         {
-            UART_SendString("[HSE] Format NOT_ALLOWED - erasing NVM data...\r\n");
-            /* Erase HSE NVM data (CUST_DEL only) */
-            uint8 ech = Hse_Ip_GetFreeChannel(HSE_MU_INSTANCE);
-            hseSrvDescriptor_t *eDesc = &g_hse_srv_desc[ech];
-            memset(eDesc, 0, sizeof(*eDesc));
-            eDesc->srvId = HSE_SRV_ID_ERASE_HSE_NVM_DATA;
-            hseSrvResponse_t eraseResp = Hse_Ip_ServiceRequest(HSE_MU_INSTANCE, ech,
+            hseStatus_t st = Hse_Ip_GetHseStatus(HSE_MU_INSTANCE);
+            UART_SendString("[HSE] INSTALL_OK=");
+            UART_SendChar((st & HSE_STATUS_INSTALL_OK) ? '1' : '0');
+            UART_SendString(" CUST_SU=");
+            UART_SendChar((st & HSE_STATUS_CUST_SUPER_USER) ? '1' : '0');
+            UART_SendString("\r\n");
+        }
+
+        /* AUTH_REQ: request explicit SuperUser rights before Format */
+        {
+            static uint8 challenge[32] = {0};
+            uint8 ach = Hse_Ip_GetFreeChannel(HSE_MU_INSTANCE);
+            hseSrvDescriptor_t *aDesc = &g_hse_srv_desc[ach];
+            memset(aDesc, 0, sizeof(*aDesc));
+            aDesc->srvId = HSE_SRV_ID_SYS_AUTH_REQ;
+            hseSysAuthorizationReqSrv_t *pReq = &aDesc->hseSrv.sysAuthorizationReq;
+            pReq->sysAuthOption  = HSE_SYS_AUTH_ALL;
+            pReq->sysRights      = HSE_RIGHTS_SUPER_USER;
+            pReq->ownerKeyHandle = HSE_INVALID_KEY_HANDLE;
+            pReq->pChallenge     = (HOST_ADDR)challenge;
+            hseSrvResponse_t authResp = Hse_Ip_ServiceRequest(HSE_MU_INSTANCE, ach,
                 &(Hse_Ip_ReqType){ .eReqType = HSE_IP_REQTYPE_SYNC,
-                                   .u32Timeout = HSE_TIMEOUT_TICKS }, eDesc);
-            UART_SendString("[HSE] Erase=0x");
-            { static const char hx[]="0123456789ABCDEF"; uint32 v=(uint32)eraseResp;
+                                   .u32Timeout = HSE_TIMEOUT_TICKS }, aDesc);
+            UART_SendString("[HSE] AUTH=0x");
+            { static const char hx[]="0123456789ABCDEF"; uint32 v=(uint32)authResp;
               int i; for(i=28;i>=0;i-=4) UART_SendChar(hx[(v>>i)&0xF]); }
             UART_SendString("\r\n");
-            /* Re-init HSE after NVM erase */
-            Hse_Ip_Init(HSE_MU_INSTANCE, &g_hse_mu_state);
-            BMU_WaitHseReady();
-            /* Retry format after erase + re-init */
-            g_hseFormatStatus = (uint32)BMU_FormatKeyCatalogs();
         }
+
+        /* Format key catalogs */
+        g_hseFormatStatus = (uint32)BMU_FormatKeyCatalogs();
+        /* No retry — erase was done before format */
         UART_SendString("[HSE] Fmt=0x");
         { static const char hx[]="0123456789ABCDEF"; uint32 v=g_hseFormatStatus;
           int i; for(i=28;i>=0;i-=4) UART_SendChar(hx[(v>>i)&0xF]); }
