@@ -936,16 +936,31 @@ int main(void)
         UART_SendString("\r\n");
 
         #ifdef BMS_MODE_EDDSA
-        /* Software Ed25519 key pair generation (TweetNaCl) */
+        /* Try HSE hardware EdDSA first, fallback to TweetNaCl */
         {
-            crypto_sign_keypair(g_sw_ed25519_pk, g_sw_ed25519_sk);
-            g_eddsaReady = TRUE;
-            UART_Lock();
-            UART_SendString("[SW-EdDSA] Ed25519 keypair generated\r\n");
-            UART_SendString("[SW-EdDSA] PK=");
-            UART_SendHex(g_sw_ed25519_pk, 32);
+            hseSrvResponse_t eccResp = BMU_GenerateEddsaKey();
+            UART_SendString("[HSE] EdDSA=0x");
+            { static const char hx[]="0123456789ABCDEF"; uint32 v=(uint32)eccResp;
+              int i; for(i=28;i>=0;i-=4) UART_SendChar(hx[(v>>i)&0xF]); }
             UART_SendString("\r\n");
-            UART_Unlock();
+
+            if (eccResp == HSE_SRV_RSP_OK)
+            {
+                g_eddsaReady = TRUE;
+                UART_SendString("[HSE-EdDSA] Ed25519 key generated (HARDWARE)\r\n");
+            }
+            else
+            {
+                /* Fallback to software TweetNaCl */
+                UART_SendString("[HSE-EdDSA] Failed, using TweetNaCl SW fallback\r\n");
+                crypto_sign_keypair(g_sw_ed25519_pk, g_sw_ed25519_sk);
+                g_eddsaReady = TRUE;
+                UART_Lock();
+                UART_SendString("[SW-EdDSA] PK=");
+                UART_SendHex(g_sw_ed25519_pk, 32);
+                UART_SendString("\r\n");
+                UART_Unlock();
+            }
         }
         #endif
     }
