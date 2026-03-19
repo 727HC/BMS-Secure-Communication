@@ -858,13 +858,71 @@ int main(void)
     Hse_Ip_Init(HSE_MU_INSTANCE, &g_hse_mu_state);
     g_hseReady = BMU_WaitHseReady();
 
+    /* Read HSE lifecycle */
     if (g_hseReady)
     {
-        /* Format key catalogs (required once, may return NOT_ALLOWED if already formatted) */
+        static volatile uint8 g_currentLC = 0U;
+        uint8 ch = Hse_Ip_GetFreeChannel(HSE_MU_INSTANCE);
+        hseSrvDescriptor_t *pDesc = &g_hse_srv_desc[ch];
+        memset(pDesc, 0, sizeof(*pDesc));
+        pDesc->srvId = HSE_SRV_ID_GET_ATTR;
+        pDesc->hseSrv.getAttrReq.attrId  = HSE_SECURE_LIFECYCLE_ATTR_ID;
+        pDesc->hseSrv.getAttrReq.attrLen = sizeof(uint8);
+        pDesc->hseSrv.getAttrReq.pAttr   = (HOST_ADDR)&g_currentLC;
+        Hse_Ip_ServiceRequest(HSE_MU_INSTANCE, ch,
+            &(Hse_Ip_ReqType){ .eReqType = HSE_IP_REQTYPE_SYNC,
+                               .u32Timeout = HSE_TIMEOUT_TICKS }, pDesc);
+
+        UART_SendString("[HSE] LC=0x");
+        {
+            static const char hx[] = "0123456789ABCDEF";
+            UART_SendChar(hx[(g_currentLC >> 4) & 0xF]);
+            UART_SendChar(hx[g_currentLC & 0xF]);
+        }
+        switch (g_currentLC) {
+            case 0x04: UART_SendString(" (CUST_DEL)\r\n"); break;
+            case 0x08: UART_SendString(" (OEM_PROD)\r\n"); break;
+            case 0x10: UART_SendString(" (IN_FIELD)\r\n"); break;
+            default:   UART_SendString(" (UNKNOWN)\r\n");  break;
+        }
+    }
+
+    if (g_hseReady)
+    {
+        /* Try format first; if NOT_ALLOWED, erase NVM data and retry */
         g_hseFormatStatus = (uint32)BMU_FormatKeyCatalogs();
+        if (g_hseFormatStatus == (uint32)HSE_SRV_RSP_NOT_ALLOWED)
+        {
+            UART_SendString("[HSE] Format NOT_ALLOWED - erasing NVM data...\r\n");
+            /* Erase HSE NVM data (CUST_DEL only) */
+            uint8 ech = Hse_Ip_GetFreeChannel(HSE_MU_INSTANCE);
+            hseSrvDescriptor_t *eDesc = &g_hse_srv_desc[ech];
+            memset(eDesc, 0, sizeof(*eDesc));
+            eDesc->srvId = HSE_SRV_ID_ERASE_HSE_NVM_DATA;
+            hseSrvResponse_t eraseResp = Hse_Ip_ServiceRequest(HSE_MU_INSTANCE, ech,
+                &(Hse_Ip_ReqType){ .eReqType = HSE_IP_REQTYPE_SYNC,
+                                   .u32Timeout = HSE_TIMEOUT_TICKS }, eDesc);
+            UART_SendString("[HSE] Erase=0x");
+            { static const char hx[]="0123456789ABCDEF"; uint32 v=(uint32)eraseResp;
+              int i; for(i=28;i>=0;i-=4) UART_SendChar(hx[(v>>i)&0xF]); }
+            UART_SendString("\r\n");
+            /* Re-init HSE after NVM erase */
+            Hse_Ip_Init(HSE_MU_INSTANCE, &g_hse_mu_state);
+            BMU_WaitHseReady();
+            /* Retry format after erase + re-init */
+            g_hseFormatStatus = (uint32)BMU_FormatKeyCatalogs();
+        }
+        UART_SendString("[HSE] Fmt=0x");
+        { static const char hx[]="0123456789ABCDEF"; uint32 v=g_hseFormatStatus;
+          int i; for(i=28;i>=0;i-=4) UART_SendChar(hx[(v>>i)&0xF]); }
+        UART_SendString("\r\n");
 
         /* Import PSK into HSE RAM key slot (try regardless of format result) */
         g_hseImportStatus = (uint32)BMU_ImportSymKey(HSE_PSK_KEY_HANDLE, PreSharedKey, AES_KEY_BITS);
+        UART_SendString("[HSE] Imp=0x");
+        { static const char hx[]="0123456789ABCDEF"; uint32 v=g_hseImportStatus;
+          int i; for(i=28;i>=0;i-=4) UART_SendChar(hx[(v>>i)&0xF]); }
+        UART_SendString("\r\n");
 
         #ifdef BMS_MODE_EDDSA
         /* Generate Ed25519 key pair for EDDSA signing */
