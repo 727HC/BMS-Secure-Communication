@@ -45,6 +45,28 @@ extern "C" {
 /* Protocol definitions shared with CMU */
 #include "common/bms_protocol.h"
 
+#ifdef BMS_MODE_EDDSA
+/* Software Ed25519 via TweetNaCl (HSE ECC catalog unavailable on this board) */
+#include "tweetnacl.h"
+
+/* randombytes() implementation for TweetNaCl — fixed seed for deterministic keys */
+static uint32 g_rng_state = 0x12345678U;
+void randombytes(unsigned char *x, unsigned long long xlen)
+{
+    for (unsigned long long i = 0; i < xlen; i++)
+    {
+        g_rng_state ^= (g_rng_state << 13);
+        g_rng_state ^= (g_rng_state >> 17);
+        g_rng_state ^= (g_rng_state << 5);
+        x[i] = (unsigned char)(g_rng_state & 0xFF);
+    }
+}
+
+/* Software EdDSA key pair */
+static uint8 g_sw_ed25519_pk[32];  /* public key */
+static uint8 g_sw_ed25519_sk[64];  /* secret key (seed + pk) */
+#endif
+
 /*============================================================================
  *  Configuration
  *============================================================================*/
@@ -899,34 +921,9 @@ int main(void)
             UART_SendString("\r\n");
         }
 
-        /* AUTH_REQ: request explicit SuperUser rights before Format */
-        {
-            static uint8 challenge[32] = {0};
-            uint8 ach = Hse_Ip_GetFreeChannel(HSE_MU_INSTANCE);
-            hseSrvDescriptor_t *aDesc = &g_hse_srv_desc[ach];
-            memset(aDesc, 0, sizeof(*aDesc));
-            aDesc->srvId = HSE_SRV_ID_SYS_AUTH_REQ;
-            hseSysAuthorizationReqSrv_t *pReq = &aDesc->hseSrv.sysAuthorizationReq;
-            pReq->sysAuthOption  = HSE_SYS_AUTH_ALL;
-            pReq->sysRights      = HSE_RIGHTS_SUPER_USER;
-            pReq->ownerKeyHandle = HSE_INVALID_KEY_HANDLE;
-            pReq->pChallenge     = (HOST_ADDR)challenge;
-            hseSrvResponse_t authResp = Hse_Ip_ServiceRequest(HSE_MU_INSTANCE, ach,
-                &(Hse_Ip_ReqType){ .eReqType = HSE_IP_REQTYPE_SYNC,
-                                   .u32Timeout = HSE_TIMEOUT_TICKS }, aDesc);
-            UART_SendString("[HSE] AUTH=0x");
-            { static const char hx[]="0123456789ABCDEF"; uint32 v=(uint32)authResp;
-              int i; for(i=28;i>=0;i-=4) UART_SendChar(hx[(v>>i)&0xF]); }
-            UART_SendString("\r\n");
-        }
-
-        /* Format key catalogs */
-        g_hseFormatStatus = (uint32)BMU_FormatKeyCatalogs();
-        /* No retry — erase was done before format */
-        UART_SendString("[HSE] Fmt=0x");
-        { static const char hx[]="0123456789ABCDEF"; uint32 v=g_hseFormatStatus;
-          int i; for(i=28;i>=0;i-=4) UART_SendChar(hx[(v>>i)&0xF]); }
-        UART_SendString("\r\n");
+        /* FormatKeyCatalogs skipped — causes NOT_ALLOWED on this board
+         * and NVM Erase + Format attempts have corrupted HSE state.
+         * Use existing catalog as-is. */
 
         /* Import PSK into HSE RAM key slot (try regardless of format result) */
         g_hseImportStatus = (uint32)BMU_ImportSymKey(HSE_PSK_KEY_HANDLE, PreSharedKey, AES_KEY_BITS);
@@ -936,24 +933,16 @@ int main(void)
         UART_SendString("\r\n");
 
         #ifdef BMS_MODE_EDDSA
-        /* Generate Ed25519 key pair for EDDSA signing */
+        /* Software Ed25519 key pair generation (TweetNaCl) */
         {
-            hseSrvResponse_t eccResp = BMU_GenerateEddsaKey();
-            if (eccResp == HSE_SRV_RSP_OK)
-            {
-                g_eddsaReady = TRUE;
-                UART_SendString("[BMU] Ed25519 key generated\r\n");
-            }
-            else
-            {
-                UART_SendString("[BMU] Ed25519 key gen failed - recovering HSE\r\n");
-                /* Re-init HSE MU to clear any corrupted channel state */
-                Hse_Ip_Init(HSE_MU_INSTANCE, &g_hse_mu_state);
-                BMU_WaitHseReady();
-                /* Re-import PSK (may have been lost during HSE re-init) */
-                g_hseImportStatus = (uint32)BMU_ImportSymKey(
-                    HSE_PSK_KEY_HANDLE, PreSharedKey, AES_KEY_BITS);
-            }
+            crypto_sign_keypair(g_sw_ed25519_pk, g_sw_ed25519_sk);
+            g_eddsaReady = TRUE;
+            UART_Lock();
+            UART_SendString("[SW-EdDSA] Ed25519 keypair generated\r\n");
+            UART_SendString("[SW-EdDSA] PK=");
+            UART_SendHex(g_sw_ed25519_pk, 32);
+            UART_SendString("\r\n");
+            UART_Unlock();
         }
         #endif
     }
@@ -1223,22 +1212,26 @@ static void BMU_DataProcessTask(void *pvParameters)
             #ifdef BMS_MODE_EDDSA
             if (g_eddsaReady)
             {
-                hseSrvResponse_t sigResp = BMU_EddsaSign(item.data, BATTERY_DATA_SIZE);
-                if (sigResp == HSE_SRV_RSP_OK)
-                {
-                    g_eddsaSignCount++;
-                    UART_Lock();
-                    UART_SendString("[SIGN] FC=");
-                    UART_SendUint(item.fc);
-                    UART_SendString(" R=");
-                    UART_SendHex(g_eddsa_signR, EDDSA_SIGN_SIZE);
-                    UART_SendString(" S=");
-                    UART_SendHex(g_eddsa_signS, EDDSA_SIGN_SIZE);
-                    UART_SendString(" DATA=");
-                    UART_SendHex(item.data, BATTERY_DATA_SIZE);
-                    UART_SendString("\r\n");
-                    UART_Unlock();
-                }
+                /* Software Ed25519 signing via TweetNaCl */
+                uint8 sm[BATTERY_DATA_SIZE + 64];
+                unsigned long long smlen;
+                crypto_sign(sm, &smlen, item.data, BATTERY_DATA_SIZE, g_sw_ed25519_sk);
+                /* sm[0..63] = signature (R||S), sm[64..] = original data */
+                memcpy(g_eddsa_signR, &sm[0],  EDDSA_SIGN_SIZE);
+                memcpy(g_eddsa_signS, &sm[32], EDDSA_SIGN_SIZE);
+                g_eddsaSignCount++;
+
+                UART_Lock();
+                UART_SendString("[SIGN] FC=");
+                UART_SendUint(item.fc);
+                UART_SendString(" R=");
+                UART_SendHex(g_eddsa_signR, EDDSA_SIGN_SIZE);
+                UART_SendString(" S=");
+                UART_SendHex(g_eddsa_signS, EDDSA_SIGN_SIZE);
+                UART_SendString(" DATA=");
+                UART_SendHex(item.data, BATTERY_DATA_SIZE);
+                UART_SendString("\r\n");
+                UART_Unlock();
             }
             #endif
         }
