@@ -902,15 +902,23 @@ int main(void)
 
         #ifdef BMS_MODE_EDDSA
         /* Generate Ed25519 key pair for EDDSA signing */
-        hseSrvResponse_t eccResp = BMU_GenerateEddsaKey();
-        if (eccResp == HSE_SRV_RSP_OK)
         {
-            g_eddsaReady = TRUE;
-            UART_SendString("[BMU] Ed25519 key generated\r\n");
-        }
-        else
-        {
-            UART_SendString("[BMU] Ed25519 key gen failed\r\n");
+            hseSrvResponse_t eccResp = BMU_GenerateEddsaKey();
+            if (eccResp == HSE_SRV_RSP_OK)
+            {
+                g_eddsaReady = TRUE;
+                UART_SendString("[BMU] Ed25519 key generated\r\n");
+            }
+            else
+            {
+                UART_SendString("[BMU] Ed25519 key gen failed - recovering HSE\r\n");
+                /* Re-init HSE MU to clear any corrupted channel state */
+                Hse_Ip_Init(HSE_MU_INSTANCE, &g_hse_mu_state);
+                BMU_WaitHseReady();
+                /* Re-import PSK (may have been lost during HSE re-init) */
+                g_hseImportStatus = (uint32)BMU_ImportSymKey(
+                    HSE_PSK_KEY_HANDLE, PreSharedKey, AES_KEY_BITS);
+            }
         }
         #endif
     }
