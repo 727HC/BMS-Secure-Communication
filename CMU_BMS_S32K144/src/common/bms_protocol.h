@@ -106,7 +106,9 @@ extern "C" {
 #define TIMEOUT_CAN_RX_POLL         ((uint32)500000U)   /* CAN RX polling wait */
 #define TIMEOUT_ACK_WAIT            ((uint32)2000000U)  /* ACK response wait   */
 #define TIMEOUT_RESYNC_CHECK        ((uint32)10000U)    /* Resync poll check   */
+#define TIMEOUT_CAN_RX_SHORT        ((uint32)1000U)     /* Short CAN RX poll (FreeRTOS tasks) */
 #define DELAY_OPERATIONAL_LOOP      ((uint32)2000000U)  /* ~500ms TX interval  */
+#define UART_PRINT_INTERVAL         50U                 /* Print every Nth verified frame */
 #define DELAY_ERROR_BLINK           ((uint32)500000U)   /* Error LED blink     */
 
 /*============================================================================

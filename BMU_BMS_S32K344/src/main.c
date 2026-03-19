@@ -712,7 +712,7 @@ static void BMU_ProcessBatteryData(const uint8 *raw_data, uint32 fc)
     /* Only print every 10th frame to reduce UART blocking */
     static uint32 printCount = 0U;
     printCount++;
-    if ((printCount % 50U) == 1U)
+    if ((printCount % UART_PRINT_INTERVAL) == 1U)
     {
         UART_Lock();
         UART_SendString("[BMU] OK FC=");
@@ -1001,7 +1001,7 @@ static void BMU_CanRxTask(void *pvParameters)
         {
             FlexCAN_Ip_Receive(INST_FLEXCAN_0, CAN_RX_MB_DATA, &rxMsg, TRUE);
             {
-                volatile uint32 timeout = 1000U;  /* Short poll */
+                volatile uint32 timeout = TIMEOUT_CAN_RX_SHORT;
                 while ((FlexCAN_Ip_GetTransferStatus(INST_FLEXCAN_0, CAN_RX_MB_DATA)
                         == FLEXCAN_STATUS_BUSY) && (timeout > 0U))
                 {
@@ -1025,7 +1025,7 @@ static void BMU_CanRxTask(void *pvParameters)
         {
             FlexCAN_Ip_Receive(INST_FLEXCAN_0, CAN_RX_MB_CTRL, &rxMsg, TRUE);
             {
-                volatile uint32 timeout = 1000U;  /* Short poll */
+                volatile uint32 timeout = TIMEOUT_CAN_RX_SHORT;
                 while ((FlexCAN_Ip_GetTransferStatus(INST_FLEXCAN_0, CAN_RX_MB_CTRL)
                         == FLEXCAN_STATUS_BUSY) && (timeout > 0U))
                 {
