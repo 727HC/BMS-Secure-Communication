@@ -444,23 +444,26 @@ static boolean CMU_SendSecuredData(const uint8 *battery_data)
     /* 1. Increment freshness counter (anti-replay) */
     g_freshness_counter++;
 
-    /* 2. Build CMAC input: FC(4B) || Data(48B) = 52 bytes */
-    BMS_BuildCmacInput(g_cmac_input, g_freshness_counter, battery_data);
+    /* 2. Build CAN-FD payload first, then compute CMAC on final data.
+     *    FC must be embedded in payload BEFORE CMAC calculation,
+     *    otherwise BMU verifies against different data. */
+    memcpy(&g_canfd_payload[0], battery_data, BATTERY_DATA_SIZE);
+    {
+        BatteryData_t *pFrame = (BatteryData_t *)&g_canfd_payload[0];
+        pFrame->freshness_counter = g_freshness_counter;
+    }
 
-    /* 3. Generate AES-128 CMAC over the input */
+    /* 3. Build CMAC input from finalized payload: FC(4B) || Data(48B) */
+    BMS_BuildCmacInput(g_cmac_input, g_freshness_counter, &g_canfd_payload[0]);
+
+    /* 4. Generate AES-128 CMAC */
     result = CMU_GenerateCmac(g_cmac_input, CMAC_INPUT_BITS, g_cmac_output);
     if (result != CSEC_IP_ERC_NO_ERROR)
     {
         return FALSE;
     }
 
-    /* 4. Build CAN-FD payload: Data(48B) || CMAC(16B) = 64B */
-    memcpy(&g_canfd_payload[0],                 battery_data,  BATTERY_DATA_SIZE);
-    /* Embed FC in BatteryData_t.freshness_counter field for BMU to read */
-    {
-        BatteryData_t *pFrame = (BatteryData_t *)&g_canfd_payload[0];
-        pFrame->freshness_counter = g_freshness_counter;
-    }
+    /* 5. Append CMAC tag */
     memcpy(&g_canfd_payload[BATTERY_DATA_SIZE], g_cmac_output, CMAC_TAG_SIZE);
 
     /* 5. Send via CAN-FD (ID = 0x14), polling */
