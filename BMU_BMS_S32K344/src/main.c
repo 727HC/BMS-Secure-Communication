@@ -708,19 +708,25 @@ static void BMU_ProcessBatteryData(const uint8 *raw_data, uint32 fc)
 {
     const BatteryData_t *batt = (const BatteryData_t *)raw_data;
 
-    UART_Lock();
-    UART_SendString("[BMU] OK FC=");
-    UART_SendUint(fc);
-    UART_SendString(" SOC=");
-    UART_SendUint(batt->soc_u16);
-    UART_SendString(" T=");
-    UART_SendUint(batt->temperature_u16);
-    UART_SendString(" Cyc=");
-    UART_SendUint(batt->discharge_cycles);
-    UART_SendString(" Cells=");
-    UART_SendUint(batt->cell_count);
-    UART_SendString("\r\n");
-    UART_Unlock();
+    /* Only print every 10th frame to reduce UART blocking */
+    static uint32 printCount = 0U;
+    printCount++;
+    if ((printCount % 50U) == 1U)
+    {
+        UART_Lock();
+        UART_SendString("[BMU] OK FC=");
+        UART_SendUint(fc);
+        UART_SendString(" SOC=");
+        UART_SendUint(batt->soc_u16);
+        UART_SendString(" T=");
+        UART_SendUint(batt->temperature_u16);
+        UART_SendString(" Cyc=");
+        UART_SendUint(batt->discharge_cycles);
+        UART_SendString(" Cells=");
+        UART_SendUint(batt->cell_count);
+        UART_SendString("\r\n");
+        UART_Unlock();
+    }
 }
 
 /*============================================================================
