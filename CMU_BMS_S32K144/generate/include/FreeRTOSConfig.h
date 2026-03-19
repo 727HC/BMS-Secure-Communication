@@ -42,7 +42,7 @@
  *----------------------------------------------------------*/
 
 
-#define configCPU_CLOCK_HZ                          ( 160000000UL )
+#define configCPU_CLOCK_HZ                          ( 48000000UL )  /* FIRC-only */
 #define configTICK_RATE_HZ                          ((TickType_t) 1000 )
 #define configMAX_PRIORITIES                        5
 #define configMINIMAL_STACK_SIZE                    ((unsigned short) 90 )
