@@ -90,7 +90,7 @@ extern "C" {
  *============================================================================*/
 #define MAX_CMAC_FAIL_COUNT         3U      /* Consecutive CMAC failures -> resync */
 #define MAX_KEY_RETRY_COUNT         3U      /* Key exchange max retries            */
-#define FC_WINDOW_SIZE              5U      /* Freshness counter acceptance window */
+#define FC_WINDOW_SIZE              100U    /* Freshness counter acceptance window */
 
 /*============================================================================
  *  CAN-FD Hardware
