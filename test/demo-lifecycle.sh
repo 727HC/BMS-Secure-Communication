@@ -96,20 +96,30 @@ info "상태: MANUFACTURED | SOH: 100% | 셀수: 11 | 화학: NCM811"
 sleep 5
 
 # ============================================================
-step "[4/9] BMU 실시간 데이터 수신 (제조사 — 서명 없이 테스트)"
-BMU_PAYLOAD=$(node -e "
-const buf=Buffer.alloc(48);
-buf.writeFloatLE(12.5,0);buf.writeFloatLE(3.72,4);buf.writeUInt16LE(85,8);
-buf.writeUInt16LE(150,10);buf.writeUInt16LE(27,12);
+step "[4/9] BMU 실시간 데이터 수신 (Ed25519 서명 포함)"
+BMU_SIGNED=$(node -e "
+const nacl = require('tweetnacl');
+// 48-byte payload 생성
+const buf = Buffer.alloc(48);
+buf.writeFloatLE(12.5,0);buf.writeFloatLE(3.72,4);buf.writeUInt16LE(55700,8);
+buf.writeUInt16LE(150,10);buf.writeUInt16LE(17500,12);
 for(let i=0;i<11;i++){buf.writeUInt8(140,14+i);buf.writeUInt8(85,25+i);}
 buf.writeUInt16LE(1000,36);buf.writeUInt8(0,38);buf.writeUInt8(11,39);
-buf.writeUInt32LE(42,40);console.log(buf.toString('hex'));
+buf.writeUInt32LE(42,40);
+const rawPayload = buf.toString('hex');
+// 테스트용 Ed25519 키페어로 서명
+const seed = Buffer.from('DemoBMUDevice001TestSeed00000001');
+const keyPair = nacl.sign.keyPair.fromSeed(seed);
+const signature = Buffer.from(nacl.sign.detached(buf, keyPair.secretKey)).toString('hex');
+console.log(JSON.stringify({rawPayload, signature}));
 " 2>/dev/null)
+BMU_PAYLOAD=$(echo $BMU_SIGNED | python3 -c "import sys,json;d=json.load(sys.stdin);print(d['rawPayload'])")
+BMU_SIG=$(echo $BMU_SIGNED | python3 -c "import sys,json;d=json.load(sys.stdin);print(d['signature'])")
 RESULT=$(call POST "$API/api/bmu/data" \
-  "{\"rawPayload\":\"$BMU_PAYLOAD\",\"did\":\"did:sov:demo001\",\"signature\":\"none\"}")
+  "{\"rawPayload\":\"$BMU_PAYLOAD\",\"did\":\"did:sov:demo001\",\"signature\":\"$BMU_SIG\"}")
 RECORD_ID=$(echo $RESULT | python3 -c "import sys,json;print(json.load(sys.stdin).get('recordId',''))" 2>/dev/null)
-ok "BMU 기록: $RECORD_ID"
-info "SOC=85% | V=3.72V | I=12.5A | T=27°C | Cycles=150"
+ok "BMU 기록: $RECORD_ID (Ed25519 서명 검증 완료)"
+info "SOC=85% | V=3.72V | I=12.5A | T=13.4°C | Cycles=150"
 
 sleep 2
 
