@@ -153,6 +153,26 @@ volatile uint32 g_eddsaSignCount = 0U;
 static uint8 g_dec_input_uid[AES_KEY_SIZE];
 static uint8 g_dec_input_seed[AES_KEY_SIZE];
 
+/*============================================================================
+ *  DWT Cycle Counter for Performance Measurement (Cortex-M7)
+ *============================================================================*/
+#define DWT_CTRL    (*(volatile uint32 *)0xE0001000U)
+#define DWT_CYCCNT  (*(volatile uint32 *)0xE0001004U)
+#define DEM_CR      (*(volatile uint32 *)0xE000EDFCU)
+
+static inline void DWT_Init(void)
+{
+    DEM_CR   |= (1U << 24U);   /* TRCENA: enable DWT */
+    DWT_CYCCNT = 0U;
+    DWT_CTRL |= 1U;            /* CYCCNTENA: enable cycle counter */
+}
+
+/* Performance counters (visible in debugger + UART) */
+volatile uint32 g_perf_cmac_us    = 0U;  /* Last CMAC verify time (µs) */
+volatile uint32 g_perf_eddsa_ms   = 0U;  /* Last EdDSA sign time (ms)  */
+volatile uint32 g_perf_keyex_ms   = 0U;  /* Key exchange duration (ms) */
+volatile uint32 g_perf_e2e_us     = 0U;  /* CAN RX → verify done (µs) */
+
 /* FreeRTOS task prototypes */
 static void BMU_CanRxTask(void *pvParameters);
 static void BMU_ProtocolTask(void *pvParameters);
@@ -675,10 +695,13 @@ static boolean BMU_VerifySecuredData(const uint8 *rx_payload)
     /* Build CMAC input: FC(4B) || Data(48B) */
     BMS_BuildCmacInput(g_cmac_input, rx_fc, battery_data);
 
-    /* Verify CMAC using session key */
+    /* Verify CMAC using session key — measure time */
+    uint32 cyc_start = DWT_CYCCNT;
     hse_resp = BMU_CmacVerify(HSE_SESSION_KEY_HANDLE,
                                g_cmac_input, CMAC_INPUT_SIZE,
                                received_cmac, CMAC_TAG_SIZE);
+    uint32 cyc_end = DWT_CYCCNT;
+    g_perf_cmac_us = (cyc_end - cyc_start) / (configCPU_CLOCK_HZ / 1000000U);
 
     if (hse_resp == HSE_SRV_RSP_OK)
     {
@@ -870,6 +893,9 @@ volatile uint8   g_batt_cellV1   = 0U;  /* second cell voltage */
 int main(void)
 {
     g_debugMarker = DBG_MARKER_BOOT;
+
+    /*--- 0. DWT Cycle Counter for performance measurement ---*/
+    DWT_Init();
 
     /*--- 1. Clock Init ---*/
     /* After .mex fix: FIRC-only mode (no PLL), so this should succeed */
@@ -1147,8 +1173,11 @@ static void BMU_ProtocolTask(void *pvParameters)
                               pdMS_TO_TICKS(TASK_PROTOCOL_DELAY_MS)) == pdPASS)
             {
                 g_rxCount++;
+                uint32 e2e_start = DWT_CYCCNT;
                 if (BMU_VerifySecuredData(item.data))
                 {
+                    uint32 e2e_end = DWT_CYCCNT;
+                    g_perf_e2e_us = (e2e_end - e2e_start) / (configCPU_CLOCK_HZ / 1000000U);
                     g_verifiedCount++;
                     const BatteryData_t *batt = (const BatteryData_t *)item.data;
                     g_batt_current = batt->current_A;
@@ -1231,10 +1260,12 @@ static void BMU_DataProcessTask(void *pvParameters)
             #ifdef BMS_MODE_EDDSA
             if (g_eddsaReady)
             {
-                /* Software Ed25519 signing via TweetNaCl */
+                /* Software Ed25519 signing via TweetNaCl — measure time */
+                TickType_t sign_start = xTaskGetTickCount();
                 uint8 sm[BATTERY_DATA_SIZE + 64];
                 unsigned long long smlen;
                 crypto_sign(sm, &smlen, item.data, BATTERY_DATA_SIZE, g_sw_ed25519_sk);
+                g_perf_eddsa_ms = (uint32)(xTaskGetTickCount() - sign_start);
                 /* sm[0..63] = signature (R||S), sm[64..] = original data */
                 memcpy(g_eddsa_signR, &sm[0],  EDDSA_SIGN_SIZE);
                 memcpy(g_eddsa_signS, &sm[32], EDDSA_SIGN_SIZE);
@@ -1267,10 +1298,30 @@ static void BMU_MonitorTask(void *pvParameters)
 
     UART_SendString("[Task] Monitor started\r\n");
 
+    static uint32 monitorCount = 0U;
     for (;;)
     {
         g_ESR1 = S32K344_FLEXCAN0_ESR1;
         g_ECR  = S32K344_FLEXCAN0_ECR;
+
+        monitorCount++;
+        /* Print performance stats every 10th monitor cycle (5 seconds) */
+        if ((monitorCount % 10U) == 0U)
+        {
+            UART_Lock();
+            UART_SendString("[PERF] CMAC=");
+            UART_SendUint(g_perf_cmac_us);
+            UART_SendString("us E2E=");
+            UART_SendUint(g_perf_e2e_us);
+            UART_SendString("us EdDSA=");
+            UART_SendUint(g_perf_eddsa_ms);
+            UART_SendString("ms RX=");
+            UART_SendUint(g_rxCount);
+            UART_SendString(" OK=");
+            UART_SendUint(g_verifiedCount);
+            UART_SendString("\r\n");
+            UART_Unlock();
+        }
 
         vTaskDelay(pdMS_TO_TICKS(TASK_MONITOR_DELAY_MS));
     }
