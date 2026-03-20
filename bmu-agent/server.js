@@ -9,18 +9,17 @@ app.use(express.json());
 // Static files — webapp frontend
 app.use(express.static(path.join(__dirname, '..', 'webapp', 'frontend')));
 
-// Routes
-app.use('/api/auth', require('./routes/auth.routes'));
-app.use('/api/passports', require('./routes/passport.routes'));
-app.use('/api/bmu', require('./routes/bmu.routes'));
-app.use('/api/materials', require('./routes/material.routes'));
-app.use('/api/maintenance', require('./routes/maintenance.routes'));
-app.use('/api/analysis', require('./routes/analysis.routes'));
-app.use('/api/recycling', require('./routes/recycling.routes'));
-app.use('/api/did', require('./routes/did.routes'));
-
-// Status endpoint
-app.get('/api/status', (req, res) => {
+// API routes
+const apiRouter = express.Router();
+apiRouter.use('/auth', require('./routes/auth.routes'));
+apiRouter.use('/passports', require('./routes/passport.routes'));
+apiRouter.use('/bmu', require('./routes/bmu.routes'));
+apiRouter.use('/materials', require('./routes/material.routes'));
+apiRouter.use('/maintenance', require('./routes/maintenance.routes'));
+apiRouter.use('/analysis', require('./routes/analysis.routes'));
+apiRouter.use('/recycling', require('./routes/recycling.routes'));
+apiRouter.use('/did', require('./routes/did.routes'));
+apiRouter.get('/status', (req, res) => {
   res.json({
     fabric: fabricService.isConnected() ? 'connected' : 'disconnected',
     channel: fabricConfig.channelName,
@@ -28,9 +27,10 @@ app.get('/api/status', (req, res) => {
     org: fabricConfig.currentOrg.mspId,
   });
 });
+app.use('/api', apiRouter);
 
 // SPA fallback — serve index.html for non-API routes
-app.get('*', (req, res) => {
+app.use((req, res) => {
   res.sendFile(path.join(__dirname, '..', 'webapp', 'frontend', 'index.html'));
 });
 
