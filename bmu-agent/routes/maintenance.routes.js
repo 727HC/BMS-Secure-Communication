@@ -1,0 +1,56 @@
+const express = require('express');
+const router = express.Router();
+const { authenticateToken } = require('../middleware/auth');
+const { requireMSP } = require('../middleware/rbac');
+const fabricService = require('../services/fabric.service');
+
+// POST /api/maintenance/:id/request — Request maintenance (EV Manufacturer)
+router.post('/:id/request', authenticateToken, requireMSP('EVManufacturerMSP'), async (req, res) => {
+  const { maintenanceType, description } = req.body;
+
+  try {
+    await fabricService.submitTransaction(
+      'RequestMaintenance',
+      req.params.id, maintenanceType || 'routine', description || ''
+    );
+    res.json({ success: true, passportId: req.params.id, status: 'MAINTENANCE' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// POST /api/maintenance/:id/log — Add maintenance log (Service)
+router.post('/:id/log', authenticateToken, requireMSP('ServiceMSP'), async (req, res) => {
+  const { maintenanceType, description, technician } = req.body;
+
+  try {
+    await fabricService.submitTransaction(
+      'AddMaintenanceLog',
+      req.params.id, maintenanceType || 'routine', description || '', technician || ''
+    );
+    res.json({ success: true, passportId: req.params.id });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// POST /api/maintenance/:id/accident — Add accident log (EV Manufacturer or Service)
+router.post('/:id/accident', authenticateToken, requireMSP('EVManufacturerMSP', 'ServiceMSP'), async (req, res) => {
+  const { severity, description, reporter } = req.body;
+
+  if (!severity || !description) {
+    return res.status(400).json({ error: 'severity, description required' });
+  }
+
+  try {
+    await fabricService.submitTransaction(
+      'AddAccidentLog',
+      req.params.id, severity, description, reporter || req.user.userId
+    );
+    res.json({ success: true, passportId: req.params.id });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+module.exports = router;
