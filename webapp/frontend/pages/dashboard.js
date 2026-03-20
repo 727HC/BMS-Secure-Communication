@@ -129,34 +129,34 @@ app.component('dashboard-page', {
       const msp = props.auth.orgMsp;
       if (msp === 'ManufacturerMSP') {
         return [
-          { icon: 'battery', label: '총 배터리', value: totalCount.value, sub: '등록된 전체 배터리', color: 'blue' },
-          { icon: 'chart', label: '평균 SOC', value: avgSoc.value + '%', sub: '충전 상태 평균', color: 'green' },
-          { icon: 'shield', label: '제조완료', value: manufacturedCount.value, sub: '제조 완료 상태', color: 'indigo' },
-          { icon: 'cube', label: '원자재 수', value: materialCount.value, sub: '등록된 원자재 데이터', color: 'purple' },
+          { icon: 'battery', label: '총 배터리', value: totalCount.value, sub: '등록된 전체 배터리', color: 'blue', page: 'passports' },
+          { icon: 'chart', label: '평균 SOC', value: avgSoc.value + '%', sub: '충전 상태 평균', color: 'green', page: 'bmu-data' },
+          { icon: 'shield', label: '제조완료', value: manufacturedCount.value, sub: '제조 완료 상태', color: 'indigo', page: 'passports' },
+          { icon: 'cube', label: '원자재 수', value: materialCount.value, sub: '등록된 원자재 데이터', color: 'purple', page: 'materials' },
         ];
       }
       if (msp === 'EVManufacturerMSP') {
         return [
-          { icon: 'battery', label: 'VIN 바인딩', value: vinBoundCount.value, sub: '차량 연결 배터리', color: 'blue' },
-          { icon: 'shield', label: '운행중', value: activeCount.value, sub: '운행중 배터리', color: 'green' },
-          { icon: 'wrench', label: '정비 필요', value: maintenanceCount.value, sub: 'MAINTENANCE 상태', color: 'yellow' },
-          { icon: 'chart', label: '평균 SOH', value: avgSoh.value + '%', sub: '건강 상태 평균', color: 'emerald' },
+          { icon: 'battery', label: 'VIN 바인딩', value: vinBoundCount.value, sub: '차량 연결 배터리', color: 'blue', page: 'passports' },
+          { icon: 'shield', label: '운행중', value: activeCount.value, sub: '운행중 배터리', color: 'green', page: 'passports' },
+          { icon: 'wrench', label: '정비 필요', value: maintenanceCount.value, sub: 'MAINTENANCE 상태', color: 'yellow', page: 'maintenance' },
+          { icon: 'chart', label: '평균 SOH', value: avgSoh.value + '%', sub: '건강 상태 평균', color: 'emerald', page: 'passports' },
         ];
       }
       if (msp === 'ServiceMSP') {
         return [
-          { icon: 'wrench', label: '정비 대기', value: maintenanceCount.value, sub: 'MAINTENANCE 상태', color: 'yellow' },
-          { icon: 'chart', label: '분석 대기', value: analysisCount.value, sub: 'ANALYSIS 상태', color: 'purple' },
-          { icon: 'shield', label: '평균 SOH', value: avgSoh.value + '%', sub: '건강 상태 평균', color: 'green' },
-          { icon: 'recycle', label: '재활용 가능', value: recycleAvailableCount.value, sub: 'recycleAvailable', color: 'emerald' },
+          { icon: 'wrench', label: '정비 대기', value: maintenanceCount.value, sub: 'MAINTENANCE 상태', color: 'yellow', page: 'maintenance' },
+          { icon: 'chart', label: '분석 대기', value: analysisCount.value, sub: 'ANALYSIS 상태', color: 'purple', page: 'maintenance' },
+          { icon: 'shield', label: '평균 SOH', value: avgSoh.value + '%', sub: '건강 상태 평균', color: 'green', page: 'passports' },
+          { icon: 'recycle', label: '재활용 가능', value: recycleAvailableCount.value, sub: 'recycleAvailable', color: 'emerald', page: 'recycling' },
         ];
       }
       if (msp === 'RegulatorMSP') {
         return [
-          { icon: 'battery', label: '전체 여권', value: totalCount.value, sub: '등록된 전체 배터리', color: 'blue' },
-          { icon: 'recycle', label: '재활용 가능', value: recycleAvailableCount.value, sub: 'recycleAvailable', color: 'green' },
-          { icon: 'chart', label: '재활용', value: recyclingCount.value, sub: '재활용 진행중', color: 'orange' },
-          { icon: 'shield', label: '폐기완료', value: disposedCount.value, sub: '폐기 완료', color: 'gray' },
+          { icon: 'battery', label: '전체 여권', value: totalCount.value, sub: '등록된 전체 배터리', color: 'blue', page: 'passports' },
+          { icon: 'recycle', label: '재활용 가능', value: recycleAvailableCount.value, sub: 'recycleAvailable', color: 'green', page: 'recycling' },
+          { icon: 'chart', label: '재활용', value: recyclingCount.value, sub: '재활용 진행중', color: 'orange', page: 'recycling' },
+          { icon: 'shield', label: '폐기완료', value: disposedCount.value, sub: '폐기 완료', color: 'gray', page: 'recycling' },
         ];
       }
       return [];
@@ -396,7 +396,8 @@ app.component('dashboard-page', {
         <!-- ===== 2. KPI STAT CARDS ===== -->
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <div v-for="(card, i) in statsCards" :key="i"
-               class="bg-white rounded-xl border border-gray-200 p-5 shadow-sm hover:shadow-md transition-shadow duration-200 cursor-default">
+               @click="card.page && nav(card.page)"
+               class="bg-white rounded-xl border border-gray-200 p-5 shadow-sm hover:shadow-md hover:border-primary-300 transition-all duration-200 cursor-pointer">
             <div class="flex items-start justify-between">
               <div class="min-w-0 flex-1">
                 <p class="text-sm font-medium text-gray-500 truncate">{{ card.label }}</p>
@@ -882,7 +883,8 @@ app.component('dashboard-page', {
               </thead>
               <tbody class="divide-y divide-gray-100">
                 <tr v-for="(p, idx) in recentPassports" :key="idx"
-                    class="hover:bg-gray-50/50 transition-colors duration-150">
+                    @click="$emit('navigate', 'passport-detail', { passportId: p.passportId || p.id })"
+                    class="hover:bg-primary-50/50 transition-colors duration-150 cursor-pointer">
                   <td class="px-6 py-4">
                     <span class="text-sm font-mono text-blue-600 font-medium">{{ truncate(p.passportId || p.id, 16) }}</span>
                   </td>
