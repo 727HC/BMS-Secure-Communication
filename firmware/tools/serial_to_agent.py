@@ -37,7 +37,7 @@ def parse_bmu_line(line):
 
     # [SIGN] FC=42 R=AABB...  S=CCDD... DATA=EEFF...
     sign_match = re.match(
-        r'\[SIGN\] FC=(\d+) R=([0-9A-Fa-f ]+) S=([0-9A-Fa-f ]+)(?: DATA=([0-9A-Fa-f ]+))?', line)
+        r'\[SIGN\] FC=(\d+) R=(.+?) S=(.+?)(?:\s+DATA=(.+))?$', line)
     if sign_match:
         result['type'] = 'sign'
         result['fc'] = int(sign_match.group(1))
@@ -50,24 +50,21 @@ def parse_bmu_line(line):
     return None
 
 
-def send_to_agent(agent_url, data_record, sign_record, did=None):
+def send_to_agent(agent_url, sign_record, data_record=None, did=None):
     """Send verified + signed data to BMS Agent."""
     signature = sign_record['signR'] + sign_record['signS']
 
     payload = {
-        'fc': data_record['fc'],
-        'soc': data_record['soc'],
-        'temperature': data_record['temperature'],
+        'fc': sign_record['fc'],
         'signature': signature,
     }
     if did:
         payload['did'] = did
     if 'rawPayload' in sign_record:
         payload['rawPayload'] = sign_record['rawPayload']
-    else:
-        # rawPayload 없을 때만 fallback으로 dataHash 전송
-        data_str = f"FC={data_record['fc']},SOC={data_record['soc']},T={data_record['temperature']}"
-        payload['dataHash'] = hashlib.sha256(data_str.encode()).hexdigest()
+    if data_record:
+        payload['soc'] = data_record['soc']
+        payload['temperature'] = data_record['temperature']
 
     try:
         resp = requests.post(f"{agent_url}/data", json=payload, timeout=5)
@@ -95,7 +92,7 @@ def main():
     print(f"BMU Serial → Agent Bridge")
     print(f"  Serial: {args.port} @ {args.baud}")
     print(f"  Agent:  {args.agent}")
-    print(f"  Press Ctrl+C to stop\n")
+    print(f"  Press Ctrl+C to stop\n", flush=True)
 
     ser = serial.Serial(args.port, args.baud, timeout=1)
     pending_data_by_fc = {}
@@ -117,7 +114,7 @@ def main():
 
             if parsed['type'] == 'data':
                 pending_data_by_fc[parsed['fc']] = parsed
-                print(f"[DATA] FC={parsed['fc']} SOC={parsed['soc']} T={parsed['temperature']}")
+                print(f"[DATA] FC={parsed['fc']} SOC={parsed['soc']} T={parsed['temperature']}", flush=True)
                 # 오래된 pending 항목 정리 (최근 50개만 유지)
                 if len(pending_data_by_fc) > 50:
                     oldest = sorted(pending_data_by_fc.keys())[:-50]
@@ -126,12 +123,9 @@ def main():
 
             elif parsed['type'] == 'sign':
                 fc = parsed['fc']
-                if fc not in pending_data_by_fc:
-                    print(f"  [WARN] No matching DATA for SIGN FC={fc}, skipping")
-                    continue
-                data_record = pending_data_by_fc.pop(fc)
-                print(f"[SIGN] FC={fc} R={parsed['signR'][:16]}... S={parsed['signS'][:16]}...")
-                send_to_agent(args.agent, data_record, parsed, did=args.did)
+                data_record = pending_data_by_fc.pop(fc, None)
+                print(f"[SIGN] FC={fc} R={parsed['signR'][:16]}... S={parsed['signS'][:16]}...", flush=True)
+                send_to_agent(args.agent, parsed, data_record=data_record, did=args.did)
                 sent_count += 1
                 if sent_count % 10 == 0:
                     print(f"  Total sent: {sent_count}")
