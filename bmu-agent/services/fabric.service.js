@@ -140,12 +140,20 @@ async function registerUser(userId, userSecret, orgConfig) {
   const provider = wallet.getProviderRegistry().getProvider(adminIdentity.type);
   const adminUser = await provider.getUserContext(adminIdentity, fabricConfig.identity);
 
-  await ca.register({
-    enrollmentID: userId,
-    enrollmentSecret: userSecret,
-    maxEnrollments: -1,
-    attrs: [],
-  }, adminUser);
+  // Register (skip if already registered in CA)
+  try {
+    await ca.register({
+      enrollmentID: userId,
+      enrollmentSecret: userSecret,
+      maxEnrollments: -1,
+      attrs: [],
+    }, adminUser);
+  } catch (registerErr) {
+    if (!registerErr.message?.includes('already registered')) {
+      throw registerErr;
+    }
+    // Already registered in CA — proceed to enroll
+  }
 
   const enrollment = await ca.enroll({
     enrollmentID: userId,
