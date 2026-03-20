@@ -115,7 +115,6 @@ async function disconnect() {
 // Register and enroll a new user via Fabric CA
 async function registerUser(userId, userSecret, orgConfig) {
   const org = orgConfig || fabricConfig.currentOrg;
-  const ccp = JSON.parse(fs.readFileSync(org.ccpPath, 'utf8'));
   const wallet = await Wallets.newFileSystemWallet(fabricConfig.walletPath);
 
   // Check if user already exists
@@ -124,21 +123,40 @@ async function registerUser(userId, userSecret, orgConfig) {
     return { message: `User ${userId} already enrolled` };
   }
 
-  // Get admin identity to register new user
-  const adminIdentity = await wallet.get(fabricConfig.identity);
+  // Connect to the org-specific CA directly
+  const caUrl = `https://localhost:${org.caPort}`;
+  const caTlsCertPath = path.resolve(
+    __dirname, '..', '..', 'passport-network',
+    'organizations', 'fabric-ca', org.caName.replace('ca-', ''), 'ca-cert.pem'
+  );
+  let tlsOptions;
+  if (fs.existsSync(caTlsCertPath)) {
+    const caTlsCert = fs.readFileSync(caTlsCertPath, 'utf8');
+    tlsOptions = { trustedRoots: caTlsCert, verify: false };
+  }
+  const ca = new FabricCAServices(caUrl, tlsOptions, org.caName);
+
+  // Enroll CA bootstrap admin for this org
+  const adminWalletLabel = `${org.caName}-admin`;
+  let adminIdentity = await wallet.get(adminWalletLabel);
   if (!adminIdentity) {
-    throw new Error('Admin identity not found. Connect to Fabric first.');
+    const adminEnrollment = await ca.enroll({
+      enrollmentID: 'admin',
+      enrollmentSecret: fabricConfig.adminSecret,
+    });
+    adminIdentity = {
+      credentials: {
+        certificate: adminEnrollment.certificate,
+        privateKey: adminEnrollment.key.toBytes(),
+      },
+      mspId: org.mspId,
+      type: 'X.509',
+    };
+    await wallet.put(adminWalletLabel, adminIdentity);
   }
 
-  const caInfo = ccp.certificateAuthorities[org.caHostname];
-  const caTLSCACerts = caInfo.tlsCACerts?.pem;
-  const tlsOptions = caTLSCACerts
-    ? { trustedRoots: caTLSCACerts, verify: fabricConfig.tlsVerify }
-    : undefined;
-  const ca = new FabricCAServices(caInfo.url, tlsOptions, caInfo.caName);
-
   const provider = wallet.getProviderRegistry().getProvider(adminIdentity.type);
-  const adminUser = await provider.getUserContext(adminIdentity, fabricConfig.identity);
+  const adminUser = await provider.getUserContext(adminIdentity, adminWalletLabel);
 
   // Register (skip if already registered in CA)
   try {
