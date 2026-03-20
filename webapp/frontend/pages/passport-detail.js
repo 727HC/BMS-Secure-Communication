@@ -1201,11 +1201,15 @@ app.component('passport-detail-page', {
             </div>
             <p class="text-gray-500 font-medium">변경 이력이 없습니다</p>
           </div>
-          <div v-else class="relative pl-6">
+          <div v-else>
+            <div class="flex items-center justify-between mb-4">
+              <p class="text-sm text-gray-500">총 <strong class="text-gray-700">{{ history.length }}</strong>건의 변경 이력 (최근 20건 표시)</p>
+            </div>
+            <div class="relative pl-6 max-h-[600px] overflow-y-auto pr-2">
             <!-- Timeline line -->
             <div class="absolute left-[11px] top-2 bottom-2 w-0.5 bg-gradient-to-b from-primary-300 via-primary-200 to-gray-200"></div>
             <div class="space-y-4">
-              <div v-for="(entry, i) in history" :key="i" class="relative">
+              <div v-for="(entry, i) in history.slice(-20).reverse()" :key="i" class="relative">
                 <!-- Timeline dot -->
                 <div class="absolute -left-6 top-5 w-[22px] h-[22px] rounded-full border-[3px] border-white shadow-sm flex items-center justify-center"
                   :class="entry.value && entry.value.status ? getStatusBadge(entry.value.status).bg : 'bg-primary-100'">
@@ -1255,6 +1259,7 @@ app.component('passport-detail-page', {
                   </div>
                 </div>
               </div>
+            </div>
             </div>
           </div>
         </div>
