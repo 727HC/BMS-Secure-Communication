@@ -20,10 +20,15 @@ app.component('dashboard-page', {
 
     const totalCount = computed(() => passports.value.length);
 
+    function scaleSOC(val) {
+      if (val == null) return 0;
+      return val > 100 ? +(val / 655.35).toFixed(1) : +val;
+    }
+
     const avgSoc = computed(() => {
       const items = passports.value.filter(p => p.currentSoc != null);
       if (items.length === 0) return 0;
-      return Math.round(items.reduce((s, p) => s + Number(p.currentSoc), 0) / items.length);
+      return Math.round(items.reduce((s, p) => s + scaleSOC(Number(p.currentSoc)), 0) / items.length);
     });
 
     const avgSoh = computed(() => {
