@@ -143,7 +143,8 @@ async function registerUser(userId, userSecret, orgConfig) {
   await ca.register({
     enrollmentID: userId,
     enrollmentSecret: userSecret,
-    role: 'client',
+    maxEnrollments: -1,
+    attrs: [],
   }, adminUser);
 
   const enrollment = await ca.enroll({
