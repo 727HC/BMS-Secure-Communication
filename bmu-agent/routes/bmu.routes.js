@@ -5,8 +5,7 @@ const fabricService = require('../services/fabric.service');
 const didService = require('../services/did.service');
 const { parseRawPayload } = require('../services/bmu-parser.service');
 
-// P0-3: unsigned BMU 기본 거부 (ALLOW_UNSIGNED_BMU=true로 개발 모드 허용)
-const ALLOW_UNSIGNED = process.env.ALLOW_UNSIGNED_BMU === 'true';
+// P0-3: unsigned BMU 완전 거부 (임베디드 확인: BMU는 100% 서명 포함)
 
 // P1-8: DID → passportId cache with TTL (5분)
 const CACHE_TTL = 5 * 60 * 1000;
@@ -38,11 +37,9 @@ router.post('/data', async (req, res) => {
     return res.status(400).json({ error: 'did required' });
   }
 
-  // P0-3: 서명 필수 (개발 모드에서만 우회)
+  // P0-3: 서명 필수 (BMU는 항상 Ed25519 서명 포함)
   if (!signature || signature === 'none') {
-    if (!ALLOW_UNSIGNED) {
-      return res.status(400).json({ error: 'signature required (set ALLOW_UNSIGNED_BMU=true to bypass)' });
-    }
+    return res.status(400).json({ error: 'signature required' });
   }
 
   try {
