@@ -161,19 +161,48 @@ app.component('passport-detail-page', {
       try {
         const data = await props.api.get('/passports/' + passportId.value + '/history');
         const raw = data.records || data || [];
-        // API returns array of JSON strings — parse each into object
-        history.value = raw.map((entry, i) => {
+        // Parse JSON strings + detect meaningful changes
+        const all = raw.map((entry, i) => {
           let parsed = entry;
           if (typeof entry === 'string') {
             try { parsed = JSON.parse(entry); } catch (e) { parsed = {}; }
           }
-          return {
-            value: parsed,
-            timestamp: parsed.updatedAt || parsed.createdAt || '-',
-            txId: null,
-            index: i + 1,
-          };
+          return { value: parsed, index: i + 1 };
         });
+        // Filter: keep only entries with status change, VIN change, maintenance, or first/last
+        const filtered = [];
+        let prevStatus = null, prevVin = null, prevMaintCount = 0;
+        all.forEach((entry, i) => {
+          const v = entry.value;
+          const status = v.status || '';
+          const vin = v.vin || '';
+          const maintCount = (v.maintenanceLogs || []).length;
+          const accidentCount = (v.accidentLogs || []).length;
+          const isFirst = i === 0;
+          const isLast = i === all.length - 1;
+          const statusChanged = status !== prevStatus;
+          const vinChanged = vin && vin !== prevVin;
+          const maintChanged = maintCount > prevMaintCount;
+          if (isFirst || isLast || statusChanged || vinChanged || maintChanged) {
+            let changeDesc = '';
+            if (isFirst) changeDesc = '여권 생성';
+            else if (statusChanged && prevStatus) changeDesc = prevStatus + ' → ' + status;
+            else if (vinChanged) changeDesc = 'VIN 바인딩: ' + vin;
+            else if (maintChanged) changeDesc = '정비 기록 추가 (#' + maintCount + ')';
+            else if (isLast) changeDesc = '최신 상태';
+            filtered.push({
+              value: v,
+              timestamp: v.updatedAt || v.createdAt || '-',
+              changeDesc,
+              index: entry.index,
+              blockNumber: entry.index,
+            });
+          }
+          prevStatus = status;
+          prevVin = vin;
+          prevMaintCount = maintCount;
+        });
+        history.value = filtered;
       } catch (e) {
         history.value = [];
       } finally {
@@ -1203,7 +1232,10 @@ app.component('passport-detail-page', {
           </div>
           <div v-else>
             <div class="flex items-center justify-between mb-4">
-              <p class="text-sm text-gray-500">총 <strong class="text-gray-700">{{ history.length }}</strong>건의 변경 이력 (최근 20건 표시)</p>
+              <p class="text-sm text-gray-500 flex items-center gap-2">
+                <svg class="w-4 h-4 text-primary-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                총 <strong class="text-gray-700">{{ history.length }}</strong>건의 주요 변경 이력 (상태 전환/VIN/정비 기준)
+              </p>
             </div>
             <div class="relative pl-6 max-h-[600px] overflow-y-auto pr-2">
             <!-- Timeline line -->
@@ -1222,7 +1254,7 @@ app.component('passport-detail-page', {
                     <div class="min-w-0 flex-1">
                       <div class="flex items-center gap-2 flex-wrap">
                         <p class="text-sm font-semibold text-gray-900">
-                          {{ entry.value && entry.value.status ? '상태: ' + entry.value.status : '변경 #' + entry.index }}
+                          {{ entry.changeDesc || ('변경 #' + entry.index) }}
                         </p>
                         <span v-if="entry.value && entry.value.status"
                           :class="[
@@ -1240,6 +1272,10 @@ app.component('passport-detail-page', {
                           <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
                         </svg>
                         {{ entry.timestamp || '-' }}
+                        <span class="inline-flex items-center gap-1 ml-2 px-1.5 py-0.5 bg-primary-50 text-primary-600 rounded text-[10px] font-medium border border-primary-100">
+                          <svg class="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                          Block #{{ entry.blockNumber }}
+                        </span>
                       </p>
                     </div>
                   </div>
