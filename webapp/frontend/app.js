@@ -95,7 +95,12 @@ const app = createApp({
       orgMsp: localStorage.getItem('bp_orgMsp') || null,
     });
 
-    const currentPage = ref(auth.value.token ? 'dashboard' : 'login');
+    // 새로고침 시 URL 해시에서 페이지 복원
+    const hashPage = window.location.hash.replace('#', '');
+    const initialPage = auth.value.token
+      ? (hashPage && PAGE_COMPONENTS[hashPage] ? hashPage : 'dashboard')
+      : 'login';
+    const currentPage = ref(initialPage);
     const pageProps = ref({});
     const toasts = ref([]);
     const mobileMenuOpen = ref(false);
