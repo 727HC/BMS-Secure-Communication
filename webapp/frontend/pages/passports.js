@@ -202,7 +202,7 @@ app.component('passports-page', {
                     {{ p.status || '-' }}
                   </span>
                 </td>
-                <td class="px-4 py-3 text-gray-700">{{ p.currentSoc != null ? p.currentSoc + '%' : '-' }}</td>
+                <td class="px-4 py-3 text-gray-700">{{ p.currentSoc != null ? (p.currentSoc > 100 ? (p.currentSoc / 655.35).toFixed(1) : p.currentSoc) + '%' : '-' }}</td>
                 <td class="px-4 py-3 text-gray-700">{{ p.currentSoh != null ? p.currentSoh + '%' : '-' }}</td>
                 <td class="px-4 py-3 font-mono text-xs text-gray-500">{{ p.vin || '-' }}</td>
               </tr>
