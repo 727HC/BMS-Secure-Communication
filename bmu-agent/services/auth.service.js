@@ -32,12 +32,20 @@ async function login(userId, password, orgNum) {
     throw new Error(`Invalid org number: ${orgNum}`);
   }
 
-  // Attempt enrollment (validates credentials against CA)
+  const { Wallets } = require('fabric-network');
+  const wallet = await Wallets.newFileSystemWallet(fabricConfig.walletPath);
+
+  // If already in wallet, issue JWT directly
+  const existing = await wallet.get(userId);
+  if (existing) {
+    const token = generateToken(userId, orgConfig.mspId);
+    return { token, mspId: orgConfig.mspId, userId };
+  }
+
+  // Not in wallet — try enroll with CA (first-time login after register)
   const FabricCAServices = require('fabric-ca-client');
   const fs = require('fs');
-  const { Wallets } = require('fabric-network');
   const ccp = JSON.parse(fs.readFileSync(orgConfig.ccpPath, 'utf8'));
-  const wallet = await Wallets.newFileSystemWallet(fabricConfig.walletPath);
 
   const caInfo = ccp.certificateAuthorities[orgConfig.caHostname];
   const caTLSCACerts = caInfo.tlsCACerts?.pem;
