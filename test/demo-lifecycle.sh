@@ -2,6 +2,10 @@
 # Battery Passport 전주기 데모 시나리오
 # 4개 조직이 참여하는 배터리 전주기를 API로 시연합니다.
 #
+# NOTE: BMU 데이터 단계는 software-signed demo path입니다.
+#       테스트용 Ed25519 키로 서명하며, 실제 BMU 하드웨어 서명과는 다릅니다.
+#       실제 BMU signed data E2E는 serial_to_agent.py + 하드웨어로 테스트합니다.
+#
 # 사용법: ./demo-lifecycle.sh [agent_url]
 # 기본값: http://localhost:3001
 

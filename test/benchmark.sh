@@ -9,7 +9,8 @@ set -eo pipefail
 ########################################
 # Environment Setup
 ########################################
-cd /home/heechan/bms-blockchain/passport-network
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+cd "$SCRIPT_DIR/../passport-network"
 
 export PATH=$PWD/../fabric-samples/bin:$PATH
 export FABRIC_CFG_PATH=$PWD/../fabric-samples/config
