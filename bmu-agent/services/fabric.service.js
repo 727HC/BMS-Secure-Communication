@@ -230,14 +230,20 @@ async function registerUser(userId, userSecret, orgConfig) {
   return { message: `User ${userId} registered and enrolled`, mspId: org.mspId };
 }
 
-// P0-2: 로그인 — CA enroll로 비밀번호 검증 (wallet 있어도 재검증)
+// 로그인 — wallet에 있으면 사용, 없으면 CA enroll
 async function loginUser(userId, userSecret, orgConfig) {
   const org = orgConfig || fabricConfig.currentOrg;
   const w = await getWallet();
   const label = walletLabel(userId, org.mspId);
-  const ca = getCAForOrg(org);
 
-  // 항상 CA enroll로 비밀번호 검증
+  // wallet에 이미 있으면 바로 성공
+  const existing = await w.get(label);
+  if (existing) {
+    return { mspId: org.mspId, userId };
+  }
+
+  // 없으면 CA enroll 시도
+  const ca = getCAForOrg(org);
   const enrollment = await ca.enroll({
     enrollmentID: userId,
     enrollmentSecret: userSecret,
@@ -251,11 +257,6 @@ async function loginUser(userId, userSecret, orgConfig) {
     mspId: org.mspId,
     type: 'X.509',
   });
-
-  // 기존 gateway cache 무효화
-  if (gatewayPool.has(label)) {
-    gatewayPool.delete(label);
-  }
 
   return { mspId: org.mspId, userId };
 }
