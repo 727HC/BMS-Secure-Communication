@@ -150,7 +150,7 @@ function networkUp() {
     createOrgs
   fi
 
-  COMPOSE_FILES="-f compose/${COMPOSE_FILE_BASE}"
+  COMPOSE_FILES="-f compose/${COMPOSE_FILE_BASE} -f compose/${COMPOSE_FILE_COUCH}"
 
   ${CONTAINER_CLI_COMPOSE} ${COMPOSE_FILES} up -d 2>&1
 
@@ -203,7 +203,8 @@ function deployCC() {
 function networkDown() {
   COMPOSE_BASE_FILES="-f compose/${COMPOSE_FILE_BASE}"
   COMPOSE_CA_FILES="-f compose/${COMPOSE_FILE_CA}"
-  COMPOSE_FILES="${COMPOSE_BASE_FILES} ${COMPOSE_CA_FILES}"
+  COMPOSE_COUCH_FILES="-f compose/${COMPOSE_FILE_COUCH}"
+  COMPOSE_FILES="${COMPOSE_BASE_FILES} ${COMPOSE_CA_FILES} ${COMPOSE_COUCH_FILES}"
 
   ${CONTAINER_CLI_COMPOSE} ${COMPOSE_FILES} down --volumes --remove-orphans 2>/dev/null
 
@@ -228,6 +229,8 @@ function networkDown() {
 COMPOSE_FILE_BASE=compose-net.yaml
 # certificate authorities compose file
 COMPOSE_FILE_CA=compose-ca.yaml
+# couchdb compose file
+COMPOSE_FILE_COUCH=compose-couch.yaml
 
 # default channel name
 CHANNEL_NAME="passportchannel"
