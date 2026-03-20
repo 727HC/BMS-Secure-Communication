@@ -67,7 +67,6 @@ def send_to_agent(agent_url, sign_record, data_record=None, did=None):
         payload['temperature'] = data_record['temperature']
 
     try:
-        # Try new passport API first, fallback to legacy
         api_url = f"{agent_url}/api/bmu/data"
         resp = requests.post(api_url, json=payload, timeout=5)
         if resp.status_code == 200:
