@@ -98,6 +98,7 @@ const app = createApp({
     const currentPage = ref(auth.value.token ? 'dashboard' : 'login');
     const pageProps = ref({});
     const toasts = ref([]);
+    const mobileMenuOpen = ref(false);
 
     const api = computed(() => createApi(auth.value));
 
@@ -147,7 +148,7 @@ const app = createApp({
 
     return {
       auth, currentPage, pageProps, toasts, api,
-      orgLabel, navItems, currentPageComponent,
+      orgLabel, navItems, currentPageComponent, mobileMenuOpen,
       navigate, onLogin, logout, showToast,
     };
   },
