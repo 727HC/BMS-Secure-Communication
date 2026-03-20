@@ -25,23 +25,28 @@ function parseRawPayload(hexString) {
 
   const current = buf.readFloatLE(0);
   const voltage = buf.readFloatLE(4);
-  const soc = buf.readUInt16LE(8);
+  const socRaw = buf.readUInt16LE(8);
   const dischargeCycles = buf.readUInt16LE(10);
-  const temperature = buf.readUInt16LE(12);
+  const tempRaw = buf.readUInt16LE(12);
+
+  // Decode: soc_u16 / 655.35 = SOC % (0~100)
+  const soc = +(socRaw / 655.35).toFixed(1);
+  // Decode: temperature_u16 / 1310.7 = temp °C (0~50)
+  const temperature = +(tempRaw / 1310.7).toFixed(1);
 
   // Cell voltages: 11 bytes at offset 14
-  // Encoding: value = 2.5 + (raw / 255) * 1.7  → maps 0~255 to 2.5~4.2V
+  // Decode: raw / 255.0 * 1.7 + 2.5 = V (2.5~4.2)
   const cellVoltages = [];
   for (let i = 0; i < 11; i++) {
     const raw = buf.readUInt8(14 + i);
-    cellVoltages.push(+(2.5 + (raw / 255) * 1.7).toFixed(3));
+    cellVoltages.push(+(raw / 255.0 * 1.7 + 2.5).toFixed(3));
   }
 
   // Cell SOCs: 11 bytes at offset 25
-  // Encoding: direct percentage 0~100
+  // Decode: raw / 255.0 * 100 = % (0~100)
   const cellSocs = [];
   for (let i = 0; i < 11; i++) {
-    cellSocs.push(buf.readUInt8(25 + i));
+    cellSocs.push(+(buf.readUInt8(25 + i) / 255.0 * 100).toFixed(1));
   }
 
   const timestampMs = buf.readUInt16LE(36);
