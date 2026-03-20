@@ -1,19 +1,22 @@
 const path = require('path');
 
-// 4-org passport network configuration
+const isDev = process.env.NODE_ENV !== 'production';
+
+// P1-5: production에서는 FABRIC_ADMIN_SECRET 필수
+if (!isDev && !process.env.FABRIC_ADMIN_SECRET) {
+  throw new Error('FABRIC_ADMIN_SECRET is required in production.');
+}
+
 const config = {
-  // Channel and chaincode
   channelName: process.env.FABRIC_CHANNEL || 'passportchannel',
   contractName: process.env.FABRIC_CONTRACT || 'passport-contract',
-
-  // Identity
   identity: process.env.FABRIC_IDENTITY || 'admin',
-  adminSecret: process.env.FABRIC_ADMIN_SECRET || 'REMOVED_SECRET_ROTATED_2026_04_18',
-
-  // Wallet
+  adminSecret: process.env.FABRIC_ADMIN_SECRET || (isDev ? 'REMOVED_SECRET_ROTATED_2026_04_18' : undefined),
   walletPath: process.env.FABRIC_WALLET_PATH || path.join(__dirname, '..', 'wallet'),
 
-  // Organization configs — selected by FABRIC_ORG env var (1-4)
+  // P1-7: TLS 검증 (기본 true, dev에서만 false 허용)
+  tlsVerify: process.env.FABRIC_CA_TLS_VERIFY !== 'false',
+
   orgs: {
     1: {
       mspId: 'ManufacturerMSP',
@@ -34,7 +37,7 @@ const config = {
       caPort: 8054,
       peerEndpoint: 'localhost:9051',
       domain: 'evmanufacturer.battery.com',
-      ccpPath: process.env.FABRIC_CCP_PATH || path.resolve(
+      ccpPath: path.resolve(
         __dirname, '..', '..', 'passport-network',
         'organizations/peerOrganizations/evmanufacturer.battery.com/connection-evmanufacturer.json'
       ),
@@ -46,7 +49,7 @@ const config = {
       caPort: 9054,
       peerEndpoint: 'localhost:11051',
       domain: 'service.battery.com',
-      ccpPath: process.env.FABRIC_CCP_PATH || path.resolve(
+      ccpPath: path.resolve(
         __dirname, '..', '..', 'passport-network',
         'organizations/peerOrganizations/service.battery.com/connection-service.json'
       ),
@@ -58,21 +61,17 @@ const config = {
       caPort: 10054,
       peerEndpoint: 'localhost:13051',
       domain: 'regulator.battery.com',
-      ccpPath: process.env.FABRIC_CCP_PATH || path.resolve(
+      ccpPath: path.resolve(
         __dirname, '..', '..', 'passport-network',
         'organizations/peerOrganizations/regulator.battery.com/connection-regulator.json'
       ),
     },
   },
 
-  // Current org (default: Manufacturer)
   get currentOrg() {
     const orgNum = parseInt(process.env.FABRIC_ORG || '1', 10);
     return this.orgs[orgNum];
   },
-
-  // TLS verification
-  tlsVerify: process.env.FABRIC_TLS_VERIFY !== 'false',
 };
 
 module.exports = config;
