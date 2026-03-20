@@ -8,11 +8,14 @@ app.component('dashboard-page', {
     const loading = ref(true);
     const fabricStatus = ref('disconnected');
 
+    const materials = ref([]);
+
     onMounted(async () => {
       try {
-        const [passportData, statusData] = await Promise.allSettled([
+        const [passportData, statusData, materialData] = await Promise.allSettled([
           props.api.get('/passports'),
-          props.api.get('/status')
+          props.api.get('/status'),
+          props.api.get('/materials'),
         ]);
         if (passportData.status === 'fulfilled') {
           const d = passportData.value;
@@ -20,6 +23,10 @@ app.component('dashboard-page', {
         }
         if (statusData.status === 'fulfilled') {
           fabricStatus.value = statusData.value.fabric || 'disconnected';
+        }
+        if (materialData.status === 'fulfilled') {
+          const m = materialData.value;
+          materials.value = Array.isArray(m) ? m : (m.records || []);
         }
       } catch (e) {
         passports.value = [];
@@ -115,15 +122,7 @@ app.component('dashboard-page', {
     const recycleAvailableCount = computed(() =>
       passports.value.filter(p => p.recycleAvailable === true || p.recycleAvailable === 'true').length
     );
-    const materialCount = computed(() => {
-      let count = 0;
-      passports.value.forEach(p => {
-        if (p.recyclingRates && typeof p.recyclingRates === 'object') {
-          count += Object.keys(p.recyclingRates).length;
-        }
-      });
-      return count;
-    });
+    const materialCount = computed(() => materials.value.length);
 
     /* ---------- KPI cards per org ---------- */
     const statsCards = computed(() => {
