@@ -108,7 +108,7 @@ const app = createApp({
 
     const currentPageComponent = computed(() => PAGE_COMPONENTS[currentPage.value] || 'login-page');
 
-    function navigate(page, navProps) {
+    function navigate(page, navProps, skipHistory) {
       if (!auth.value.token && page !== 'login') {
         currentPage.value = 'login';
         return;
@@ -116,10 +116,28 @@ const app = createApp({
       currentPage.value = page;
       if (navProps) {
         pageProps.value = navProps;
-        // Expose pageProps globally so child components can read them
         window.__pageProps = navProps;
+      } else {
+        pageProps.value = {};
+        window.__pageProps = {};
+      }
+      // Browser history support (뒤로가기/앞으로가기)
+      if (!skipHistory) {
+        history.pushState({ page, props: navProps || {} }, '', `#${page}`);
       }
     }
+
+    // 뒤로가기/앞으로가기 처리
+    window.addEventListener('popstate', (e) => {
+      if (e.state && e.state.page) {
+        navigate(e.state.page, e.state.props, true);
+      } else {
+        navigate(auth.value.token ? 'dashboard' : 'login', {}, true);
+      }
+    });
+
+    // 초기 상태 등록
+    history.replaceState({ page: currentPage.value, props: {} }, '', `#${currentPage.value}`);
 
     function onLogin(data) {
       auth.value = { token: data.token, userId: data.userId, orgMsp: data.mspId };
@@ -127,7 +145,7 @@ const app = createApp({
       localStorage.setItem('bp_userId', data.userId);
       localStorage.setItem('bp_orgMsp', data.mspId);
       showToast('success', `${data.userId}님 환영합니다`);
-      currentPage.value = 'dashboard';
+      navigate('dashboard');
     }
 
     function logout() {
@@ -135,7 +153,7 @@ const app = createApp({
       localStorage.removeItem('bp_token');
       localStorage.removeItem('bp_userId');
       localStorage.removeItem('bp_orgMsp');
-      currentPage.value = 'login';
+      navigate('login');
     }
 
     function showToast(type, message) {
