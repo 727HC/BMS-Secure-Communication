@@ -929,11 +929,11 @@ app.component('passport-detail-page', {
                     <td class="px-5 py-3 font-mono text-xs text-gray-500">{{ r.recordId }}</td>
                     <td class="px-5 py-3 text-gray-600 text-xs">{{ r.timestamp }}</td>
                     <td class="px-5 py-3">
-                      <span class="font-semibold text-gray-900 tabular-nums">{{ r.soc != null ? r.soc + '%' : '-' }}</span>
+                      <span class="font-semibold text-gray-900 tabular-nums">{{ r.soc != null ? scaleSOC(r.soc) + '%' : '-' }}</span>
                     </td>
                     <td class="px-5 py-3 text-gray-700 tabular-nums">{{ r.voltage != null ? r.voltage + 'V' : '-' }}</td>
                     <td class="px-5 py-3 text-gray-700 tabular-nums">{{ r.current != null ? r.current + 'A' : '-' }}</td>
-                    <td class="px-5 py-3 text-gray-700 tabular-nums">{{ r.temperature != null ? r.temperature + 'C' : '-' }}</td>
+                    <td class="px-5 py-3 text-gray-700 tabular-nums">{{ r.temperature != null ? scaleTemp(r.temperature) + '°C' : '-' }}</td>
                     <td class="px-5 py-3 text-gray-700 tabular-nums">{{ r.dischargeCycles != null ? r.dischargeCycles : '-' }}</td>
                     <td class="px-5 py-3">
                       <div class="flex flex-wrap gap-1">
