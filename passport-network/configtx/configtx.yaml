@@ -1,0 +1,219 @@
+# Copyright IBM Corp. All Rights Reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+
+---
+################################################################################
+#
+#   Section: Organizations
+#
+################################################################################
+Organizations:
+  - &OrdererOrg
+    Name: OrdererOrg
+    ID: OrdererMSP
+    MSPDir: ../organizations/ordererOrganizations/battery.com/msp
+    Policies:
+      Readers:
+        Type: Signature
+        Rule: "OR('OrdererMSP.member')"
+      Writers:
+        Type: Signature
+        Rule: "OR('OrdererMSP.member')"
+      Admins:
+        Type: Signature
+        Rule: "OR('OrdererMSP.admin')"
+    OrdererEndpoints:
+      - orderer.battery.com:7050
+
+  - &Manufacturer
+    Name: ManufacturerMSP
+    ID: ManufacturerMSP
+    MSPDir: ../organizations/peerOrganizations/manufacturer.battery.com/msp
+    Policies:
+      Readers:
+        Type: Signature
+        Rule: "OR('ManufacturerMSP.admin', 'ManufacturerMSP.peer', 'ManufacturerMSP.client')"
+      Writers:
+        Type: Signature
+        Rule: "OR('ManufacturerMSP.admin', 'ManufacturerMSP.client')"
+      Admins:
+        Type: Signature
+        Rule: "OR('ManufacturerMSP.admin')"
+      Endorsement:
+        Type: Signature
+        Rule: "OR('ManufacturerMSP.peer')"
+
+  - &EVManufacturer
+    Name: EVManufacturerMSP
+    ID: EVManufacturerMSP
+    MSPDir: ../organizations/peerOrganizations/evmanufacturer.battery.com/msp
+    Policies:
+      Readers:
+        Type: Signature
+        Rule: "OR('EVManufacturerMSP.admin', 'EVManufacturerMSP.peer', 'EVManufacturerMSP.client')"
+      Writers:
+        Type: Signature
+        Rule: "OR('EVManufacturerMSP.admin', 'EVManufacturerMSP.client')"
+      Admins:
+        Type: Signature
+        Rule: "OR('EVManufacturerMSP.admin')"
+      Endorsement:
+        Type: Signature
+        Rule: "OR('EVManufacturerMSP.peer')"
+
+  - &Service
+    Name: ServiceMSP
+    ID: ServiceMSP
+    MSPDir: ../organizations/peerOrganizations/service.battery.com/msp
+    Policies:
+      Readers:
+        Type: Signature
+        Rule: "OR('ServiceMSP.admin', 'ServiceMSP.peer', 'ServiceMSP.client')"
+      Writers:
+        Type: Signature
+        Rule: "OR('ServiceMSP.admin', 'ServiceMSP.client')"
+      Admins:
+        Type: Signature
+        Rule: "OR('ServiceMSP.admin')"
+      Endorsement:
+        Type: Signature
+        Rule: "OR('ServiceMSP.peer')"
+
+  - &Regulator
+    Name: RegulatorMSP
+    ID: RegulatorMSP
+    MSPDir: ../organizations/peerOrganizations/regulator.battery.com/msp
+    Policies:
+      Readers:
+        Type: Signature
+        Rule: "OR('RegulatorMSP.admin', 'RegulatorMSP.peer', 'RegulatorMSP.client')"
+      Writers:
+        Type: Signature
+        Rule: "OR('RegulatorMSP.admin', 'RegulatorMSP.client')"
+      Admins:
+        Type: Signature
+        Rule: "OR('RegulatorMSP.admin')"
+      Endorsement:
+        Type: Signature
+        Rule: "OR('RegulatorMSP.peer')"
+
+################################################################################
+#
+#   SECTION: Capabilities
+#
+################################################################################
+Capabilities:
+  Channel: &ChannelCapabilities
+    V2_0: true
+  Orderer: &OrdererCapabilities
+    V2_0: true
+  Application: &ApplicationCapabilities
+    V2_5: true
+
+################################################################################
+#
+#   SECTION: Application
+#
+################################################################################
+Application: &ApplicationDefaults
+  Organizations:
+  Policies:
+    Readers:
+      Type: ImplicitMeta
+      Rule: "ANY Readers"
+    Writers:
+      Type: ImplicitMeta
+      Rule: "ANY Writers"
+    Admins:
+      Type: ImplicitMeta
+      Rule: "MAJORITY Admins"
+    LifecycleEndorsement:
+      Type: ImplicitMeta
+      Rule: "MAJORITY Endorsement"
+    Endorsement:
+      Type: ImplicitMeta
+      Rule: "MAJORITY Endorsement"
+  Capabilities:
+    <<: *ApplicationCapabilities
+
+################################################################################
+#
+#   SECTION: Orderer
+#
+################################################################################
+Orderer: &OrdererDefaults
+  Addresses:
+    - orderer.battery.com:7050
+  BatchTimeout: 2s
+  BatchSize:
+    MaxMessageCount: 10
+    AbsoluteMaxBytes: 99 MB
+    PreferredMaxBytes: 512 KB
+  Organizations:
+  Policies:
+    Readers:
+      Type: ImplicitMeta
+      Rule: "ANY Readers"
+    Writers:
+      Type: ImplicitMeta
+      Rule: "ANY Writers"
+    Admins:
+      Type: ImplicitMeta
+      Rule: "MAJORITY Admins"
+    BlockValidation:
+      Type: ImplicitMeta
+      Rule: "ANY Writers"
+
+################################################################################
+#
+#   CHANNEL
+#
+################################################################################
+Channel: &ChannelDefaults
+  Policies:
+    Readers:
+      Type: ImplicitMeta
+      Rule: "ANY Readers"
+    Writers:
+      Type: ImplicitMeta
+      Rule: "ANY Writers"
+    Admins:
+      Type: ImplicitMeta
+      Rule: "MAJORITY Admins"
+  Capabilities:
+    <<: *ChannelCapabilities
+
+################################################################################
+#
+#   Profile
+#
+#   Battery Passport Channel Profile
+#   Endorsement policy (for reference):
+#     AND('ManufacturerMSP.peer', OR('EVManufacturerMSP.peer', 'ServiceMSP.peer', 'RegulatorMSP.peer'))
+#
+################################################################################
+Profiles:
+  PassportChannel:
+    <<: *ChannelDefaults
+    Orderer:
+      <<: *OrdererDefaults
+      OrdererType: etcdraft
+      EtcdRaft:
+        Consenters:
+          - Host: orderer.battery.com
+            Port: 7050
+            ClientTLSCert: ../organizations/ordererOrganizations/battery.com/orderers/orderer.battery.com/tls/server.crt
+            ServerTLSCert: ../organizations/ordererOrganizations/battery.com/orderers/orderer.battery.com/tls/server.crt
+      Organizations:
+        - *OrdererOrg
+      Capabilities: *OrdererCapabilities
+    Application:
+      <<: *ApplicationDefaults
+      Organizations:
+        - *Manufacturer
+        - *EVManufacturer
+        - *Service
+        - *Regulator
+      Capabilities: *ApplicationCapabilities

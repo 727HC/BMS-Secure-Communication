@@ -14,6 +14,12 @@ type BMSContract struct {
 	contractapi.Contract
 }
 
+// [G-04] docType 상수
+const bmsDocType = "bmsData"
+
+// [G-01] 기본 페이지 사이즈 상수
+const defaultPageSize int32 = 100
+
 // BMSData represents a battery data record on the blockchain
 type BMSData struct {
 	DocType   string `json:"docType"`
@@ -39,7 +45,12 @@ func (c *BMSContract) RecordBMSData(ctx contractapi.TransactionContextInterface,
 	id string, dataHash string, did string, signature string,
 	fc string, soc string, timestamp string) error {
 
-	// #6 수정: 중복 ID 체크
+	// [G-03, BC-06] 필수 파라미터 빈 값 검증
+	if id == "" || dataHash == "" || did == "" || timestamp == "" {
+		return fmt.Errorf("id, dataHash, did, timestamp must not be empty")
+	}
+
+	// 중복 ID 체크
 	existing, err := ctx.GetStub().GetState(id)
 	if err != nil {
 		return fmt.Errorf("failed to check existing record: %v", err)
@@ -65,7 +76,7 @@ func (c *BMSContract) RecordBMSData(ctx contractapi.TransactionContextInterface,
 	}
 
 	record := BMSData{
-		DocType:   "bmsData",
+		DocType:   bmsDocType,
 		DataHash:  dataHash,
 		DID:       did,
 		Signature: signature,
@@ -105,16 +116,17 @@ func (c *BMSContract) QueryBMSData(ctx contractapi.TransactionContextInterface,
 	return &record, nil
 }
 
-// QueryAllBMSData returns all battery data records (#7 수정: pagination 지원)
-func (c *BMSContract) QueryAllBMSData(ctx contractapi.TransactionContextInterface) ([]*BMSData, error) {
-	return c.QueryBMSDataWithPagination(ctx, 100, "")
+// QueryAllBMSData returns all battery data records (기본 defaultPageSize건)
+func (c *BMSContract) QueryAllBMSData(ctx contractapi.TransactionContextInterface) (*PaginatedResult, error) {
+	return c.QueryBMSDataWithPagination(ctx, defaultPageSize, "")
 }
 
-// QueryBMSDataWithPagination returns paginated battery data records
+// QueryBMSDataWithPagination returns paginated battery data records with bookmark
 func (c *BMSContract) QueryBMSDataWithPagination(ctx contractapi.TransactionContextInterface,
-	pageSize int32, bookmark string) ([]*BMSData, error) {
+	pageSize int32, bookmark string) (*PaginatedResult, error) {
 
-	resultsIterator, responseMetadata, err := ctx.GetStub().GetStateByRangeWithPagination("", "", pageSize, bookmark)
+	// [G-02] BMS 키 접두사로 범위 한정
+	resultsIterator, responseMetadata, err := ctx.GetStub().GetStateByRangeWithPagination("bms-", "bms-~", pageSize, bookmark)
 	if err != nil {
 		return nil, err
 	}
@@ -135,10 +147,11 @@ func (c *BMSContract) QueryBMSDataWithPagination(ctx contractapi.TransactionCont
 		records = append(records, &record)
 	}
 
-	// bookmark를 마지막 레코드의 metadata로 전달 (클라이언트가 다음 페이지 요청 시 사용)
-	_ = responseMetadata
-
-	return records, nil
+	return &PaginatedResult{
+		Records:  records,
+		Bookmark: responseMetadata.GetBookmark(),
+		Count:    int(responseMetadata.GetFetchedRecordsCount()),
+	}, nil
 }
 
 // GetHistoryForKey returns the history of a battery data record
@@ -151,13 +164,18 @@ func (c *BMSContract) GetHistoryForKey(ctx contractapi.TransactionContextInterfa
 	}
 	defer historyIterator.Close()
 
+	// [G-05] 삭제된 키 처리
 	var history []string
 	for historyIterator.HasNext() {
 		modification, err := historyIterator.Next()
 		if err != nil {
 			return nil, err
 		}
-		history = append(history, string(modification.Value))
+		if modification.IsDelete {
+			history = append(history, `{"deleted":true}`)
+		} else {
+			history = append(history, string(modification.Value))
+		}
 	}
 
 	return history, nil

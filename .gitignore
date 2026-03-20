@@ -1,10 +1,23 @@
 node_modules/
 wallet/
 *.log
+logs/
 
 # Third-party (submodules or manually cloned)
 fabric-samples/
 von-network/
+
+# Fabric network runtime artifacts
+passport-network/organizations/peerOrganizations/
+passport-network/organizations/ordererOrganizations/
+passport-network/organizations/fabric-ca/*/
+passport-network/channel-artifacts/
+passport-network/system-genesis-block/
+
+# Chaincode binaries and vendor
+chaincode/*/vendor/
+chaincode/*/*.tar.gz
+chaincode/bms-contract/bms-contract
 
 # OS / IDE
 .DS_Store

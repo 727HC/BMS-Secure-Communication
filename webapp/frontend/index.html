@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Battery Passport Platform</title>
+  <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    [v-cloak] { display: none; }
+    .fade-enter-active, .fade-leave-active { transition: opacity 0.2s; }
+    .fade-enter-from, .fade-leave-to { opacity: 0; }
+  </style>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: { 50:'#eff6ff',100:'#dbeafe',200:'#bfdbfe',300:'#93c5fd',400:'#60a5fa',500:'#3b82f6',600:'#2563eb',700:'#1d4ed8',800:'#1e40af',900:'#1e3a8a' },
+          }
+        }
+      }
+    }
+  </script>
+</head>
+<body class="bg-gray-50 min-h-screen">
+  <div id="app" v-cloak>
+    <!-- Top Navigation -->
+    <nav v-if="auth.token" class="bg-primary-800 text-white shadow-lg">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex items-center justify-between h-16">
+          <div class="flex items-center space-x-8">
+            <span class="text-xl font-bold cursor-pointer" @click="navigate('dashboard')">Battery Passport</span>
+            <div class="hidden md:flex space-x-1">
+              <button v-for="item in navItems" :key="item.route"
+                @click="navigate(item.route)"
+                :class="['px-3 py-2 rounded-md text-sm font-medium transition-colors',
+                  currentPage === item.route ? 'bg-primary-900 text-white' : 'text-primary-200 hover:bg-primary-700 hover:text-white']">
+                {{ item.label }}
+              </button>
+            </div>
+          </div>
+          <div class="flex items-center space-x-4">
+            <span class="text-sm text-primary-200">
+              <span class="font-medium text-white">{{ auth.userId }}</span>
+              <span class="ml-1 px-2 py-0.5 bg-primary-900 rounded text-xs">{{ orgLabel }}</span>
+            </span>
+            <button @click="logout" class="text-sm text-primary-300 hover:text-white">Logout</button>
+          </div>
+        </div>
+      </div>
+      <!-- Mobile menu -->
+      <div class="md:hidden px-2 pb-3 space-y-1">
+        <button v-for="item in navItems" :key="item.route"
+          @click="navigate(item.route)"
+          :class="['block w-full text-left px-3 py-2 rounded-md text-sm font-medium',
+            currentPage === item.route ? 'bg-primary-900 text-white' : 'text-primary-200 hover:bg-primary-700']">
+          {{ item.label }}
+        </button>
+      </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <component :is="currentPageComponent"
+        :auth="auth"
+        :api="api"
+        @navigate="navigate"
+        @login="onLogin">
+      </component>
+    </main>
+
+    <!-- Toast Notifications -->
+    <div class="fixed top-4 right-4 z-50 space-y-2">
+      <div v-for="(toast, i) in toasts" :key="i"
+        :class="['px-4 py-3 rounded-lg shadow-lg text-white text-sm transition-all',
+          toast.type === 'error' ? 'bg-red-500' : toast.type === 'success' ? 'bg-green-500' : 'bg-blue-500']">
+        {{ toast.message }}
+      </div>
+    </div>
+  </div>
+
+  <!-- App instance (creates `app` variable) -->
+  <script src="app.js"></script>
+  <!-- Page Components (register on `app` via app.component()) -->
+  <script src="pages/login.js"></script>
+  <script src="pages/dashboard.js"></script>
+  <script src="pages/passports.js"></script>
+  <script src="pages/passport-detail.js"></script>
+  <script src="pages/materials.js"></script>
+  <script src="pages/bmu-data.js"></script>
+  <script src="pages/maintenance.js"></script>
+  <script src="pages/recycling.js"></script>
+  <!-- Mount after all components are registered -->
+  <script>app.mount('#app');</script>
+</body>
+</html>
