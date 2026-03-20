@@ -28,6 +28,16 @@ app.component('passport-detail-page', {
     const showExtractModal = ref(false);
     const submitting = ref(false);
 
+    // SOC/Temperature raw value scaler (legacy data stored as uint16 raw)
+    function scaleSOC(val) {
+      if (val == null) return null;
+      return val > 100 ? +(val / 655.35).toFixed(1) : +val.toFixed(1);
+    }
+    function scaleTemp(val) {
+      if (val == null) return null;
+      return val > 100 ? +(val / 1310.7).toFixed(1) : val;
+    }
+
     // VIN Bind form
     const bindForm = ref({ vin: '', installDate: '', evManufacturer: '', evAssemblyCountry: '' });
 
@@ -338,7 +348,7 @@ app.component('passport-detail-page', {
           title: '실시간 상태',
           fields: [
             { label: '상태', value: p.status, badge: true },
-            { label: '현재 SOC', value: p.currentSoc != null ? p.currentSoc + '%' : '-', progress: true, pval: p.currentSoc },
+            { label: '현재 SOC', value: p.currentSoc != null ? scaleSOC(p.currentSoc) + '%' : '-', progress: true, pval: scaleSOC(p.currentSoc) },
             { label: '현재 SOH', value: p.currentSoh != null ? p.currentSoh + '%' : '-', progress: true, pval: p.currentSoh },
             { label: '재활용 가능', value: p.recycleAvailable ? '예' : '아니오' },
           ]
@@ -431,11 +441,11 @@ app.component('passport-detail-page', {
                 <div>
                   <div class="flex justify-between text-sm mb-1">
                     <span class="text-gray-500">SOC</span>
-                    <span class="font-semibold text-gray-700">{{ passport.currentSoc != null ? passport.currentSoc + '%' : '-' }}</span>
+                    <span class="font-semibold text-gray-700">{{ passport.currentSoc != null ? scaleSOC(passport.currentSoc) + '%' : '-' }}</span>
                   </div>
                   <div class="w-full bg-gray-200 rounded-full h-2.5">
                     <div class="bg-green-500 h-2.5 rounded-full transition-all"
-                      :style="{ width: (passport.currentSoc || 0) + '%' }"></div>
+                      :style="{ width: Math.min(scaleSOC(passport.currentSoc) || 0, 100) + '%' }"></div>
                   </div>
                 </div>
                 <div>
