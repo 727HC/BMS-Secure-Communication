@@ -82,7 +82,7 @@ async function getContractForUser(userId, orgMsp) {
 
   // Pool에서 캐시 확인
   if (gatewayPool.has(label)) {
-    return gatewayPool.get(label);
+    return gatewayPool.get(label).contract;
   }
 
   // 해당 user의 wallet identity 확인
@@ -98,13 +98,11 @@ async function getContractForUser(userId, orgMsp) {
     throw new Error(`Unknown MSP: ${orgMsp}`);
   }
 
-  let ccp;
-  try {
-    ccp = JSON.parse(fs.readFileSync(org.ccpPath, 'utf8'));
-  } catch (err) {
-    // CCP 없으면 기본 org CCP 사용
-    ccp = JSON.parse(fs.readFileSync(fabricConfig.currentOrg.ccpPath, 'utf8'));
+  // P1-5: CCP fallback 제거 — fail-fast
+  if (!fs.existsSync(org.ccpPath)) {
+    throw new Error(`CCP not found for ${orgMsp}: ${org.ccpPath}`);
   }
+  const ccp = JSON.parse(fs.readFileSync(org.ccpPath, 'utf8'));
 
   const gw = new Gateway();
   await gw.connect(ccp, {
@@ -115,7 +113,8 @@ async function getContractForUser(userId, orgMsp) {
 
   const network = await gw.getNetwork(fabricConfig.channelName);
   const ct = network.getContract(fabricConfig.contractName);
-  gatewayPool.set(label, ct);
+  // P1-3: gateway도 함께 저장 (disconnect 가능하게)
+  gatewayPool.set(label, { gateway: gw, contract: ct });
   console.log(`Gateway opened for ${label}`);
   return ct;
 }
@@ -141,8 +140,8 @@ function isConnected() {
 }
 
 async function disconnect() {
-  for (const [label, ct] of gatewayPool) {
-    // Contract doesn't have disconnect, gateway does
+  for (const [label, entry] of gatewayPool) {
+    try { await entry.gateway.disconnect(); } catch (e) { /* ignore */ }
   }
   gatewayPool.clear();
   defaultContract = null;

@@ -5,6 +5,34 @@
 
 ---
 
+## Battery Passport Platform (배터리 여권)
+
+GBA 21 규격 배터리 여권 플랫폼 — 4-org Fabric 네트워크 + Vue 3 웹앱
+
+```bash
+# Quick Start
+./start_passport_network.sh up          # 4-org Fabric + CouchDB
+cd bmu-agent && FABRIC_ORG=1 node server.js  # Agent + 프론트엔드
+open http://localhost:3001              # 브라우저 접속
+./test/demo-lifecycle.sh                # 전주기 데모
+```
+
+| 디렉토리 | 설명 |
+|----------|------|
+| `passport-network/` | 4-org Hyperledger Fabric (Manufacturer, EVManufacturer, Service, Regulator) |
+| `chaincode/passport-contract/` | GBA 21 체인코드 (Go, 19개 함수, RBAC) |
+| `bmu-agent/` | Node.js API 서버 (Express 4, JWT, org별 gateway pool) |
+| `webapp/frontend/` | Vue 3 + Tailwind CSS (8개 페이지, ESG 디자인) |
+| `docs/ARCHITECTURE.md` | 상세 아키텍처 문서 |
+
+**BMU 데이터 흐름**: BMU(Ed25519 서명) → serial_to_agent.py → Agent(48B 파싱 + DID 검증) → Fabric → 여권 SOC/Cycles 갱신
+
+**참고**: BMU ingest는 Manufacturer M2M service identity로 실행. 일반 API는 요청자 JWT identity로 실행.
+
+**성능**: 여권생성 ~1.9초, 조회 ~55ms, BMU기록 ~2.2초 (단일 클라이언트 순차, sleep 포함)
+
+---
+
 ## 목차
 
 - [프로젝트 개요](#프로젝트-개요)
