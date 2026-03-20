@@ -136,7 +136,7 @@ extern "C" {
  *============================================================================*/
 #define TASK_CANRX_STACK            512U    /* CAN RX task extra stack       */
 #define TASK_PROTOCOL_STACK         512U    /* Protocol task extra stack      */
-#define TASK_DATAPROC_STACK         512U    /* Data process task extra stack  */
+#define TASK_DATAPROC_STACK         2048U   /* Data process task extra stack (TweetNaCl needs ~4KB) */
 #define TASK_MONITOR_STACK          128U    /* Monitor task extra stack       */
 #define TASK_CANRX_PRIORITY         3U      /* CAN RX task priority (highest) */
 #define TASK_PROTOCOL_PRIORITY      2U      /* Protocol task priority         */
