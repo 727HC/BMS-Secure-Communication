@@ -417,6 +417,11 @@ app.component('passport-detail-page', {
     }
 
     // SOH health label
+    function formatDate(ts) {
+      if (!ts) return '-';
+      try { return new Date(ts).toLocaleString('ko-KR'); } catch { return ts; }
+    }
+
     function getSohHealthLabel(soh) {
       if (soh == null) return { label: '--', color: 'bg-gray-100 text-gray-500 border-gray-200', icon: 'none' };
       if (soh > 80) return { label: '양호', color: 'bg-emerald-100 text-emerald-700 border-emerald-200', icon: 'heart' };
@@ -436,7 +441,7 @@ app.component('passport-detail-page', {
       maintenanceLogs, accidentLogs,
       batteryFillAnimated, lifecycleSteps,
       getStatusBadge, getSocColor, getSohColor, scaleSOC, scaleTemp, decodeStatusFlags,
-      getBatteryFillColor, getLifecycleIdx, getSohHealthLabel,
+      getBatteryFillColor, getLifecycleIdx, getSohHealthLabel, formatDate,
       switchTab, goBack, setPassportId,
       submitBind, submitMaintenanceRequest, submitMaintenanceLog, submitAccidentLog,
       submitAnalysisRequest, submitAnalysisResult, submitRecycleAvailability,
@@ -828,11 +833,11 @@ app.component('passport-detail-page', {
                 </div>
                 <div>
                   <dt class="text-xs font-medium text-gray-400 uppercase tracking-wider mb-1">전압 범위</dt>
-                  <dd class="text-sm text-gray-900">{{ passport.voltageRange || '-' }}</dd>
+                  <dd class="text-sm text-gray-900">{{ passport.voltageRange ? passport.voltageRange + ' V' : '-' }}</dd>
                 </div>
                 <div>
                   <dt class="text-xs font-medium text-gray-400 uppercase tracking-wider mb-1">온도 범위</dt>
-                  <dd class="text-sm text-gray-900">{{ passport.temperatureRange || '-' }}</dd>
+                  <dd class="text-sm text-gray-900">{{ passport.temperatureRange ? passport.temperatureRange + ' °C' : '-' }}</dd>
                 </div>
               </div>
             </div>
@@ -903,7 +908,7 @@ app.component('passport-detail-page', {
                   <dd class="text-xl font-bold text-gray-900 tabular-nums">{{ passport.currentSoh != null ? passport.currentSoh + '%' : '--' }}</dd>
                 </div>
                 <div class="bg-gray-50 rounded-xl p-4 border border-gray-100 text-center">
-                  <dt class="text-xs font-medium text-gray-400 uppercase tracking-wider mb-2">SOCE</dt>
+                  <dt class="text-xs font-medium text-gray-400 uppercase tracking-wider mb-2" title="에너지 충전상태">SOCE (에너지 충전상태)</dt>
                   <dd class="text-xl font-bold text-gray-900 tabular-nums">{{ passport.soce != null ? passport.soce + '%' : '--' }}</dd>
                 </div>
                 <div class="bg-gray-50 rounded-xl p-4 border border-gray-100 text-center">
@@ -942,13 +947,13 @@ app.component('passport-detail-page', {
               <table class="w-full text-sm">
                 <thead>
                   <tr class="bg-gray-50/80 border-b border-gray-200">
-                    <th class="text-left px-5 py-3.5 font-semibold text-gray-500 text-xs uppercase tracking-wider">Record ID</th>
-                    <th class="text-left px-5 py-3.5 font-semibold text-gray-500 text-xs uppercase tracking-wider">Timestamp</th>
-                    <th class="text-left px-5 py-3.5 font-semibold text-gray-500 text-xs uppercase tracking-wider">SOC</th>
-                    <th class="text-left px-5 py-3.5 font-semibold text-gray-500 text-xs uppercase tracking-wider">Voltage</th>
-                    <th class="text-left px-5 py-3.5 font-semibold text-gray-500 text-xs uppercase tracking-wider">Current</th>
-                    <th class="text-left px-5 py-3.5 font-semibold text-gray-500 text-xs uppercase tracking-wider">Temp</th>
-                    <th class="text-left px-5 py-3.5 font-semibold text-gray-500 text-xs uppercase tracking-wider">Cycles</th>
+                    <th class="text-left px-5 py-3.5 font-semibold text-gray-500 text-xs uppercase tracking-wider">기록 ID</th>
+                    <th class="text-left px-5 py-3.5 font-semibold text-gray-500 text-xs uppercase tracking-wider">시각</th>
+                    <th class="text-left px-5 py-3.5 font-semibold text-gray-500 text-xs uppercase tracking-wider">SOC(%)</th>
+                    <th class="text-left px-5 py-3.5 font-semibold text-gray-500 text-xs uppercase tracking-wider">전압(V)</th>
+                    <th class="text-left px-5 py-3.5 font-semibold text-gray-500 text-xs uppercase tracking-wider">전류(A)</th>
+                    <th class="text-left px-5 py-3.5 font-semibold text-gray-500 text-xs uppercase tracking-wider">온도(°C)</th>
+                    <th class="text-left px-5 py-3.5 font-semibold text-gray-500 text-xs uppercase tracking-wider">방전주기</th>
                     <th class="text-left px-5 py-3.5 font-semibold text-gray-500 text-xs uppercase tracking-wider">상태 플래그</th>
                   </tr>
                 </thead>
@@ -956,7 +961,7 @@ app.component('passport-detail-page', {
                   <tr v-for="(r, idx) in bmuRecords" :key="r.recordId"
                     :class="['transition-colors', idx % 2 === 0 ? 'bg-white' : 'bg-gray-50/40', 'hover:bg-primary-50/40']">
                     <td class="px-5 py-3 font-mono text-xs text-gray-500">{{ r.recordId }}</td>
-                    <td class="px-5 py-3 text-gray-600 text-xs">{{ r.timestamp }}</td>
+                    <td class="px-5 py-3 text-gray-600 text-xs">{{ formatDate(r.timestamp) }}</td>
                     <td class="px-5 py-3">
                       <span class="font-semibold text-gray-900 tabular-nums">{{ r.soc != null ? scaleSOC(r.soc) + '%' : '-' }}</span>
                     </td>
@@ -1167,6 +1172,7 @@ app.component('passport-detail-page', {
           <!-- Action Buttons -->
           <div class="bg-white rounded-xl shadow-sm border border-gray-200/80 p-6">
             <h4 class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-4">가용 작업</h4>
+            <p v-if="!isEV && !isService && !isRegulator" class="text-sm text-gray-400 py-4">현재 가능한 작업이 없습니다.</p>
             <div class="flex flex-wrap gap-3">
               <button v-if="isEV"
                 @click="showAnalysisRequestModal = true"
@@ -1271,7 +1277,7 @@ app.component('passport-detail-page', {
                         <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                           <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
                         </svg>
-                        {{ entry.timestamp || '-' }}
+                        {{ formatDate(entry.timestamp) }}
                         <span class="inline-flex items-center gap-1 ml-2 px-1.5 py-0.5 bg-primary-50 text-primary-600 rounded text-[10px] font-medium border border-primary-100">
                           <svg class="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
                           On-Chain TX #{{ entry.index }}
