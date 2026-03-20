@@ -220,12 +220,118 @@ app.component('dashboard-page', {
 
     function nav(page) { emit('navigate', page); }
 
+    /* ---------- donut chart data ---------- */
+    const donutHexColors = {
+      MANUFACTURED: '#3b82f6',
+      ACTIVE: '#10b981',
+      MAINTENANCE: '#f59e0b',
+      ANALYSIS: '#8b5cf6',
+      RECYCLING: '#f97316',
+      DISPOSED: '#6b7280',
+    };
+    const donutCircumference = 2 * Math.PI * 70; // radius=70
+    const donutSegments = computed(() => {
+      const total = totalCount.value || 0;
+      if (total === 0) return [];
+      let accumulated = 0;
+      return statusList.map(s => {
+        const count = countByStatus.value[s] || 0;
+        const pct = count / total * 100;
+        const dashLen = (pct / 100) * donutCircumference;
+        const offset = accumulated;
+        accumulated += pct;
+        return {
+          status: s,
+          label: statusLabels[s],
+          count,
+          pct,
+          color: donutHexColors[s],
+          dasharray: dashLen + ' ' + (donutCircumference - dashLen),
+          dashoffset: -(offset / 100) * donutCircumference,
+        };
+      }).filter(seg => seg.count > 0);
+    });
+
+    /* ---------- gauge helpers ---------- */
+    const gaugeCircumference = 2 * Math.PI * 70; // radius=70
+    const gaugeReady = ref(false);
+    onMounted(() => {
+      setTimeout(() => { gaugeReady.value = true; }, 100);
+    });
+
+    /* ---------- lifecycle steps ---------- */
+    const lifecycleSteps = [
+      { label: '원자재 등록', key: 'materials' },
+      { label: '여권 발급', key: 'manufactured' },
+      { label: 'VIN 바인딩', key: 'vinBound' },
+      { label: '정비', key: 'maintenance' },
+      { label: 'SOH 분석', key: 'analysis' },
+      { label: '재활용', key: 'recycling' },
+      { label: '폐기', key: 'disposed' },
+    ];
+    const lifecycleProgress = computed(() => {
+      // Determine which steps are completed based on passport data
+      const has = {
+        materials: materialCount.value > 0,
+        manufactured: (countByStatus.value['MANUFACTURED'] || 0) > 0 || (countByStatus.value['ACTIVE'] || 0) > 0,
+        vinBound: vinBoundCount.value > 0,
+        maintenance: (countByStatus.value['MAINTENANCE'] || 0) > 0 || (countByStatus.value['ACTIVE'] || 0) > 0,
+        analysis: (countByStatus.value['ANALYSIS'] || 0) > 0,
+        recycling: (countByStatus.value['RECYCLING'] || 0) > 0,
+        disposed: (countByStatus.value['DISPOSED'] || 0) > 0,
+      };
+      // Find last completed index
+      let lastCompleted = -1;
+      lifecycleSteps.forEach((step, i) => {
+        if (has[step.key]) lastCompleted = i;
+      });
+      return lifecycleSteps.map((step, i) => ({
+        ...step,
+        index: i,
+        completed: i <= lastCompleted && has[step.key],
+        current: i === lastCompleted + 1,
+        upcoming: i > lastCompleted + 1,
+      }));
+    });
+
+    /* ---------- ESG metrics ---------- */
+    const avgRecyclingRate = computed(() => {
+      let totalRate = 0, count = 0;
+      passports.value.forEach(p => {
+        if (p.recyclingRates && typeof p.recyclingRates === 'object') {
+          const vals = Object.values(p.recyclingRates).map(Number).filter(v => !isNaN(v));
+          if (vals.length > 0) {
+            totalRate += vals.reduce((a, b) => a + b, 0) / vals.length;
+            count++;
+          }
+        }
+      });
+      return count > 0 ? Math.round(totalRate / count) : 0;
+    });
+
+    const avgCarbonFootprint = computed(() => {
+      const items = passports.value.filter(p => p.carbonFootprint != null && Number(p.carbonFootprint) > 0);
+      if (items.length === 0) return 0;
+      return Math.round(items.reduce((s, p) => s + Number(p.carbonFootprint), 0) / items.length);
+    });
+
+    const ecoRate = computed(() => {
+      const total = totalCount.value || 0;
+      if (total === 0) return 0;
+      return Math.round((recycleAvailableCount.value / total) * 100);
+    });
+
     return {
       loading, fabricStatus, passports, totalCount,
       statsCards, statusDistribution, statusColors, statusLabels,
       quickActions, recentPassports,
       orgDisplayName, scaleSOC, truncate, formatDate,
       nav,
+      avgSoc, avgSoh,
+      donutSegments, donutCircumference, donutHexColors,
+      gaugeCircumference, gaugeReady,
+      lifecycleProgress,
+      avgRecyclingRate, avgCarbonFootprint, ecoRate, recycleAvailableCount,
     };
   },
   template: `
@@ -254,12 +360,25 @@ app.component('dashboard-page', {
               GBA 21 규격 배터리 여권 플랫폼 &mdash; xEV BMS 보안 기반 배터리 전주기 관리
             </p>
           </div>
-          <div class="flex items-center gap-2 bg-white/10 backdrop-blur-sm rounded-lg px-4 py-2.5 border border-white/20 self-start">
-            <span :class="['inline-block w-2.5 h-2.5 rounded-full', fabricStatus === 'connected' ? 'bg-green-400 shadow-green-glow' : 'bg-red-400']"
-                  :style="fabricStatus === 'connected' ? 'box-shadow: 0 0 6px rgba(74,222,128,0.6)' : ''"></span>
-            <span class="text-sm font-medium text-white">
-              Fabric {{ fabricStatus === 'connected' ? '연결됨' : '연결 끊김' }}
-            </span>
+          <div class="flex items-center gap-3 self-start flex-wrap">
+            <!-- GBA 21 Compliance Badge -->
+            <div class="flex items-center gap-1.5 bg-white/15 backdrop-blur-sm rounded-full px-3 py-1.5 border border-white/25">
+              <svg class="w-4 h-4 text-green-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+              </svg>
+              <span class="text-xs font-semibold text-white">GBA 21</span>
+              <svg class="w-3.5 h-3.5 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                <polyline points="20 6 9 17 4 12"/>
+              </svg>
+            </div>
+            <!-- Fabric Status -->
+            <div class="flex items-center gap-2 bg-white/10 backdrop-blur-sm rounded-lg px-4 py-2.5 border border-white/20">
+              <span :class="['inline-block w-2.5 h-2.5 rounded-full', fabricStatus === 'connected' ? 'bg-green-400 shadow-green-glow' : 'bg-red-400']"
+                    :style="fabricStatus === 'connected' ? 'box-shadow: 0 0 6px rgba(74,222,128,0.6)' : ''"></span>
+              <span class="text-sm font-medium text-white">
+                Fabric {{ fabricStatus === 'connected' ? '연결됨' : '연결 끊김' }}
+              </span>
+            </div>
           </div>
         </div>
       </div>
@@ -389,10 +508,54 @@ app.component('dashboard-page', {
           </div>
         </div>
 
+        <!-- ===== 2.5 CIRCULAR SOC / SOH GAUGES ===== -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 mt-6">
+          <!-- SOC Gauge -->
+          <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-6 flex flex-col items-center">
+            <h3 class="text-sm font-semibold text-gray-500 mb-4">평균 충전 상태 (SOC)</h3>
+            <svg viewBox="0 0 200 200" class="w-40 h-40">
+              <circle cx="100" cy="100" r="70" fill="none" stroke="#e5e7eb" stroke-width="12"/>
+              <circle cx="100" cy="100" r="70" fill="none"
+                      stroke="#10b981" stroke-width="12"
+                      stroke-linecap="round"
+                      :stroke-dasharray="gaugeCircumference"
+                      :stroke-dashoffset="gaugeReady ? gaugeCircumference * (1 - avgSoc / 100) : gaugeCircumference"
+                      transform="rotate(-90 100 100)"
+                      style="transition: stroke-dashoffset 1s ease;"/>
+              <text x="100" y="95" text-anchor="middle" dominant-baseline="middle"
+                    class="text-3xl font-bold" fill="#111827" font-size="36" font-weight="700">
+                {{ avgSoc }}
+              </text>
+              <text x="100" y="125" text-anchor="middle" fill="#6b7280" font-size="14" font-weight="500">%</text>
+            </svg>
+            <p class="mt-3 text-xs text-gray-400">전체 배터리 평균 충전율</p>
+          </div>
+          <!-- SOH Gauge -->
+          <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-6 flex flex-col items-center">
+            <h3 class="text-sm font-semibold text-gray-500 mb-4">평균 건강 상태 (SOH)</h3>
+            <svg viewBox="0 0 200 200" class="w-40 h-40">
+              <circle cx="100" cy="100" r="70" fill="none" stroke="#e5e7eb" stroke-width="12"/>
+              <circle cx="100" cy="100" r="70" fill="none"
+                      stroke="#3b82f6" stroke-width="12"
+                      stroke-linecap="round"
+                      :stroke-dasharray="gaugeCircumference"
+                      :stroke-dashoffset="gaugeReady ? gaugeCircumference * (1 - avgSoh / 100) : gaugeCircumference"
+                      transform="rotate(-90 100 100)"
+                      style="transition: stroke-dashoffset 1s ease;"/>
+              <text x="100" y="95" text-anchor="middle" dominant-baseline="middle"
+                    fill="#111827" font-size="36" font-weight="700">
+                {{ avgSoh }}
+              </text>
+              <text x="100" y="125" text-anchor="middle" fill="#6b7280" font-size="14" font-weight="500">%</text>
+            </svg>
+            <p class="mt-3 text-xs text-gray-400">전체 배터리 평균 건강도</p>
+          </div>
+        </div>
+
         <!-- ===== 3. STATUS DISTRIBUTION + QUICK ACTIONS (2 col) ===== -->
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
 
-          <!-- Left: Battery Status Overview -->
+          <!-- Left: Battery Status Overview with Donut Chart -->
           <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
             <div class="flex items-center gap-2 mb-5">
               <svg class="w-5 h-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -400,6 +563,41 @@ app.component('dashboard-page', {
                 <rect x="3" y="4" width="18" height="16" rx="2"/>
               </svg>
               <h2 class="text-lg font-semibold text-gray-900">배터리 상태 현황</h2>
+            </div>
+
+            <!-- SVG Donut Chart -->
+            <div class="flex flex-col items-center mb-5">
+              <svg viewBox="0 0 200 200" class="w-44 h-44 donut-chart">
+                <!-- No data state -->
+                <template v-if="donutSegments.length === 0">
+                  <circle cx="100" cy="100" r="70" fill="none" stroke="#e5e7eb" stroke-width="14"/>
+                  <text x="100" y="105" text-anchor="middle" dominant-baseline="middle"
+                        fill="#9ca3af" font-size="16" font-weight="500">No Data</text>
+                </template>
+                <!-- Donut segments -->
+                <template v-else>
+                  <circle v-for="(seg, idx) in donutSegments" :key="seg.status"
+                          cx="100" cy="100" r="70" fill="none"
+                          :stroke="seg.color" stroke-width="14"
+                          stroke-linecap="butt"
+                          :stroke-dasharray="seg.dasharray"
+                          :stroke-dashoffset="seg.dashoffset"
+                          transform="rotate(-90 100 100)"
+                          class="donut-segment"/>
+                  <!-- Center total -->
+                  <text x="100" y="92" text-anchor="middle" dominant-baseline="middle"
+                        fill="#111827" font-size="32" font-weight="700">{{ totalCount }}</text>
+                  <text x="100" y="116" text-anchor="middle" fill="#6b7280" font-size="12" font-weight="500">TOTAL</text>
+                </template>
+              </svg>
+              <!-- Donut legend -->
+              <div class="flex flex-wrap justify-center gap-x-4 gap-y-1.5 mt-3">
+                <div v-for="item in statusDistribution" :key="item.status"
+                     class="flex items-center gap-1.5" v-show="item.count > 0">
+                  <span class="w-2.5 h-2.5 rounded-full flex-shrink-0" :style="{ backgroundColor: donutHexColors[item.status] }"></span>
+                  <span class="text-xs text-gray-600">{{ item.label }} ({{ item.count }})</span>
+                </div>
+              </div>
             </div>
 
             <!-- Status total bar -->
@@ -493,6 +691,164 @@ app.component('dashboard-page', {
           </div>
         </div>
 
+        <!-- ===== 3.5 BATTERY LIFECYCLE TIMELINE ===== -->
+        <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-6 mt-6">
+          <div class="flex items-center gap-2 mb-6">
+            <svg class="w-5 h-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"/>
+              <polyline points="12 6 12 12 16 14"/>
+            </svg>
+            <h2 class="text-lg font-semibold text-gray-900">배터리 전주기</h2>
+          </div>
+
+          <!-- Desktop: Horizontal timeline -->
+          <div class="hidden sm:block">
+            <div class="flex items-start justify-between relative">
+              <div v-for="(step, i) in lifecycleProgress" :key="i"
+                   class="flex flex-col items-center relative" style="flex: 1;">
+                <!-- Connector line -->
+                <div v-if="i < lifecycleProgress.length - 1"
+                     class="absolute top-5 h-0.5 transition-all duration-500"
+                     :class="step.completed && lifecycleProgress[i+1] && (lifecycleProgress[i+1].completed || lifecycleProgress[i+1].current) ? 'bg-blue-400' : 'bg-gray-200'"
+                     :style="{ left: '50%', right: '-50%' }"></div>
+                <!-- Step circle -->
+                <div class="relative z-10 flex items-center justify-center w-10 h-10 rounded-full border-2 transition-all duration-500"
+                     :class="[
+                       step.completed ? 'bg-blue-500 border-blue-500 text-white' : '',
+                       step.current ? 'bg-white border-blue-500 lifecycle-pulse' : '',
+                       !step.completed && !step.current ? 'bg-white border-gray-300 text-gray-400' : '',
+                     ]">
+                  <svg v-if="step.completed" class="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
+                    <polyline points="20 6 9 17 4 12"/>
+                  </svg>
+                  <span v-else class="text-xs font-bold" :class="step.current ? 'text-blue-500' : 'text-gray-400'">{{ i + 1 }}</span>
+                </div>
+                <!-- Step label -->
+                <p class="mt-2 text-xs font-medium text-center leading-tight"
+                   :class="step.completed ? 'text-blue-600' : step.current ? 'text-blue-500' : 'text-gray-400'">
+                  {{ step.label }}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Mobile: Vertical timeline -->
+          <div class="sm:hidden space-y-0">
+            <div v-for="(step, i) in lifecycleProgress" :key="i" class="flex items-start gap-3">
+              <div class="flex flex-col items-center">
+                <div class="flex items-center justify-center w-8 h-8 rounded-full border-2 transition-all duration-500"
+                     :class="[
+                       step.completed ? 'bg-blue-500 border-blue-500 text-white' : '',
+                       step.current ? 'bg-white border-blue-500 lifecycle-pulse' : '',
+                       !step.completed && !step.current ? 'bg-white border-gray-300 text-gray-400' : '',
+                     ]">
+                  <svg v-if="step.completed" class="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
+                    <polyline points="20 6 9 17 4 12"/>
+                  </svg>
+                  <span v-else class="text-xs font-bold" :class="step.current ? 'text-blue-500' : 'text-gray-400'">{{ i + 1 }}</span>
+                </div>
+                <div v-if="i < lifecycleProgress.length - 1"
+                     class="w-0.5 h-6 transition-all duration-500"
+                     :class="step.completed ? 'bg-blue-400' : 'bg-gray-200'"></div>
+              </div>
+              <p class="text-sm font-medium pt-1.5"
+                 :class="step.completed ? 'text-blue-600' : step.current ? 'text-blue-500' : 'text-gray-400'">
+                {{ step.label }}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- ===== 3.6 ESG / CARBON METRICS CARDS ===== -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-6">
+          <!-- Recycling Rate -->
+          <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
+            <div class="flex items-center gap-3 mb-4">
+              <div class="flex items-center justify-center w-10 h-10 rounded-lg bg-green-100">
+                <svg class="w-5 h-5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path d="M7.5 7.5l-2.7 4.7a2 2 0 0 0 1.7 3h3.5"/>
+                  <path d="M16.5 7.5l2.7 4.7a2 2 0 0 1-1.7 3H14"/>
+                  <path d="M12 2l3 5H9l3-5z"/>
+                  <path d="M12 14v8"/>
+                </svg>
+              </div>
+              <div>
+                <p class="text-sm font-semibold text-gray-800">재활용률</p>
+                <p class="text-xs text-gray-400">Average recycling rate</p>
+              </div>
+            </div>
+            <div v-if="avgRecyclingRate > 0" class="flex items-center gap-4">
+              <svg viewBox="0 0 60 60" class="w-14 h-14 flex-shrink-0">
+                <circle cx="30" cy="30" r="24" fill="none" stroke="#e5e7eb" stroke-width="6"/>
+                <circle cx="30" cy="30" r="24" fill="none" stroke="#10b981" stroke-width="6"
+                        stroke-linecap="round"
+                        :stroke-dasharray="2 * Math.PI * 24"
+                        :stroke-dashoffset="2 * Math.PI * 24 * (1 - avgRecyclingRate / 100)"
+                        transform="rotate(-90 30 30)"
+                        style="transition: stroke-dashoffset 1s ease;"/>
+                <text x="30" y="33" text-anchor="middle" dominant-baseline="middle"
+                      fill="#111827" font-size="12" font-weight="700">{{ avgRecyclingRate }}</text>
+              </svg>
+              <span class="text-2xl font-bold text-gray-900">{{ avgRecyclingRate }}%</span>
+            </div>
+            <div v-else class="esg-pulse-text">
+              <p class="text-sm text-gray-400">데이터 수집 중</p>
+            </div>
+          </div>
+
+          <!-- Carbon Footprint -->
+          <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
+            <div class="flex items-center gap-3 mb-4">
+              <div class="flex items-center justify-center w-10 h-10 rounded-lg bg-green-100">
+                <svg class="w-5 h-5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path d="M17 8C8 10 5.9 16.17 3.82 21.34l1.89.66.95-2.68c.08-.21.2-.4.36-.57l3.19-3.42C11.56 13.85 15 11 17 8z"/>
+                  <path d="M12.5 3.5C12.5 3.5 15 6 15 9c0 3-2.5 5-2.5 5"/>
+                </svg>
+              </div>
+              <div>
+                <p class="text-sm font-semibold text-gray-800">탄소발자국</p>
+                <p class="text-xs text-gray-400">Carbon footprint</p>
+              </div>
+            </div>
+            <div v-if="avgCarbonFootprint > 0" class="flex items-center gap-2">
+              <span class="text-2xl font-bold text-gray-900">{{ avgCarbonFootprint }}</span>
+              <span class="text-sm text-gray-500">kg CO2e</span>
+            </div>
+            <div v-else class="esg-pulse-text">
+              <p class="text-sm text-gray-400">측정 대기</p>
+            </div>
+          </div>
+
+          <!-- Eco Index -->
+          <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
+            <div class="flex items-center gap-3 mb-4">
+              <div class="flex items-center justify-center w-10 h-10 rounded-lg bg-green-100">
+                <svg class="w-5 h-5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/>
+                  <path d="M8 12l3 3 5-5"/>
+                </svg>
+              </div>
+              <div>
+                <p class="text-sm font-semibold text-gray-800">친환경 지표</p>
+                <p class="text-xs text-gray-400">Eco-friendly index</p>
+              </div>
+            </div>
+            <div v-if="totalCount > 0">
+              <div class="flex items-center justify-between mb-2">
+                <span class="text-2xl font-bold text-gray-900">{{ ecoRate }}%</span>
+                <span class="text-xs text-gray-400">{{ recycleAvailableCount }} / {{ totalCount }}</span>
+              </div>
+              <div class="w-full h-2.5 rounded-full bg-gray-100 overflow-hidden">
+                <div class="h-full rounded-full bg-green-500 transition-all duration-700"
+                     :style="{ width: ecoRate + '%' }"></div>
+              </div>
+            </div>
+            <div v-else class="esg-pulse-text">
+              <p class="text-sm text-gray-400">데이터 수집 중</p>
+            </div>
+          </div>
+        </div>
+
         <!-- ===== 4. RECENT PASSPORTS TABLE ===== -->
         <div class="bg-white rounded-xl border border-gray-200 shadow-sm mt-6">
           <div class="px-6 py-5 border-b border-gray-100 flex items-center justify-between">
@@ -574,6 +930,30 @@ app.component('dashboard-page', {
         </div>
 
       </div>
+
+      <!-- Inline styles for animations -->
+      <component is="style">
+        .donut-segment {
+          transition: stroke-dashoffset 1s ease, stroke-dasharray 1s ease;
+        }
+        .donut-chart:hover .donut-segment {
+          filter: brightness(1.1);
+        }
+        @keyframes lifecycle-pulse-anim {
+          0%, 100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.4); }
+          50% { box-shadow: 0 0 0 8px rgba(59, 130, 246, 0); }
+        }
+        .lifecycle-pulse {
+          animation: lifecycle-pulse-anim 2s ease-in-out infinite;
+        }
+        @keyframes esg-pulse-anim {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.4; }
+        }
+        .esg-pulse-text {
+          animation: esg-pulse-anim 2s ease-in-out infinite;
+        }
+      </component>
     </div>
   `
 });
