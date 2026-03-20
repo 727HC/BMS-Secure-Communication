@@ -86,6 +86,16 @@ app.component('bmu-data-page', {
       if (val === null || val === undefined) return '-';
       return Number(val).toFixed(decimals !== undefined ? decimals : 1);
     }
+    function scaleSOC(val) {
+      if (val == null) return 0;
+      const n = Number(val);
+      return n > 100 ? +(n / 655.35).toFixed(1) : +n.toFixed(1);
+    }
+    function scaleTemp(val) {
+      if (val == null) return 0;
+      const n = Number(val);
+      return n > 100 ? +(n / 1310.7).toFixed(1) : +n.toFixed(1);
+    }
 
     function startAutoRefresh() {
       stopAutoRefresh();
@@ -273,13 +283,13 @@ app.component('bmu-data-page', {
               <td class="px-5 py-3.5 whitespace-nowrap text-sm text-gray-700">{{ formatTimestamp(r.timestamp) }}</td>
               <td class="px-5 py-3.5 whitespace-nowrap text-right">
                 <span :class="['text-sm font-bold tabular-nums',
-                  r.soc > 50 ? 'text-emerald-600' : r.soc > 20 ? 'text-amber-600' : 'text-red-600']">
-                  {{ formatNumber(r.soc, 1) }}
+                  scaleSOC(r.soc) > 50 ? 'text-emerald-600' : scaleSOC(r.soc) > 20 ? 'text-amber-600' : 'text-red-600']">
+                  {{ scaleSOC(r.soc) }}%
                 </span>
               </td>
-              <td class="px-5 py-3.5 whitespace-nowrap text-sm text-right text-gray-700 tabular-nums">{{ formatNumber(r.voltage, 2) }}</td>
-              <td class="px-5 py-3.5 whitespace-nowrap text-sm text-right text-gray-700 tabular-nums">{{ formatNumber(r.current, 2) }}</td>
-              <td class="px-5 py-3.5 whitespace-nowrap text-sm text-right text-gray-700 tabular-nums">{{ formatNumber(r.temperature, 1) }}</td>
+              <td class="px-5 py-3.5 whitespace-nowrap text-sm text-right text-gray-700 tabular-nums">{{ formatNumber(r.voltage, 2) }}V</td>
+              <td class="px-5 py-3.5 whitespace-nowrap text-sm text-right text-gray-700 tabular-nums">{{ formatNumber(r.current, 2) }}A</td>
+              <td class="px-5 py-3.5 whitespace-nowrap text-sm text-right text-gray-700 tabular-nums">{{ scaleTemp(r.temperature) }}°C</td>
               <td class="px-5 py-3.5 whitespace-nowrap text-sm text-right text-gray-700 tabular-nums">{{ r.dischargeCycles != null ? r.dischargeCycles : '-' }}</td>
               <td class="px-5 py-3.5 whitespace-nowrap">
                 <div class="flex flex-wrap gap-1.5">
