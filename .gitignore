@@ -1,9 +1,49 @@
-node_modules/
-wallet/
-*.log
-logs/
+# Secrets & Environment
+**/secrets.h
+!**/secrets.h.example
+config.env
+!config.env.example
 
-# Third-party (submodules or manually cloned)
+# Build outputs
+**/*.o
+**/*.d
+**/*.elf
+**/*.map
+**/*.siz
+
+# IDE / S32DS
+.metadata/
+.s32ds_packages_support/
+RemoteSystemsTempFiles/
+workspace_bmu/
+workspace_cmu/
+workspace/
+.vscode/
+.idea/
+
+# Logs
+logs/
+*.log
+
+# Backups
+*.zip
+
+# Large/external projects
+Electric-Vehicle-Simscape-master/
+FreeRTOS_Toggle_Led_Example_S32K344/
+FreeRTOS_TAD_logs/
+ZephyrRTOS_TAD_logs/
+Can_43_FLEXCAN_TS_T40D34M60I0R0/
+BMU_BMS_FreeRTOS/
+**/debug_t32/
+
+# CANoe temp
+*.cfg.ini
+*.vtcfg.local
+
+# Blockchain / Node.js
+**/node_modules/
+**/wallet/
 fabric-samples/
 von-network/
 
@@ -19,7 +59,13 @@ chaincode/*/vendor/
 chaincode/*/*.tar.gz
 chaincode/bms-contract/bms-contract
 
-# OS / IDE
+# Python
+__pycache__/
+*.pyc
+
+# OS
+Thumbs.db
 .DS_Store
-.vscode/
-.idea/
+
+# Misc
+workspaceS32DS.3.6.0.zip

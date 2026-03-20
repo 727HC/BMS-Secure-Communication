@@ -1,0 +1,87 @@
+VERSION ""
+
+NS_ :
+
+BS_:
+
+BU_: CMU BMU
+
+BO_ 20 BatteryData: 64 CMU
+ SG_ Current : 0|32@1+ (1,0) [-100|100] "A" BMU
+ SG_ Voltage : 32|32@1+ (1,0) [0|500] "V" BMU
+ SG_ SOC : 64|16@1+ (1,0) [0|65535] "" BMU
+ SG_ DischargeCycles : 80|16@1+ (1,0) [0|65535] "" BMU
+ SG_ Temperature : 96|16@1+ (1,0) [0|65535] "" BMU
+ SG_ CellVolt_1 : 112|8@1+ (1,0) [0|255] "" BMU
+ SG_ CellVolt_2 : 120|8@1+ (1,0) [0|255] "" BMU
+ SG_ CellVolt_3 : 128|8@1+ (1,0) [0|255] "" BMU
+ SG_ CellVolt_4 : 136|8@1+ (1,0) [0|255] "" BMU
+ SG_ CellVolt_5 : 144|8@1+ (1,0) [0|255] "" BMU
+ SG_ CellVolt_6 : 152|8@1+ (1,0) [0|255] "" BMU
+ SG_ CellVolt_7 : 160|8@1+ (1,0) [0|255] "" BMU
+ SG_ CellVolt_8 : 168|8@1+ (1,0) [0|255] "" BMU
+ SG_ CellVolt_9 : 176|8@1+ (1,0) [0|255] "" BMU
+ SG_ CellVolt_10 : 184|8@1+ (1,0) [0|255] "" BMU
+ SG_ CellVolt_11 : 192|8@1+ (1,0) [0|255] "" BMU
+ SG_ CellSOC_1 : 200|8@1+ (1,0) [0|255] "" BMU
+ SG_ CellSOC_2 : 208|8@1+ (1,0) [0|255] "" BMU
+ SG_ CellSOC_3 : 216|8@1+ (1,0) [0|255] "" BMU
+ SG_ CellSOC_4 : 224|8@1+ (1,0) [0|255] "" BMU
+ SG_ CellSOC_5 : 232|8@1+ (1,0) [0|255] "" BMU
+ SG_ CellSOC_6 : 240|8@1+ (1,0) [0|255] "" BMU
+ SG_ CellSOC_7 : 248|8@1+ (1,0) [0|255] "" BMU
+ SG_ CellSOC_8 : 256|8@1+ (1,0) [0|255] "" BMU
+ SG_ CellSOC_9 : 264|8@1+ (1,0) [0|255] "" BMU
+ SG_ CellSOC_10 : 272|8@1+ (1,0) [0|255] "" BMU
+ SG_ CellSOC_11 : 280|8@1+ (1,0) [0|255] "" BMU
+ SG_ Timestamp : 288|16@1+ (1,0) [0|65535] "ms" BMU
+ SG_ StatusFlags : 304|8@1+ (1,0) [0|255] "" BMU
+ SG_ CellCount : 312|8@1+ (1,0) [0|255] "" BMU
+ SG_ FreshnessCounter : 320|32@1+ (1,0) [0|4294967295] "" BMU
+ SG_ CMAC_0 : 384|8@1+ (1,0) [0|255] "" BMU
+ SG_ CMAC_1 : 392|8@1+ (1,0) [0|255] "" BMU
+ SG_ CMAC_2 : 400|8@1+ (1,0) [0|255] "" BMU
+ SG_ CMAC_3 : 408|8@1+ (1,0) [0|255] "" BMU
+ SG_ CMAC_4 : 416|8@1+ (1,0) [0|255] "" BMU
+ SG_ CMAC_5 : 424|8@1+ (1,0) [0|255] "" BMU
+ SG_ CMAC_6 : 432|8@1+ (1,0) [0|255] "" BMU
+ SG_ CMAC_7 : 440|8@1+ (1,0) [0|255] "" BMU
+ SG_ CMAC_8 : 448|8@1+ (1,0) [0|255] "" BMU
+ SG_ CMAC_9 : 456|8@1+ (1,0) [0|255] "" BMU
+ SG_ CMAC_10 : 464|8@1+ (1,0) [0|255] "" BMU
+ SG_ CMAC_11 : 472|8@1+ (1,0) [0|255] "" BMU
+ SG_ CMAC_12 : 480|8@1+ (1,0) [0|255] "" BMU
+ SG_ CMAC_13 : 488|8@1+ (1,0) [0|255] "" BMU
+ SG_ CMAC_14 : 496|8@1+ (1,0) [0|255] "" BMU
+ SG_ CMAC_15 : 504|8@1+ (1,0) [0|255] "" BMU
+
+BO_ 21 KeyExchange: 32 CMU
+ SG_ EncryptedUID : 0|128@1+ (1,0) [0|0] "" BMU
+ SG_ EncryptedSeed : 128|128@1+ (1,0) [0|0] "" BMU
+
+BO_ 22 KeyACK: 24 BMU
+ SG_ ACK_Status : 0|8@1+ (1,0) [0|255] "" CMU
+ SG_ ACK_CMAC : 64|128@1+ (1,0) [0|0] "" CMU
+
+BO_ 23 ResyncRequest: 24 BMU
+ SG_ Resync_Marker : 0|8@1+ (1,0) [0|255] "" CMU
+ SG_ Resync_CMAC : 64|128@1+ (1,0) [0|0] "" CMU
+
+CM_ BU_ CMU "Cell Monitoring Unit (S32K144) - Battery data collection + CSEc CMAC";
+CM_ BU_ BMU "Battery Management Unit (S32K344) - HSE CMAC verify + EDDSA signing";
+CM_ BO_ 20 "CMAC-authenticated battery data (48B data + 16B CMAC tag)";
+CM_ BO_ 21 "AES-ECB encrypted UID + Seed for session key derivation";
+CM_ BO_ 22 "Key exchange acknowledgement from BMU";
+CM_ BO_ 23 "Resync request after 3 consecutive CMAC failures";
+CM_ SG_ 20 Current "Battery current (IEEE 754 float, little-endian)";
+CM_ SG_ 20 Voltage "Battery voltage (IEEE 754 float, little-endian)";
+CM_ SG_ 20 SOC "State of Charge (0-65535 mapped to 0-100%)";
+CM_ SG_ 20 Temperature "Temperature encoded (K-273)/50*65535";
+CM_ SG_ 20 StatusFlags "b0=charging b1=balancing b2=fault";
+CM_ SG_ 22 ACK_Status "0x01=ACK success";
+CM_ SG_ 23 Resync_Marker "0xFF=resync request";
+
+
+SIG_VALTYPE_ 20 Current : 1;
+SIG_VALTYPE_ 20 Voltage : 1;
+

@@ -1,0 +1,269 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Panel Type="Vector.CANalyzer.Panels.PanelSerializer, Vector.CANalyzer.Panels.Serializer, Version=19.2.76.0, Culture=neutral, PublicKeyToken=null">
+  <Object Type="Vector.CANalyzer.Panels.Runtime.Panel, Vector.CANalyzer.Panels.Common, Version=18.0.150.0, Culture=neutral, PublicKeyToken=null" Name="Panel" ControlName="Panel1">
+    <Object Type="Vector.CANalyzer.Panels.Design.StaticTextControl, Vector.CANalyzer.Panels.CommonControls, Version=18.0.150.0, Culture=neutral, PublicKeyToken=null" Name="X3e907af5e4bc4e4c91ead01ed4f5ddbdea99" ControlName="Static Text 5">
+      <Property Name="Name">X3e907af5e4bc4e4c91ead01ed4f5ddbdea99</Property>
+      <Property Name="Size">34, 15</Property>
+      <Property Name="Location">393, 105</Property>
+      <Property Name="Text">cCon</Property>
+    </Object>
+    <Object Type="Vector.CANalyzer.Panels.Design.StaticTextControl, Vector.CANalyzer.Panels.CommonControls, Version=18.0.150.0, Culture=neutral, PublicKeyToken=null" Name="Xa82ef866ee91ee4d6ce9529e24ea4717cb09" ControlName="Static Text 4">
+      <Property Name="Name">Xa82ef866ee91ee4d6ce9529e24ea4717cb09</Property>
+      <Property Name="Size">32, 15</Property>
+      <Property Name="Location">429, 81</Property>
+      <Property Name="Text">DisC</Property>
+    </Object>
+    <Object Type="Vector.CANalyzer.Panels.Design.TextBoxControl, Vector.CANalyzer.Panels.CommonControls, Version=18.0.150.0, Culture=neutral, PublicKeyToken=null" Name="X664de7ace5148e44efebc5bea0c9593910ce" ControlName="Input/Output Box 5">
+      <Property Name="Name">X664de7ace5148e44efebc5bea0c9593910ce</Property>
+      <Property Name="Size">156, 21</Property>
+      <Property Name="Location">235, 103</Property>
+      <Property Name="AlarmGeneralSettings">1;2;0;100</Property>
+      <Property Name="AlarmLowerBkgColor">Salmon</Property>
+      <Property Name="AlarmLowerTextColor">Black</Property>
+      <Property Name="AlarmUpperBkgColor">IndianRed</Property>
+      <Property Name="AlarmUpperTextColor">Black</Property>
+      <Property Name="BoxBorderStyle">FixedSingle</Property>
+      <Property Name="DisplayLabel">Left</Property>
+      <Property Name="TabIndex">6</Property>
+      <Property Name="DescriptionText">CellCount:</Property>
+      <Property Name="ValueDecimalPlaces">0</Property>
+      <Property Name="ValueDisplay">Double</Property>
+      <Property Name="UsedValueTable">RawValue</Property>
+      <Property Name="DescriptionSize">57, 21</Property>
+      <Property Name="SymbolConfiguration">8;2;BMS_SecureComm;CMU;BatteryData;CellCount;1;CAN;;-1;;;Value;;;0</Property>
+    </Object>
+    <Object Type="Vector.CANalyzer.Panels.Design.TextBoxControl, Vector.CANalyzer.Panels.CommonControls, Version=18.0.150.0, Culture=neutral, PublicKeyToken=null" Name="X4f387053e5311e497ae950ee86a7f93192df" ControlName="Input/Output Box 4">
+      <Property Name="Name">X4f387053e5311e497ae950ee86a7f93192df</Property>
+      <Property Name="Size">190, 21</Property>
+      <Property Name="Location">235, 78</Property>
+      <Property Name="AlarmGeneralSettings">1;2;0;100</Property>
+      <Property Name="AlarmLowerBkgColor">Salmon</Property>
+      <Property Name="AlarmLowerTextColor">Black</Property>
+      <Property Name="AlarmUpperBkgColor">IndianRed</Property>
+      <Property Name="AlarmUpperTextColor">Black</Property>
+      <Property Name="BoxBorderStyle">FixedSingle</Property>
+      <Property Name="DisplayLabel">Left</Property>
+      <Property Name="TabIndex">5</Property>
+      <Property Name="DescriptionText">DischargeCycles:</Property>
+      <Property Name="ValueDecimalPlaces">0</Property>
+      <Property Name="ValueDisplay">Double</Property>
+      <Property Name="UsedValueTable">RawValue</Property>
+      <Property Name="DescriptionSize">91, 21</Property>
+      <Property Name="SymbolConfiguration">8;2;BMS_SecureComm;CMU;BatteryData;DischargeCycles;1;CAN;;-1;;;Value;;;0</Property>
+    </Object>
+    <Object Type="Vector.CANalyzer.Panels.Design.ProgressBarControl, Vector.CANalyzer.Panels.CommonControls, Version=19.2.23.0, Culture=neutral, PublicKeyToken=null" Name="X5e98bbbbe570fe48d1e8d7be7b56f3107e54" ControlName="Progress Bar 11">
+      <Property Name="Name">X5e98bbbbe570fe48d1e8d7be7b56f3107e54</Property>
+      <Property Name="Size">135, 28</Property>
+      <Property Name="Location">809, 354</Property>
+      <Property Name="Maximum">255</Property>
+      <Property Name="ValueSize">0, 0</Property>
+      <Property Name="OriginValue">0</Property>
+      <Property Name="SymbolConfiguration">8;2;BMS_SecureComm;CMU;BatteryData;CellVolt_11;1;CAN;;-1;;;Value;;;0</Property>
+    </Object>
+    <Object Type="Vector.CANalyzer.Panels.Design.ProgressBarControl, Vector.CANalyzer.Panels.CommonControls, Version=19.2.23.0, Culture=neutral, PublicKeyToken=null" Name="X54a12937e890be498de83e7e5a3519c3167c" ControlName="Progress Bar 10">
+      <Property Name="Name">X54a12937e890be498de83e7e5a3519c3167c</Property>
+      <Property Name="Size">135, 28</Property>
+      <Property Name="Location">809, 320</Property>
+      <Property Name="Maximum">255</Property>
+      <Property Name="ValueSize">0, 0</Property>
+      <Property Name="OriginValue">0</Property>
+      <Property Name="SymbolConfiguration">8;2;BMS_SecureComm;CMU;BatteryData;CellVolt_10;1;CAN;;-1;;;Value;;;0</Property>
+    </Object>
+    <Object Type="Vector.CANalyzer.Panels.Design.ProgressBarControl, Vector.CANalyzer.Panels.CommonControls, Version=19.2.23.0, Culture=neutral, PublicKeyToken=null" Name="X71eae2bbe443de42afeb11cec1ae291014ec" ControlName="Progress Bar 9">
+      <Property Name="Name">X71eae2bbe443de42afeb11cec1ae291014ec</Property>
+      <Property Name="Size">135, 28</Property>
+      <Property Name="Location">809, 286</Property>
+      <Property Name="Maximum">255</Property>
+      <Property Name="ValueSize">0, 0</Property>
+      <Property Name="OriginValue">0</Property>
+      <Property Name="SymbolConfiguration">8;2;BMS_SecureComm;CMU;BatteryData;CellVolt_9;1;CAN;;-1;;;Value;;;0</Property>
+    </Object>
+    <Object Type="Vector.CANalyzer.Panels.Design.ProgressBarControl, Vector.CANalyzer.Panels.CommonControls, Version=19.2.23.0, Culture=neutral, PublicKeyToken=null" Name="X5f66b3daea2cae4a9deb2bde1de3cb88c979" ControlName="Progress Bar 8">
+      <Property Name="Name">X5f66b3daea2cae4a9deb2bde1de3cb88c979</Property>
+      <Property Name="Size">135, 28</Property>
+      <Property Name="Location">809, 252</Property>
+      <Property Name="Maximum">255</Property>
+      <Property Name="ValueSize">0, 0</Property>
+      <Property Name="OriginValue">0</Property>
+      <Property Name="SymbolConfiguration">8;2;BMS_SecureComm;CMU;BatteryData;CellVolt_8;1;CAN;;-1;;;Value;;;0</Property>
+    </Object>
+    <Object Type="Vector.CANalyzer.Panels.Design.ProgressBarControl, Vector.CANalyzer.Panels.CommonControls, Version=19.2.23.0, Culture=neutral, PublicKeyToken=null" Name="X411fdf83e3241e4447eb960e4a7f6f8e471d" ControlName="Progress Bar 7">
+      <Property Name="Name">X411fdf83e3241e4447eb960e4a7f6f8e471d</Property>
+      <Property Name="Size">135, 28</Property>
+      <Property Name="Location">809, 218</Property>
+      <Property Name="Maximum">255</Property>
+      <Property Name="ValueSize">0, 0</Property>
+      <Property Name="OriginValue">0</Property>
+      <Property Name="SymbolConfiguration">8;2;BMS_SecureComm;CMU;BatteryData;CellVolt_7;1;CAN;;-1;;;Value;;;0</Property>
+    </Object>
+    <Object Type="Vector.CANalyzer.Panels.Design.ProgressBarControl, Vector.CANalyzer.Panels.CommonControls, Version=19.2.23.0, Culture=neutral, PublicKeyToken=null" Name="Xeb62b85ee9ae3e439eeb5b9e851cc337dfa0" ControlName="Progress Bar 6">
+      <Property Name="Name">Xeb62b85ee9ae3e439eeb5b9e851cc337dfa0</Property>
+      <Property Name="Size">135, 28</Property>
+      <Property Name="Location">809, 184</Property>
+      <Property Name="Maximum">255</Property>
+      <Property Name="ValueSize">0, 0</Property>
+      <Property Name="OriginValue">0</Property>
+      <Property Name="SymbolConfiguration">8;2;BMS_SecureComm;CMU;BatteryData;CellVolt_6;1;CAN;;-1;;;Value;;;0</Property>
+    </Object>
+    <Object Type="Vector.CANalyzer.Panels.Design.ProgressBarControl, Vector.CANalyzer.Panels.CommonControls, Version=19.2.23.0, Culture=neutral, PublicKeyToken=null" Name="X8bccc9aded07ee41e3eafcdeaae8af482b12" ControlName="Progress Bar 5">
+      <Property Name="Name">X8bccc9aded07ee41e3eafcdeaae8af482b12</Property>
+      <Property Name="Size">135, 28</Property>
+      <Property Name="Location">809, 151</Property>
+      <Property Name="Maximum">255</Property>
+      <Property Name="ValueSize">0, 0</Property>
+      <Property Name="OriginValue">0</Property>
+      <Property Name="SymbolConfiguration">8;2;BMS_SecureComm;CMU;BatteryData;CellVolt_5;1;CAN;;-1;;;Value;;;0</Property>
+    </Object>
+    <Object Type="Vector.CANalyzer.Panels.Design.ProgressBarControl, Vector.CANalyzer.Panels.CommonControls, Version=19.2.23.0, Culture=neutral, PublicKeyToken=null" Name="Xafe5c736ea177e4bc1e8e58e9eb17da942f5" ControlName="Progress Bar 4">
+      <Property Name="Name">Xafe5c736ea177e4bc1e8e58e9eb17da942f5</Property>
+      <Property Name="Size">135, 28</Property>
+      <Property Name="Location">809, 117</Property>
+      <Property Name="Maximum">255</Property>
+      <Property Name="ValueSize">0, 0</Property>
+      <Property Name="OriginValue">0</Property>
+      <Property Name="SymbolConfiguration">8;2;BMS_SecureComm;CMU;BatteryData;CellVolt_4;1;CAN;;-1;;;Value;;;0</Property>
+    </Object>
+    <Object Type="Vector.CANalyzer.Panels.Design.ProgressBarControl, Vector.CANalyzer.Panels.CommonControls, Version=19.2.23.0, Culture=neutral, PublicKeyToken=null" Name="X0ee4d290e4cc1e4ef7eacbceb5b73d2c7cf1" ControlName="Progress Bar 3">
+      <Property Name="Name">X0ee4d290e4cc1e4ef7eacbceb5b73d2c7cf1</Property>
+      <Property Name="Size">135, 28</Property>
+      <Property Name="Location">809, 83</Property>
+      <Property Name="Maximum">255</Property>
+      <Property Name="ValueSize">0, 0</Property>
+      <Property Name="OriginValue">0</Property>
+      <Property Name="SymbolConfiguration">8;2;BMS_SecureComm;CMU;BatteryData;CellVolt_3;1;CAN;;-1;;;Value;;;0</Property>
+    </Object>
+    <Object Type="Vector.CANalyzer.Panels.Design.ProgressBarControl, Vector.CANalyzer.Panels.CommonControls, Version=19.2.23.0, Culture=neutral, PublicKeyToken=null" Name="Xb626d41beb3f9e4f02e9c58e60c630319245" ControlName="Progress Bar 2">
+      <Property Name="Name">Xb626d41beb3f9e4f02e9c58e60c630319245</Property>
+      <Property Name="Size">135, 28</Property>
+      <Property Name="Location">809, 49</Property>
+      <Property Name="Maximum">255</Property>
+      <Property Name="ValueSize">0, 0</Property>
+      <Property Name="OriginValue">0</Property>
+      <Property Name="SymbolConfiguration">8;2;BMS_SecureComm;CMU;BatteryData;CellVolt_2;1;CAN;;-1;;;Value;;;0</Property>
+    </Object>
+    <Object Type="Vector.CANalyzer.Panels.Design.ProgressBarControl, Vector.CANalyzer.Panels.CommonControls, Version=19.2.23.0, Culture=neutral, PublicKeyToken=null" Name="Xcc28d4dfe1ca8e4043eb32eea421b9315de6" ControlName="Progress Bar 1">
+      <Property Name="Name">Xcc28d4dfe1ca8e4043eb32eea421b9315de6</Property>
+      <Property Name="Size">135, 28</Property>
+      <Property Name="Location">809, 15</Property>
+      <Property Name="Maximum">255</Property>
+      <Property Name="ValueSize">0, 0</Property>
+      <Property Name="OriginValue">0</Property>
+      <Property Name="SymbolConfiguration">8;2;BMS_SecureComm;CMU;BatteryData;CellVolt_1;1;CAN;;-1;;;Value;;;0</Property>
+    </Object>
+    <Object Type="Vector.CANalyzer.Panels.Design.LEDControl, Vector.CANalyzer.Panels.CommonControls, Version=18.0.150.0, Culture=neutral, PublicKeyToken=null" Name="X95dd81d4eb63ae4a15ea97ce36cdc0e4a2aa" ControlName="LED Control 1">
+      <Property Name="Name">X95dd81d4eb63ae4a15ea97ce36cdc0e4a2aa</Property>
+      <Property Name="Size">24, 24</Property>
+      <Property Name="Location">598, 55</Property>
+      <Property Name="ReadOnlyControl">True</Property>
+      <Property Name="TabIndex">4</Property>
+      <Property Name="TabStopActive">False</Property>
+      <Property Name="SwitchValuesVTXml">&lt;Version&gt;2&lt;/Version&gt;&lt;Count&gt;2&lt;/Count&gt;&lt;RxValue&gt;0&lt;/RxValue&gt;&lt;LowerUpper&gt;Lower&lt;/LowerUpper&gt;&lt;TxValue&gt;0&lt;/TxValue&gt;&lt;Color&gt;255, 152, 152, 152&lt;/Color&gt;&lt;RxValue&gt;1&lt;/RxValue&gt;&lt;LowerUpper&gt;Lower&lt;/LowerUpper&gt;&lt;TxValue&gt;1&lt;/TxValue&gt;&lt;Color&gt;Red&lt;/Color&gt;</Property>
+      <Property Name="SymbolConfiguration">8;2;BMS_SecureComm;CMU;BatteryData;StatusFlags;1;CAN;;-1;;;Value;;;0</Property>
+    </Object>
+    <Object Type="Vector.CANalyzer.Panels.Design.StaticTextControl, Vector.CANalyzer.Panels.CommonControls, Version=18.0.150.0, Culture=neutral, PublicKeyToken=null" Name="X814bbda5ec49de46d2e9265eb24d0a1dd53c" ControlName="Static Text 3">
+      <Property Name="Name">X814bbda5ec49de46d2e9265eb24d0a1dd53c</Property>
+      <Property Name="Size">37, 15</Property>
+      <Property Name="Location">412, 55</Property>
+      <Property Name="Text">Temp</Property>
+    </Object>
+    <Object Type="Vector.CANalyzer.Panels.Design.StaticTextControl, Vector.CANalyzer.Panels.CommonControls, Version=18.0.150.0, Culture=neutral, PublicKeyToken=null" Name="X4d82e1cbe9af9e4a06ebee5e20f275f03ef2" ControlName="Static Text 2">
+      <Property Name="Name">X4d82e1cbe9af9e4a06ebee5e20f275f03ef2</Property>
+      <Property Name="Size">62, 15</Property>
+      <Property Name="Location">385, 34</Property>
+      <Property Name="Text">Voltage [V]</Property>
+    </Object>
+    <Object Type="Vector.CANalyzer.Panels.Design.StaticTextControl, Vector.CANalyzer.Panels.CommonControls, Version=18.0.150.0, Culture=neutral, PublicKeyToken=null" Name="X61b39a2be17a0e45e4e8c1cecf9dc525a432" ControlName="Static Text 1">
+      <Property Name="Name">X61b39a2be17a0e45e4e8c1cecf9dc525a432</Property>
+      <Property Name="Size">62, 15</Property>
+      <Property Name="Location">385, 11</Property>
+      <Property Name="Text">Current [A]</Property>
+    </Object>
+    <Object Type="Vector.CANalyzer.Panels.Design.TextBoxControl, Vector.CANalyzer.Panels.CommonControls, Version=18.0.150.0, Culture=neutral, PublicKeyToken=null" Name="Xd16611e5ea11ce425dea93ced413a68fb06f" ControlName="Input/Output Box 3">
+      <Property Name="Name">Xd16611e5ea11ce425dea93ced413a68fb06f</Property>
+      <Property Name="Size">171, 21</Property>
+      <Property Name="Location">235, 54</Property>
+      <Property Name="AlarmGeneralSettings">1;2;0;100</Property>
+      <Property Name="AlarmLowerBkgColor">Salmon</Property>
+      <Property Name="AlarmLowerTextColor">Black</Property>
+      <Property Name="AlarmUpperBkgColor">IndianRed</Property>
+      <Property Name="AlarmUpperTextColor">Black</Property>
+      <Property Name="BoxBorderStyle">FixedSingle</Property>
+      <Property Name="DisplayLabel">Left</Property>
+      <Property Name="TabIndex">3</Property>
+      <Property Name="DescriptionText">Temperature:</Property>
+      <Property Name="ValueDecimalPlaces">0</Property>
+      <Property Name="ValueDisplay">Double</Property>
+      <Property Name="UsedValueTable">RawValue</Property>
+      <Property Name="DescriptionSize">72, 21</Property>
+      <Property Name="SymbolConfiguration">8;2;BMS_SecureComm;CMU;BatteryData;Temperature;1;CAN;;-1;;;Value;;;0</Property>
+    </Object>
+    <Object Type="Vector.CANalyzer.Panels.Design.TextBoxControl, Vector.CANalyzer.Panels.CommonControls, Version=18.0.150.0, Culture=neutral, PublicKeyToken=null" Name="X13249b09eeb53e4a92ea0d4ef7a8b75fb291" ControlName="Input/Output Box 2">
+      <Property Name="Name">X13249b09eeb53e4a92ea0d4ef7a8b75fb291</Property>
+      <Property Name="Size">145, 21</Property>
+      <Property Name="Location">235, 30</Property>
+      <Property Name="AlarmGeneralSettings">1;2;0;100</Property>
+      <Property Name="AlarmLowerBkgColor">Salmon</Property>
+      <Property Name="AlarmLowerTextColor">Black</Property>
+      <Property Name="AlarmUpperBkgColor">IndianRed</Property>
+      <Property Name="AlarmUpperTextColor">Black</Property>
+      <Property Name="BoxBorderStyle">FixedSingle</Property>
+      <Property Name="DisplayLabel">Left</Property>
+      <Property Name="TabIndex">2</Property>
+      <Property Name="DescriptionText">Voltage:</Property>
+      <Property Name="ValueDecimalPlaces">0</Property>
+      <Property Name="ValueDisplay">Double</Property>
+      <Property Name="UsedValueTable">RawValue</Property>
+      <Property Name="DescriptionSize">46, 21</Property>
+      <Property Name="SymbolConfiguration">8;2;BMS_SecureComm;CMU;BatteryData;Voltage;1;CAN;;-1;;;Value;;;0</Property>
+    </Object>
+    <Object Type="Vector.CANalyzer.Panels.Design.TextBoxControl, Vector.CANalyzer.Panels.CommonControls, Version=18.0.150.0, Culture=neutral, PublicKeyToken=null" Name="X47f48e40e59bae408bebde1e1a535cd07c30" ControlName="Input/Output Box 1">
+      <Property Name="Name">X47f48e40e59bae408bebde1e1a535cd07c30</Property>
+      <Property Name="Size">144, 21</Property>
+      <Property Name="Location">235, 5</Property>
+      <Property Name="AlarmGeneralSettings">1;2;0;100</Property>
+      <Property Name="AlarmLowerBkgColor">Salmon</Property>
+      <Property Name="AlarmLowerTextColor">Black</Property>
+      <Property Name="AlarmUpperBkgColor">IndianRed</Property>
+      <Property Name="AlarmUpperTextColor">Black</Property>
+      <Property Name="BoxBorderStyle">FixedSingle</Property>
+      <Property Name="DisplayLabel">Left</Property>
+      <Property Name="TabIndex">1</Property>
+      <Property Name="DescriptionText">Current:</Property>
+      <Property Name="ValueDecimalPlaces">0</Property>
+      <Property Name="ValueDisplay">Double</Property>
+      <Property Name="UsedValueTable">RawValue</Property>
+      <Property Name="DescriptionSize">45, 21</Property>
+      <Property Name="SymbolConfiguration">8;2;BMS_SecureComm;CMU;BatteryData;Current;1;CAN;;-1;;;Value;;;0</Property>
+    </Object>
+    <Object Type="Vector.CANalyzer.Panels.Design.AnalogGaugeControl, Vector.CANalyzer.Panels.AnalogGauge, Version=18.0.150.0, Culture=neutral, PublicKeyToken=null" Name="Xb88a8d17e0343e44dae95b8e1a783ee37d4a" ControlName="Analog Gauge 1">
+      <Property Name="Name">Xb88a8d17e0343e44dae95b8e1a783ee37d4a</Property>
+      <Property Name="Size">225, 180</Property>
+      <Property Name="Location">4, 5</Property>
+      <Property Name="ScaleMin">0</Property>
+      <Property Name="ScaleMax">65535</Property>
+      <Property Name="LowerRangeLimit">0</Property>
+      <Property Name="UpperRangeLimit">65535</Property>
+      <Property Name="BorderStyle">FixedSingle</Property>
+      <Property Name="BackgroundColor">White</Property>
+      <Property Name="LegendText"></Property>
+      <Property Name="LegendTextFont">Microsoft Sans Serif, 8.25pt</Property>
+      <Property Name="MainTicksNumber">6</Property>
+      <Property Name="CurrentPosition">0</Property>
+      <Property Name="IsFrame">False</Property>
+      <Property Name="IsMargin">False</Property>
+      <Property Name="ScaleMargin">0</Property>
+      <Property Name="SymbolConfiguration">8;2;BMS_SecureComm;CMU;BatteryData;SOC;1;CAN;;-1;;;Value;;;0</Property>
+      <Property Name="CriticalProps" Member="AAEAAAD/////AQAAAAAAAAAEAQAAAC9TeXN0ZW0uUmVmbGVjdGlvbi5NZW1iZXJJbmZvU2VyaWFsaXphdGlvbkhvbGRlcgcAAAAETmFtZQxBc3NlbWJseU5hbWUJQ2xhc3NOYW1lCVNpZ25hdHVyZQpTaWduYXR1cmUyCk1lbWJlclR5cGUQR2VuZXJpY0FyZ3VtZW50cwEBAQEBAAMIDVN5c3RlbS5UeXBlW10GAgAAAAUuY3RvcgYDAAAAXFZlY3Rvci5DQU5hbHl6ZXIuUGFuZWxzLkFuYWxvZ0dhdWdlLCBWZXJzaW9uPTE3LjMuOTEuMCwgQ3VsdHVyZT1uZXV0cmFsLCBQdWJsaWNLZXlUb2tlbj1udWxsBgQAAAA2VmVjdG9yLkNBTmFseXplci5QYW5lbHMuRGVzaWduLkdhdWdlQ3JpdGljYWxQcm9wZXJ0aWVzBgUAAAAyVm9pZCAuY3RvcihEb3VibGUsIERvdWJsZSwgRG91YmxlLCBEb3VibGUsIERvdWJsZSkGBgAAAFAuY3RvcihTeXN0ZW0uRG91YmxlLCBTeXN0ZW0uRG91YmxlLCBTeXN0ZW0uRG91YmxlLCBTeXN0ZW0uRG91YmxlLCBTeXN0ZW0uRG91YmxlKQEAAAAKCw==">
+        <Argument>0</Argument>
+        <Argument>65535</Argument>
+        <Argument>0</Argument>
+        <Argument>0</Argument>
+        <Argument>65535</Argument>
+      </Property>
+    </Object>
+    <Property Name="Name">Panel</Property>
+    <Property Name="Size">961, 393</Property>
+    <Property Name="Location">0, 0</Property>
+    <Property Name="BackColor">White</Property>
+  </Object>
+</Panel>

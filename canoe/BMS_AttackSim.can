@@ -1,0 +1,406 @@
+/*============================================================================
+ *  BMS Attack Simulation — CAPL Script
+ *  File:    BMS_AttackSim.can
+ *  Purpose: Simulate CAN bus attacks to verify BMU/CMU security mechanisms
+ *
+ *  Attack Scenarios:
+ *    [1] Replay Attack      — Re-send captured frame with old FC
+ *    [2] CMAC Spoofing      — Send BatteryData with forged CMAC
+ *    [3] FC Manipulation    — Send frame with out-of-window FC
+ *    [4] Resync Flooding    — Flood fake Resync requests
+ *    [5] KeyExchange Spoof  — Inject fake key exchange frame
+ *    [9] Automated sequence — All 5 attacks with 3s intervals
+ *    [0] Stop all attacks
+ *============================================================================*/
+
+variables
+{
+    /* CAN IDs */
+    const dword CAN_ID_BATTERY_DATA  = 0x14;
+    const dword CAN_ID_KEY_EXCHANGE  = 0x15;
+    const dword CAN_ID_KEY_ACK       = 0x16;
+    const dword CAN_ID_RESYNC_REQ    = 0x17;
+
+    /* Frame sizes */
+    const int BATTERY_FRAME_SIZE     = 64;
+    const int KEY_EXCHANGE_SIZE      = 32;
+    const int CTRL_FRAME_SIZE        = 24;
+
+    /* Protocol constants */
+    const byte ACK_MARKER            = 0x01;
+    const byte RESYNC_MARKER         = 0xFF;
+    const int  FC_WINDOW_SIZE        = 5;
+
+    /* Attack state */
+    int gAttackRunning               = 0;
+    int gReplayFC                    = 0;
+    byte gCapturedFrame[64];
+    int gCapturedLen                 = 0;
+    dword gFloodCount                = 0;
+
+    /* Timers */
+    msTimer tFloodTimer;
+    msTimer tAutoTest;
+
+    /* Auto test state */
+    int gAutoStep                    = 0;
+
+    /* Statistics */
+    dword gAttacksSent               = 0;
+    dword gReplaysAttempted          = 0;
+    dword gSpoofsSent               = 0;
+    dword gFloodsSent                = 0;
+
+    /* Reusable message variables for auto test */
+    message 0x14 gAutoMsg64;
+    message 0x17 gAutoMsgCtrl;
+    message 0x15 gAutoMsgKey;
+}
+
+/*============================================================================
+ *  Initialization
+ *============================================================================*/
+on start
+{
+    write("=== BMS Attack Simulator Loaded ===");
+    write("  [1] Replay Attack");
+    write("  [2] CMAC Spoofing Attack");
+    write("  [3] FC Manipulation Attack");
+    write("  [4] Resync Flood Attack");
+    write("  [5] Key Exchange Spoofing");
+    write("  [9] Auto sequence (all 5)");
+    write("  [0] Stop all attacks");
+    write("  [C] Capture frame for replay");
+    write("===================================");
+}
+
+/*============================================================================
+ *  Frame Capture
+ *============================================================================*/
+on message 0x14
+{
+    int i;
+    gCapturedLen = this.dlc;
+    for (i = 0; i < this.dlc && i < 64; i++)
+    {
+        gCapturedFrame[i] = this.byte(i);
+    }
+    gReplayFC = this.byte(40) |
+                (this.byte(41) << 8) |
+                (this.byte(42) << 16) |
+                (this.byte(43) << 24);
+}
+
+on key 'c'
+{
+    if (gCapturedLen > 0)
+    {
+        write("[CAPTURE] Frame captured: FC=%d, %d bytes", gReplayFC, gCapturedLen);
+    }
+    else
+    {
+        write("[CAPTURE] No frame yet - wait for BatteryData on bus");
+    }
+}
+
+/*============================================================================
+ *  Attack 1: Replay Attack
+ *============================================================================*/
+void doReplayAttack()
+{
+    message 0x14 replayMsg;
+    int i;
+
+    if (gCapturedLen == 0)
+    {
+        write("[REPLAY] No captured frame. Press [C] first.");
+        return;
+    }
+
+    replayMsg.dlc = gCapturedLen;
+    replayMsg.FDF = 1;
+    replayMsg.BRS = 1;
+
+    for (i = 0; i < gCapturedLen; i++)
+    {
+        replayMsg.byte(i) = gCapturedFrame[i];
+    }
+
+    output(replayMsg);
+    gReplaysAttempted++;
+    gAttacksSent++;
+    write("[REPLAY] Sent captured FC=%d. Total: %d", gReplayFC, gAttacksSent);
+}
+
+on key '1'
+{
+    write("[ATTACK 1] Replay Attack");
+    write("  Expected: BMU rejects (FC out of window)");
+    doReplayAttack();
+}
+
+/*============================================================================
+ *  Attack 2: CMAC Spoofing
+ *============================================================================*/
+void doCmacSpoofAttack()
+{
+    message 0x14 spoofMsg;
+    int i;
+
+    spoofMsg.dlc = BATTERY_FRAME_SIZE;
+    spoofMsg.FDF = 1;
+    spoofMsg.BRS = 1;
+
+    for (i = 0; i < 64; i++)
+    {
+        spoofMsg.byte(i) = 0x00;
+    }
+
+    /* Plausible battery data */
+    spoofMsg.byte(0) = 0x00; spoofMsg.byte(1) = 0x00;
+    spoofMsg.byte(2) = 0x20; spoofMsg.byte(3) = 0x41;  /* 10.0A */
+    spoofMsg.byte(4) = 0x00; spoofMsg.byte(5) = 0x00;
+    spoofMsg.byte(6) = 0xC8; spoofMsg.byte(7) = 0x43;  /* 400.0V */
+    spoofMsg.byte(8) = 0x50; spoofMsg.byte(9) = 0xC3;  /* SOC=50000 */
+    spoofMsg.byte(40) = 0xFF;  /* FC=255 */
+
+    /* CMAC: all zeros (forged) — bytes 48~63 already 0x00 */
+
+    output(spoofMsg);
+    gSpoofsSent++;
+    gAttacksSent++;
+    write("[SPOOF] Sent forged CMAC. Total: %d", gAttacksSent);
+}
+
+on key '2'
+{
+    write("[ATTACK 2] CMAC Spoofing");
+    write("  Expected: BMU CMAC verification fails");
+    doCmacSpoofAttack();
+}
+
+/*============================================================================
+ *  Attack 3: FC Manipulation
+ *============================================================================*/
+void doFcAttack()
+{
+    message 0x14 fcMsg;
+    int i;
+
+    fcMsg.dlc = BATTERY_FRAME_SIZE;
+    fcMsg.FDF = 1;
+    fcMsg.BRS = 1;
+
+    for (i = 0; i < 64; i++)
+    {
+        fcMsg.byte(i) = 0x00;
+    }
+
+    /* FC = 0 (past) */
+    output(fcMsg);
+    write("  [FC=0] Sent (past)");
+
+    /* FC = 0xFFFFFFFF (far future) */
+    fcMsg.byte(40) = 0xFF;
+    fcMsg.byte(41) = 0xFF;
+    fcMsg.byte(42) = 0xFF;
+    fcMsg.byte(43) = 0xFF;
+    output(fcMsg);
+    write("  [FC=MAX] Sent (far future)");
+
+    gAttacksSent += 2;
+}
+
+on key '3'
+{
+    write("[ATTACK 3] FC Manipulation");
+    write("  Expected: BMU rejects (FC out of window=%d)", FC_WINDOW_SIZE);
+    doFcAttack();
+    write("[FC] Total: %d", gAttacksSent);
+}
+
+/*============================================================================
+ *  Attack 4: Resync Flooding
+ *============================================================================*/
+on key '4'
+{
+    if (gAttackRunning)
+    {
+        write("[FLOOD] Already running. Press [0] to stop.");
+        return;
+    }
+
+    write("[ATTACK 4] Resync Flood - 50 fake requests");
+    write("  Expected: CMU verifies CMAC and rejects all");
+
+    gAttackRunning = 1;
+    gFloodCount = 0;
+    setTimer(tFloodTimer, 20);
+}
+
+on timer tFloodTimer
+{
+    message 0x17 floodMsg;
+    int i;
+
+    if (!gAttackRunning || gFloodCount >= 50)
+    {
+        gAttackRunning = 0;
+        write("[FLOOD] Stopped after %d frames", gFloodCount);
+        return;
+    }
+
+    floodMsg.dlc = CTRL_FRAME_SIZE;
+    floodMsg.FDF = 1;
+    floodMsg.BRS = 1;
+
+    floodMsg.byte(0) = RESYNC_MARKER;
+    for (i = 1; i < 8; i++)
+    {
+        floodMsg.byte(i) = 0x00;
+    }
+    for (i = 8; i < 24; i++)
+    {
+        floodMsg.byte(i) = 0xAA;
+    }
+
+    output(floodMsg);
+    gFloodCount++;
+    gFloodsSent++;
+    gAttacksSent++;
+
+    setTimer(tFloodTimer, 20);
+}
+
+/*============================================================================
+ *  Attack 5: Key Exchange Spoofing
+ *============================================================================*/
+void doKeyExchangeSpoof()
+{
+    message 0x15 keyMsg;
+    int i;
+
+    keyMsg.dlc = KEY_EXCHANGE_SIZE;
+    keyMsg.FDF = 1;
+    keyMsg.BRS = 1;
+
+    for (i = 0; i < 16; i++)
+    {
+        keyMsg.byte(i) = (byte)(0xDE + i);
+    }
+    for (i = 16; i < 32; i++)
+    {
+        keyMsg.byte(i) = (byte)(0xAD + i);
+    }
+
+    output(keyMsg);
+    gAttacksSent++;
+    write("[KEY SPOOF] Sent fake key exchange. Total: %d", gAttacksSent);
+}
+
+on key '5'
+{
+    write("[ATTACK 5] Key Exchange Spoofing");
+    write("  Expected: BMU rejects (unknown UID / wrong encryption)");
+    doKeyExchangeSpoof();
+}
+
+/*============================================================================
+ *  Stop All Attacks
+ *============================================================================*/
+on key '0'
+{
+    gAttackRunning = 0;
+    gAutoStep = 0;
+    cancelTimer(tFloodTimer);
+    cancelTimer(tAutoTest);
+    write("[STOP] All attacks stopped.");
+    write("  Total attacks:    %d", gAttacksSent);
+    write("  Replay attempts:  %d", gReplaysAttempted);
+    write("  CMAC spoofs:      %d", gSpoofsSent);
+    write("  Resync floods:    %d", gFloodsSent);
+}
+
+/*============================================================================
+ *  Monitor: Log BMU responses
+ *============================================================================*/
+on message 0x16
+{
+    write("[MONITOR] KeyACK - Status=0x%02X", this.byte(0));
+    if (this.byte(0) == ACK_MARKER)
+    {
+        write("  -> Legitimate ACK (session established)");
+    }
+}
+
+on message 0x17
+{
+    write("[MONITOR] Resync on bus - Marker=0x%02X", this.byte(0));
+}
+
+/*============================================================================
+ *  Automated Test Sequence [9]
+ *  Runs all 5 attacks with 3-second intervals using helper functions
+ *============================================================================*/
+on key '9'
+{
+    write("=== AUTO ATTACK SEQUENCE START ===");
+    gAutoStep = 1;
+    setTimer(tAutoTest, 1000);
+}
+
+on timer tAutoTest
+{
+    int i;
+
+    if (gAutoStep == 1)
+    {
+        write("--- Step 1/5: Replay ---");
+        doReplayAttack();
+        gAutoStep = 2;
+        setTimer(tAutoTest, 3000);
+    }
+    else if (gAutoStep == 2)
+    {
+        write("--- Step 2/5: CMAC Spoofing ---");
+        doCmacSpoofAttack();
+        gAutoStep = 3;
+        setTimer(tAutoTest, 3000);
+    }
+    else if (gAutoStep == 3)
+    {
+        write("--- Step 3/5: FC Manipulation ---");
+        doFcAttack();
+        gAutoStep = 4;
+        setTimer(tAutoTest, 3000);
+    }
+    else if (gAutoStep == 4)
+    {
+        write("--- Step 4/5: Resync Flood (10x) ---");
+        gAutoMsgCtrl.dlc = CTRL_FRAME_SIZE;
+        gAutoMsgCtrl.FDF = 1;
+        gAutoMsgCtrl.BRS = 1;
+        gAutoMsgCtrl.byte(0) = RESYNC_MARKER;
+        for (i = 1; i < 24; i++)
+        {
+            gAutoMsgCtrl.byte(i) = 0xBB;
+        }
+        for (i = 0; i < 10; i++)
+        {
+            output(gAutoMsgCtrl);
+            gFloodsSent++;
+            gAttacksSent++;
+        }
+        write("[AUTO] 10 Resync floods sent");
+        gAutoStep = 5;
+        setTimer(tAutoTest, 3000);
+    }
+    else if (gAutoStep == 5)
+    {
+        write("--- Step 5/5: Key Exchange Spoofing ---");
+        doKeyExchangeSpoof();
+        gAutoStep = 0;
+        write("=== AUTO ATTACK SEQUENCE COMPLETE ===");
+        write("Total attacks: %d", gAttacksSent);
+    }
+}
