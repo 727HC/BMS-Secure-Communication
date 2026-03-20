@@ -98,6 +98,20 @@ app.component('passport-detail-page', {
     }
 
     onMounted(() => {
+      // Inject keyframe animation styles for visual enhancements
+      if (!document.getElementById('passport-detail-animations')) {
+        const style = document.createElement('style');
+        style.id = 'passport-detail-animations';
+        style.textContent = `
+          @keyframes sohBadgeFadeIn {
+            0% { opacity: 0; transform: scale(0.7); }
+            60% { transform: scale(1.1); }
+            100% { opacity: 1; transform: scale(1); }
+          }
+        `;
+        document.head.appendChild(style);
+      }
+
       const urlParams = new URLSearchParams(window.location.search);
       passportId.value = urlParams.get('passportId') || '';
 
@@ -324,6 +338,50 @@ app.component('passport-detail-page', {
       return passport.value.accidentLogs || [];
     });
 
+    // Battery icon fill animation
+    const batteryFillAnimated = ref(0);
+    const { watch, nextTick } = Vue;
+    watch(() => passport.value, (p) => {
+      if (p) {
+        batteryFillAnimated.value = 0;
+        nextTick(() => {
+          setTimeout(() => {
+            batteryFillAnimated.value = Math.min(scaleSOC(p.currentSoc) || 0, 100);
+          }, 100);
+        });
+      }
+    }, { immediate: true });
+
+    function getBatteryFillColor(soc) {
+      if (soc == null) return '#d1d5db';
+      if (soc >= 60) return '#22c55e';
+      if (soc >= 30) return '#f59e0b';
+      return '#ef4444';
+    }
+
+    // Lifecycle step mapping
+    const lifecycleSteps = [
+      { key: 'MANUFACTURED', label: '제조', idx: 1 },
+      { key: 'ACTIVE', label: '운행', idx: 2 },
+      { key: 'MAINTENANCE', label: '정비', idx: 3 },
+      { key: 'ANALYSIS', label: '분석', idx: 4 },
+      { key: 'RECYCLING', label: '재활용', idx: 5 },
+      { key: 'DISPOSED', label: '폐기', idx: 6 },
+    ];
+
+    function getLifecycleIdx(status) {
+      const found = lifecycleSteps.find(s => s.key === status);
+      return found ? found.idx : 0;
+    }
+
+    // SOH health label
+    function getSohHealthLabel(soh) {
+      if (soh == null) return { label: '--', color: 'bg-gray-100 text-gray-500 border-gray-200', icon: 'none' };
+      if (soh > 80) return { label: '양호', color: 'bg-emerald-100 text-emerald-700 border-emerald-200', icon: 'heart' };
+      if (soh >= 50) return { label: '주의', color: 'bg-amber-100 text-amber-700 border-amber-200', icon: 'warning' };
+      return { label: '위험', color: 'bg-red-100 text-red-700 border-red-200', icon: 'alert' };
+    }
+
     return {
       passport, loading, activeTab, passportId, tabs,
       bmuRecords, bmuLoading, history, historyLoading,
@@ -334,7 +392,9 @@ app.component('passport-detail-page', {
       submitting, bindForm, maintenanceForm, accidentForm, analysisForm, extractForm,
       msp, isEV, isService, isRegulator, isManufacturer,
       maintenanceLogs, accidentLogs,
+      batteryFillAnimated, lifecycleSteps,
       getStatusBadge, getSocColor, getSohColor, scaleSOC, scaleTemp, decodeStatusFlags,
+      getBatteryFillColor, getLifecycleIdx, getSohHealthLabel,
       switchTab, goBack, setPassportId,
       submitBind, submitMaintenanceRequest, submitMaintenanceLog, submitAccidentLog,
       submitAnalysisRequest, submitAnalysisResult, submitRecycleAvailability,
@@ -421,7 +481,28 @@ app.component('passport-detail-page', {
           <!-- Status Banner -->
           <div class="bg-white rounded-xl shadow-sm border border-gray-200/80 overflow-hidden">
             <div class="bg-gradient-to-r from-gray-50 to-white p-6">
-              <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div class="grid grid-cols-1 md:grid-cols-4 gap-6 items-center">
+
+                <!-- Battery Icon Visualization -->
+                <div class="flex flex-col items-center justify-center">
+                  <svg width="120" height="60" viewBox="0 0 120 60" xmlns="http://www.w3.org/2000/svg">
+                    <!-- Battery outline -->
+                    <rect x="2" y="8" width="100" height="44" rx="6" ry="6" fill="none" stroke="#9ca3af" stroke-width="3"/>
+                    <!-- Terminal nub -->
+                    <rect x="102" y="20" width="14" height="20" rx="3" ry="3" fill="none" stroke="#9ca3af" stroke-width="3"/>
+                    <!-- Fill level (animated via style) -->
+                    <rect x="6" y="12" :width="Math.max((batteryFillAnimated / 100) * 92, 0)" height="36" rx="3" ry="3"
+                      :fill="getBatteryFillColor(scaleSOC(passport.currentSoc))"
+                      style="transition: width 1.2s cubic-bezier(0.4,0,0.2,1), fill 0.6s ease;"/>
+                    <!-- SOC text overlay -->
+                    <text x="52" y="35" text-anchor="middle" font-size="16" font-weight="bold"
+                      :fill="batteryFillAnimated > 50 ? '#ffffff' : '#374151'" font-family="system-ui, sans-serif">
+                      {{ passport.currentSoc != null ? scaleSOC(passport.currentSoc) + '%' : '--' }}
+                    </text>
+                  </svg>
+                  <span class="text-xs font-medium text-gray-400 uppercase tracking-wider mt-1.5">충전 잔량</span>
+                </div>
+
                 <!-- Status -->
                 <div class="flex items-center gap-4">
                   <div :class="['w-14 h-14 rounded-xl flex items-center justify-center',
@@ -454,13 +535,34 @@ app.component('passport-detail-page', {
                   </div>
                 </div>
 
-                <!-- SOH Progress -->
+                <!-- SOH Progress + Health Badge -->
                 <div>
                   <div class="flex items-center justify-between mb-2">
                     <span class="text-xs font-medium text-gray-400 uppercase tracking-wider">건강 상태 (SOH)</span>
-                    <span class="text-lg font-bold text-gray-800 tabular-nums">
-                      {{ passport.currentSoh != null ? passport.currentSoh + '%' : '--' }}
-                    </span>
+                    <div class="flex items-center gap-2">
+                      <!-- SOH Health Indicator Badge -->
+                      <span v-if="passport.currentSoh != null"
+                        :class="['inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold border transition-all duration-500',
+                          getSohHealthLabel(passport.currentSoh).color]"
+                        style="animation: sohBadgeFadeIn 0.6s ease-out;">
+                        <!-- Heart icon (양호) -->
+                        <svg v-if="getSohHealthLabel(passport.currentSoh).icon === 'heart'" class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
+                          <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+                        </svg>
+                        <!-- Warning icon (주의) -->
+                        <svg v-if="getSohHealthLabel(passport.currentSoh).icon === 'warning'" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                        </svg>
+                        <!-- Alert icon (위험) -->
+                        <svg v-if="getSohHealthLabel(passport.currentSoh).icon === 'alert'" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                        {{ getSohHealthLabel(passport.currentSoh).label }}
+                      </span>
+                      <span class="text-lg font-bold text-gray-800 tabular-nums">
+                        {{ passport.currentSoh != null ? passport.currentSoh + '%' : '--' }}
+                      </span>
+                    </div>
                   </div>
                   <div class="w-full h-3 bg-gray-100 rounded-full overflow-hidden">
                     <div :class="['h-full rounded-full transition-all duration-700', getSohColor(passport.currentSoh)]"
@@ -469,6 +571,98 @@ app.component('passport-detail-page', {
                   <div class="flex justify-between mt-1">
                     <span class="text-[10px] text-gray-300">0%</span>
                     <span class="text-[10px] text-gray-300">100%</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Lifecycle Progress Indicator -->
+          <div class="bg-white rounded-xl shadow-sm border border-gray-200/80 overflow-hidden">
+            <div class="px-6 py-5">
+              <h3 class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-5">배터리 수명 주기</h3>
+              <div class="flex items-center justify-between relative">
+                <template v-for="(step, si) in lifecycleSteps" :key="step.key">
+                  <!-- Connecting line (before each step except first) -->
+                  <div v-if="si > 0" class="flex-1 h-0.5 mx-1"
+                    :class="getLifecycleIdx(passport.status) > step.idx ? 'bg-blue-400' : (getLifecycleIdx(passport.status) >= step.idx ? 'bg-blue-400' : 'bg-gray-200')">
+                  </div>
+                  <!-- Step circle + label -->
+                  <div class="flex flex-col items-center relative" style="min-width: 56px;">
+                    <!-- Completed step -->
+                    <div v-if="getLifecycleIdx(passport.status) > step.idx"
+                      class="w-9 h-9 rounded-full bg-blue-500 flex items-center justify-center shadow-sm">
+                      <svg class="w-4.5 h-4.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+                      </svg>
+                    </div>
+                    <!-- Current step (pulsing) -->
+                    <div v-else-if="getLifecycleIdx(passport.status) === step.idx"
+                      class="w-9 h-9 rounded-full bg-blue-500 flex items-center justify-center shadow-md relative">
+                      <div class="absolute inset-0 rounded-full bg-blue-400 animate-ping opacity-30"></div>
+                      <div class="w-3 h-3 rounded-full bg-white"></div>
+                    </div>
+                    <!-- Future step -->
+                    <div v-else
+                      class="w-9 h-9 rounded-full border-2 border-gray-300 bg-white flex items-center justify-center">
+                      <div class="w-2.5 h-2.5 rounded-full bg-gray-300"></div>
+                    </div>
+                    <span class="text-xs font-medium mt-2 whitespace-nowrap"
+                      :class="getLifecycleIdx(passport.status) >= step.idx ? 'text-blue-600' : 'text-gray-400'">
+                      {{ step.label }}
+                    </span>
+                  </div>
+                </template>
+              </div>
+            </div>
+          </div>
+
+          <!-- GBA 21 Compliance Badge -->
+          <div class="bg-white rounded-xl shadow-sm border border-gray-200/80 border-l-4 border-l-green-500 overflow-hidden">
+            <div class="px-6 py-5">
+              <div class="flex items-start gap-4">
+                <!-- Shield icon with checkmark -->
+                <div class="flex-shrink-0">
+                  <svg class="w-10 h-10 text-green-600" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 2L3 7v5c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-9-5z" fill="currentColor" opacity="0.15"/>
+                    <path d="M12 2L3 7v5c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-9-5z" stroke="currentColor" stroke-width="1.5" fill="none"/>
+                    <path d="M9 12l2 2 4-4" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+                  </svg>
+                </div>
+                <div class="flex-1 min-w-0">
+                  <h3 class="text-sm font-bold text-gray-900 mb-1">GBA 21 Battery Passport</h3>
+                  <p class="text-xs text-gray-500 mb-3">Global Battery Alliance 21가지 데이터 항목 준수</p>
+                  <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-x-4 gap-y-1.5">
+                    <div class="flex items-center gap-1.5">
+                      <svg class="w-4 h-4 text-green-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+                      </svg>
+                      <span class="text-xs text-gray-700">배터리 식별</span>
+                    </div>
+                    <div class="flex items-center gap-1.5">
+                      <svg class="w-4 h-4 text-green-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+                      </svg>
+                      <span class="text-xs text-gray-700">제조 정보</span>
+                    </div>
+                    <div class="flex items-center gap-1.5">
+                      <svg class="w-4 h-4 text-green-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+                      </svg>
+                      <span class="text-xs text-gray-700">기술 사양</span>
+                    </div>
+                    <div class="flex items-center gap-1.5">
+                      <svg class="w-4 h-4 text-green-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+                      </svg>
+                      <span class="text-xs text-gray-700">지속가능성</span>
+                    </div>
+                    <div class="flex items-center gap-1.5">
+                      <svg class="w-4 h-4 text-green-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+                      </svg>
+                      <span class="text-xs text-gray-700">수명 주기 추적</span>
+                    </div>
                   </div>
                 </div>
               </div>
