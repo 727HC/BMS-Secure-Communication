@@ -160,7 +160,20 @@ app.component('passport-detail-page', {
       historyLoading.value = true;
       try {
         const data = await props.api.get('/passports/' + passportId.value + '/history');
-        history.value = data.records || data || [];
+        const raw = data.records || data || [];
+        // API returns array of JSON strings — parse each into object
+        history.value = raw.map((entry, i) => {
+          let parsed = entry;
+          if (typeof entry === 'string') {
+            try { parsed = JSON.parse(entry); } catch (e) { parsed = {}; }
+          }
+          return {
+            value: parsed,
+            timestamp: parsed.updatedAt || parsed.createdAt || '-',
+            txId: null,
+            index: i + 1,
+          };
+        });
       } catch (e) {
         history.value = [];
       } finally {
@@ -1205,7 +1218,7 @@ app.component('passport-detail-page', {
                     <div class="min-w-0 flex-1">
                       <div class="flex items-center gap-2 flex-wrap">
                         <p class="text-sm font-semibold text-gray-900">
-                          {{ entry.txId ? 'TX: ' + entry.txId.substring(0, 20) + '...' : 'Change #' + (i + 1) }}
+                          {{ entry.value && entry.value.status ? '상태: ' + entry.value.status : '변경 #' + entry.index }}
                         </p>
                         <span v-if="entry.value && entry.value.status"
                           :class="[
