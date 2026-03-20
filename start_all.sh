@@ -133,8 +133,9 @@ fi
 # ============================================================
 echo "=== [5/6] Checking wallet ==="
 if [ -d "$AGENT_DIR/wallet" ]; then
-    echo "Removing stale wallet for fresh enrollment..."
-    rm -rf "$AGENT_DIR/wallet"
+    echo "Wallet exists, preserving user identities."
+else
+    echo "No wallet found, will be created on first enrollment."
 fi
 
 # ============================================================
