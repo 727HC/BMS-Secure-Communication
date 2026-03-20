@@ -45,6 +45,9 @@ extern "C" {
 /* Protocol definitions shared with CMU */
 #include "common/bms_protocol.h"
 
+/* Board-specific hardware configuration */
+#include "bmu_board.h"
+
 #ifdef BMS_MODE_EDDSA
 /* Software Ed25519 via TweetNaCl (HSE ECC catalog unavailable on this board) */
 #include "tweetnacl.h"
@@ -90,26 +93,6 @@ static uint8 g_sw_ed25519_sk[64];  /* secret key (seed + pk) */
 
 /* Pre-Shared Key — separated into secrets.h (exclude from VCS) */
 #include "common/secrets.h"
-
-/* HSE MU instance */
-#define HSE_MU_INSTANCE         HSE_IP_MU_0
-
-/* HSE key handles */
-#define HSE_PSK_KEY_HANDLE      ((hseKeyHandle_t)GET_KEY_HANDLE(HSE_KEY_CATALOG_ID_RAM, 0U, 0U))
-#define HSE_SESSION_KEY_HANDLE  ((hseKeyHandle_t)GET_KEY_HANDLE(HSE_KEY_CATALOG_ID_RAM, 0U, 1U))
-
-/* EDDSA (Ed25519) key handle — NVM catalog, group 1, slot 0 */
-#define HSE_ECC_KEY_HANDLE      ((hseKeyHandle_t)GET_KEY_HANDLE(HSE_KEY_CATALOG_ID_NVM, 1U, 0U))
-
-/* HSE Timeout */
-#define HSE_TIMEOUT_TICKS       TIMEOUT_CRYPTO_INIT
-
-/* S32K344 FlexCAN0 register addresses */
-#define S32K344_FLEXCAN0_ESR1   (*(volatile uint32 *)0x40304020U)
-#define S32K344_FLEXCAN0_ECR    (*(volatile uint32 *)0x40304024U)
-
-/* CMU whitelist: authorized CMU UIDs */
-#define CMU_WHITELIST_SIZE    4U
 static uint8 CMU_UidWhitelist[CMU_WHITELIST_SIZE][UID_SIZE] = {0};
 static uint8 g_whitelistCount = 0U;  /* Number of registered UIDs */
 /* FALSE = discovery mode (auto-register first CMU_WHITELIST_SIZE UIDs)
@@ -153,20 +136,6 @@ volatile uint32 g_eddsaSignCount = 0U;
 static uint8 g_dec_input_uid[AES_KEY_SIZE];
 static uint8 g_dec_input_seed[AES_KEY_SIZE];
 
-/*============================================================================
- *  DWT Cycle Counter for Performance Measurement (Cortex-M7)
- *============================================================================*/
-#define DWT_CTRL    (*(volatile uint32 *)0xE0001000U)
-#define DWT_CYCCNT  (*(volatile uint32 *)0xE0001004U)
-#define DEM_CR      (*(volatile uint32 *)0xE000EDFCU)
-
-static inline void DWT_Init(void)
-{
-    DEM_CR   |= (1U << 24U);   /* TRCENA: enable DWT */
-    DWT_CYCCNT = 0U;
-    DWT_CTRL |= 1U;            /* CYCCNTENA: enable cycle counter */
-}
-
 /* Performance counters (visible in debugger + UART) */
 volatile uint32 g_perf_cmac_us    = 0U;  /* Last CMAC verify time (µs) */
 volatile uint32 g_perf_eddsa_ms   = 0U;  /* Last EdDSA sign time (ms)  */
@@ -206,67 +175,15 @@ static Flexcan_Ip_DataInfoType g_canfd_tx_info = {
 
 /*============================================================================
  *  LPUART6 Debug Output (bare-metal, no RTD driver)
- *  S32K3X4EVB-Q172: LPUART6 TX = PTA16 → OpenSDA Virtual COM
- *  Clock source: FIRC 48MHz → LPUART6
+ *  Board-specific registers defined in bmu_board.h
  *============================================================================*/
-
-/* LPUART6 registers (OpenSDA UART on S32K3X4EVB-Q172) */
-#define LPUART6_BASE    0x40340000U
-#define LPUART6_BAUD    (*(volatile uint32 *)(LPUART6_BASE + 0x10U))
-#define LPUART6_STAT    (*(volatile uint32 *)(LPUART6_BASE + 0x14U))
-#define LPUART6_CTRL    (*(volatile uint32 *)(LPUART6_BASE + 0x18U))
-#define LPUART6_DATA    (*(volatile uint32 *)(LPUART6_BASE + 0x1CU))
-
-/* SIUL2 MSCR for PTA16 (LPUART6_TX on Q172 EVB) */
-/* S32K344: SIUL2_0 base=0x40290000, MSCR offset=0x240 */
-#define SIUL2_MSCR(n)   (*(volatile uint32 *)(0x40290000U + 0x240U + 4U * (n)))
-
-/* LPUART BAUD register bits */
-#define LPUART_BAUD_SBR_MASK    0x1FFFU
-#define LPUART_BAUD_OSR_SHIFT   24U
-#define LPUART_BAUD_OSR_MASK    (0x1FU << LPUART_BAUD_OSR_SHIFT)
-
-/* LPUART CTRL register bits */
-#define LPUART_CTRL_TE          (1U << 19U)  /* Transmitter Enable */
-#define LPUART_CTRL_RE          (1U << 18U)  /* Receiver Enable */
-
-/* LPUART STAT register bits */
-#define LPUART_STAT_TDRE        (1U << 23U)  /* TX Data Register Empty */
-#define LPUART_STAT_TC          (1U << 22U)  /* Transmission Complete */
-
-/* LPUART6 baud: 28800 baud actual @ 48MHz/4=12MHz, OSR=15, SBR=26 */
-#define LPUART6_OSR_VALUE       15U
-#define LPUART6_SBR_VALUE       26U
-
-/* SIUL2 MSCR field bits */
-#define SIUL2_MSCR_OBE          (1U << 21U)  /* Output Buffer Enable */
-#define SIUL2_MSCR_SRE          (1U << 14U)  /* Slew Rate Enable */
-#define LPUART6_TX_SSS          5U           /* PTA16 LPUART6_TX = ALT5 */
-
-/* MC_ME unlock key sequence */
-#define MC_ME_KEY               0x5AF0U
-#define MC_ME_KEY_INV           0xA50FU
-
 volatile uint32 g_lpuartStat = 0U;
 volatile uint32 g_lpuartBaud = 0U;
 volatile uint32 g_lpuartCtrl = 0U;
 
-/* MC_ME registers for clock gating (S32K344) */
-#define MC_ME_BASE              0x402DC000U
-#define MC_ME_PRTN1_COFB2_CLKEN (*(volatile uint32 *)(MC_ME_BASE + 0x338U))
-#define MC_ME_PRTN1_COFB2_STAT  (*(volatile uint32 *)(MC_ME_BASE + 0x318U))
-#define MC_ME_PRTN1_PUPD        (*(volatile uint32 *)(MC_ME_BASE + 0x304U))
-#define MC_ME_CTL_KEY           (*(volatile uint32 *)(MC_ME_BASE + 0x000U))
-/* S32K344: both key writes go to same register at offset 0x000 */
-#define MC_ME_CTL_KEY_INV       (*(volatile uint32 *)(MC_ME_BASE + 0x000U))
-
-/* LPUART6 = PRTN1_COFB2_REQ80 → bit (80-64) = bit 16 in COFB2 */
-#define MC_ME_LPUART6_REQ_BIT   (1U << 16U)
-
 static void BMU_InitLpuart6(void)
 {
     /* 0. Enable LPUART6 clock via MC_ME (PRTN1_COFB2, REQ80) */
-    #define MC_ME_PRTN1_PCONF (*(volatile uint32 *)(MC_ME_BASE + 0x300U))
     MC_ME_PRTN1_COFB2_CLKEN |= MC_ME_LPUART6_REQ_BIT;
     MC_ME_PRTN1_PCONF |= 1U;
     MC_ME_PRTN1_PUPD  |= 1U;
