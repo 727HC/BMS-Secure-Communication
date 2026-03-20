@@ -29,10 +29,10 @@ function parseRawPayload(hexString) {
   const dischargeCycles = buf.readUInt16LE(10);
   const tempRaw = buf.readUInt16LE(12);
 
-  // Decode: soc_u16 / 655.35 = SOC % (0~100)
-  const soc = +(socRaw / 655.35).toFixed(1);
-  // Decode: temperature_u16 / 1310.7 = temp °C (0~50)
-  const temperature = +(tempRaw / 1310.7).toFixed(1);
+  // Raw uint16 values — 체인코드에 그대로 저장, 프론트엔드에서 스케일링
+  // soc_u16 / 655.35 = SOC %, temperature_u16 / 1310.7 = °C
+  const soc = socRaw;
+  const temperature = tempRaw;
 
   // Cell voltages: 11 bytes at offset 14
   // Decode: raw / 255.0 * 1.7 + 2.5 = V (2.5~4.2)
