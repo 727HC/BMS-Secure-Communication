@@ -71,7 +71,7 @@ def send_to_agent(agent_url, sign_record, data_record=None, did=None):
         resp = requests.post(api_url, json=payload, timeout=5)
         if resp.status_code == 200:
             result = resp.json()
-            print(f"  → Blockchain: {result.get('id', 'ok')} onChain={result.get('onChain')}")
+            print(f"  → Blockchain: {result.get('id', result.get('recordId', 'ok'))} ✓", flush=True)
         else:
             print(f"  → Agent error: {resp.status_code} {resp.text[:100]}")
     except requests.exceptions.ConnectionError:
