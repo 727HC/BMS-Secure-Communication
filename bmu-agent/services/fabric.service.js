@@ -230,35 +230,76 @@ async function registerUser(userId, userSecret, orgConfig) {
   return { message: `User ${userId} registered and enrolled`, mspId: org.mspId };
 }
 
-// 로그인 — wallet에 있으면 사용, 없으면 CA enroll
+// 로그인 — wallet 확인 → enroll 시도 → re-register fallback
 async function loginUser(userId, userSecret, orgConfig) {
   const org = orgConfig || fabricConfig.currentOrg;
   const w = await getWallet();
   const label = walletLabel(userId, org.mspId);
 
-  // wallet에 이미 있으면 바로 성공
+  // 1. wallet에 이미 있으면 바로 성공
   const existing = await w.get(label);
   if (existing) {
     return { mspId: org.mspId, userId };
   }
 
-  // 없으면 CA enroll 시도
+  // 2. wallet에 없으면 CA enroll 시도
   const ca = getCAForOrg(org);
-  const enrollment = await ca.enroll({
-    enrollmentID: userId,
-    enrollmentSecret: userSecret,
-  });
+  try {
+    const enrollment = await ca.enroll({
+      enrollmentID: userId,
+      enrollmentSecret: userSecret,
+    });
+    await w.put(label, {
+      credentials: {
+        certificate: enrollment.certificate,
+        privateKey: enrollment.key.toBytes(),
+      },
+      mspId: org.mspId,
+      type: 'X.509',
+    });
+    return { mspId: org.mspId, userId };
+  } catch (enrollErr) {
+    // 3. enroll 실패 (횟수 소진 등) → 새 비밀번호로 re-register 후 enroll
+    const adminLabel2 = `${org.caName}-admin`;
+    let adminIdentity = await w.get(adminLabel2);
+    if (!adminIdentity) {
+      const adminEnrollment = await ca.enroll({
+        enrollmentID: 'admin',
+        enrollmentSecret: fabricConfig.adminSecret,
+      });
+      adminIdentity = {
+        credentials: {
+          certificate: adminEnrollment.certificate,
+          privateKey: adminEnrollment.key.toBytes(),
+        },
+        mspId: org.mspId,
+        type: 'X.509',
+      };
+      await w.put(adminLabel2, adminIdentity);
+    }
 
-  await w.put(label, {
-    credentials: {
-      certificate: enrollment.certificate,
-      privateKey: enrollment.key.toBytes(),
-    },
-    mspId: org.mspId,
-    type: 'X.509',
-  });
+    const provider = w.getProviderRegistry().getProvider(adminIdentity.type);
+    const adminUser = await provider.getUserContext(adminIdentity, adminLabel2);
 
-  return { mspId: org.mspId, userId };
+    // 기존 사용자 삭제 후 재등록 (reenroll은 CA에서 지원 안 하므로)
+    const newSecret = userSecret + '_' + Date.now();
+    try {
+      await ca.register({
+        enrollmentID: userId + '_recovery',
+        enrollmentSecret: newSecret,
+        maxEnrollments: -1,
+        attrs: [],
+      }, adminUser);
+    } catch (regErr) {
+      // 이미 recovery도 등록됨 → 원래 에러 throw
+      if (!regErr.message?.includes('already registered')) {
+        throw new Error(`계정 복구 실패: ${enrollErr.message}`);
+      }
+    }
+
+    // 원래 에러 메시지를 사용자에게 알려줌
+    throw new Error(`계정 "${userId}"의 인증 횟수가 초과되었습니다. 새 계정으로 가입해주세요.`);
+  }
 }
 
 module.exports = {
