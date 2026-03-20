@@ -5,23 +5,28 @@ const fabricService = require('../services/fabric.service');
 const didService = require('../services/did.service');
 const { parseRawPayload } = require('../services/bmu-parser.service');
 
-// DID → passportId cache
+// P0-3: unsigned BMU 기본 거부 (ALLOW_UNSIGNED_BMU=true로 개발 모드 허용)
+const ALLOW_UNSIGNED = process.env.ALLOW_UNSIGNED_BMU === 'true';
+
+// P1-8: DID → passportId cache with TTL (5분)
+const CACHE_TTL = 5 * 60 * 1000;
 const didPassportCache = new Map();
 
 async function resolvePassportId(did) {
-  if (didPassportCache.has(did)) {
-    return didPassportCache.get(did);
+  const cached = didPassportCache.get(did);
+  if (cached && Date.now() - cached.ts < CACHE_TTL) {
+    return cached.passportId;
   }
   const result = await fabricService.evaluateTransaction('QueryBatteryByDID', did);
   const passport = JSON.parse(result.toString());
   if (passport && passport.passportId) {
-    didPassportCache.set(did, passport.passportId);
+    didPassportCache.set(did, { passportId: passport.passportId, ts: Date.now() });
     return passport.passportId;
   }
   return null;
 }
 
-// POST /api/bmu/data — Receive BMU data from serial_to_agent.py
+// POST /api/bmu/data — Receive BMU data
 router.post('/data', async (req, res) => {
   const { rawPayload, signature, did: reqDid } = req.body;
   const did = reqDid || process.env.DEFAULT_BMU_DID;
@@ -30,14 +35,20 @@ router.post('/data', async (req, res) => {
     return res.status(400).json({ error: 'rawPayload required' });
   }
   if (!did) {
-    return res.status(400).json({ error: 'did required (set DEFAULT_BMU_DID or send in request)' });
+    return res.status(400).json({ error: 'did required' });
+  }
+
+  // P0-3: 서명 필수 (개발 모드에서만 우회)
+  if (!signature || signature === 'none') {
+    if (!ALLOW_UNSIGNED) {
+      return res.status(400).json({ error: 'signature required (set ALLOW_UNSIGNED_BMU=true to bypass)' });
+    }
   }
 
   try {
-    // 1. Parse rawPayload (48 bytes hex)
     const parsed = parseRawPayload(rawPayload);
 
-    // 2. Ed25519 signature verification
+    // Ed25519 서명 검증
     if (signature && signature !== 'none') {
       const verifyTarget = Buffer.from(rawPayload, 'hex');
       const isValid = await didService.verifySignature(did, verifyTarget, signature);
@@ -46,55 +57,39 @@ router.post('/data', async (req, res) => {
       }
     }
 
-    // 3. Compute data hash
     const dataHash = crypto.createHash('sha256')
       .update(Buffer.from(rawPayload, 'hex'))
       .digest('hex');
 
-    // 4. Resolve DID → passportId
     let passportId;
     try {
       passportId = await resolvePassportId(did);
     } catch (err) {
-      // Passport not yet registered — store with empty passportId
       console.warn('DID→passport lookup failed:', err.message);
     }
 
-    // 5. Record to Fabric
     const recordId = `BMU-${Date.now()}-${parsed.freshnessCounter}`;
     const timestamp = new Date().toISOString();
 
-    await fabricService.submitTransaction(
-      'RecordBMUData',
-      recordId,
-      passportId || '',
-      did,
-      dataHash,
+    // BMU 데이터는 제조사 admin으로 기록 (M2M 통신)
+    await fabricService.submitTransaction('RecordBMUData', [
+      recordId, passportId || '', did, dataHash,
       signature || 'none',
-      String(parsed.freshnessCounter),
-      String(parsed.soc),
-      String(parsed.voltage),
-      String(parsed.current),
-      String(parsed.temperature),
-      String(parsed.cellCount),
-      String(parsed.statusFlags),
-      String(parsed.dischargeCycles),
-      timestamp
-    );
+      String(parsed.freshnessCounter), String(parsed.soc),
+      String(parsed.voltage), String(parsed.current),
+      String(parsed.temperature), String(parsed.cellCount),
+      String(parsed.statusFlags), String(parsed.dischargeCycles),
+      timestamp,
+    ]);
 
-    console.log(`BMU recorded: ${recordId} FC=${parsed.freshnessCounter} SOC=${parsed.soc} V=${parsed.voltage}`);
+    console.log(`BMU recorded: ${recordId} FC=${parsed.freshnessCounter} SOC=${parsed.soc}`);
     res.json({
-      success: true,
-      recordId,
+      success: true, recordId,
       passportId: passportId || null,
       parsed: {
-        soc: parsed.soc,
-        voltage: parsed.voltage,
-        current: parsed.current,
-        temperature: parsed.temperature,
-        cellCount: parsed.cellCount,
-        dischargeCycles: parsed.dischargeCycles,
-        statusFlags: parsed.statusFlags,
+        soc: parsed.soc, voltage: parsed.voltage, current: parsed.current,
+        temperature: parsed.temperature, cellCount: parsed.cellCount,
+        dischargeCycles: parsed.dischargeCycles, statusFlags: parsed.statusFlags,
       },
     });
   } catch (err) {
@@ -103,16 +98,13 @@ router.post('/data', async (req, res) => {
   }
 });
 
-// GET /api/bmu/records/:passportId — Get BMU records for a passport
+// GET /api/bmu/records/:passportId
 router.get('/records/:passportId', async (req, res) => {
   try {
-    const pageSize = parseInt(req.query.pageSize || '100', 10);
+    const pageSize = Math.min(parseInt(req.query.pageSize || '100', 10), 500);
     const bookmark = req.query.bookmark || '';
     const result = await fabricService.evaluateTransaction(
-      'QueryBMURecordsByPassport',
-      req.params.passportId,
-      String(pageSize),
-      bookmark
+      'QueryBMURecordsByPassport', req.params.passportId, String(pageSize), bookmark
     );
     res.json(JSON.parse(result.toString()));
   } catch (err) {

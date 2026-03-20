@@ -23,8 +23,7 @@ router.post('/', authenticateToken, requireMSP('ManufacturerMSP'), async (req, r
   }
 
   try {
-    await fabricService.submitTransaction(
-      'CreateBatteryPassport',
+    await fabricService.submitTransaction('CreateBatteryPassport', [
       passportId, batteryId, did || '',
       model || '', serialNumber,
       manufacturerName || '', manufactureCountry || '',
@@ -33,8 +32,8 @@ router.post('/', authenticateToken, requireMSP('ManufacturerMSP'), async (req, r
       String(cellCount || 0), String(weight || 0),
       String(totalEnergy || 0), String(energyDensity || 0),
       String(ratedCapacity || 0), String(expectedLifespan || 0),
-      voltageRange || '', temperatureRange || ''
-    );
+      voltageRange || '', temperatureRange || '',
+    ], req.user);
     res.json({ success: true, passportId });
   } catch (err) {
     console.error('CreateBatteryPassport failed:', err.message);
@@ -75,16 +74,13 @@ router.get('/:id/history', async (req, res) => {
 // PUT /api/passports/:id/bind — Bind to vehicle (EV Manufacturer)
 router.put('/:id/bind', authenticateToken, requireMSP('EVManufacturerMSP'), async (req, res) => {
   const { vin, installDate, evManufacturer, evAssemblyCountry } = req.body;
-
   if (!vin) {
     return res.status(400).json({ error: 'vin required' });
   }
-
   try {
-    await fabricService.submitTransaction(
-      'BindToVehicle',
-      req.params.id, vin, installDate || '', evManufacturer || '', evAssemblyCountry || ''
-    );
+    await fabricService.submitTransaction('BindToVehicle', [
+      req.params.id, vin, installDate || '', evManufacturer || '', evAssemblyCountry || '',
+    ], req.user);
     res.json({ success: true, passportId: req.params.id, vin });
   } catch (err) {
     res.status(500).json({ error: err.message });
