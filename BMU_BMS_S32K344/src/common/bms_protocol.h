@@ -123,7 +123,7 @@ extern "C" {
 #define SIM_SOC_MAX                 65535U
 #define SIM_SOC_STEP                655U
 #define SIM_SOC_MOD                 100U
-#define SIM_TEMP_DEFAULT            2981U   /* ~25°C encoded */
+#define SIM_TEMP_DEFAULT            32964U  /* 25°C encoded: (298.15-273)/50*65535 */
 #define SIM_CYCLES_DIV              100U
 #define SIM_TX_PERIOD_MS            500U
 #define SIM_CELL_VOLT_BASE          180U
