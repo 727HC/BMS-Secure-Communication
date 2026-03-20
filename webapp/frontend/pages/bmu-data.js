@@ -13,8 +13,8 @@ app.component('bmu-data-page', {
 
     const sortedRecords = computed(() => {
       return [...records.value].sort((a, b) => {
-        const tA = new Date(a.timestamp).getTime();
-        const tB = new Date(b.timestamp).getTime();
+        const tA = new Date(a.timestamp || 0).getTime() || 0;
+        const tB = new Date(b.timestamp || 0).getTime() || 0;
         return tB - tA;
       });
     });
@@ -126,7 +126,7 @@ app.component('bmu-data-page', {
     return {
       passportId, records, loading, autoRefresh, refreshing, hasSearched,
       sortedRecords, decodeStatusFlags, getBadgeClasses, getDotClasses,
-      fetchRecords, handleSearch, formatTimestamp, formatNumber,
+      fetchRecords, handleSearch, formatTimestamp, formatNumber, scaleSOC, scaleTemp,
     };
   },
   template: `
