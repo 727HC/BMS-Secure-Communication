@@ -131,14 +131,14 @@ app.component('dashboard-page', {
         return [
           { icon: 'battery', label: '총 배터리', value: totalCount.value, sub: '등록된 전체 배터리', color: 'blue' },
           { icon: 'chart', label: '평균 SOC', value: avgSoc.value + '%', sub: '충전 상태 평균', color: 'green' },
-          { icon: 'shield', label: 'MANUFACTURED', value: manufacturedCount.value, sub: '제조 완료 상태', color: 'indigo' },
+          { icon: 'shield', label: '제조완료', value: manufacturedCount.value, sub: '제조 완료 상태', color: 'indigo' },
           { icon: 'cube', label: '원자재 수', value: materialCount.value, sub: '등록된 원자재 데이터', color: 'purple' },
         ];
       }
       if (msp === 'EVManufacturerMSP') {
         return [
           { icon: 'battery', label: 'VIN 바인딩', value: vinBoundCount.value, sub: '차량 연결 배터리', color: 'blue' },
-          { icon: 'shield', label: 'ACTIVE', value: activeCount.value, sub: '운행중 배터리', color: 'green' },
+          { icon: 'shield', label: '운행중', value: activeCount.value, sub: '운행중 배터리', color: 'green' },
           { icon: 'wrench', label: '정비 필요', value: maintenanceCount.value, sub: 'MAINTENANCE 상태', color: 'yellow' },
           { icon: 'chart', label: '평균 SOH', value: avgSoh.value + '%', sub: '건강 상태 평균', color: 'emerald' },
         ];
@@ -155,8 +155,8 @@ app.component('dashboard-page', {
         return [
           { icon: 'battery', label: '전체 여권', value: totalCount.value, sub: '등록된 전체 배터리', color: 'blue' },
           { icon: 'recycle', label: '재활용 가능', value: recycleAvailableCount.value, sub: 'recycleAvailable', color: 'green' },
-          { icon: 'chart', label: 'RECYCLING', value: recyclingCount.value, sub: '재활용 진행중', color: 'orange' },
-          { icon: 'shield', label: 'DISPOSED', value: disposedCount.value, sub: '폐기 완료', color: 'gray' },
+          { icon: 'chart', label: '재활용', value: recyclingCount.value, sub: '재활용 진행중', color: 'orange' },
+          { icon: 'shield', label: '폐기완료', value: disposedCount.value, sub: '폐기 완료', color: 'gray' },
         ];
       }
       return [];
@@ -791,7 +791,7 @@ app.component('dashboard-page', {
               <span class="text-2xl font-bold text-gray-900">{{ avgRecyclingRate }}%</span>
             </div>
             <div v-else class="esg-pulse-text">
-              <p class="text-sm text-gray-400">데이터 수집 중</p>
+              <p class="text-sm text-gray-400">서비스 준비 중</p>
             </div>
           </div>
 
@@ -814,7 +814,7 @@ app.component('dashboard-page', {
               <span class="text-sm text-gray-500">kg CO2e</span>
             </div>
             <div v-else class="esg-pulse-text">
-              <p class="text-sm text-gray-400">측정 대기</p>
+              <p class="text-sm text-gray-400">서비스 준비 중</p>
             </div>
           </div>
 
@@ -843,7 +843,7 @@ app.component('dashboard-page', {
               </div>
             </div>
             <div v-else class="esg-pulse-text">
-              <p class="text-sm text-gray-400">데이터 수집 중</p>
+              <p class="text-sm text-gray-400">서비스 준비 중</p>
             </div>
           </div>
         </div>

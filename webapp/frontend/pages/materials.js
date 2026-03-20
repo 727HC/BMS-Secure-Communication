@@ -188,7 +188,7 @@ app.component('materials-page', {
             <tr v-for="(m, idx) in materials" :key="m.materialId"
               :class="['transition-colors duration-150 hover:bg-blue-50/40', idx % 2 === 0 ? 'bg-white' : 'bg-gray-50/40']">
               <td class="px-5 py-4 whitespace-nowrap">
-                <span class="text-sm font-mono text-blue-600 bg-blue-50 px-2 py-0.5 rounded">{{ m.materialId }}</span>
+                <span class="text-sm font-mono text-gray-700 text-xs">{{ m.materialId }}</span>
               </td>
               <td class="px-5 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">{{ m.name }}</td>
               <td class="px-5 py-4 whitespace-nowrap">

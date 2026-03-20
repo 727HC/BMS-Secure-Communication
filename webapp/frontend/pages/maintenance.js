@@ -275,8 +275,8 @@ app.component('maintenance-page', {
             <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
           </svg>
         </div>
-        <h3 class="text-lg font-semibold text-gray-800 mb-2">해당하는 여권이 없습니다</h3>
-        <p class="text-sm text-gray-500 text-center max-w-md">현재 필터 조건에 맞는 배터리 여권이 존재하지 않습니다.</p>
+        <h3 class="text-lg font-semibold text-gray-800 mb-2">{{ activeTab === 'all' ? '등록된 정비 이력이 없습니다.' : '해당 조건의 정비 이력이 없습니다.' }}</h3>
+        <p class="text-sm text-gray-500 text-center max-w-md">{{ activeTab === 'all' ? '배터리 여권이 등록되면 정비 이력을 관리할 수 있습니다.' : '현재 필터 조건에 맞는 배터리 여권이 존재하지 않습니다.' }}</p>
       </div>
     </div>
 
