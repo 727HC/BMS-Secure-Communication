@@ -67,6 +67,7 @@ services:
       - FABRIC_CFG_PATH=/etc/hyperledger/peercfg
       - FABRIC_LOGGING_SPEC=INFO
       #- FABRIC_LOGGING_SPEC=DEBUG
+      - CORE_VM_DOCKER_HOSTCONFIG_NETWORKMODE=passport_net
       - CORE_PEER_TLS_ENABLED=true
       - CORE_PEER_PROFILE_ENABLED=false
       - CORE_PEER_TLS_CERT_FILE=/etc/hyperledger/fabric/tls/server.crt
@@ -87,6 +88,8 @@ services:
       - CHAINCODE_AS_A_SERVICE_BUILDER_CONFIG={"peername":"peer0manufacturer"}
       - CORE_CHAINCODE_EXECUTETIMEOUT=300s
     volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./docker/peercfg:/etc/hyperledger/peercfg
       - ../organizations/peerOrganizations/manufacturer.battery.com/peers/peer0.manufacturer.battery.com:/etc/hyperledger/fabric
       - peer0.manufacturer.battery.com:/var/hyperledger/production
     working_dir: /root
@@ -106,6 +109,7 @@ services:
       - FABRIC_CFG_PATH=/etc/hyperledger/peercfg
       - FABRIC_LOGGING_SPEC=INFO
       #- FABRIC_LOGGING_SPEC=DEBUG
+      - CORE_VM_DOCKER_HOSTCONFIG_NETWORKMODE=passport_net
       - CORE_PEER_TLS_ENABLED=true
       - CORE_PEER_PROFILE_ENABLED=false
       - CORE_PEER_TLS_CERT_FILE=/etc/hyperledger/fabric/tls/server.crt
@@ -126,6 +130,8 @@ services:
       - CHAINCODE_AS_A_SERVICE_BUILDER_CONFIG={"peername":"peer0evmanufacturer"}
       - CORE_CHAINCODE_EXECUTETIMEOUT=300s
     volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./docker/peercfg:/etc/hyperledger/peercfg
       - ../organizations/peerOrganizations/evmanufacturer.battery.com/peers/peer0.evmanufacturer.battery.com:/etc/hyperledger/fabric
       - peer0.evmanufacturer.battery.com:/var/hyperledger/production
     working_dir: /root
@@ -145,6 +151,7 @@ services:
       - FABRIC_CFG_PATH=/etc/hyperledger/peercfg
       - FABRIC_LOGGING_SPEC=INFO
       #- FABRIC_LOGGING_SPEC=DEBUG
+      - CORE_VM_DOCKER_HOSTCONFIG_NETWORKMODE=passport_net
       - CORE_PEER_TLS_ENABLED=true
       - CORE_PEER_PROFILE_ENABLED=false
       - CORE_PEER_TLS_CERT_FILE=/etc/hyperledger/fabric/tls/server.crt
@@ -165,6 +172,8 @@ services:
       - CHAINCODE_AS_A_SERVICE_BUILDER_CONFIG={"peername":"peer0service"}
       - CORE_CHAINCODE_EXECUTETIMEOUT=300s
     volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./docker/peercfg:/etc/hyperledger/peercfg
       - ../organizations/peerOrganizations/service.battery.com/peers/peer0.service.battery.com:/etc/hyperledger/fabric
       - peer0.service.battery.com:/var/hyperledger/production
     working_dir: /root
@@ -184,6 +193,7 @@ services:
       - FABRIC_CFG_PATH=/etc/hyperledger/peercfg
       - FABRIC_LOGGING_SPEC=INFO
       #- FABRIC_LOGGING_SPEC=DEBUG
+      - CORE_VM_DOCKER_HOSTCONFIG_NETWORKMODE=passport_net
       - CORE_PEER_TLS_ENABLED=true
       - CORE_PEER_PROFILE_ENABLED=false
       - CORE_PEER_TLS_CERT_FILE=/etc/hyperledger/fabric/tls/server.crt
@@ -204,6 +214,8 @@ services:
       - CHAINCODE_AS_A_SERVICE_BUILDER_CONFIG={"peername":"peer0regulator"}
       - CORE_CHAINCODE_EXECUTETIMEOUT=300s
     volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./docker/peercfg:/etc/hyperledger/peercfg
       - ../organizations/peerOrganizations/regulator.battery.com/peers/peer0.regulator.battery.com:/etc/hyperledger/fabric
       - peer0.regulator.battery.com:/var/hyperledger/production
     working_dir: /root
