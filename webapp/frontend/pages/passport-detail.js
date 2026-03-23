@@ -650,57 +650,63 @@ app.component('passport-detail-page', {
               </div>
               <h3 class="text-sm font-bold text-slate-800 uppercase tracking-wider">성능 및 내구성</h3>
             </div>
-            <div class="p-6 space-y-8">
-              <!-- Row 1 -->
+            <div class="p-6 space-y-6">
+              <!-- 정격용량 (단독, 크게) -->
+              <div>
+                <p class="text-xs text-slate-400 mb-1">정격용량</p>
+                <p class="text-3xl font-bold text-slate-900">{{ passport.ratedCapacity || '--' }} Ah</p>
+              </div>
+              <div class="border-t border-slate-100"></div>
+              <!-- 전압 3열 -->
               <div class="grid grid-cols-3 gap-x-8">
                 <div>
-                  <p class="text-xs text-slate-400 mb-1">정격용량</p>
-                  <p class="text-2xl font-bold text-slate-900">{{ passport.ratedCapacity || '--' }} <span class="text-base font-normal text-slate-400">Ah</span></p>
+                  <p class="text-xs text-slate-400 mb-1">공칭 전압</p>
+                  <p class="text-2xl font-bold text-slate-900">{{ parseVoltageRange(passport.voltageRange).nom }} V</p>
                 </div>
                 <div>
-                  <p class="text-xs text-slate-400 mb-1">공칭 전압</p>
-                  <p class="text-2xl font-bold text-slate-900">{{ parseVoltageRange(passport.voltageRange).nom }} <span class="text-base font-normal text-slate-400">V</span></p>
+                  <p class="text-xs text-slate-400 mb-1">최소 전압</p>
+                  <p class="text-2xl font-bold text-slate-900">{{ parseVoltageRange(passport.voltageRange).min }} V</p>
                 </div>
                 <div>
                   <p class="text-xs text-slate-400 mb-1">최대 전압</p>
-                  <p class="text-2xl font-bold text-slate-900">{{ parseVoltageRange(passport.voltageRange).max }} <span class="text-base font-normal text-slate-400">V</span></p>
+                  <p class="text-2xl font-bold text-slate-900">{{ parseVoltageRange(passport.voltageRange).max }} V</p>
                 </div>
               </div>
               <div class="border-t border-slate-100"></div>
-              <!-- Row 2 -->
+              <!-- 에너지/무게 3열 -->
               <div class="grid grid-cols-3 gap-x-8">
                 <div>
-                  <p class="text-xs text-slate-400 mb-1">최소 전압</p>
-                  <p class="text-2xl font-bold text-slate-900">{{ parseVoltageRange(passport.voltageRange).min }} <span class="text-base font-normal text-slate-400">V</span></p>
-                </div>
-                <div>
                   <p class="text-xs text-slate-400 mb-1">총 에너지</p>
-                  <p class="text-2xl font-bold text-slate-900">{{ passport.totalEnergy || '--' }} <span class="text-base font-normal text-slate-400">kWh</span></p>
+                  <p class="text-2xl font-bold text-slate-900">{{ passport.totalEnergy || '--' }} kWh</p>
                 </div>
                 <div>
                   <p class="text-xs text-slate-400 mb-1">에너지밀도</p>
-                  <p class="text-2xl font-bold text-slate-900">{{ passport.energyDensity || '--' }} <span class="text-base font-normal text-slate-400">Wh/kg</span></p>
+                  <p class="text-2xl font-bold text-slate-900">{{ passport.energyDensity || '--' }} Wh/kg</p>
+                </div>
+                <div>
+                  <p class="text-xs text-slate-400 mb-1">무게</p>
+                  <p class="text-2xl font-bold text-slate-900">{{ passport.weight || '--' }} kg</p>
                 </div>
               </div>
               <div class="border-t border-slate-100"></div>
-              <!-- Row 3 -->
+              <!-- 수명/셀 3열 -->
               <div class="grid grid-cols-3 gap-x-8">
                 <div>
-                  <p class="text-xs text-slate-400 mb-1">무게</p>
-                  <p class="text-2xl font-bold text-slate-900">{{ passport.weight || '--' }} <span class="text-base font-normal text-slate-400">kg</span></p>
+                  <p class="text-xs text-slate-400 mb-1">예상수명</p>
+                  <p class="text-2xl font-bold text-slate-900">{{ passport.expectedLifespan || '--' }} cycles</p>
                 </div>
                 <div>
                   <p class="text-xs text-slate-400 mb-1">셀 수</p>
-                  <p class="text-2xl font-bold text-slate-900">{{ passport.cellCount || '--' }} <span class="text-base font-normal text-slate-400">개</span></p>
+                  <p class="text-2xl font-bold text-slate-900">{{ passport.cellCount || '--' }} 개</p>
                 </div>
                 <div>
-                  <p class="text-xs text-slate-400 mb-1">예상수명</p>
-                  <p class="text-2xl font-bold text-slate-900">{{ passport.expectedLifespan || '--' }} <span class="text-base font-normal text-slate-400">cycles</span></p>
+                  <p class="text-xs text-slate-400 mb-1">화학물질</p>
+                  <p class="text-2xl font-bold text-slate-900">{{ passport.chemistry || '--' }}</p>
                 </div>
               </div>
               <div class="border-t border-slate-100"></div>
-              <!-- Row 4 -->
-              <div class="grid grid-cols-3 gap-x-8">
+              <!-- 온도/셀유형 2열 -->
+              <div class="grid grid-cols-2 gap-x-8">
                 <div>
                   <p class="text-xs text-slate-400 mb-1">사용 온도 범위</p>
                   <p class="text-2xl font-bold text-slate-900">{{ parseTempRange(passport.temperatureRange).min }}&deg;C ~ {{ parseTempRange(passport.temperatureRange).max }}&deg;C</p>
@@ -708,10 +714,6 @@ app.component('passport-detail-page', {
                 <div>
                   <p class="text-xs text-slate-400 mb-1">셀 유형</p>
                   <p class="text-2xl font-bold text-slate-900">{{ passport.cellType || '--' }}</p>
-                </div>
-                <div>
-                  <p class="text-xs text-slate-400 mb-1">화학물질</p>
-                  <p class="text-2xl font-bold text-slate-900">{{ passport.chemistry || '--' }}</p>
                 </div>
               </div>
             </div>
