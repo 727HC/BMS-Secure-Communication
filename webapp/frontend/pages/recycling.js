@@ -345,8 +345,8 @@ app.component('recycling-page', {
             <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
           </svg>
         </div>
-        <h3 class="text-lg font-semibold text-gray-800 mb-2">재활용 대상 배터리가 없습니다.</h3>
-        <p class="text-sm text-gray-500 text-center max-w-md">현재 필터 조건에 맞는 배터리 여권이 존재하지 않습니다.</p>
+        <h3 class="text-lg font-semibold text-gray-800 mb-2">재활용 관리 대상 배터리가 없습니다.</h3>
+        <p class="text-sm text-gray-500 text-center max-w-md">배터리 여권이 등록되면 재활용 관리를 시작할 수 있습니다.</p>
       </div>
     </div>
 

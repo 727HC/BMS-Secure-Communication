@@ -270,26 +270,27 @@ app.component('dashboard-page', {
     ];
     const lifecycleProgress = computed(() => {
       // Determine which steps are completed based on passport data
-      const has = {
-        materials: materialCount.value > 0,
-        manufactured: (countByStatus.value['MANUFACTURED'] || 0) > 0 || (countByStatus.value['ACTIVE'] || 0) > 0,
-        vinBound: vinBoundCount.value > 0,
-        maintenance: (countByStatus.value['MAINTENANCE'] || 0) > 0 || (countByStatus.value['ACTIVE'] || 0) > 0,
-        analysis: (countByStatus.value['ANALYSIS'] || 0) > 0,
-        recycling: (countByStatus.value['RECYCLING'] || 0) > 0,
-        disposed: (countByStatus.value['DISPOSED'] || 0) > 0,
-      };
-      // Find last completed index
-      let lastCompleted = -1;
-      lifecycleSteps.forEach((step, i) => {
-        if (has[step.key]) lastCompleted = i;
-      });
+      const checks = [
+        materialCount.value > 0,                                                        // 원자재 등록
+        totalCount.value > 0,                                                           // 여권 발급
+        vinBoundCount.value > 0,                                                        // VIN 바인딩
+        passports.value.some(p => (p.maintenanceLogs || []).length > 0),                 // 정비
+        passports.value.some(p => p.soce > 0 || p.currentSoh < 100),                    // SOH 분석
+        recyclingCount.value > 0 || recycleAvailableCount.value > 0,                    // 재활용
+        disposedCount.value > 0,                                                        // 폐기
+      ];
+      // Find highest consecutive completed step (don't skip)
+      let maxConsecutive = 0;
+      for (let i = 0; i < checks.length; i++) {
+        if (checks[i]) maxConsecutive = i + 1;
+        else break;
+      }
       return lifecycleSteps.map((step, i) => ({
         ...step,
         index: i,
-        completed: i <= lastCompleted && has[step.key],
-        current: i === lastCompleted + 1,
-        upcoming: i > lastCompleted + 1,
+        completed: i < maxConsecutive,
+        current: i === maxConsecutive,
+        upcoming: i > maxConsecutive,
       }));
     });
 
@@ -774,7 +775,7 @@ app.component('dashboard-page', {
               </div>
               <div>
                 <p class="text-sm font-semibold text-gray-800">재활용률</p>
-                <p class="text-xs text-gray-400">Average recycling rate</p>
+                <p class="text-xs text-gray-400">평균 재활용률</p>
               </div>
             </div>
             <div v-if="avgRecyclingRate > 0" class="flex items-center gap-4">
@@ -807,7 +808,7 @@ app.component('dashboard-page', {
               </div>
               <div>
                 <p class="text-sm font-semibold text-gray-800">탄소발자국</p>
-                <p class="text-xs text-gray-400">Carbon footprint</p>
+                <p class="text-xs text-gray-400">탄소 발자국</p>
               </div>
             </div>
             <div v-if="avgCarbonFootprint > 0" class="flex items-center gap-2">
@@ -830,7 +831,7 @@ app.component('dashboard-page', {
               </div>
               <div>
                 <p class="text-sm font-semibold text-gray-800">친환경 지표</p>
-                <p class="text-xs text-gray-400">Eco-friendly index</p>
+                <p class="text-xs text-gray-400">친환경 지수</p>
               </div>
             </div>
             <div v-if="totalCount > 0">
@@ -873,7 +874,7 @@ app.component('dashboard-page', {
             <table class="w-full">
               <thead>
                 <tr class="bg-gray-50/80">
-                  <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Passport ID</th>
+                  <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">여권 ID</th>
                   <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">모델</th>
                   <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">시리얼</th>
                   <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">상태</th>
@@ -899,7 +900,7 @@ app.component('dashboard-page', {
                       (p.status === 'ANALYSIS') ? 'bg-purple-100 text-purple-800' : '',
                       (p.status === 'RECYCLING') ? 'bg-orange-100 text-orange-800' : '',
                       (p.status === 'DISPOSED') ? 'bg-gray-100 text-gray-700' : '',
-                    ]">{{ p.status || 'UNKNOWN' }}</span>
+                    ]">{{ statusLabels[p.status] || p.status || 'UNKNOWN' }}</span>
                   </td>
                   <td class="px-6 py-4">
                     <div class="flex items-center gap-2">

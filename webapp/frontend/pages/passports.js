@@ -469,13 +469,19 @@ app.component('passports-page', {
                     </div>
                     <div>
                       <label class="block text-xs font-medium text-gray-500 mb-1.5">전압 범위</label>
-                      <input v-model="form.voltageRange" type="text" placeholder="300~400V"
-                        class="w-full px-3.5 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 outline-none text-sm hover:border-gray-400 transition-colors" />
+                      <div class="flex items-center gap-2">
+                        <input v-model="form.voltageRange" type="text" placeholder="300~400"
+                          class="flex-1 px-3.5 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 outline-none text-sm hover:border-gray-400 transition-colors" />
+                        <span class="text-sm font-medium text-gray-500">V</span>
+                      </div>
                     </div>
                     <div>
                       <label class="block text-xs font-medium text-gray-500 mb-1.5">온도 범위</label>
-                      <input v-model="form.temperatureRange" type="text" placeholder="-20~60°C"
-                        class="w-full px-3.5 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 outline-none text-sm hover:border-gray-400 transition-colors" />
+                      <div class="flex items-center gap-2">
+                        <input v-model="form.temperatureRange" type="text" placeholder="-20~60"
+                          class="flex-1 px-3.5 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 outline-none text-sm hover:border-gray-400 transition-colors" />
+                        <span class="text-sm font-medium text-gray-500">&deg;C</span>
+                      </div>
                     </div>
                   </div>
                 </div>
