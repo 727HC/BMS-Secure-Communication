@@ -42,38 +42,15 @@ const MSP_ORG_NUM = {
   RegulatorMSP: 4,
 };
 
-// Navigation items per role
-const NAV_CONFIG = {
-  ManufacturerMSP: [
-    { route: 'dashboard', label: '대시보드' },
-    { route: 'passports', label: '여권관리' },
-    { route: 'bmu-data', label: 'BMU데이터' },
-    { route: 'materials', label: '원자재' },
-    { route: 'maintenance', label: '정비이력' },
-    { route: 'recycling', label: '재활용' },
-  ],
-  EVManufacturerMSP: [
-    { route: 'dashboard', label: '대시보드' },
-    { route: 'passports', label: '여권조회' },
-    { route: 'bmu-data', label: 'BMU데이터' },
-    { route: 'maintenance', label: '정비요청' },
-    { route: 'recycling', label: '재활용' },
-  ],
-  ServiceMSP: [
-    { route: 'dashboard', label: '대시보드' },
-    { route: 'passports', label: '여권조회' },
-    { route: 'bmu-data', label: 'BMU데이터' },
-    { route: 'maintenance', label: '정비수행' },
-    { route: 'recycling', label: '재활용판정' },
-  ],
-  RegulatorMSP: [
-    { route: 'dashboard', label: '대시보드' },
-    { route: 'passports', label: '여권검증' },
-    { route: 'bmu-data', label: 'BMU데이터' },
-    { route: 'maintenance', label: '정비이력' },
-    { route: 'recycling', label: '폐기관리' },
-  ],
-};
+// Unified sidebar navigation (RBAC handled at page level)
+const SIDEBAR_NAV = [
+  { route: 'dashboard', label: '대시보드', icon: 'dashboard', section: '' },
+  { route: 'passports', label: '배터리 여권', icon: 'passport', section: '관리' },
+  { route: 'materials', label: '추적성', icon: 'chain', section: '관리' },
+  { route: 'bmu-data', label: '배터리 데이터', icon: 'pulse', section: '모니터링' },
+  { route: 'maintenance', label: '정비/서비스', icon: 'wrench', section: '운영' },
+  { route: 'recycling', label: '재활용', icon: 'recycle', section: '운영' },
+];
 
 // Page component map
 const PAGE_COMPONENTS = {
@@ -95,7 +72,7 @@ const app = createApp({
       orgMsp: localStorage.getItem('bp_orgMsp') || null,
     });
 
-    // 새로고침 시 URL 해시에서 페이지 복원
+    // Restore page from URL hash on refresh
     const hashPage = window.location.hash.replace('#', '');
     const initialPage = auth.value.token
       ? (hashPage && PAGE_COMPONENTS[hashPage] ? hashPage : 'dashboard')
@@ -109,9 +86,62 @@ const app = createApp({
 
     const orgLabel = computed(() => MSP_LABELS[auth.value.orgMsp] || auth.value.orgMsp);
 
-    const navItems = computed(() => NAV_CONFIG[auth.value.orgMsp] || []);
+    // Unified nav items for sidebar
+    const navItems = computed(() => SIDEBAR_NAV);
+
+    // Grouped nav items by section for sidebar rendering
+    const groupedNavItems = computed(() => {
+      const groups = [];
+      let currentSection = null;
+      for (const item of SIDEBAR_NAV) {
+        if (item.section !== currentSection) {
+          currentSection = item.section;
+          groups.push({ section: currentSection, items: [] });
+        }
+        groups[groups.length - 1].items.push(item);
+      }
+      return groups;
+    });
 
     const currentPageComponent = computed(() => PAGE_COMPONENTS[currentPage.value] || 'login-page');
+
+    // Current page title in Korean
+    const currentPageTitle = computed(() => {
+      const item = SIDEBAR_NAV.find(n => n.route === currentPage.value);
+      if (item) return item.label;
+      if (currentPage.value === 'passport-detail') return '여권 상세';
+      if (currentPage.value === 'login') return '로그인';
+      return '대시보드';
+    });
+
+    // User initials (first 2 chars of userId)
+    const userInitials = computed(() => {
+      const id = auth.value.userId;
+      if (!id) return '??';
+      return id.substring(0, 2).toUpperCase();
+    });
+
+    // Org color classes for badge
+    const orgBadgeClasses = computed(() => {
+      switch (auth.value.orgMsp) {
+        case 'ManufacturerMSP': return 'bg-blue-400/20 text-blue-300 border-blue-400/30';
+        case 'EVManufacturerMSP': return 'bg-purple-400/20 text-purple-300 border-purple-400/30';
+        case 'ServiceMSP': return 'bg-amber-400/20 text-amber-300 border-amber-400/30';
+        case 'RegulatorMSP': return 'bg-emerald-400/20 text-emerald-300 border-emerald-400/30';
+        default: return 'bg-gray-400/20 text-gray-300 border-gray-400/30';
+      }
+    });
+
+    // Org avatar background color
+    const orgAvatarColor = computed(() => {
+      switch (auth.value.orgMsp) {
+        case 'ManufacturerMSP': return 'bg-blue-500';
+        case 'EVManufacturerMSP': return 'bg-purple-500';
+        case 'ServiceMSP': return 'bg-amber-500';
+        case 'RegulatorMSP': return 'bg-emerald-500';
+        default: return 'bg-gray-500';
+      }
+    });
 
     function navigate(page, navProps, skipHistory) {
       if (!auth.value.token && page !== 'login') {
@@ -119,6 +149,7 @@ const app = createApp({
         return;
       }
       currentPage.value = page;
+      mobileMenuOpen.value = false;
       if (navProps) {
         pageProps.value = navProps;
         window.__pageProps = navProps;
@@ -126,13 +157,12 @@ const app = createApp({
         pageProps.value = {};
         window.__pageProps = {};
       }
-      // Browser history support (뒤로가기/앞으로가기)
       if (!skipHistory) {
         history.pushState({ page, props: navProps || {} }, '', `#${page}`);
       }
     }
 
-    // 뒤로가기/앞으로가기 처리
+    // Back/forward navigation
     window.addEventListener('popstate', (e) => {
       if (e.state && e.state.page) {
         navigate(e.state.page, e.state.props, true);
@@ -141,7 +171,7 @@ const app = createApp({
       }
     });
 
-    // 초기 상태 등록
+    // Register initial state
     history.replaceState({ page: currentPage.value, props: {} }, '', `#${currentPage.value}`);
 
     function onLogin(data) {
@@ -171,7 +201,9 @@ const app = createApp({
 
     return {
       auth, currentPage, pageProps, toasts, api,
-      orgLabel, navItems, currentPageComponent, mobileMenuOpen,
+      orgLabel, navItems, groupedNavItems, currentPageComponent,
+      currentPageTitle, userInitials, orgBadgeClasses, orgAvatarColor,
+      mobileMenuOpen,
       navigate, onLogin, logout, showToast,
     };
   },

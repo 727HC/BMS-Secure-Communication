@@ -7,10 +7,13 @@ app.component('dashboard-page', {
     const passports = ref([]);
     const loading = ref(true);
     const fabricStatus = ref('disconnected');
-
     const materials = ref([]);
+    const currentTime = ref('');
 
+    /* ---------- data fetching ---------- */
     onMounted(async () => {
+      updateTime();
+      setInterval(updateTime, 60000);
       try {
         const [passportData, statusData, materialData] = await Promise.allSettled([
           props.api.get('/passports'),
@@ -35,6 +38,13 @@ app.component('dashboard-page', {
       }
     });
 
+    function updateTime() {
+      currentTime.value = new Date().toLocaleString('ko-KR', {
+        year: 'numeric', month: 'long', day: 'numeric',
+        weekday: 'long', hour: '2-digit', minute: '2-digit'
+      });
+    }
+
     /* ---------- helpers ---------- */
     function scaleSOC(val) {
       if (val == null) return 0;
@@ -52,12 +62,55 @@ app.component('dashboard-page', {
       try {
         const dt = new Date(d);
         if (isNaN(dt)) return d;
-        return dt.toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit' });
+        return dt.toLocaleString('ko-KR');
       } catch { return d; }
     }
 
+    /* ---------- status config ---------- */
+    const statusList = ['MANUFACTURED', 'ACTIVE', 'MAINTENANCE', 'ANALYSIS', 'RECYCLING', 'DISPOSED'];
+
+    const statusLabels = {
+      MANUFACTURED: '제조완료', ACTIVE: '운행중', MAINTENANCE: '정비중',
+      ANALYSIS: '분석중', RECYCLING: '재활용', DISPOSED: '폐기',
+    };
+
+    const statusHexColors = {
+      MANUFACTURED: '#3b82f6', ACTIVE: '#10b981', MAINTENANCE: '#f59e0b',
+      ANALYSIS: '#8b5cf6', RECYCLING: '#f97316', DISPOSED: '#6b7280',
+    };
+
+    const statusBgClasses = {
+      MANUFACTURED: 'bg-blue-500', ACTIVE: 'bg-green-500', MAINTENANCE: 'bg-amber-500',
+      ANALYSIS: 'bg-purple-500', RECYCLING: 'bg-orange-500', DISPOSED: 'bg-gray-500',
+    };
+
+    const statusBadgeClasses = {
+      MANUFACTURED: 'bg-blue-100 text-blue-800',
+      ACTIVE: 'bg-green-100 text-green-800',
+      MAINTENANCE: 'bg-amber-100 text-amber-800',
+      ANALYSIS: 'bg-purple-100 text-purple-800',
+      RECYCLING: 'bg-orange-100 text-orange-800',
+      DISPOSED: 'bg-gray-100 text-gray-700',
+    };
+
     /* ---------- computed ---------- */
     const totalCount = computed(() => passports.value.length);
+
+    const countByStatus = computed(() => {
+      const map = {};
+      statusList.forEach(s => map[s] = 0);
+      passports.value.forEach(p => {
+        const s = p.status || 'UNKNOWN';
+        if (map[s] !== undefined) map[s]++;
+      });
+      return map;
+    });
+
+    const activeCount = computed(() => countByStatus.value['ACTIVE'] || 0);
+    const maintenanceCount = computed(() => countByStatus.value['MAINTENANCE'] || 0);
+    const recyclingDisposedCount = computed(() =>
+      (countByStatus.value['RECYCLING'] || 0) + (countByStatus.value['DISPOSED'] || 0)
+    );
 
     const avgSoc = computed(() => {
       const items = passports.value.filter(p => p.currentSoc != null);
@@ -71,130 +124,128 @@ app.component('dashboard-page', {
       return Math.round(items.reduce((s, p) => s + Number(p.currentSoh), 0) / items.length);
     });
 
-    const statusList = ['MANUFACTURED', 'ACTIVE', 'MAINTENANCE', 'ANALYSIS', 'RECYCLING', 'DISPOSED'];
-
-    const statusColors = {
-      MANUFACTURED: { bg: 'bg-blue-500', text: 'text-blue-700', light: 'bg-blue-100', badge: 'bg-blue-100 text-blue-800' },
-      ACTIVE:       { bg: 'bg-green-500', text: 'text-green-700', light: 'bg-green-100', badge: 'bg-green-100 text-green-800' },
-      MAINTENANCE:  { bg: 'bg-yellow-500', text: 'text-yellow-700', light: 'bg-yellow-100', badge: 'bg-yellow-100 text-yellow-800' },
-      ANALYSIS:     { bg: 'bg-purple-500', text: 'text-purple-700', light: 'bg-purple-100', badge: 'bg-purple-100 text-purple-800' },
-      RECYCLING:    { bg: 'bg-orange-500', text: 'text-orange-700', light: 'bg-orange-100', badge: 'bg-orange-100 text-orange-800' },
-      DISPOSED:     { bg: 'bg-gray-500', text: 'text-gray-700', light: 'bg-gray-100', badge: 'bg-gray-100 text-gray-700' },
-    };
-
-    const statusLabels = {
-      MANUFACTURED: '제조완료',
-      ACTIVE: '운행중',
-      MAINTENANCE: '정비',
-      ANALYSIS: '분석',
-      RECYCLING: '재활용',
-      DISPOSED: '폐기',
-    };
-
-    const countByStatus = computed(() => {
-      const map = {};
-      statusList.forEach(s => map[s] = 0);
-      passports.value.forEach(p => {
-        const s = p.status || 'UNKNOWN';
-        if (map[s] !== undefined) map[s]++;
-      });
-      return map;
+    const orgDisplayName = computed(() => {
+      const map = {
+        ManufacturerMSP: '배터리 제조사', EVManufacturerMSP: 'EV 제조사',
+        ServiceMSP: '정비/서비스', RegulatorMSP: '규제기관',
+      };
+      return map[props.auth.orgMsp] || props.auth.orgMsp;
     });
 
+    /* ---------- GBA 21 compliance ---------- */
+    const gba21Fields = [
+      // Group 1: 식별정보 (1-3)
+      { idx: 1, key: 'passportId', label: '여권 ID', group: '식별정보' },
+      { idx: 2, key: 'batteryId', label: '배터리 ID', group: '식별정보' },
+      { idx: 3, key: 'serialNumber', label: '시리얼번호', group: '식별정보' },
+      // Group 2: 제조정보 (4-11)
+      { idx: 4, key: 'model', label: '모델명', group: '제조정보' },
+      { idx: 5, key: 'manufacturerName', label: '제조사', group: '제조정보' },
+      { idx: 6, key: 'manufactureCountry', label: '제조국가', group: '제조정보' },
+      { idx: 7, key: 'cellManufacturer', label: '셀 제조사', group: '제조정보' },
+      { idx: 8, key: 'cellManufactureCountry', label: '셀 제조국가', group: '제조정보' },
+      { idx: 9, key: 'manufactureDate', label: '제조일자', group: '제조정보' },
+      { idx: 10, key: 'cellType', label: '셀 유형', group: '제조정보' },
+      { idx: 11, key: 'chemistry', label: '화학물질', group: '제조정보' },
+      // Group 3: 기술사양 (12-21)
+      { idx: 12, key: 'cellCount', label: '셀 수', group: '기술사양' },
+      { idx: 13, key: 'weight', label: '무게', group: '기술사양' },
+      { idx: 14, key: 'totalEnergy', label: '총 에너지', group: '기술사양' },
+      { idx: 15, key: 'energyDensity', label: '에너지밀도', group: '기술사양' },
+      { idx: 16, key: 'ratedCapacity', label: '정격용량', group: '기술사양' },
+      { idx: 17, key: 'expectedLifespan', label: '예상수명', group: '기술사양' },
+      { idx: 18, key: 'voltageRange', label: '전압범위', group: '기술사양' },
+      { idx: 19, key: 'temperatureRange', label: '온도범위', group: '기술사양' },
+      { idx: 20, key: 'carbonFootprint', label: '탄소발자국', group: '기술사양' },
+      { idx: 21, key: 'rawMaterials', label: '원자재', group: '기술사양' },
+    ];
+
+    function fieldFilled(p, key) {
+      const v = p[key];
+      if (v == null || v === '' || v === 0) return false;
+      if (typeof v === 'object' && Object.keys(v).length === 0) return false;
+      if (Array.isArray(v) && v.length === 0) return false;
+      return true;
+    }
+
+    const gbaComplianceOverview = computed(() => {
+      if (passports.value.length === 0) return { pct: 0, filled: 0, groups: [] };
+      // Average across all passports
+      let totalFilled = 0;
+      passports.value.forEach(p => {
+        gba21Fields.forEach(f => {
+          if (fieldFilled(p, f.key)) totalFilled++;
+        });
+      });
+      const avgFilled = Math.round(totalFilled / passports.value.length);
+      const pct = Math.round((avgFilled / 21) * 100);
+
+      // For field-level, use first passport as representative
+      const rep = passports.value[0];
+      const fields = gba21Fields.map(f => ({
+        ...f,
+        filled: rep ? fieldFilled(rep, f.key) : false,
+      }));
+
+      const groups = ['식별정보', '제조정보', '기술사양'].map(g => ({
+        name: g,
+        fields: fields.filter(f => f.group === g),
+      }));
+
+      return { pct, filled: avgFilled, groups };
+    });
+
+    /* ---------- status distribution for bar chart ---------- */
     const statusDistribution = computed(() => {
-      const total = totalCount.value || 1;
+      const maxCount = Math.max(...statusList.map(s => countByStatus.value[s] || 0), 1);
       return statusList.map(s => ({
         status: s,
         label: statusLabels[s],
         count: countByStatus.value[s] || 0,
-        pct: Math.round(((countByStatus.value[s] || 0) / total) * 100),
-        colors: statusColors[s],
+        pct: Math.round(((countByStatus.value[s] || 0) / maxCount) * 100),
+        color: statusHexColors[s],
+        bgClass: statusBgClasses[s],
       }));
     });
 
-    const vinBoundCount = computed(() => passports.value.filter(p => p.vin).length);
-    const activeCount = computed(() => countByStatus.value['ACTIVE'] || 0);
-    const manufacturedCount = computed(() => countByStatus.value['MANUFACTURED'] || 0);
-    const maintenanceCount = computed(() => countByStatus.value['MAINTENANCE'] || 0);
-    const analysisCount = computed(() => countByStatus.value['ANALYSIS'] || 0);
-    const recyclingCount = computed(() => countByStatus.value['RECYCLING'] || 0);
-    const disposedCount = computed(() => countByStatus.value['DISPOSED'] || 0);
-    const recycleAvailableCount = computed(() =>
-      passports.value.filter(p => p.recycleAvailable === true || p.recycleAvailable === 'true').length
-    );
-    const materialCount = computed(() => materials.value.length);
-
-    /* ---------- KPI cards per org ---------- */
-    const statsCards = computed(() => {
-      const msp = props.auth.orgMsp;
-      if (msp === 'ManufacturerMSP') {
-        return [
-          { icon: 'battery', label: '총 배터리', value: totalCount.value, sub: '등록된 전체 배터리', color: 'blue', page: 'passports' },
-          { icon: 'chart', label: '평균 SOC', value: avgSoc.value + '%', sub: '충전 상태 평균', color: 'green', page: 'bmu-data' },
-          { icon: 'shield', label: '제조완료', value: manufacturedCount.value, sub: '제조 완료 상태', color: 'indigo', page: 'passports' },
-          { icon: 'cube', label: '원자재 수', value: materialCount.value, sub: '등록된 원자재 데이터', color: 'purple', page: 'materials' },
-        ];
-      }
-      if (msp === 'EVManufacturerMSP') {
-        return [
-          { icon: 'battery', label: 'VIN 바인딩', value: vinBoundCount.value, sub: '차량 연결 배터리', color: 'blue', page: 'passports' },
-          { icon: 'shield', label: '운행중', value: activeCount.value, sub: '운행중 배터리', color: 'green', page: 'passports' },
-          { icon: 'wrench', label: '정비 필요', value: maintenanceCount.value, sub: 'MAINTENANCE 상태', color: 'yellow', page: 'maintenance' },
-          { icon: 'chart', label: '평균 SOH', value: avgSoh.value + '%', sub: '건강 상태 평균', color: 'emerald', page: 'passports' },
-        ];
-      }
-      if (msp === 'ServiceMSP') {
-        return [
-          { icon: 'wrench', label: '정비 대기', value: maintenanceCount.value, sub: 'MAINTENANCE 상태', color: 'yellow', page: 'maintenance' },
-          { icon: 'chart', label: '분석 대기', value: analysisCount.value, sub: 'ANALYSIS 상태', color: 'purple', page: 'maintenance' },
-          { icon: 'shield', label: '평균 SOH', value: avgSoh.value + '%', sub: '건강 상태 평균', color: 'green', page: 'passports' },
-          { icon: 'recycle', label: '재활용 가능', value: recycleAvailableCount.value, sub: 'recycleAvailable', color: 'emerald', page: 'recycling' },
-        ];
-      }
-      if (msp === 'RegulatorMSP') {
-        return [
-          { icon: 'battery', label: '전체 여권', value: totalCount.value, sub: '등록된 전체 배터리', color: 'blue', page: 'passports' },
-          { icon: 'recycle', label: '재활용 가능', value: recycleAvailableCount.value, sub: 'recycleAvailable', color: 'green', page: 'recycling' },
-          { icon: 'chart', label: '재활용', value: recyclingCount.value, sub: '재활용 진행중', color: 'orange', page: 'recycling' },
-          { icon: 'shield', label: '폐기완료', value: disposedCount.value, sub: '폐기 완료', color: 'gray', page: 'recycling' },
-        ];
-      }
-      return [];
+    /* ---------- recent activity timeline ---------- */
+    const recentActivity = computed(() => {
+      const activities = [];
+      const sorted = [...passports.value].sort((a, b) => {
+        const da = a.updatedAt || a.createdAt || '';
+        const db = b.updatedAt || b.createdAt || '';
+        return db.localeCompare(da);
+      });
+      sorted.slice(0, 10).forEach(p => {
+        const ts = p.updatedAt || p.createdAt || '';
+        if (p.vin && p.status === 'ACTIVE') {
+          activities.push({ type: 'vin', desc: (p.model || 'Battery') + ' VIN 바인딩 완료', time: ts, icon: 'link' });
+        }
+        if ((p.maintenanceLogs || []).length > 0) {
+          activities.push({ type: 'maintenance', desc: (p.model || 'Battery') + ' 정비 기록 추가', time: ts, icon: 'wrench' });
+        }
+        if (p.status === 'MANUFACTURED') {
+          activities.push({ type: 'create', desc: (p.model || 'Battery') + ' 여권 생성', time: p.createdAt || ts, icon: 'plus' });
+        }
+        if (p.status === 'RECYCLING' || p.status === 'DISPOSED') {
+          activities.push({ type: 'recycle', desc: (p.model || 'Battery') + ' ' + statusLabels[p.status], time: ts, icon: 'recycle' });
+        }
+      });
+      activities.sort((a, b) => (b.time || '').localeCompare(a.time || ''));
+      return activities.slice(0, 5);
     });
 
-    /* ---------- quick actions per org ---------- */
-    const quickActions = computed(() => {
-      const msp = props.auth.orgMsp;
-      if (msp === 'ManufacturerMSP') {
-        return [
-          { icon: 'plus', label: '여권 생성', desc: '새 배터리 여권을 생성합니다', page: 'passports' },
-          { icon: 'chart', label: 'BMU 데이터', desc: 'BMU 수집 데이터를 조회합니다', page: 'bmu-data' },
-          { icon: 'cube', label: '원자재 관리', desc: '원자재 정보를 관리합니다', page: 'materials' },
-        ];
-      }
-      if (msp === 'EVManufacturerMSP') {
-        return [
-          { icon: 'search', label: '여권 조회', desc: '배터리 여권을 조회합니다', page: 'passports' },
-          { icon: 'wrench', label: '정비 요청', desc: '배터리 정비를 요청합니다', page: 'maintenance' },
-          { icon: 'chart', label: 'BMU 데이터', desc: 'BMU 수집 데이터를 조회합니다', page: 'bmu-data' },
-        ];
-      }
-      if (msp === 'ServiceMSP') {
-        return [
-          { icon: 'wrench', label: '정비 수행', desc: '정비 대기 배터리를 처리합니다', page: 'maintenance' },
-          { icon: 'recycle', label: '재활용 판정', desc: '재활용 여부를 판정합니다', page: 'recycling' },
-          { icon: 'search', label: '여권 조회', desc: '배터리 여권을 조회합니다', page: 'passports' },
-        ];
-      }
-      if (msp === 'RegulatorMSP') {
-        return [
-          { icon: 'shield', label: '여권 검증', desc: '배터리 여권을 검증합니다', page: 'passports' },
-          { icon: 'recycle', label: '폐기 관리', desc: '폐기 배터리를 관리합니다', page: 'recycling' },
-          { icon: 'wrench', label: '정비 이력', desc: '정비 이력을 조회합니다', page: 'maintenance' },
-        ];
-      }
-      return [];
-    });
+    function timeAgo(ts) {
+      if (!ts) return '';
+      const now = new Date();
+      const then = new Date(ts);
+      const diff = Math.floor((now - then) / 1000);
+      if (diff < 60) return '방금 전';
+      if (diff < 3600) return Math.floor(diff / 60) + '분 전';
+      if (diff < 86400) return Math.floor(diff / 3600) + '시간 전';
+      if (diff < 604800) return Math.floor(diff / 86400) + '일 전';
+      return formatDate(ts);
+    }
 
     /* ---------- recent passports ---------- */
     const recentPassports = computed(() => {
@@ -206,756 +257,370 @@ app.component('dashboard-page', {
       return sorted.slice(0, 5);
     });
 
-    /* ---------- org display name ---------- */
-    const orgDisplayName = computed(() => {
-      const map = {
-        ManufacturerMSP: '배터리 제조사',
-        EVManufacturerMSP: 'EV 제조사',
-        ServiceMSP: '정비/서비스',
-        RegulatorMSP: '규제기관',
-      };
-      return map[props.auth.orgMsp] || props.auth.orgMsp;
+    /* ---------- gauge helpers ---------- */
+    const gaugeCircumference = 2 * Math.PI * 36;
+    const gaugeReady = ref(false);
+    onMounted(() => {
+      setTimeout(() => { gaugeReady.value = true; }, 150);
     });
 
     function nav(page) { emit('navigate', page); }
 
-    /* ---------- donut chart data ---------- */
-    const donutHexColors = {
-      MANUFACTURED: '#3b82f6',
-      ACTIVE: '#10b981',
-      MAINTENANCE: '#f59e0b',
-      ANALYSIS: '#8b5cf6',
-      RECYCLING: '#f97316',
-      DISPOSED: '#6b7280',
-    };
-    const donutCircumference = 2 * Math.PI * 70; // radius=70
-    const donutSegments = computed(() => {
-      const total = totalCount.value || 0;
-      if (total === 0) return [];
-      let accumulated = 0;
-      return statusList.map(s => {
-        const count = countByStatus.value[s] || 0;
-        const pct = count / total * 100;
-        const dashLen = (pct / 100) * donutCircumference;
-        const offset = accumulated;
-        accumulated += pct;
-        return {
-          status: s,
-          label: statusLabels[s],
-          count,
-          pct,
-          color: donutHexColors[s],
-          dasharray: dashLen + ' ' + (donutCircumference - dashLen),
-          dashoffset: -(offset / 100) * donutCircumference,
-        };
-      }).filter(seg => seg.count > 0);
-    });
-
-    /* ---------- gauge helpers ---------- */
-    const gaugeCircumference = 2 * Math.PI * 70; // radius=70
-    const gaugeReady = ref(false);
-    onMounted(() => {
-      setTimeout(() => { gaugeReady.value = true; }, 100);
-    });
-
-    /* ---------- lifecycle steps ---------- */
-    const lifecycleSteps = [
-      { label: '원자재 등록', key: 'materials' },
-      { label: '여권 발급', key: 'manufactured' },
-      { label: 'VIN 바인딩', key: 'vinBound' },
-      { label: '정비', key: 'maintenance' },
-      { label: 'SOH 분석', key: 'analysis' },
-      { label: '재활용', key: 'recycling' },
-      { label: '폐기', key: 'disposed' },
-    ];
-    const lifecycleProgress = computed(() => {
-      // Determine which steps are completed based on passport data
-      const checks = [
-        materialCount.value > 0,                                                        // 원자재 등록
-        totalCount.value > 0,                                                           // 여권 발급
-        vinBoundCount.value > 0,                                                        // VIN 바인딩
-        passports.value.some(p => (p.maintenanceLogs || []).length > 0),                 // 정비
-        passports.value.some(p => p.soce > 0 || p.currentSoh < 100),                    // SOH 분석
-        recyclingCount.value > 0 || recycleAvailableCount.value > 0,                    // 재활용
-        disposedCount.value > 0,                                                        // 폐기
-      ];
-      // Find highest consecutive completed step (don't skip)
-      let maxConsecutive = 0;
-      for (let i = 0; i < checks.length; i++) {
-        if (checks[i]) maxConsecutive = i + 1;
-        else break;
-      }
-      return lifecycleSteps.map((step, i) => ({
-        ...step,
-        index: i,
-        completed: i < maxConsecutive,
-        current: i === maxConsecutive,
-        upcoming: i > maxConsecutive,
-      }));
-    });
-
-    /* ---------- ESG metrics ---------- */
-    const avgRecyclingRate = computed(() => {
-      let totalRate = 0, count = 0;
-      passports.value.forEach(p => {
-        if (p.recyclingRates && typeof p.recyclingRates === 'object') {
-          const vals = Object.values(p.recyclingRates).map(Number).filter(v => !isNaN(v));
-          if (vals.length > 0) {
-            totalRate += vals.reduce((a, b) => a + b, 0) / vals.length;
-            count++;
-          }
-        }
-      });
-      return count > 0 ? Math.round(totalRate / count) : 0;
-    });
-
-    const avgCarbonFootprint = computed(() => {
-      const items = passports.value.filter(p => p.carbonFootprint != null && Number(p.carbonFootprint) > 0);
-      if (items.length === 0) return 0;
-      return Math.round(items.reduce((s, p) => s + Number(p.carbonFootprint), 0) / items.length);
-    });
-
-    const ecoRate = computed(() => {
-      const total = totalCount.value || 0;
-      if (total === 0) return 0;
-      return Math.round((recycleAvailableCount.value / total) * 100);
-    });
-
     return {
-      loading, fabricStatus, passports, totalCount,
-      statsCards, statusDistribution, statusColors, statusLabels,
-      quickActions, recentPassports,
-      orgDisplayName, scaleSOC, truncate, formatDate,
-      nav,
-      avgSoc, avgSoh,
-      donutSegments, donutCircumference, donutHexColors,
+      loading, fabricStatus, passports, currentTime,
+      totalCount, activeCount, maintenanceCount, recyclingDisposedCount,
+      avgSoc, avgSoh, orgDisplayName,
+      statusList, statusLabels, statusHexColors, statusBgClasses, statusBadgeClasses,
+      countByStatus, statusDistribution,
+      gba21Fields, gbaComplianceOverview,
+      recentActivity, timeAgo,
+      recentPassports,
       gaugeCircumference, gaugeReady,
-      lifecycleProgress,
-      avgRecyclingRate, avgCarbonFootprint, ecoRate, recycleAvailableCount,
+      scaleSOC, truncate, formatDate, nav,
     };
   },
   template: `
     <div class="space-y-6">
 
-      <!-- ===== 1. WELCOME HERO BANNER ===== -->
-      <div class="relative overflow-hidden rounded-2xl bg-gradient-to-r from-blue-600 to-blue-800 p-6 sm:p-8">
-        <div class="absolute inset-0 opacity-10">
-          <svg class="h-full w-full" viewBox="0 0 800 400" fill="none">
-            <circle cx="700" cy="50" r="180" fill="white"/>
-            <circle cx="100" cy="350" r="120" fill="white"/>
-            <circle cx="400" cy="200" r="80" fill="white"/>
-          </svg>
-        </div>
-        <div class="relative z-10 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <div class="flex items-center gap-3 mb-2">
-              <h1 class="text-2xl sm:text-3xl font-bold text-white">
-                환영합니다, {{ auth.userId }}님
-              </h1>
-              <span class="inline-flex items-center rounded-full bg-white/20 backdrop-blur-sm px-3 py-1 text-xs font-medium text-white border border-white/30">
-                {{ orgDisplayName }}
-              </span>
-            </div>
-            <p class="text-blue-100 text-sm sm:text-base">
-              GBA 21 규격 배터리 여권 플랫폼 &mdash; xEV BMS 보안 기반 배터리 전주기 관리
-            </p>
-          </div>
-          <div class="flex items-center gap-3 self-start flex-wrap">
-            <!-- GBA 21 Compliance Badge -->
-            <div class="flex items-center gap-1.5 bg-white/15 backdrop-blur-sm rounded-full px-3 py-1.5 border border-white/25">
-              <svg class="w-4 h-4 text-green-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
-              </svg>
-              <span class="text-xs font-semibold text-white">GBA 21</span>
-              <svg class="w-3.5 h-3.5 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                <polyline points="20 6 9 17 4 12"/>
-              </svg>
-            </div>
-            <!-- Fabric Status -->
-            <div class="flex items-center gap-2 bg-white/10 backdrop-blur-sm rounded-lg px-4 py-2.5 border border-white/20">
-              <span :class="['inline-block w-2.5 h-2.5 rounded-full', fabricStatus === 'connected' ? 'bg-green-400 shadow-green-glow' : 'bg-red-400']"
-                    :style="fabricStatus === 'connected' ? 'box-shadow: 0 0 6px rgba(74,222,128,0.6)' : ''"></span>
-              <span class="text-sm font-medium text-white">
-                Fabric {{ fabricStatus === 'connected' ? '연결됨' : '연결 끊김' }}
-              </span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- ===== LOADING STATE ===== -->
-      <div v-if="loading" class="flex flex-col justify-center items-center py-24">
+      <!-- ===== LOADING ===== -->
+      <div v-if="loading" class="flex flex-col justify-center items-center py-32">
         <svg class="animate-spin h-10 w-10 text-blue-600 mb-4" fill="none" viewBox="0 0 24 24">
           <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
           <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
         </svg>
-        <p class="text-sm text-gray-500">데이터를 불러오는 중...</p>
+        <p class="text-sm text-slate-500">데이터를 불러오는 중...</p>
       </div>
 
       <div v-else>
 
-        <!-- ===== 2. KPI STAT CARDS ===== -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div v-for="(card, i) in statsCards" :key="i"
-               @click="card.page && nav(card.page)"
-               class="bg-white rounded-xl border border-gray-200 p-5 shadow-sm hover:shadow-md hover:border-primary-300 transition-all duration-200 cursor-pointer">
-            <div class="flex items-start justify-between">
-              <div class="min-w-0 flex-1">
-                <p class="text-sm font-medium text-gray-500 truncate">{{ card.label }}</p>
-                <p class="mt-2 text-3xl font-bold text-gray-900">{{ card.value }}</p>
-                <p class="mt-1 text-xs text-gray-400">{{ card.sub }}</p>
+        <!-- ===== SECTION 1: WELCOME + SYSTEM STATUS ===== -->
+        <div class="bg-white rounded-xl border border-slate-200 shadow-sm px-6 py-5">
+          <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div class="flex items-center gap-4">
+              <div>
+                <div class="flex items-center gap-3 mb-1">
+                  <h1 class="text-xl font-bold text-slate-900">
+                    안녕하세요, {{ auth.userId }}님
+                  </h1>
+                  <span class="inline-flex items-center rounded-md bg-blue-50 px-2.5 py-0.5 text-xs font-semibold text-blue-700 border border-blue-200">
+                    {{ orgDisplayName }}
+                  </span>
+                </div>
+                <p class="text-sm text-slate-500">{{ currentTime }}</p>
               </div>
-              <div :class="[
-                'flex-shrink-0 flex items-center justify-center w-11 h-11 rounded-xl',
-                card.color === 'blue' ? 'bg-blue-100' : '',
-                card.color === 'green' ? 'bg-green-100' : '',
-                card.color === 'emerald' ? 'bg-emerald-100' : '',
-                card.color === 'indigo' ? 'bg-indigo-100' : '',
-                card.color === 'purple' ? 'bg-purple-100' : '',
-                card.color === 'yellow' ? 'bg-yellow-100' : '',
-                card.color === 'orange' ? 'bg-orange-100' : '',
-                card.color === 'gray' ? 'bg-gray-100' : '',
-              ]">
-                <!-- Battery icon -->
-                <svg v-if="card.icon === 'battery'" class="w-5 h-5" :class="[
-                  card.color === 'blue' ? 'text-blue-600' : '',
-                  card.color === 'green' ? 'text-green-600' : '',
-                  card.color === 'emerald' ? 'text-emerald-600' : '',
-                  card.color === 'indigo' ? 'text-indigo-600' : '',
-                  card.color === 'purple' ? 'text-purple-600' : '',
-                  card.color === 'yellow' ? 'text-yellow-600' : '',
-                  card.color === 'orange' ? 'text-orange-600' : '',
-                  card.color === 'gray' ? 'text-gray-600' : '',
-                ]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                  <rect x="2" y="6" width="18" height="12" rx="2"/>
-                  <path d="M22 10v4"/>
+            </div>
+            <div class="flex items-center gap-2 bg-slate-50 rounded-lg px-4 py-2 border border-slate-200">
+              <span :class="['inline-block w-2 h-2 rounded-full',
+                fabricStatus === 'connected' ? 'bg-green-500' : 'bg-red-400']"
+                :style="fabricStatus === 'connected' ? 'box-shadow: 0 0 6px rgba(34,197,94,0.5)' : ''"></span>
+              <span class="text-sm font-medium text-slate-700">Blockchain {{ fabricStatus === 'connected' ? 'Connected' : 'Disconnected' }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- ===== SECTION 2: KEY METRICS (3x2 grid) ===== -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+
+          <!-- Card 1: 전체 여권 -->
+          <div @click="nav('passports')"
+               class="bg-white rounded-xl border border-slate-200 shadow-sm p-5 hover:shadow-md hover:border-blue-300 transition-all cursor-pointer">
+            <div class="flex items-start justify-between">
+              <div>
+                <p class="text-sm font-medium text-slate-500">전체 여권</p>
+                <p class="mt-2 text-3xl font-bold text-slate-900 tabular-nums">{{ totalCount }}</p>
+              </div>
+              <div class="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center flex-shrink-0">
+                <svg class="w-5 h-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <rect x="2" y="6" width="18" height="12" rx="2"/><path d="M22 10v4"/>
                   <rect x="5" y="9" width="8" height="6" rx="1" fill="currentColor" opacity="0.3"/>
                 </svg>
-                <!-- Chart / trending icon -->
-                <svg v-else-if="card.icon === 'chart'" class="w-5 h-5" :class="[
-                  card.color === 'blue' ? 'text-blue-600' : '',
-                  card.color === 'green' ? 'text-green-600' : '',
-                  card.color === 'emerald' ? 'text-emerald-600' : '',
-                  card.color === 'indigo' ? 'text-indigo-600' : '',
-                  card.color === 'purple' ? 'text-purple-600' : '',
-                  card.color === 'yellow' ? 'text-yellow-600' : '',
-                  card.color === 'orange' ? 'text-orange-600' : '',
-                  card.color === 'gray' ? 'text-gray-600' : '',
-                ]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                  <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
-                </svg>
-                <!-- Shield / check icon -->
-                <svg v-else-if="card.icon === 'shield'" class="w-5 h-5" :class="[
-                  card.color === 'blue' ? 'text-blue-600' : '',
-                  card.color === 'green' ? 'text-green-600' : '',
-                  card.color === 'emerald' ? 'text-emerald-600' : '',
-                  card.color === 'indigo' ? 'text-indigo-600' : '',
-                  card.color === 'purple' ? 'text-purple-600' : '',
-                  card.color === 'yellow' ? 'text-yellow-600' : '',
-                  card.color === 'orange' ? 'text-orange-600' : '',
-                  card.color === 'gray' ? 'text-gray-600' : '',
-                ]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              </div>
+            </div>
+          </div>
+
+          <!-- Card 2: 운행중 -->
+          <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
+            <div class="flex items-start justify-between">
+              <div>
+                <p class="text-sm font-medium text-slate-500">운행중</p>
+                <p class="mt-2 text-3xl font-bold text-slate-900 tabular-nums">{{ activeCount }}</p>
+              </div>
+              <div class="w-10 h-10 rounded-lg bg-green-100 flex items-center justify-center flex-shrink-0">
+                <svg class="w-5 h-5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                   <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
                   <polyline points="9 12 11 14 15 10"/>
                 </svg>
-                <!-- Wrench icon -->
-                <svg v-else-if="card.icon === 'wrench'" class="w-5 h-5" :class="[
-                  card.color === 'blue' ? 'text-blue-600' : '',
-                  card.color === 'green' ? 'text-green-600' : '',
-                  card.color === 'emerald' ? 'text-emerald-600' : '',
-                  card.color === 'indigo' ? 'text-indigo-600' : '',
-                  card.color === 'purple' ? 'text-purple-600' : '',
-                  card.color === 'yellow' ? 'text-yellow-600' : '',
-                  card.color === 'orange' ? 'text-orange-600' : '',
-                  card.color === 'gray' ? 'text-gray-600' : '',
-                ]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              </div>
+            </div>
+          </div>
+
+          <!-- Card 3: 평균 SOC (mini gauge) -->
+          <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
+            <div class="flex items-start justify-between">
+              <div>
+                <p class="text-sm font-medium text-slate-500">평균 SOC</p>
+                <p class="mt-2 text-3xl font-bold text-slate-900 tabular-nums">{{ avgSoc }}<span class="text-lg text-slate-400">%</span></p>
+              </div>
+              <svg viewBox="0 0 80 80" class="w-14 h-14 flex-shrink-0">
+                <circle cx="40" cy="40" r="36" fill="none" stroke="#e2e8f0" stroke-width="5"/>
+                <circle cx="40" cy="40" r="36" fill="none"
+                        stroke="#10b981" stroke-width="5" stroke-linecap="round"
+                        :stroke-dasharray="gaugeCircumference"
+                        :stroke-dashoffset="gaugeReady ? gaugeCircumference * (1 - avgSoc / 100) : gaugeCircumference"
+                        transform="rotate(-90 40 40)"
+                        style="transition: stroke-dashoffset 1s ease;"/>
+                <text x="40" y="44" text-anchor="middle" dominant-baseline="middle"
+                      fill="#10b981" font-size="14" font-weight="700">{{ avgSoc }}</text>
+              </svg>
+            </div>
+          </div>
+
+          <!-- Card 4: 평균 SOH (mini gauge) -->
+          <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
+            <div class="flex items-start justify-between">
+              <div>
+                <p class="text-sm font-medium text-slate-500">평균 SOH</p>
+                <p class="mt-2 text-3xl font-bold text-slate-900 tabular-nums">{{ avgSoh }}<span class="text-lg text-slate-400">%</span></p>
+              </div>
+              <svg viewBox="0 0 80 80" class="w-14 h-14 flex-shrink-0">
+                <circle cx="40" cy="40" r="36" fill="none" stroke="#e2e8f0" stroke-width="5"/>
+                <circle cx="40" cy="40" r="36" fill="none"
+                        stroke="#3b82f6" stroke-width="5" stroke-linecap="round"
+                        :stroke-dasharray="gaugeCircumference"
+                        :stroke-dashoffset="gaugeReady ? gaugeCircumference * (1 - avgSoh / 100) : gaugeCircumference"
+                        transform="rotate(-90 40 40)"
+                        style="transition: stroke-dashoffset 1s ease;"/>
+                <text x="40" y="44" text-anchor="middle" dominant-baseline="middle"
+                      fill="#3b82f6" font-size="14" font-weight="700">{{ avgSoh }}</text>
+              </svg>
+            </div>
+          </div>
+
+          <!-- Card 5: 정비 대기 -->
+          <div @click="nav('maintenance')"
+               class="bg-white rounded-xl border border-slate-200 shadow-sm p-5 hover:shadow-md hover:border-amber-300 transition-all cursor-pointer">
+            <div class="flex items-start justify-between">
+              <div>
+                <p class="text-sm font-medium text-slate-500">정비 대기</p>
+                <p class="mt-2 text-3xl font-bold text-slate-900 tabular-nums">{{ maintenanceCount }}</p>
+              </div>
+              <div class="w-10 h-10 rounded-lg bg-amber-100 flex items-center justify-center flex-shrink-0">
+                <svg class="w-5 h-5 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                   <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>
                 </svg>
-                <!-- Recycle icon -->
-                <svg v-else-if="card.icon === 'recycle'" class="w-5 h-5" :class="[
-                  card.color === 'blue' ? 'text-blue-600' : '',
-                  card.color === 'green' ? 'text-green-600' : '',
-                  card.color === 'emerald' ? 'text-emerald-600' : '',
-                  card.color === 'indigo' ? 'text-indigo-600' : '',
-                  card.color === 'purple' ? 'text-purple-600' : '',
-                  card.color === 'yellow' ? 'text-yellow-600' : '',
-                  card.color === 'orange' ? 'text-orange-600' : '',
-                  card.color === 'gray' ? 'text-gray-600' : '',
-                ]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                  <path d="M7.5 7.5l-2.7 4.7a2 2 0 0 0 1.7 3h3.5"/>
-                  <path d="M16.5 7.5l2.7 4.7a2 2 0 0 1-1.7 3H14"/>
-                  <path d="M12 2l3 5H9l3-5z"/>
-                  <path d="M9 19.5l-1.5 2.5"/>
-                  <path d="M15 19.5l1.5 2.5"/>
-                  <path d="M12 14v8"/>
-                </svg>
-                <!-- Cube / box icon -->
-                <svg v-else-if="card.icon === 'cube'" class="w-5 h-5" :class="[
-                  card.color === 'blue' ? 'text-blue-600' : '',
-                  card.color === 'green' ? 'text-green-600' : '',
-                  card.color === 'emerald' ? 'text-emerald-600' : '',
-                  card.color === 'indigo' ? 'text-indigo-600' : '',
-                  card.color === 'purple' ? 'text-purple-600' : '',
-                  card.color === 'yellow' ? 'text-yellow-600' : '',
-                  card.color === 'orange' ? 'text-orange-600' : '',
-                  card.color === 'gray' ? 'text-gray-600' : '',
-                ]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                  <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
-                  <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
-                  <line x1="12" y1="22.08" x2="12" y2="12"/>
+              </div>
+            </div>
+          </div>
+
+          <!-- Card 6: 재활용/폐기 -->
+          <div @click="nav('recycling')"
+               class="bg-white rounded-xl border border-slate-200 shadow-sm p-5 hover:shadow-md hover:border-orange-300 transition-all cursor-pointer">
+            <div class="flex items-start justify-between">
+              <div>
+                <p class="text-sm font-medium text-slate-500">재활용/폐기</p>
+                <p class="mt-2 text-3xl font-bold text-slate-900 tabular-nums">{{ recyclingDisposedCount }}</p>
+              </div>
+              <div class="w-10 h-10 rounded-lg bg-orange-100 flex items-center justify-center flex-shrink-0">
+                <svg class="w-5 h-5 text-orange-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
                 </svg>
               </div>
             </div>
           </div>
         </div>
 
-        <!-- ===== 2.5 CIRCULAR SOC / SOH GAUGES ===== -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 mt-6">
-          <!-- SOC Gauge -->
-          <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-6 flex flex-col items-center">
-            <h3 class="text-sm font-semibold text-gray-500 mb-4">평균 충전 상태 (SOC)</h3>
-            <svg viewBox="0 0 200 200" class="w-40 h-40">
-              <circle cx="100" cy="100" r="70" fill="none" stroke="#e5e7eb" stroke-width="12"/>
-              <circle cx="100" cy="100" r="70" fill="none"
-                      stroke="#10b981" stroke-width="12"
-                      stroke-linecap="round"
-                      :stroke-dasharray="gaugeCircumference"
-                      :stroke-dashoffset="gaugeReady ? gaugeCircumference * (1 - avgSoc / 100) : gaugeCircumference"
-                      transform="rotate(-90 100 100)"
-                      style="transition: stroke-dashoffset 1s ease;"/>
-              <text x="100" y="95" text-anchor="middle" dominant-baseline="middle"
-                    class="text-3xl font-bold" fill="#111827" font-size="36" font-weight="700">
-                {{ avgSoc }}
-              </text>
-              <text x="100" y="125" text-anchor="middle" fill="#6b7280" font-size="14" font-weight="500">%</text>
-            </svg>
-            <p class="mt-3 text-xs text-gray-400">전체 배터리 평균 충전율</p>
-          </div>
-          <!-- SOH Gauge -->
-          <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-6 flex flex-col items-center">
-            <h3 class="text-sm font-semibold text-gray-500 mb-4">평균 건강 상태 (SOH)</h3>
-            <svg viewBox="0 0 200 200" class="w-40 h-40">
-              <circle cx="100" cy="100" r="70" fill="none" stroke="#e5e7eb" stroke-width="12"/>
-              <circle cx="100" cy="100" r="70" fill="none"
-                      stroke="#3b82f6" stroke-width="12"
-                      stroke-linecap="round"
-                      :stroke-dasharray="gaugeCircumference"
-                      :stroke-dashoffset="gaugeReady ? gaugeCircumference * (1 - avgSoh / 100) : gaugeCircumference"
-                      transform="rotate(-90 100 100)"
-                      style="transition: stroke-dashoffset 1s ease;"/>
-              <text x="100" y="95" text-anchor="middle" dominant-baseline="middle"
-                    fill="#111827" font-size="36" font-weight="700">
-                {{ avgSoh }}
-              </text>
-              <text x="100" y="125" text-anchor="middle" fill="#6b7280" font-size="14" font-weight="500">%</text>
-            </svg>
-            <p class="mt-3 text-xs text-gray-400">전체 배터리 평균 건강도</p>
-          </div>
-        </div>
-
-        <!-- ===== 3. STATUS DISTRIBUTION + QUICK ACTIONS (2 col) ===== -->
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
-
-          <!-- Left: Battery Status Overview with Donut Chart -->
-          <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
-            <div class="flex items-center gap-2 mb-5">
-              <svg class="w-5 h-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                <path d="M16 8v8m-8-8v8m-4-4h16"/>
-                <rect x="3" y="4" width="18" height="16" rx="2"/>
-              </svg>
-              <h2 class="text-lg font-semibold text-gray-900">배터리 상태 현황</h2>
-            </div>
-
-            <!-- SVG Donut Chart -->
-            <div class="flex flex-col items-center mb-5">
-              <svg viewBox="0 0 200 200" class="w-44 h-44 donut-chart">
-                <!-- No data state -->
-                <template v-if="donutSegments.length === 0">
-                  <circle cx="100" cy="100" r="70" fill="none" stroke="#e5e7eb" stroke-width="14"/>
-                  <text x="100" y="105" text-anchor="middle" dominant-baseline="middle"
-                        fill="#9ca3af" font-size="16" font-weight="500">No Data</text>
-                </template>
-                <!-- Donut segments -->
-                <template v-else>
-                  <circle v-for="(seg, idx) in donutSegments" :key="seg.status"
-                          cx="100" cy="100" r="70" fill="none"
-                          :stroke="seg.color" stroke-width="14"
-                          stroke-linecap="butt"
-                          :stroke-dasharray="seg.dasharray"
-                          :stroke-dashoffset="seg.dashoffset"
-                          transform="rotate(-90 100 100)"
-                          class="donut-segment"/>
-                  <!-- Center total -->
-                  <text x="100" y="92" text-anchor="middle" dominant-baseline="middle"
-                        fill="#111827" font-size="32" font-weight="700">{{ totalCount }}</text>
-                  <text x="100" y="116" text-anchor="middle" fill="#6b7280" font-size="12" font-weight="500">TOTAL</text>
-                </template>
-              </svg>
-              <!-- Donut legend -->
-              <div class="flex flex-wrap justify-center gap-x-4 gap-y-1.5 mt-3">
-                <div v-for="item in statusDistribution" :key="item.status"
-                     class="flex items-center gap-1.5" v-show="item.count > 0">
-                  <span class="w-2.5 h-2.5 rounded-full flex-shrink-0" :style="{ backgroundColor: donutHexColors[item.status] }"></span>
-                  <span class="text-xs text-gray-600">{{ item.label }} ({{ item.count }})</span>
-                </div>
-              </div>
-            </div>
-
-            <!-- Status total bar -->
-            <div class="mb-5 h-3 rounded-full bg-gray-100 overflow-hidden flex" v-if="totalCount > 0">
-              <div v-for="item in statusDistribution" :key="item.status"
-                   :class="[item.colors.bg]"
-                   :style="{ width: item.pct + '%', minWidth: item.count > 0 ? '4px' : '0' }"
-                   class="transition-all duration-300"></div>
-            </div>
-            <div v-else class="mb-5 h-3 rounded-full bg-gray-100"></div>
-
-            <!-- Individual status bars -->
-            <div class="space-y-3">
-              <div v-for="item in statusDistribution" :key="item.status"
-                   class="flex items-center gap-3">
-                <div class="flex items-center gap-2 w-20 flex-shrink-0">
-                  <span :class="['w-2.5 h-2.5 rounded-full flex-shrink-0', item.colors.bg]"></span>
-                  <span class="text-xs font-medium text-gray-600 truncate">{{ item.label }}</span>
-                </div>
-                <div class="flex-1 h-2 rounded-full bg-gray-100 overflow-hidden">
-                  <div :class="[item.colors.bg, 'h-full rounded-full transition-all duration-500']"
-                       :style="{ width: (totalCount > 0 ? (item.count / totalCount * 100) : 0) + '%', minWidth: item.count > 0 ? '4px' : '0' }"></div>
-                </div>
-                <div class="flex items-center gap-1.5 w-16 flex-shrink-0 justify-end">
-                  <span class="text-sm font-semibold text-gray-800">{{ item.count }}</span>
-                  <span class="text-xs text-gray-400">({{ item.pct }}%)</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Right: Quick Actions -->
-          <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
-            <div class="flex items-center gap-2 mb-5">
-              <svg class="w-5 h-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                <path d="M13 10V3L4 14h7v7l9-11h-7z"/>
-              </svg>
-              <h2 class="text-lg font-semibold text-gray-900">빠른 작업</h2>
-            </div>
-            <div class="space-y-3">
-              <button v-for="(action, i) in quickActions" :key="i"
-                      @click="nav(action.page)"
-                      class="w-full flex items-center gap-4 p-4 rounded-xl border border-gray-200 bg-gray-50/50
-                             hover:bg-blue-50 hover:border-blue-200 hover:shadow-sm
-                             transition-all duration-200 text-left group">
-                <div class="flex-shrink-0 flex items-center justify-center w-10 h-10 rounded-lg bg-blue-100 group-hover:bg-blue-200 transition-colors duration-200">
-                  <!-- Plus icon -->
-                  <svg v-if="action.icon === 'plus'" class="w-5 h-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                    <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
-                  </svg>
-                  <!-- Search icon -->
-                  <svg v-else-if="action.icon === 'search'" class="w-5 h-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                    <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-                  </svg>
-                  <!-- Chart icon -->
-                  <svg v-else-if="action.icon === 'chart'" class="w-5 h-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                    <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
-                  </svg>
-                  <!-- Wrench icon -->
-                  <svg v-else-if="action.icon === 'wrench'" class="w-5 h-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                    <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>
-                  </svg>
-                  <!-- Recycle icon -->
-                  <svg v-else-if="action.icon === 'recycle'" class="w-5 h-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                    <path d="M7.5 7.5l-2.7 4.7a2 2 0 0 0 1.7 3h3.5"/>
-                    <path d="M16.5 7.5l2.7 4.7a2 2 0 0 1-1.7 3H14"/>
-                    <path d="M12 2l3 5H9l3-5z"/>
-                    <path d="M12 14v8"/>
-                  </svg>
-                  <!-- Cube icon -->
-                  <svg v-else-if="action.icon === 'cube'" class="w-5 h-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                    <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
-                    <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
-                    <line x1="12" y1="22.08" x2="12" y2="12"/>
-                  </svg>
-                  <!-- Shield icon -->
-                  <svg v-else-if="action.icon === 'shield'" class="w-5 h-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <!-- ===== SECTION 3: GBA 21 COMPLIANCE OVERVIEW ===== -->
+        <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+          <div class="px-6 py-5 border-b border-slate-100">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-3">
+                <div class="w-9 h-9 bg-green-100 rounded-lg flex items-center justify-center">
+                  <svg class="w-5 h-5 text-green-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
                     <polyline points="9 12 11 14 15 10"/>
                   </svg>
                 </div>
-                <div class="min-w-0 flex-1">
-                  <p class="text-sm font-semibold text-gray-800 group-hover:text-blue-700 transition-colors duration-200">{{ action.label }}</p>
-                  <p class="text-xs text-gray-400 mt-0.5">{{ action.desc }}</p>
+                <div>
+                  <h2 class="text-base font-semibold text-slate-900">GBA 21 규제 준수 현황</h2>
+                  <p class="text-xs text-slate-400 mt-0.5">Global Battery Alliance 21가지 데이터 항목 평균 준수율</p>
                 </div>
-                <svg class="w-4 h-4 text-gray-300 group-hover:text-blue-500 transition-colors duration-200 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                  <polyline points="9 18 15 12 9 6"/>
-                </svg>
-              </button>
+              </div>
+              <span class="text-2xl font-bold text-slate-900 tabular-nums">{{ gbaComplianceOverview.filled }}<span class="text-sm text-slate-400 font-normal">/21</span></span>
             </div>
           </div>
-        </div>
-
-        <!-- ===== 3.5 BATTERY LIFECYCLE TIMELINE ===== -->
-        <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-6 mt-6">
-          <div class="flex items-center gap-2 mb-6">
-            <svg class="w-5 h-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-              <circle cx="12" cy="12" r="10"/>
-              <polyline points="12 6 12 12 16 14"/>
-            </svg>
-            <h2 class="text-lg font-semibold text-gray-900">배터리 전주기</h2>
-          </div>
-
-          <!-- Desktop: Horizontal timeline -->
-          <div class="hidden sm:block">
-            <div class="flex items-start justify-between relative">
-              <div v-for="(step, i) in lifecycleProgress" :key="i"
-                   class="flex flex-col items-center relative" style="flex: 1;">
-                <!-- Connector line -->
-                <div v-if="i < lifecycleProgress.length - 1"
-                     class="absolute top-5 h-0.5 transition-all duration-500"
-                     :class="step.completed && lifecycleProgress[i+1] && (lifecycleProgress[i+1].completed || lifecycleProgress[i+1].current) ? 'bg-blue-400' : 'bg-gray-200'"
-                     :style="{ left: '50%', right: '-50%' }"></div>
-                <!-- Step circle -->
-                <div class="relative z-10 flex items-center justify-center w-10 h-10 rounded-full border-2 transition-all duration-500"
-                     :class="[
-                       step.completed ? 'bg-blue-500 border-blue-500 text-white' : '',
-                       step.current ? 'bg-white border-blue-500 lifecycle-pulse' : '',
-                       !step.completed && !step.current ? 'bg-white border-gray-300 text-gray-400' : '',
-                     ]">
-                  <svg v-if="step.completed" class="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
-                    <polyline points="20 6 9 17 4 12"/>
-                  </svg>
-                  <span v-else class="text-xs font-bold" :class="step.current ? 'text-blue-500' : 'text-gray-400'">{{ i + 1 }}</span>
-                </div>
-                <!-- Step label -->
-                <p class="mt-2 text-xs font-medium text-center leading-tight"
-                   :class="step.completed ? 'text-blue-600' : step.current ? 'text-blue-500' : 'text-gray-400'">
-                  {{ step.label }}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <!-- Mobile: Vertical timeline -->
-          <div class="sm:hidden space-y-0">
-            <div v-for="(step, i) in lifecycleProgress" :key="i" class="flex items-start gap-3">
-              <div class="flex flex-col items-center">
-                <div class="flex items-center justify-center w-8 h-8 rounded-full border-2 transition-all duration-500"
-                     :class="[
-                       step.completed ? 'bg-blue-500 border-blue-500 text-white' : '',
-                       step.current ? 'bg-white border-blue-500 lifecycle-pulse' : '',
-                       !step.completed && !step.current ? 'bg-white border-gray-300 text-gray-400' : '',
-                     ]">
-                  <svg v-if="step.completed" class="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
-                    <polyline points="20 6 9 17 4 12"/>
-                  </svg>
-                  <span v-else class="text-xs font-bold" :class="step.current ? 'text-blue-500' : 'text-gray-400'">{{ i + 1 }}</span>
-                </div>
-                <div v-if="i < lifecycleProgress.length - 1"
-                     class="w-0.5 h-6 transition-all duration-500"
-                     :class="step.completed ? 'bg-blue-400' : 'bg-gray-200'"></div>
-              </div>
-              <p class="text-sm font-medium pt-1.5"
-                 :class="step.completed ? 'text-blue-600' : step.current ? 'text-blue-500' : 'text-gray-400'">
-                {{ step.label }}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <!-- ===== 3.6 ESG / CARBON METRICS CARDS ===== -->
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-6">
-          <!-- Recycling Rate -->
-          <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
-            <div class="flex items-center gap-3 mb-4">
-              <div class="flex items-center justify-center w-10 h-10 rounded-lg bg-green-100">
-                <svg class="w-5 h-5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                  <path d="M7.5 7.5l-2.7 4.7a2 2 0 0 0 1.7 3h3.5"/>
-                  <path d="M16.5 7.5l2.7 4.7a2 2 0 0 1-1.7 3H14"/>
-                  <path d="M12 2l3 5H9l3-5z"/>
-                  <path d="M12 14v8"/>
-                </svg>
-              </div>
-              <div>
-                <p class="text-sm font-semibold text-gray-800">재활용률</p>
-                <p class="text-xs text-gray-400">평균 재활용률</p>
-              </div>
-            </div>
-            <div v-if="avgRecyclingRate > 0" class="flex items-center gap-4">
-              <svg viewBox="0 0 60 60" class="w-14 h-14 flex-shrink-0">
-                <circle cx="30" cy="30" r="24" fill="none" stroke="#e5e7eb" stroke-width="6"/>
-                <circle cx="30" cy="30" r="24" fill="none" stroke="#10b981" stroke-width="6"
-                        stroke-linecap="round"
-                        :stroke-dasharray="2 * Math.PI * 24"
-                        :stroke-dashoffset="2 * Math.PI * 24 * (1 - avgRecyclingRate / 100)"
-                        transform="rotate(-90 30 30)"
-                        style="transition: stroke-dashoffset 1s ease;"/>
-                <text x="30" y="33" text-anchor="middle" dominant-baseline="middle"
-                      fill="#111827" font-size="12" font-weight="700">{{ avgRecyclingRate }}</text>
-              </svg>
-              <span class="text-2xl font-bold text-gray-900">{{ avgRecyclingRate }}%</span>
-            </div>
-            <div v-else class="esg-pulse-text">
-              <p class="text-sm text-gray-400">서비스 준비 중</p>
-            </div>
-          </div>
-
-          <!-- Carbon Footprint -->
-          <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
-            <div class="flex items-center gap-3 mb-4">
-              <div class="flex items-center justify-center w-10 h-10 rounded-lg bg-green-100">
-                <svg class="w-5 h-5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                  <path d="M17 8C8 10 5.9 16.17 3.82 21.34l1.89.66.95-2.68c.08-.21.2-.4.36-.57l3.19-3.42C11.56 13.85 15 11 17 8z"/>
-                  <path d="M12.5 3.5C12.5 3.5 15 6 15 9c0 3-2.5 5-2.5 5"/>
-                </svg>
-              </div>
-              <div>
-                <p class="text-sm font-semibold text-gray-800">탄소발자국</p>
-                <p class="text-xs text-gray-400">탄소 발자국</p>
-              </div>
-            </div>
-            <div v-if="avgCarbonFootprint > 0" class="flex items-center gap-2">
-              <span class="text-2xl font-bold text-gray-900">{{ avgCarbonFootprint }}</span>
-              <span class="text-sm text-gray-500">kg CO2e</span>
-            </div>
-            <div v-else class="esg-pulse-text">
-              <p class="text-sm text-gray-400">서비스 준비 중</p>
-            </div>
-          </div>
-
-          <!-- Eco Index -->
-          <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
-            <div class="flex items-center gap-3 mb-4">
-              <div class="flex items-center justify-center w-10 h-10 rounded-lg bg-green-100">
-                <svg class="w-5 h-5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                  <path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/>
-                  <path d="M8 12l3 3 5-5"/>
-                </svg>
-              </div>
-              <div>
-                <p class="text-sm font-semibold text-gray-800">친환경 지표</p>
-                <p class="text-xs text-gray-400">친환경 지수</p>
-              </div>
-            </div>
-            <div v-if="totalCount > 0">
+          <div class="px-6 py-5">
+            <!-- Progress bar -->
+            <div class="mb-6">
               <div class="flex items-center justify-between mb-2">
-                <span class="text-2xl font-bold text-gray-900">{{ ecoRate }}%</span>
-                <span class="text-xs text-gray-400">{{ recycleAvailableCount }} / {{ totalCount }}</span>
+                <span class="text-sm font-medium text-slate-600">전체 준수율</span>
+                <span class="text-sm font-bold tabular-nums" :class="gbaComplianceOverview.pct >= 80 ? 'text-green-600' : gbaComplianceOverview.pct >= 50 ? 'text-amber-600' : 'text-red-600'">{{ gbaComplianceOverview.pct }}%</span>
               </div>
-              <div class="w-full h-2.5 rounded-full bg-gray-100 overflow-hidden">
-                <div class="h-full rounded-full bg-green-500 transition-all duration-700"
-                     :style="{ width: ecoRate + '%' }"></div>
+              <div class="w-full h-3 bg-slate-100 rounded-full overflow-hidden">
+                <div class="h-full rounded-full transition-all duration-700"
+                     :class="gbaComplianceOverview.pct >= 80 ? 'bg-green-500' : gbaComplianceOverview.pct >= 50 ? 'bg-amber-500' : 'bg-red-500'"
+                     :style="{ width: gbaComplianceOverview.pct + '%' }"></div>
               </div>
             </div>
-            <div v-else class="esg-pulse-text">
-              <p class="text-sm text-gray-400">서비스 준비 중</p>
+
+            <!-- Grouped field checklist -->
+            <div class="space-y-5">
+              <div v-for="group in gbaComplianceOverview.groups" :key="group.name">
+                <h4 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2.5">{{ group.name }}</h4>
+                <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-x-4 gap-y-2">
+                  <div v-for="f in group.fields" :key="f.idx" class="flex items-center gap-2">
+                    <svg v-if="f.filled" class="w-4 h-4 text-green-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+                    </svg>
+                    <svg v-else class="w-4 h-4 text-slate-300 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                    <span class="text-xs" :class="f.filled ? 'text-slate-700' : 'text-slate-400'">{{ f.label }}</span>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
 
-        <!-- ===== 4. RECENT PASSPORTS TABLE ===== -->
-        <div class="bg-white rounded-xl border border-gray-200 shadow-sm mt-6">
-          <div class="px-6 py-5 border-b border-gray-100 flex items-center justify-between">
+        <!-- ===== SECTION 4: TWO COLUMNS ===== -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+          <!-- Left: Battery Lifecycle Status (Horizontal Bars) -->
+          <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+            <div class="flex items-center gap-2 mb-5">
+              <svg class="w-5 h-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="3" width="18" height="18" rx="2"/>
+                <path d="M3 9h18M9 21V9"/>
+              </svg>
+              <h2 class="text-base font-semibold text-slate-900">배터리 수명주기 현황</h2>
+            </div>
+            <div class="space-y-3.5">
+              <div v-for="item in statusDistribution" :key="item.status">
+                <div class="flex items-center justify-between mb-1">
+                  <span class="text-xs font-medium text-slate-600">{{ item.label }}</span>
+                  <span class="text-xs font-bold text-slate-800 tabular-nums">{{ item.count }}</span>
+                </div>
+                <div class="w-full h-4 bg-slate-100 rounded overflow-hidden">
+                  <div class="h-full rounded transition-all duration-700"
+                       :style="{ width: (totalCount > 0 ? (item.count / totalCount * 100) : 0) + '%', backgroundColor: item.color, minWidth: item.count > 0 ? '8px' : '0' }"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Right: Recent Activity Timeline -->
+          <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+            <div class="flex items-center gap-2 mb-5">
+              <svg class="w-5 h-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+              </svg>
+              <h2 class="text-base font-semibold text-slate-900">최근 활동</h2>
+            </div>
+            <div v-if="recentActivity.length === 0" class="py-10 text-center">
+              <p class="text-sm text-slate-400">최근 활동이 없습니다</p>
+            </div>
+            <div v-else class="relative pl-7">
+              <div class="absolute left-[11px] top-1 bottom-1 w-0.5 bg-slate-200"></div>
+              <div class="space-y-5">
+                <div v-for="(act, i) in recentActivity" :key="i" class="relative">
+                  <!-- Timeline dot -->
+                  <div class="absolute -left-7 top-0.5 w-[22px] h-[22px] rounded-full border-2 border-white shadow-sm flex items-center justify-center"
+                       :class="act.icon === 'plus' ? 'bg-blue-500' : act.icon === 'link' ? 'bg-green-500' : act.icon === 'wrench' ? 'bg-amber-500' : 'bg-orange-500'">
+                    <!-- Plus -->
+                    <svg v-if="act.icon === 'plus'" class="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
+                      <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+                    </svg>
+                    <!-- Link -->
+                    <svg v-else-if="act.icon === 'link'" class="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
+                      <path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/>
+                    </svg>
+                    <!-- Wrench -->
+                    <svg v-else-if="act.icon === 'wrench'" class="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
+                      <path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/>
+                    </svg>
+                    <!-- Recycle -->
+                    <svg v-else class="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
+                      <path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9"/>
+                    </svg>
+                  </div>
+                  <div>
+                    <p class="text-sm text-slate-800">{{ act.desc }}</p>
+                    <p class="text-xs text-slate-400 mt-0.5">{{ timeAgo(act.time) }}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ===== SECTION 5: RECENT PASSPORTS TABLE ===== -->
+        <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+          <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
             <div class="flex items-center gap-2">
               <svg class="w-5 h-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                 <path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/>
                 <rect x="9" y="3" width="6" height="4" rx="1"/>
               </svg>
-              <h2 class="text-lg font-semibold text-gray-900">최근 등록 여권</h2>
+              <h2 class="text-base font-semibold text-slate-900">최근 등록 여권</h2>
             </div>
             <button @click="nav('passports')"
-                    class="text-sm text-blue-600 hover:text-blue-800 font-medium transition-colors duration-200 flex items-center gap-1">
+                    class="text-sm text-blue-600 hover:text-blue-800 font-medium transition-colors flex items-center gap-1">
               전체 보기
               <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                 <polyline points="9 18 15 12 9 6"/>
               </svg>
             </button>
           </div>
-
-          <!-- Table content -->
           <div v-if="recentPassports.length > 0" class="overflow-x-auto">
             <table class="w-full">
               <thead>
-                <tr class="bg-gray-50/80">
-                  <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">여권 ID</th>
-                  <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">모델</th>
-                  <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">시리얼</th>
-                  <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">상태</th>
-                  <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">SOC</th>
-                  <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">등록일</th>
+                <tr class="bg-slate-50/80">
+                  <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">여권 ID</th>
+                  <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">모델</th>
+                  <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">상태</th>
+                  <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">SOC</th>
+                  <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">VIN</th>
                 </tr>
               </thead>
-              <tbody class="divide-y divide-gray-100">
+              <tbody class="divide-y divide-slate-100">
                 <tr v-for="(p, idx) in recentPassports" :key="idx"
                     @click="$emit('navigate', 'passport-detail', { passportId: p.passportId || p.id })"
-                    class="hover:bg-primary-50/50 transition-colors duration-150 cursor-pointer">
-                  <td class="px-6 py-4">
+                    class="hover:bg-blue-50/50 transition-colors cursor-pointer">
+                  <td class="px-6 py-3.5">
                     <span class="text-sm font-mono text-blue-600 font-medium">{{ truncate(p.passportId || p.id, 16) }}</span>
                   </td>
-                  <td class="px-6 py-4 text-sm text-gray-700">{{ p.model || '-' }}</td>
-                  <td class="px-6 py-4 text-sm text-gray-500 font-mono">{{ truncate(p.serialNumber, 14) }}</td>
-                  <td class="px-6 py-4">
-                    <span :class="[
-                      'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium',
-                      (p.status === 'MANUFACTURED') ? 'bg-blue-100 text-blue-800' : '',
-                      (p.status === 'ACTIVE') ? 'bg-green-100 text-green-800' : '',
-                      (p.status === 'MAINTENANCE') ? 'bg-yellow-100 text-yellow-800' : '',
-                      (p.status === 'ANALYSIS') ? 'bg-purple-100 text-purple-800' : '',
-                      (p.status === 'RECYCLING') ? 'bg-orange-100 text-orange-800' : '',
-                      (p.status === 'DISPOSED') ? 'bg-gray-100 text-gray-700' : '',
-                    ]">{{ statusLabels[p.status] || p.status || 'UNKNOWN' }}</span>
+                  <td class="px-6 py-3.5 text-sm text-slate-700">{{ p.model || '-' }}</td>
+                  <td class="px-6 py-3.5">
+                    <span :class="['inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium', statusBadgeClasses[p.status] || 'bg-slate-100 text-slate-600']">
+                      {{ statusLabels[p.status] || p.status || 'UNKNOWN' }}
+                    </span>
                   </td>
-                  <td class="px-6 py-4">
+                  <td class="px-6 py-3.5">
                     <div class="flex items-center gap-2">
-                      <div class="w-16 h-1.5 rounded-full bg-gray-200 overflow-hidden">
-                        <div class="h-full rounded-full transition-all duration-300"
-                             :class="scaleSOC(p.currentSoc) >= 50 ? 'bg-green-500' : scaleSOC(p.currentSoc) >= 20 ? 'bg-yellow-500' : 'bg-red-500'"
+                      <div class="w-16 h-1.5 rounded-full bg-slate-200 overflow-hidden">
+                        <div class="h-full rounded-full transition-all"
+                             :class="scaleSOC(p.currentSoc) >= 50 ? 'bg-green-500' : scaleSOC(p.currentSoc) >= 20 ? 'bg-amber-500' : 'bg-red-500'"
                              :style="{ width: Math.min(scaleSOC(p.currentSoc), 100) + '%' }"></div>
                       </div>
-                      <span class="text-xs text-gray-600 font-medium w-10">{{ scaleSOC(p.currentSoc) }}%</span>
+                      <span class="text-xs text-slate-600 font-medium tabular-nums w-10">{{ scaleSOC(p.currentSoc) }}%</span>
                     </div>
                   </td>
-                  <td class="px-6 py-4 text-sm text-gray-500">{{ formatDate(p.createdAt || p.timestamp) }}</td>
+                  <td class="px-6 py-3.5 text-sm text-slate-500 font-mono">{{ p.vin ? truncate(p.vin, 14) : '-' }}</td>
                 </tr>
               </tbody>
             </table>
           </div>
-
-          <!-- Empty state -->
-          <div v-else class="py-16 flex flex-col items-center justify-center">
-            <svg class="w-16 h-16 text-gray-300 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1">
+          <div v-else class="py-14 text-center">
+            <svg class="mx-auto w-14 h-14 text-slate-300 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1">
               <path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/>
               <rect x="9" y="3" width="6" height="4" rx="1"/>
-              <line x1="9" y1="12" x2="15" y2="12"/>
-              <line x1="9" y1="16" x2="13" y2="16"/>
             </svg>
-            <p class="text-sm font-medium text-gray-500">등록된 여권이 없습니다</p>
-            <p class="text-xs text-gray-400 mt-1">새로운 배터리 여권을 등록해 주세요</p>
+            <p class="text-sm font-medium text-slate-500">등록된 여권이 없습니다</p>
+            <p class="text-xs text-slate-400 mt-1">새로운 배터리 여권을 등록해 주세요</p>
           </div>
         </div>
 
       </div>
-
-      <!-- Inline styles for animations -->
-      <component is="style">
-        .donut-segment {
-          transition: stroke-dashoffset 1s ease, stroke-dasharray 1s ease;
-        }
-        .donut-chart:hover .donut-segment {
-          filter: brightness(1.1);
-        }
-        @keyframes lifecycle-pulse-anim {
-          0%, 100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.4); }
-          50% { box-shadow: 0 0 0 8px rgba(59, 130, 246, 0); }
-        }
-        .lifecycle-pulse {
-          animation: lifecycle-pulse-anim 2s ease-in-out infinite;
-        }
-        @keyframes esg-pulse-anim {
-          0%, 100% { opacity: 1; }
-          50% { opacity: 0.4; }
-        }
-        .esg-pulse-text {
-          animation: esg-pulse-anim 2s ease-in-out infinite;
-        }
-      </component>
     </div>
   `
 });
