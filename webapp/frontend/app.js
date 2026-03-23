@@ -124,21 +124,21 @@ const app = createApp({
     // Org color classes for badge
     const orgBadgeClasses = computed(() => {
       switch (auth.value.orgMsp) {
-        case 'ManufacturerMSP': return 'bg-blue-400/20 text-blue-300 border-blue-400/30';
-        case 'EVManufacturerMSP': return 'bg-purple-400/20 text-purple-300 border-purple-400/30';
-        case 'ServiceMSP': return 'bg-amber-400/20 text-amber-300 border-amber-400/30';
-        case 'RegulatorMSP': return 'bg-emerald-400/20 text-emerald-300 border-emerald-400/30';
-        default: return 'bg-gray-400/20 text-gray-300 border-gray-400/30';
+        case 'ManufacturerMSP': return 'bg-emerald-50 text-emerald-700 border-emerald-200';
+        case 'EVManufacturerMSP': return 'bg-purple-50 text-purple-700 border-purple-200';
+        case 'ServiceMSP': return 'bg-amber-50 text-amber-700 border-amber-200';
+        case 'RegulatorMSP': return 'bg-teal-50 text-teal-700 border-teal-200';
+        default: return 'bg-gray-50 text-gray-600 border-gray-200';
       }
     });
 
     // Org avatar background color
     const orgAvatarColor = computed(() => {
       switch (auth.value.orgMsp) {
-        case 'ManufacturerMSP': return 'bg-blue-500';
-        case 'EVManufacturerMSP': return 'bg-purple-500';
-        case 'ServiceMSP': return 'bg-amber-500';
-        case 'RegulatorMSP': return 'bg-emerald-500';
+        case 'ManufacturerMSP': return 'bg-emerald-600';
+        case 'EVManufacturerMSP': return 'bg-purple-600';
+        case 'ServiceMSP': return 'bg-amber-600';
+        case 'RegulatorMSP': return 'bg-teal-600';
         default: return 'bg-gray-500';
       }
     });

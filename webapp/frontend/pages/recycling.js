@@ -640,7 +640,7 @@ app.component('recycling-page', {
                 </button>
               </div>
               <button @click="addExtractEntry"
-                class="inline-flex items-center text-sm font-semibold text-blue-600 hover:text-blue-700 transition-colors">
+                class="inline-flex items-center text-sm font-semibold text-emerald-600 hover:text-emerald-700 transition-colors">
                 <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
                 </svg>
