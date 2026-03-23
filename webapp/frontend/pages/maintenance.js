@@ -55,7 +55,12 @@ app.component('maintenance-page', {
       if (activeTab.value === 'accident') {
         return passports.value.filter(p => (p.accidentLogs && p.accidentLogs.length > 0));
       }
-      return passports.value;
+      // 전체: 정비이력 또는 사고기록이 있거나, 정비중 상태인 배터리만
+      return passports.value.filter(p =>
+        p.status === 'MAINTENANCE' ||
+        (p.maintenanceLogs && p.maintenanceLogs.length > 0) ||
+        (p.accidentLogs && p.accidentLogs.length > 0)
+      );
     });
 
     const tabs = [
@@ -65,7 +70,11 @@ app.component('maintenance-page', {
     ];
 
     const tabCounts = computed(() => ({
-      all: passports.value.length,
+      all: passports.value.filter(p =>
+        p.status === 'MAINTENANCE' ||
+        (p.maintenanceLogs && p.maintenanceLogs.length > 0) ||
+        (p.accidentLogs && p.accidentLogs.length > 0)
+      ).length,
       maintenance: passports.value.filter(p => p.status === 'MAINTENANCE').length,
       accident: passports.value.filter(p => (p.accidentLogs && p.accidentLogs.length > 0)).length,
     }));
