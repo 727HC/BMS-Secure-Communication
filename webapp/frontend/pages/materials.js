@@ -115,7 +115,7 @@ app.component('materials-page', {
           </svg>
         </div>
         <div>
-          <h1 class="text-xl font-bold text-gray-900">추적성 / 원자재 관리</h1>
+          <h1 class="text-xl font-bold text-gray-900">원자재 관리</h1>
           <p class="text-gray-500 text-xs mt-0.5">배터리 원자재 등록 및 공급망 이력 추적</p>
         </div>
       </div>

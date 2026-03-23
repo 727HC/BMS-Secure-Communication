@@ -46,7 +46,7 @@ const MSP_ORG_NUM = {
 const SIDEBAR_NAV = [
   { route: 'dashboard', label: '대시보드', icon: 'dashboard', section: '' },
   { route: 'passports', label: '배터리 여권', icon: 'passport', section: '관리' },
-  { route: 'materials', label: '추적성', icon: 'chain', section: '관리' },
+  { route: 'materials', label: '원자재', icon: 'chain', section: '관리' },
   { route: 'bmu-data', label: '배터리 데이터', icon: 'pulse', section: '모니터링' },
   { route: 'maintenance', label: '정비/서비스', icon: 'wrench', section: '운영' },
   { route: 'recycling', label: '재활용', icon: 'recycle', section: '운영' },
