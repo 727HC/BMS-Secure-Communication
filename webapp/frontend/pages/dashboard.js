@@ -181,8 +181,8 @@ app.component('dashboard-page', {
 
     const chemistrySegments = computed(() => donutSegments(chemistryDistribution.value));
     const statusSegments = computed(() => donutSegments(statusDistribution.value));
-    const chemistry합계 = computed(() => chemistryDistribution.value.reduce((s, it) => s + it.count, 0));
-    const status합계 = computed(() => statusDistribution.value.reduce((s, it) => s + it.count, 0));
+    const chemTotal = computed(() => chemistryDistribution.value.reduce((s, it) => s + it.count, 0));
+    const statTotal = computed(() => statusDistribution.value.reduce((s, it) => s + it.count, 0));
 
     /* ---------- recent passports ---------- */
     const recentPassports = computed(() => {
@@ -202,8 +202,8 @@ app.component('dashboard-page', {
       statusList, statusLabels,
       countByStatus, statusDistribution,
       gba21Fields, gbaComplianceOverview,
-      chemistryDistribution, chemistrySegments, chemistry합계,
-      statusSegments, status합계,
+      chemistryDistribution, chemistrySegments, chemTotal,
+      statusDistribution, statTotal,
       recentPassports,
       scaleSOC, truncate, formatDate, nav,
     };
@@ -308,7 +308,7 @@ app.component('dashboard-page', {
                     class="transition-all duration-700"/>
                 </svg>
                 <div class="absolute inset-0 flex flex-col items-center justify-center">
-                  <span class="text-2xl font-bold text-slate-900">{{ chemistry합계 }}</span>
+                  <span class="text-2xl font-bold text-slate-900">{{ chemTotal }}</span>
                   <span class="text-[10px] text-slate-400 uppercase tracking-wide">합계</span>
                 </div>
               </div>
@@ -326,37 +326,21 @@ app.component('dashboard-page', {
             </div>
           </div>
 
-          <!-- Right: 상태 분포 -->
+          <!-- Right: 상태 분포 (수평 바 차트) -->
           <div class="bg-white rounded-xl border border-gray-200 p-6">
             <h2 class="text-base font-semibold text-slate-900 mb-6">상태 분포</h2>
-            <div class="flex items-center gap-8">
-              <!-- Donut SVG -->
-              <div class="relative flex-shrink-0" style="width:140px;height:140px;">
-                <svg viewBox="0 0 100 100" class="w-full h-full -rotate-90">
-                  <circle cx="50" cy="50" r="40" fill="none" stroke="#f1f5f9" stroke-width="12"/>
-                  <circle v-for="(seg, i) in statusSegments" :key="i"
-                    cx="50" cy="50" r="40" fill="none"
-                    :stroke="seg.color" stroke-width="12"
-                    :stroke-dasharray="seg.dashArray"
-                    :stroke-dashoffset="seg.dashOffset"
-                    stroke-linecap="round"
-                    class="transition-all duration-700"/>
-                </svg>
-                <div class="absolute inset-0 flex flex-col items-center justify-center">
-                  <span class="text-2xl font-bold text-slate-900">{{ status합계 }}</span>
-                  <span class="text-[10px] text-slate-400 uppercase tracking-wide">합계</span>
+            <div class="space-y-3">
+              <div v-for="item in statusDistribution" :key="item.status" class="flex items-center gap-3">
+                <span class="text-xs font-medium text-slate-500 w-16 text-right flex-shrink-0">{{ item.label }}</span>
+                <div class="flex-1 h-6 bg-gray-100 rounded-full overflow-hidden">
+                  <div class="h-full rounded-full transition-all duration-700"
+                    :style="{ width: (statTotal > 0 ? item.count / statTotal * 100 : 0) + '%', backgroundColor: item.color }"></div>
                 </div>
+                <span class="text-sm font-bold text-slate-800 tabular-nums w-8 flex-shrink-0">{{ item.count }}</span>
               </div>
-              <!-- Legend -->
-              <div class="flex-1 space-y-2.5">
-                <div v-for="item in statusDistribution" :key="item.status" class="flex items-center justify-between">
-                  <div class="flex items-center gap-2">
-                    <span class="w-2.5 h-2.5 rounded-full flex-shrink-0" :style="{ backgroundColor: item.color }"></span>
-                    <span class="text-sm text-slate-600">{{ item.label }}</span>
-                  </div>
-                  <span class="text-sm font-semibold text-slate-800 tabular-nums">{{ item.count }}</span>
-                </div>
-                <div v-if="statusDistribution.length === 0" class="text-sm text-slate-400 py-4">데이터 없음</div>
+              <div v-if="statusDistribution.length === 0" class="text-sm text-slate-400 py-8 text-center">데이터 없음</div>
+              <div v-else class="pt-2 text-right">
+                <span class="text-xs text-slate-400">합계 {{ statTotal }}건</span>
               </div>
             </div>
           </div>
