@@ -381,7 +381,13 @@ app.component('dashboard-page', {
                   <td class="px-6 py-3.5 text-sm text-slate-400">{{ formatDate(p.createdAt || p.manufactureDate) }}</td>
                   <td class="px-6 py-3.5">
                     <span class="inline-flex items-center gap-1.5 text-sm">
-                      <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                      <span :class="['w-1.5 h-1.5 rounded-full',
+                        p.status === 'MANUFACTURED' ? 'bg-blue-500' :
+                        p.status === 'ACTIVE' ? 'bg-emerald-500' :
+                        p.status === 'MAINTENANCE' ? 'bg-amber-500' :
+                        p.status === 'ANALYSIS' ? 'bg-purple-500' :
+                        p.status === 'RECYCLING' ? 'bg-orange-500' :
+                        p.status === 'DISPOSED' ? 'bg-gray-500' : 'bg-slate-400']"></span>
                       <span class="text-slate-600">{{ statusLabels[p.status] || p.status || 'Unknown' }}</span>
                     </span>
                   </td>
