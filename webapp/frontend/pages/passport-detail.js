@@ -513,18 +513,21 @@ app.component('passport-detail-page', {
           </div>
 
           <!-- Battery SVG icon with SOC fill -->
-          <div class="flex-shrink-0 hidden sm:block">
-            <svg width="100" height="50" viewBox="0 0 100 50" xmlns="http://www.w3.org/2000/svg">
-              <rect x="2" y="6" width="82" height="38" rx="5" fill="none" stroke="#94a3b8" stroke-width="2.5"/>
-              <rect x="84" y="16" width="12" height="18" rx="3" fill="none" stroke="#94a3b8" stroke-width="2.5"/>
-              <rect x="5" y="9" :width="Math.max((batteryFillAnimated / 100) * 76, 0)" height="32" rx="3"
-                :fill="getSocHex(scaleSOC(passport.currentSoc))"
-                style="transition: width 1.2s cubic-bezier(0.4,0,0.2,1), fill 0.6s ease;"/>
-              <text x="44" y="29" text-anchor="middle" font-size="13" font-weight="bold"
-                :fill="batteryFillAnimated > 45 ? '#ffffff' : '#334155'" font-family="system-ui, sans-serif">
-                {{ passport.currentSoc != null ? scaleSOC(passport.currentSoc) + '%' : '--' }}
-              </text>
-            </svg>
+          <div class="flex-shrink-0">
+            <div class="bg-slate-50 rounded-xl border border-slate-200 p-4 flex flex-col items-center gap-2">
+              <svg width="140" height="70" viewBox="0 0 140 70" xmlns="http://www.w3.org/2000/svg">
+                <rect x="3" y="8" width="115" height="54" rx="8" fill="none" stroke="#94a3b8" stroke-width="3"/>
+                <rect x="118" y="22" width="16" height="26" rx="4" fill="#94a3b8"/>
+                <rect x="7" y="12" :width="Math.max((batteryFillAnimated / 100) * 107, 0)" height="46" rx="5"
+                  :fill="getSocHex(scaleSOC(passport.currentSoc))"
+                  style="transition: width 1.2s cubic-bezier(0.4,0,0.2,1), fill 0.6s ease;"/>
+                <text x="60" y="42" text-anchor="middle" font-size="18" font-weight="bold"
+                  :fill="batteryFillAnimated > 40 ? '#ffffff' : '#334155'" font-family="system-ui, sans-serif">
+                  {{ passport.currentSoc != null ? scaleSOC(passport.currentSoc) + '%' : '--' }}
+                </text>
+              </svg>
+              <span class="text-xs text-slate-400">SOC</span>
+            </div>
           </div>
         </div>
       </div>
