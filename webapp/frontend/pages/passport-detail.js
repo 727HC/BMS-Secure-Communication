@@ -623,7 +623,7 @@ app.component('passport-detail-page', {
             </div>
           </div>
 
-          <!-- Performance & Durability — OpenBattery spec grid style -->
+          <!-- Performance & Durability — OpenBattery hero spec grid -->
           <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
             <div class="px-6 py-4 border-b border-slate-100 flex items-center gap-2.5">
               <div class="w-8 h-8 bg-emerald-100 rounded-lg flex items-center justify-center">
@@ -631,41 +631,49 @@ app.component('passport-detail-page', {
                   <path stroke-linecap="round" stroke-linejoin="round" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z"/>
                 </svg>
               </div>
-              <h3 class="text-sm font-bold text-slate-800 uppercase tracking-wider">Performance &amp; Durability</h3>
+              <h3 class="text-sm font-bold text-slate-800 uppercase tracking-wider">성능 및 내구성</h3>
             </div>
             <div class="p-6">
-              <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-10 gap-y-6">
-                <div>
-                  <p class="text-xs font-medium text-slate-400 uppercase tracking-wider mb-1">Rated capacity</p>
-                  <p class="text-2xl font-bold text-slate-900 tabular-nums">{{ passport.ratedCapacity || '--' }}<span class="text-sm font-normal text-slate-400 ml-1">Ah</span></p>
+              <div class="grid grid-cols-2 lg:grid-cols-3 gap-6">
+                <div class="bg-slate-50 rounded-xl p-5 border border-slate-100 text-center">
+                  <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">정격용량</p>
+                  <p class="text-4xl font-extrabold text-slate-900 tabular-nums leading-tight">{{ passport.ratedCapacity || '--' }}</p>
+                  <p class="text-sm font-medium text-slate-400 mt-1">Ah</p>
                 </div>
-                <div>
-                  <p class="text-xs font-medium text-slate-400 uppercase tracking-wider mb-1">Total energy</p>
-                  <p class="text-2xl font-bold text-slate-900 tabular-nums">{{ passport.totalEnergy || '--' }}<span class="text-sm font-normal text-slate-400 ml-1">kWh</span></p>
+                <div class="bg-slate-50 rounded-xl p-5 border border-slate-100 text-center">
+                  <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">전압범위</p>
+                  <p class="text-4xl font-extrabold text-slate-900 tabular-nums leading-tight">{{ passport.voltageRange || '--' }}</p>
+                  <p class="text-sm font-medium text-slate-400 mt-1">V</p>
                 </div>
-                <div>
-                  <p class="text-xs font-medium text-slate-400 uppercase tracking-wider mb-1">Energy density</p>
-                  <p class="text-2xl font-bold text-slate-900 tabular-nums">{{ passport.energyDensity || '--' }}<span class="text-sm font-normal text-slate-400 ml-1">Wh/kg</span></p>
+                <div class="bg-slate-50 rounded-xl p-5 border border-slate-100 text-center">
+                  <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">총 에너지</p>
+                  <p class="text-4xl font-extrabold text-slate-900 tabular-nums leading-tight">{{ passport.totalEnergy || '--' }}</p>
+                  <p class="text-sm font-medium text-slate-400 mt-1">kWh</p>
                 </div>
-                <div>
-                  <p class="text-xs font-medium text-slate-400 uppercase tracking-wider mb-1">Weight</p>
-                  <p class="text-2xl font-bold text-slate-900 tabular-nums">{{ passport.weight || '--' }}<span class="text-sm font-normal text-slate-400 ml-1">kg</span></p>
+                <div class="bg-slate-50 rounded-xl p-5 border border-slate-100 text-center">
+                  <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">무게</p>
+                  <p class="text-4xl font-extrabold text-slate-900 tabular-nums leading-tight">{{ passport.weight || '--' }}</p>
+                  <p class="text-sm font-medium text-slate-400 mt-1">kg</p>
                 </div>
-                <div>
-                  <p class="text-xs font-medium text-slate-400 uppercase tracking-wider mb-1">Cell count</p>
-                  <p class="text-2xl font-bold text-slate-900 tabular-nums">{{ passport.cellCount || '--' }}</p>
+                <div class="bg-slate-50 rounded-xl p-5 border border-slate-100 text-center">
+                  <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">에너지밀도</p>
+                  <p class="text-4xl font-extrabold text-slate-900 tabular-nums leading-tight">{{ passport.energyDensity || '--' }}</p>
+                  <p class="text-sm font-medium text-slate-400 mt-1">Wh/kg</p>
                 </div>
-                <div>
-                  <p class="text-xs font-medium text-slate-400 uppercase tracking-wider mb-1">Expected lifespan</p>
-                  <p class="text-2xl font-bold text-slate-900 tabular-nums">{{ passport.expectedLifespan || '--' }}<span class="text-sm font-normal text-slate-400 ml-1">years</span></p>
+                <div class="bg-slate-50 rounded-xl p-5 border border-slate-100 text-center">
+                  <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">셀 수</p>
+                  <p class="text-4xl font-extrabold text-slate-900 tabular-nums leading-tight">{{ passport.cellCount || '--' }}</p>
+                  <p class="text-sm font-medium text-slate-400 mt-1">개</p>
                 </div>
-                <div>
-                  <p class="text-xs font-medium text-slate-400 uppercase tracking-wider mb-1">Voltage range</p>
-                  <p class="text-2xl font-bold text-slate-900 tabular-nums">{{ passport.voltageRange || '--' }}<span class="text-sm font-normal text-slate-400 ml-1">V</span></p>
+                <div class="bg-slate-50 rounded-xl p-5 border border-slate-100 text-center">
+                  <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">예상수명</p>
+                  <p class="text-4xl font-extrabold text-slate-900 tabular-nums leading-tight">{{ passport.expectedLifespan || '--' }}</p>
+                  <p class="text-sm font-medium text-slate-400 mt-1">년</p>
                 </div>
-                <div>
-                  <p class="text-xs font-medium text-slate-400 uppercase tracking-wider mb-1">Temperature range</p>
-                  <p class="text-2xl font-bold text-slate-900 tabular-nums">{{ passport.temperatureRange || '--' }}<span class="text-sm font-normal text-slate-400 ml-1">&deg;C</span></p>
+                <div class="bg-slate-50 rounded-xl p-5 border border-slate-100 text-center">
+                  <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">온도범위</p>
+                  <p class="text-4xl font-extrabold text-slate-900 tabular-nums leading-tight">{{ passport.temperatureRange || '--' }}</p>
+                  <p class="text-sm font-medium text-slate-400 mt-1">&deg;C</p>
                 </div>
               </div>
             </div>
@@ -805,33 +813,41 @@ app.component('passport-detail-page', {
                     :stroke-dashoffset="gaugeReady ? complianceGaugeCircumference * (1 - gbaCompliance.pct / 100) : complianceGaugeCircumference"
                     transform="rotate(-90 100 100)"
                     style="transition: stroke-dashoffset 1.2s ease;"/>
-                  <text x="100" y="78" text-anchor="middle" fill="#9ca3af" font-size="14" font-weight="500">Rate</text>
+                  <text x="100" y="78" text-anchor="middle" fill="#9ca3af" font-size="14" font-weight="500">등급</text>
                   <text x="100" y="120" text-anchor="middle" fill="#111827" font-size="52" font-weight="800">{{ complianceGrade }}</text>
                 </svg>
               </div>
 
-              <!-- Key metrics row -->
-              <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8 bg-slate-50 rounded-xl p-5">
-                <div class="text-center">
-                  <p class="text-xs text-slate-400 uppercase tracking-wider mb-1">GBA</p>
-                  <p class="text-xl font-bold text-slate-900">{{ gbaCompliance.pct }}%</p>
+              <!-- Key metrics row — 6 boxes like OpenBattery -->
+              <div class="grid grid-cols-3 sm:grid-cols-6 gap-3 mb-8">
+                <div class="bg-slate-50 rounded-xl p-4 text-center border border-slate-100">
+                  <p class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1.5">GBA 준수</p>
+                  <p class="text-xl font-bold text-emerald-600">{{ gbaCompliance.pct }}%</p>
                 </div>
-                <div class="text-center">
-                  <p class="text-xs text-slate-400 uppercase tracking-wider mb-1">Weight</p>
-                  <p class="text-xl font-bold text-slate-900">{{ passport.weight || '--' }}<span class="text-sm font-normal text-slate-400 ml-0.5">kg</span></p>
+                <div class="bg-slate-50 rounded-xl p-4 text-center border border-slate-100">
+                  <p class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1.5">무게</p>
+                  <p class="text-xl font-bold text-slate-900">{{ passport.weight || 'N/A' }}<span v-if="passport.weight" class="text-xs font-normal text-slate-400 ml-0.5">kg</span></p>
                 </div>
-                <div class="text-center">
-                  <p class="text-xs text-slate-400 uppercase tracking-wider mb-1">Capacity</p>
-                  <p class="text-xl font-bold text-slate-900">{{ passport.totalEnergy || '--' }}<span class="text-sm font-normal text-slate-400 ml-0.5">kWh</span></p>
+                <div class="bg-slate-50 rounded-xl p-4 text-center border border-slate-100">
+                  <p class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1.5">용량</p>
+                  <p class="text-xl font-bold text-slate-900">{{ passport.totalEnergy || 'N/A' }}<span v-if="passport.totalEnergy" class="text-xs font-normal text-slate-400 ml-0.5">kWh</span></p>
                 </div>
-                <div class="text-center">
-                  <p class="text-xs text-slate-400 uppercase tracking-wider mb-1">Recycling</p>
-                  <p class="text-xl font-bold text-slate-900">{{ passport.recycleAvailable != null ? (passport.recycleAvailable ? 'Yes' : 'No') : 'N/A' }}</p>
+                <div class="bg-slate-50 rounded-xl p-4 text-center border border-slate-100">
+                  <p class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1.5">재활용</p>
+                  <p class="text-xl font-bold text-slate-900">{{ passport.recycleAvailable != null ? (passport.recycleAvailable ? '가능' : '불가') : 'N/A' }}</p>
+                </div>
+                <div class="bg-slate-50 rounded-xl p-4 text-center border border-slate-100">
+                  <p class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1.5">유해물질</p>
+                  <p class="text-xl font-bold text-slate-900">N/A</p>
+                </div>
+                <div class="bg-slate-50 rounded-xl p-4 text-center border border-slate-100">
+                  <p class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1.5">핵심원자재</p>
+                  <p class="text-xl font-bold text-slate-900">N/A</p>
                 </div>
               </div>
 
               <!-- Progress bar -->
-              <div class="mb-6">
+              <div class="mb-8">
                 <div class="flex items-center justify-between mb-2">
                   <span class="text-sm font-medium text-slate-600">전체 준수율</span>
                   <span class="text-sm font-bold tabular-nums" :class="gbaCompliance.pct >= 80 ? 'text-emerald-600' : gbaCompliance.pct >= 50 ? 'text-amber-600' : 'text-red-600'">{{ gbaCompliance.filled }}/21 ({{ gbaCompliance.pct }}%)</span>
@@ -861,17 +877,122 @@ app.component('passport-detail-page', {
                 </div>
               </div>
 
-              <!-- Certified badge -->
-              <div v-if="gbaCompliance.allFilled" class="mt-6 p-4 bg-emerald-50 rounded-xl border border-emerald-200 flex items-center gap-3">
-                <svg class="w-8 h-8 text-emerald-600 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" fill="currentColor" opacity="0.15"/>
+              <!-- Battery Information — numbered categories like OpenBattery -->
+              <div class="mt-8 space-y-4">
+                <h3 class="text-sm font-bold text-slate-800 uppercase tracking-wider mb-3">배터리 정보 카테고리</h3>
+
+                <!-- 1. 배터리 식별 정보 -->
+                <div class="bg-slate-50 rounded-xl border border-slate-100 p-5">
+                  <h4 class="text-sm font-bold text-slate-700 mb-3 flex items-center gap-2">
+                    <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-emerald-600 text-white text-xs font-bold">1</span>
+                    배터리 식별 정보
+                  </h4>
+                  <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                    <div>
+                      <p class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">여권 ID</p>
+                      <p class="text-sm font-bold text-slate-800 font-mono truncate mt-0.5">{{ passport.passportId || 'N/A' }}</p>
+                    </div>
+                    <div>
+                      <p class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">시리얼번호</p>
+                      <p class="text-sm font-bold text-slate-800 mt-0.5">{{ passport.serialNumber || 'N/A' }}</p>
+                    </div>
+                    <div>
+                      <p class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">모델명</p>
+                      <p class="text-sm font-bold text-slate-800 mt-0.5">{{ passport.model || 'N/A' }}</p>
+                    </div>
+                    <div>
+                      <p class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">DID</p>
+                      <p class="text-sm font-bold text-slate-800 font-mono truncate mt-0.5">{{ passport.did || 'N/A' }}</p>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- 2. 성능 및 내구성 -->
+                <div class="bg-slate-50 rounded-xl border border-slate-100 p-5">
+                  <h4 class="text-sm font-bold text-slate-700 mb-3 flex items-center gap-2">
+                    <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-emerald-600 text-white text-xs font-bold">2</span>
+                    성능 및 내구성
+                  </h4>
+                  <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                    <div>
+                      <p class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">정격용량</p>
+                      <p class="text-sm font-bold text-slate-800 mt-0.5">{{ passport.ratedCapacity ? passport.ratedCapacity + ' Ah' : 'N/A' }}</p>
+                    </div>
+                    <div>
+                      <p class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">전압범위</p>
+                      <p class="text-sm font-bold text-slate-800 mt-0.5">{{ passport.voltageRange ? passport.voltageRange + ' V' : 'N/A' }}</p>
+                    </div>
+                    <div>
+                      <p class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">총 에너지</p>
+                      <p class="text-sm font-bold text-slate-800 mt-0.5">{{ passport.totalEnergy ? passport.totalEnergy + ' kWh' : 'N/A' }}</p>
+                    </div>
+                    <div>
+                      <p class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">예상수명</p>
+                      <p class="text-sm font-bold text-slate-800 mt-0.5">{{ passport.expectedLifespan ? passport.expectedLifespan + '년' : 'N/A' }}</p>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- 3. 원자재 구성 -->
+                <div class="bg-slate-50 rounded-xl border border-slate-100 p-5">
+                  <h4 class="text-sm font-bold text-slate-700 mb-3 flex items-center gap-2">
+                    <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-emerald-600 text-white text-xs font-bold">3</span>
+                    원자재 구성
+                  </h4>
+                  <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                    <div>
+                      <p class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">화학물질</p>
+                      <p class="text-sm font-bold text-slate-800 mt-0.5">{{ passport.chemistry || 'N/A' }}</p>
+                    </div>
+                    <div>
+                      <p class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">셀 유형</p>
+                      <p class="text-sm font-bold text-slate-800 mt-0.5">{{ passport.cellType || 'N/A' }}</p>
+                    </div>
+                    <div>
+                      <p class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">셀 제조사</p>
+                      <p class="text-sm font-bold text-slate-800 mt-0.5">{{ passport.cellManufacturer || 'N/A' }}</p>
+                    </div>
+                    <div>
+                      <p class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">원자재</p>
+                      <p class="text-sm font-bold text-slate-800 mt-0.5">{{ passport.rawMaterials ? (typeof passport.rawMaterials === 'object' ? Object.keys(passport.rawMaterials).join(', ') : passport.rawMaterials) : 'N/A' }}</p>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- 4. 지속가능성 -->
+                <div class="bg-slate-50 rounded-xl border border-slate-100 p-5">
+                  <h4 class="text-sm font-bold text-slate-700 mb-3 flex items-center gap-2">
+                    <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-emerald-600 text-white text-xs font-bold">4</span>
+                    지속가능성
+                  </h4>
+                  <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                    <div>
+                      <p class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">탄소발자국</p>
+                      <p class="text-sm font-bold text-slate-800 mt-0.5">{{ passport.carbonFootprint || 'N/A' }}</p>
+                    </div>
+                    <div>
+                      <p class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">재활용 가능</p>
+                      <p class="text-sm font-bold text-slate-800 mt-0.5">{{ passport.recycleAvailable != null ? (passport.recycleAvailable ? '가능' : '불가') : 'N/A' }}</p>
+                    </div>
+                    <div>
+                      <p class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">재활용 비율</p>
+                      <p class="text-sm font-bold text-slate-800 mt-0.5">{{ passport.recyclingRates ? JSON.stringify(passport.recyclingRates) : 'N/A' }}</p>
+                    </div>
+                    <div>
+                      <p class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">제조국가</p>
+                      <p class="text-sm font-bold text-slate-800 mt-0.5">{{ passport.manufactureCountry || 'N/A' }}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Certified badge — subtle -->
+              <div v-if="gbaCompliance.allFilled" class="mt-6 px-4 py-3 bg-emerald-50/60 rounded-lg border border-emerald-100 flex items-center gap-2.5">
+                <svg class="w-5 h-5 text-emerald-500 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
                   <polyline points="9 12 11 14 15 10" stroke-width="2.5"/>
                 </svg>
-                <div>
-                  <p class="text-sm font-bold text-emerald-800">GBA 21 Battery Passport Certified</p>
-                  <p class="text-xs text-emerald-600 mt-0.5">모든 21가지 필수 데이터 항목이 완료되었습니다.</p>
-                </div>
+                <p class="text-xs font-semibold text-emerald-700">GBA 21 Battery Passport Certified - 모든 필수 데이터 항목 완료</p>
               </div>
             </div>
           </div>
