@@ -62,7 +62,7 @@ app.component('recycling-page', {
       loading.value = true;
       try {
         const data = await props.api.get('/passports');
-        passports.value = Array.isArray(data) ? data : (data.passports || []);
+        passports.value = Array.isArray(data) ? data : (data.records || []);
       } catch (e) {
         window.$toast('error', '여권 목록 조회 실패: ' + e.message);
       } finally {
