@@ -137,7 +137,7 @@ app.component('dashboard-page', {
       return { pct, filled: avgFilled, groups };
     });
 
-    /* ---------- Chemistry distribution ---------- */
+    /* ---------- 화학 구성 distribution ---------- */
     const chemistryDistribution = computed(() => {
       const map = {};
       passports.value.forEach(p => {
@@ -181,8 +181,8 @@ app.component('dashboard-page', {
 
     const chemistrySegments = computed(() => donutSegments(chemistryDistribution.value));
     const statusSegments = computed(() => donutSegments(statusDistribution.value));
-    const chemistryTotal = computed(() => chemistryDistribution.value.reduce((s, it) => s + it.count, 0));
-    const statusTotal = computed(() => statusDistribution.value.reduce((s, it) => s + it.count, 0));
+    const chemistry합계 = computed(() => chemistryDistribution.value.reduce((s, it) => s + it.count, 0));
+    const status합계 = computed(() => statusDistribution.value.reduce((s, it) => s + it.count, 0));
 
     /* ---------- recent passports ---------- */
     const recentPassports = computed(() => {
@@ -202,8 +202,8 @@ app.component('dashboard-page', {
       statusList, statusLabels,
       countByStatus, statusDistribution,
       gba21Fields, gbaComplianceOverview,
-      chemistryDistribution, chemistrySegments, chemistryTotal,
-      statusSegments, statusTotal,
+      chemistryDistribution, chemistrySegments, chemistry합계,
+      statusSegments, status합계,
       recentPassports,
       scaleSOC, truncate, formatDate, nav,
     };
@@ -217,7 +217,7 @@ app.component('dashboard-page', {
           <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
           <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
         </svg>
-        <p class="text-sm text-slate-500">Loading data...</p>
+        <p class="text-sm text-slate-500">데이터를 불러오는 중...</p>
       </div>
 
       <div v-else>
@@ -225,22 +225,22 @@ app.component('dashboard-page', {
         <!-- ===== SECTION 1: HEADER ===== -->
         <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h1 class="text-2xl font-bold text-slate-900">Dashboard</h1>
-            <p class="text-sm text-slate-500 mt-1">Keep tabs on your batteries.</p>
+            <h1 class="text-2xl font-bold text-slate-900">대시보드</h1>
+            <p class="text-sm text-slate-500 mt-1">배터리 여권 현황을 한눈에 확인하세요.</p>
           </div>
           <div class="flex items-center gap-2">
             <button @click="nav('passports')"
               class="inline-flex items-center gap-1.5 px-4 py-2 bg-emerald-600 text-white text-sm font-medium rounded-lg hover:bg-emerald-700 transition-colors shadow-sm">
               <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-              Add New
+              여권 발급
             </button>
             <button class="inline-flex items-center gap-1.5 px-3.5 py-2 bg-white text-slate-700 text-sm font-medium rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors">
               <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M12 10v6m0 0l-3-3m3 3l3-3M3 17V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>
-              Export
+              내보내기
             </button>
             <button class="inline-flex items-center gap-1.5 px-3.5 py-2 bg-white text-slate-700 text-sm font-medium rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors">
               <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/></svg>
-              Filter
+              필터
             </button>
           </div>
         </div>
@@ -248,10 +248,10 @@ app.component('dashboard-page', {
         <!-- ===== SECTION 2: KPI CARDS ===== -->
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
 
-          <!-- Card 1: Total Passports -->
+          <!-- Card 1: 전체 여권 -->
           <div @click="nav('passports')"
                class="bg-white rounded-xl border border-gray-200 p-6 hover:shadow-md transition-all cursor-pointer">
-            <p class="text-sm font-medium text-slate-500 mb-1">Total Passports</p>
+            <p class="text-sm font-medium text-slate-500 mb-1">전체 여권</p>
             <div class="flex items-end gap-3">
               <p class="text-4xl font-bold text-slate-900 tabular-nums leading-none">{{ totalCount }}</p>
               <span class="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-xs font-medium bg-emerald-50 text-emerald-700 mb-0.5">
@@ -261,17 +261,17 @@ app.component('dashboard-page', {
             </div>
           </div>
 
-          <!-- Card 2: Active -->
+          <!-- Card 2: 운행중 -->
           <div class="bg-white rounded-xl border border-gray-200 p-6">
-            <p class="text-sm font-medium text-slate-500 mb-1">Active</p>
+            <p class="text-sm font-medium text-slate-500 mb-1">운행중</p>
             <div class="flex items-end gap-3">
               <p class="text-4xl font-bold text-slate-900 tabular-nums leading-none">{{ activeCount }}</p>
             </div>
           </div>
 
-          <!-- Card 3: GBA 21 Compliance -->
+          <!-- Card 3: GBA 21 준수율 -->
           <div class="bg-white rounded-xl border border-gray-200 p-6">
-            <p class="text-sm font-medium text-slate-500 mb-1">GBA 21 Compliance</p>
+            <p class="text-sm font-medium text-slate-500 mb-1">GBA 21 준수율</p>
             <div class="flex items-end gap-3">
               <p class="text-4xl font-bold text-slate-900 tabular-nums leading-none">{{ gbaComplianceOverview.pct }}<span class="text-xl text-slate-400">%</span></p>
               <span v-if="gbaComplianceOverview.pct >= 50"
@@ -291,9 +291,9 @@ app.component('dashboard-page', {
         <!-- ===== SECTION 3: DONUT CHARTS ===== -->
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
-          <!-- Left: Chemistry Distribution -->
+          <!-- Left: 화학 구성 Distribution -->
           <div class="bg-white rounded-xl border border-gray-200 p-6">
-            <h2 class="text-base font-semibold text-slate-900 mb-6">Chemistry</h2>
+            <h2 class="text-base font-semibold text-slate-900 mb-6">화학 구성</h2>
             <div class="flex items-center gap-8">
               <!-- Donut SVG -->
               <div class="relative flex-shrink-0" style="width:140px;height:140px;">
@@ -308,8 +308,8 @@ app.component('dashboard-page', {
                     class="transition-all duration-700"/>
                 </svg>
                 <div class="absolute inset-0 flex flex-col items-center justify-center">
-                  <span class="text-2xl font-bold text-slate-900">{{ chemistryTotal }}</span>
-                  <span class="text-[10px] text-slate-400 uppercase tracking-wide">Total</span>
+                  <span class="text-2xl font-bold text-slate-900">{{ chemistry합계 }}</span>
+                  <span class="text-[10px] text-slate-400 uppercase tracking-wide">합계</span>
                 </div>
               </div>
               <!-- Legend -->
@@ -321,14 +321,14 @@ app.component('dashboard-page', {
                   </div>
                   <span class="text-sm font-semibold text-slate-800 tabular-nums">{{ item.count }}</span>
                 </div>
-                <div v-if="chemistryDistribution.length === 0" class="text-sm text-slate-400 py-4">No data</div>
+                <div v-if="chemistryDistribution.length === 0" class="text-sm text-slate-400 py-4">데이터 없음</div>
               </div>
             </div>
           </div>
 
-          <!-- Right: Status Distribution -->
+          <!-- Right: 상태 분포 -->
           <div class="bg-white rounded-xl border border-gray-200 p-6">
-            <h2 class="text-base font-semibold text-slate-900 mb-6">Status Distribution</h2>
+            <h2 class="text-base font-semibold text-slate-900 mb-6">상태 분포</h2>
             <div class="flex items-center gap-8">
               <!-- Donut SVG -->
               <div class="relative flex-shrink-0" style="width:140px;height:140px;">
@@ -343,8 +343,8 @@ app.component('dashboard-page', {
                     class="transition-all duration-700"/>
                 </svg>
                 <div class="absolute inset-0 flex flex-col items-center justify-center">
-                  <span class="text-2xl font-bold text-slate-900">{{ statusTotal }}</span>
-                  <span class="text-[10px] text-slate-400 uppercase tracking-wide">Total</span>
+                  <span class="text-2xl font-bold text-slate-900">{{ status합계 }}</span>
+                  <span class="text-[10px] text-slate-400 uppercase tracking-wide">합계</span>
                 </div>
               </div>
               <!-- Legend -->
@@ -356,7 +356,7 @@ app.component('dashboard-page', {
                   </div>
                   <span class="text-sm font-semibold text-slate-800 tabular-nums">{{ item.count }}</span>
                 </div>
-                <div v-if="statusDistribution.length === 0" class="text-sm text-slate-400 py-4">No data</div>
+                <div v-if="statusDistribution.length === 0" class="text-sm text-slate-400 py-4">데이터 없음</div>
               </div>
             </div>
           </div>
@@ -365,17 +365,17 @@ app.component('dashboard-page', {
         <!-- ===== SECTION 4: ADD CUSTOM REPORT ===== -->
         <div class="text-center py-2">
           <button class="text-sm text-slate-400 hover:text-emerald-600 transition-colors font-medium">
-            + Add custom report
+            + 맞춤 보고서 추가
           </button>
         </div>
 
         <!-- ===== SECTION 5: RECENT PASSPORTS TABLE ===== -->
         <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
           <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
-            <h2 class="text-base font-semibold text-slate-900">Recent Passports</h2>
+            <h2 class="text-base font-semibold text-slate-900">최근 등록 여권</h2>
             <button @click="nav('passports')"
                     class="text-sm text-emerald-600 hover:text-emerald-800 font-medium transition-colors flex items-center gap-1">
-              View all
+              전체 보기
               <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                 <polyline points="9 18 15 12 9 6"/>
               </svg>
@@ -385,13 +385,13 @@ app.component('dashboard-page', {
             <table class="w-full">
               <thead>
                 <tr class="border-b border-gray-100">
-                  <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Manufacturer</th>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Model</th>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Weight</th>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Chemistry</th>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Registered</th>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Status</th>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Actions</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">제조사</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">모델</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">무게</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">화학</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">등록일</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">상태</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">작업</th>
                 </tr>
               </thead>
               <tbody class="divide-y divide-gray-50">
@@ -412,7 +412,7 @@ app.component('dashboard-page', {
                   <td class="px-6 py-3.5">
                     <button @click.stop="$emit('navigate', 'passport-detail', { passportId: p.passportId || p.id })"
                       class="text-sm text-emerald-600 hover:text-emerald-800 font-medium">
-                      View
+                      상세
                     </button>
                   </td>
                 </tr>
@@ -424,8 +424,8 @@ app.component('dashboard-page', {
               <path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/>
               <rect x="9" y="3" width="6" height="4" rx="1"/>
             </svg>
-            <p class="text-sm font-medium text-slate-500">No passports registered</p>
-            <p class="text-xs text-slate-400 mt-1">Create a new battery passport to get started.</p>
+            <p class="text-sm font-medium text-slate-500">등록된 여권이 없습니다</p>
+            <p class="text-xs text-slate-400 mt-1">새 배터리 여권을 발급하여 시작하세요.</p>
           </div>
         </div>
 
