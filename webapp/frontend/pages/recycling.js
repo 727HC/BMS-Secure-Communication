@@ -38,8 +38,16 @@ app.component('recycling-page', {
       { key: 'disposed', label: '폐기완료', icon: 'M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16' },
     ];
 
+    // 재활용 관련 배터리만 필터
+    function isRecyclingRelated(p) {
+      return p.recycleAvailable === true ||
+        p.status === 'RECYCLING' ||
+        p.status === 'DISPOSED' ||
+        (p.recyclingRates && Object.keys(p.recyclingRates).length > 0);
+    }
+
     const tabCounts = computed(() => ({
-      all: passports.value.length,
+      all: passports.value.filter(isRecyclingRelated).length,
       recyclable: passports.value.filter(p => p.recycleAvailable === true).length,
       recycling: passports.value.filter(p => p.status === 'RECYCLING').length,
       disposed: passports.value.filter(p => p.status === 'DISPOSED').length,
@@ -55,7 +63,8 @@ app.component('recycling-page', {
       if (activeTab.value === 'disposed') {
         return passports.value.filter(p => p.status === 'DISPOSED');
       }
-      return passports.value;
+      // 전체: 재활용 관련 배터리만
+      return passports.value.filter(isRecyclingRelated);
     });
 
     async function fetchPassports() {
