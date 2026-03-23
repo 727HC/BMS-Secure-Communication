@@ -28,8 +28,7 @@
       theme: {
         extend: {
           colors: {
-            primary: { 50:'#eff6ff',100:'#dbeafe',200:'#bfdbfe',300:'#93c5fd',400:'#60a5fa',500:'#3b82f6',600:'#2563eb',700:'#1d4ed8',800:'#1e40af',900:'#1e3a8a' },
-            sidebar: { DEFAULT:'#1e293b', hover:'#334155', active:'#1e3a5f' },
+            primary: { 50:'#ecfdf5',100:'#d1fae5',200:'#a7f3d0',300:'#6ee7b7',400:'#34d399',500:'#10b981',600:'#059669',700:'#047857',800:'#065f46',900:'#064e3b' },
           }
         }
       }
@@ -62,14 +61,14 @@
 
         <!-- ===== SIDEBAR ===== -->
         <aside :class="[
-          'fixed inset-y-0 left-0 z-50 w-60 bg-sidebar flex flex-col transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:z-auto',
+          'fixed inset-y-0 left-0 z-50 w-60 bg-white border-r border-gray-200 flex flex-col transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:z-auto',
           mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
         ]">
 
           <!-- Logo Area -->
-          <div class="flex items-center px-5 h-16 flex-shrink-0 border-b border-slate-700/50">
+          <div class="flex items-center px-5 h-16 flex-shrink-0 border-b border-gray-200">
             <div class="flex items-center space-x-3 cursor-pointer" @click="navigate('dashboard')">
-              <div class="w-8 h-8 bg-emerald-500 rounded-lg flex items-center justify-center flex-shrink-0">
+              <div class="w-8 h-8 bg-emerald-600 rounded-lg flex items-center justify-center flex-shrink-0">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <rect x="6" y="2" width="12" height="20" rx="2" ry="2"/>
                   <line x1="6" y1="6" x2="18" y2="6"/>
@@ -79,7 +78,7 @@
                 </svg>
               </div>
               <div class="min-w-0">
-                <div class="text-white font-semibold text-sm leading-tight truncate">Battery Passport</div>
+                <div class="text-slate-800 font-semibold text-sm leading-tight truncate">Battery Passport</div>
                 <div class="text-slate-400 text-xs leading-tight">GBA 21 Platform</div>
               </div>
             </div>
@@ -90,7 +89,7 @@
             <template v-for="(group, gi) in groupedNavItems" :key="gi">
               <!-- Section label -->
               <div v-if="group.section" class="px-3 pt-4 pb-1.5 first:pt-0">
-                <span class="text-[10px] font-semibold uppercase tracking-wider text-slate-500">{{ group.section }}</span>
+                <span class="text-[10px] font-semibold uppercase tracking-wider text-slate-400">{{ group.section }}</span>
               </div>
 
               <!-- Nav items -->
@@ -99,18 +98,18 @@
                 :class="[
                   'group w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-150',
                   currentPage === item.route
-                    ? 'bg-slate-700/50 text-white border-l-[3px] border-primary-400 pl-[9px]'
-                    : 'text-slate-300 hover:bg-slate-700 hover:text-white border-l-[3px] border-transparent pl-[9px]'
+                    ? 'bg-emerald-50 text-emerald-700 border-l-2 border-emerald-600 pl-[10px]'
+                    : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900 border-l-2 border-transparent pl-[10px]'
                 ]">
                 <!-- Dashboard icon -->
-                <svg v-if="item.icon === 'dashboard'" class="w-[18px] h-[18px] flex-shrink-0" :class="currentPage === item.route ? 'text-primary-400' : 'text-slate-400 group-hover:text-slate-200'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                <svg v-if="item.icon === 'dashboard'" class="w-[18px] h-[18px] flex-shrink-0" :class="currentPage === item.route ? 'text-emerald-600' : 'text-gray-400 group-hover:text-gray-600'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
                   <rect x="3" y="3" width="7" height="7" rx="1"/>
                   <rect x="14" y="3" width="7" height="7" rx="1"/>
                   <rect x="3" y="14" width="7" height="7" rx="1"/>
                   <rect x="14" y="14" width="7" height="7" rx="1"/>
                 </svg>
                 <!-- Passport icon -->
-                <svg v-else-if="item.icon === 'passport'" class="w-[18px] h-[18px] flex-shrink-0" :class="currentPage === item.route ? 'text-primary-400' : 'text-slate-400 group-hover:text-slate-200'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                <svg v-else-if="item.icon === 'passport'" class="w-[18px] h-[18px] flex-shrink-0" :class="currentPage === item.route ? 'text-emerald-600' : 'text-gray-400 group-hover:text-gray-600'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
                   <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
                   <polyline points="14 2 14 8 20 8"/>
                   <line x1="16" y1="13" x2="8" y2="13"/>
@@ -118,20 +117,20 @@
                   <polyline points="10 9 9 9 8 9"/>
                 </svg>
                 <!-- Chain / traceability icon -->
-                <svg v-else-if="item.icon === 'chain'" class="w-[18px] h-[18px] flex-shrink-0" :class="currentPage === item.route ? 'text-primary-400' : 'text-slate-400 group-hover:text-slate-200'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                <svg v-else-if="item.icon === 'chain'" class="w-[18px] h-[18px] flex-shrink-0" :class="currentPage === item.route ? 'text-emerald-600' : 'text-gray-400 group-hover:text-gray-600'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
                   <path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/>
                   <path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/>
                 </svg>
                 <!-- Pulse / data icon -->
-                <svg v-else-if="item.icon === 'pulse'" class="w-[18px] h-[18px] flex-shrink-0" :class="currentPage === item.route ? 'text-primary-400' : 'text-slate-400 group-hover:text-slate-200'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                <svg v-else-if="item.icon === 'pulse'" class="w-[18px] h-[18px] flex-shrink-0" :class="currentPage === item.route ? 'text-emerald-600' : 'text-gray-400 group-hover:text-gray-600'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
                   <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
                 </svg>
                 <!-- Wrench / service icon -->
-                <svg v-else-if="item.icon === 'wrench'" class="w-[18px] h-[18px] flex-shrink-0" :class="currentPage === item.route ? 'text-primary-400' : 'text-slate-400 group-hover:text-slate-200'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                <svg v-else-if="item.icon === 'wrench'" class="w-[18px] h-[18px] flex-shrink-0" :class="currentPage === item.route ? 'text-emerald-600' : 'text-gray-400 group-hover:text-gray-600'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
                   <path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/>
                 </svg>
                 <!-- Recycle icon -->
-                <svg v-else-if="item.icon === 'recycle'" class="w-[18px] h-[18px] flex-shrink-0" :class="currentPage === item.route ? 'text-primary-400' : 'text-slate-400 group-hover:text-slate-200'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                <svg v-else-if="item.icon === 'recycle'" class="w-[18px] h-[18px] flex-shrink-0" :class="currentPage === item.route ? 'text-emerald-600' : 'text-gray-400 group-hover:text-gray-600'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
                   <polyline points="7 2 12 7 7 12"/>
                   <path d="M12 7H3a1 1 0 00-1 1v4"/>
                   <polyline points="17 22 12 17 17 12"/>
@@ -145,7 +144,7 @@
           </nav>
 
           <!-- User section at bottom -->
-          <div class="flex-shrink-0 border-t border-slate-700/50 p-4">
+          <div class="flex-shrink-0 border-t border-gray-200 p-4">
             <div class="flex items-center space-x-3">
               <!-- Avatar -->
               <div :class="['w-9 h-9 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0', orgAvatarColor]">
@@ -153,14 +152,14 @@
               </div>
               <!-- Info -->
               <div class="min-w-0 flex-1">
-                <div class="text-sm font-medium text-white truncate">{{ auth.userId }}</div>
+                <div class="text-sm font-medium text-slate-800 truncate">{{ auth.userId }}</div>
                 <span :class="['inline-block mt-0.5 px-1.5 py-0.5 rounded text-[10px] font-semibold border', orgBadgeClasses]">
                   {{ orgLabel }}
                 </span>
               </div>
               <!-- Logout -->
               <button @click="logout" title="로그아웃"
-                class="p-1.5 rounded-lg text-slate-400 hover:text-red-400 hover:bg-slate-700 transition-colors flex-shrink-0">
+                class="p-1.5 rounded-lg text-gray-400 hover:text-red-500 hover:bg-gray-100 transition-colors flex-shrink-0">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/>
                   <polyline points="16 17 21 12 16 7"/>
@@ -232,7 +231,7 @@
     <div class="fixed top-4 right-4 z-[100] space-y-2">
       <div v-for="(toast, i) in toasts" :key="i"
         :class="['px-4 py-3 rounded-lg shadow-lg text-white text-sm transition-all flex items-center space-x-2',
-          toast.type === 'error' ? 'bg-red-500' : toast.type === 'success' ? 'bg-green-500' : 'bg-blue-500']">
+          toast.type === 'error' ? 'bg-red-500' : toast.type === 'success' ? 'bg-emerald-500' : 'bg-emerald-600']">
         <svg v-if="toast.type === 'success'" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
           <polyline points="20 6 9 17 4 12"/>
         </svg>
