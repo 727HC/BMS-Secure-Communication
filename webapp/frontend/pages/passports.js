@@ -518,32 +518,32 @@ app.component('passports-page', {
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                   <div>
                     <label class="block text-xs font-medium text-gray-500 mb-1">셀 수</label>
-                    <input v-model="form.cellCount" type="number" placeholder="96"
+                    <input v-model="form.cellCount" type="number" min="0" placeholder="96"
                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none text-sm" />
                   </div>
                   <div>
                     <label class="block text-xs font-medium text-gray-500 mb-1">무게 (kg)</label>
-                    <input v-model="form.weight" type="number" step="0.1" placeholder="450"
+                    <input v-model="form.weight" type="number" min="0" step="0.1" placeholder="450"
                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none text-sm" />
                   </div>
                   <div>
                     <label class="block text-xs font-medium text-gray-500 mb-1">총 에너지 (kWh)</label>
-                    <input v-model="form.totalEnergy" type="number" step="0.1" placeholder="77.4"
+                    <input v-model="form.totalEnergy" type="number" min="0" step="0.1" placeholder="77.4"
                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none text-sm" />
                   </div>
                   <div>
                     <label class="block text-xs font-medium text-gray-500 mb-1">에너지 밀도 (Wh/kg)</label>
-                    <input v-model="form.energyDensity" type="number" step="0.1" placeholder="172"
+                    <input v-model="form.energyDensity" type="number" min="0" step="0.1" placeholder="172"
                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none text-sm" />
                   </div>
                   <div>
                     <label class="block text-xs font-medium text-gray-500 mb-1">정격 용량 (Ah)</label>
-                    <input v-model="form.ratedCapacity" type="number" step="0.1" placeholder="200"
+                    <input v-model="form.ratedCapacity" type="number" min="0" step="0.1" placeholder="200"
                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none text-sm" />
                   </div>
                   <div>
-                    <label class="block text-xs font-medium text-gray-500 mb-1">예상 수명 (년)</label>
-                    <input v-model="form.expectedLifespan" type="number" placeholder="10"
+                    <label class="block text-xs font-medium text-gray-500 mb-1">예상 수명 (cycles)</label>
+                    <input v-model="form.expectedLifespan" type="number" min="0" placeholder="3000"
                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none text-sm" />
                   </div>
                   <div>
