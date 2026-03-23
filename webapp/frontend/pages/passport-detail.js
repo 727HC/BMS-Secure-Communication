@@ -50,6 +50,23 @@ app.component('passport-detail-page', {
       try { return new Date(ts).toLocaleString('ko-KR'); } catch { return ts; }
     }
 
+    // "280~403" or "280-350-403" → { min, nom, max }
+    function parseVoltageRange(str) {
+      if (!str) return { min: '--', nom: '--', max: '--' };
+      const parts = String(str).replace(/[VvＶ]/g, '').split(/[~\-,]/);
+      if (parts.length >= 3) return { min: parts[0].trim(), nom: parts[1].trim(), max: parts[2].trim() };
+      if (parts.length === 2) return { min: parts[0].trim(), nom: '--', max: parts[1].trim() };
+      return { min: '--', nom: str.trim(), max: '--' };
+    }
+
+    // "-20~60" or "-40~60" → { min, max }
+    function parseTempRange(str) {
+      if (!str) return { min: '--', max: '--' };
+      const m = String(str).replace(/[°CcＣ]/g, '').match(/([\-\d.]+)[~\s]+([\d.]+)/);
+      if (m) return { min: m[1], max: m[2] };
+      return { min: '--', max: str.trim() };
+    }
+
     /* ---------- status config ---------- */
     const statusLabels = {
       MANUFACTURED: '제조완료', ACTIVE: '운행중', MAINTENANCE: '정비중',
@@ -454,7 +471,7 @@ app.component('passport-detail-page', {
       gba21Fields, gbaCompliance, complianceGrade,
       gaugeCircumference, complianceGaugeCircumference, gaugeReady,
       getStatusBadge, getSocColor, getSocHex, getSohColor, scaleSOC, scaleTemp,
-      decodeStatusFlags, getLifecycleState, fieldFilled, formatDate, copyToClipboard,
+      decodeStatusFlags, getLifecycleState, fieldFilled, formatDate, copyToClipboard, parseVoltageRange, parseTempRange,
       switchTab, goBack, setPassportId,
       submitBind, submitMaintenanceRequest, submitMaintenanceLog, submitAccidentLog,
       submitAnalysisRequest, submitAnalysisResult, submitRecycleAvailability,
@@ -641,8 +658,18 @@ app.component('passport-detail-page', {
                   <p class="text-sm font-medium text-slate-400 mt-1">Ah</p>
                 </div>
                 <div class="bg-slate-50 rounded-xl p-5 border border-slate-100 text-center">
-                  <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">전압범위</p>
-                  <p class="text-4xl font-extrabold text-slate-900 tabular-nums leading-tight">{{ passport.voltageRange || '--' }}</p>
+                  <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">최소 전압</p>
+                  <p class="text-4xl font-extrabold text-slate-900 tabular-nums leading-tight">{{ parseVoltageRange(passport.voltageRange).min }}</p>
+                  <p class="text-sm font-medium text-slate-400 mt-1">V</p>
+                </div>
+                <div class="bg-slate-50 rounded-xl p-5 border border-slate-100 text-center">
+                  <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">공칭 전압</p>
+                  <p class="text-4xl font-extrabold text-slate-900 tabular-nums leading-tight">{{ parseVoltageRange(passport.voltageRange).nom }}</p>
+                  <p class="text-sm font-medium text-slate-400 mt-1">V</p>
+                </div>
+                <div class="bg-slate-50 rounded-xl p-5 border border-slate-100 text-center">
+                  <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">최대 전압</p>
+                  <p class="text-4xl font-extrabold text-slate-900 tabular-nums leading-tight">{{ parseVoltageRange(passport.voltageRange).max }}</p>
                   <p class="text-sm font-medium text-slate-400 mt-1">V</p>
                 </div>
                 <div class="bg-slate-50 rounded-xl p-5 border border-slate-100 text-center">
@@ -671,8 +698,13 @@ app.component('passport-detail-page', {
                   <p class="text-sm font-medium text-slate-400 mt-1">cycles</p>
                 </div>
                 <div class="bg-slate-50 rounded-xl p-5 border border-slate-100 text-center">
-                  <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">온도범위</p>
-                  <p class="text-4xl font-extrabold text-slate-900 tabular-nums leading-tight">{{ passport.temperatureRange || '--' }}</p>
+                  <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">최저 온도</p>
+                  <p class="text-4xl font-extrabold text-slate-900 tabular-nums leading-tight">{{ parseTempRange(passport.temperatureRange).min }}</p>
+                  <p class="text-sm font-medium text-slate-400 mt-1">&deg;C</p>
+                </div>
+                <div class="bg-slate-50 rounded-xl p-5 border border-slate-100 text-center">
+                  <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">최고 온도</p>
+                  <p class="text-4xl font-extrabold text-slate-900 tabular-nums leading-tight">{{ parseTempRange(passport.temperatureRange).max }}</p>
                   <p class="text-sm font-medium text-slate-400 mt-1">&deg;C</p>
                 </div>
               </div>
