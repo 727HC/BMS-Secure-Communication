@@ -668,7 +668,7 @@ app.component('passport-detail-page', {
                 <div class="bg-slate-50 rounded-xl p-5 border border-slate-100 text-center">
                   <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">예상수명</p>
                   <p class="text-4xl font-extrabold text-slate-900 tabular-nums leading-tight">{{ passport.expectedLifespan || '--' }}</p>
-                  <p class="text-sm font-medium text-slate-400 mt-1">년</p>
+                  <p class="text-sm font-medium text-slate-400 mt-1">cycles</p>
                 </div>
                 <div class="bg-slate-50 rounded-xl p-5 border border-slate-100 text-center">
                   <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">온도범위</p>
@@ -928,7 +928,7 @@ app.component('passport-detail-page', {
                     </div>
                     <div>
                       <p class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">예상수명</p>
-                      <p class="text-sm font-bold text-slate-800 mt-0.5">{{ passport.expectedLifespan ? passport.expectedLifespan + '년' : 'N/A' }}</p>
+                      <p class="text-sm font-bold text-slate-800 mt-0.5">{{ passport.expectedLifespan ? passport.expectedLifespan + ' cycles' : 'N/A' }}</p>
                     </div>
                   </div>
                 </div>
@@ -976,7 +976,7 @@ app.component('passport-detail-page', {
                     </div>
                     <div>
                       <p class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">재활용 비율</p>
-                      <p class="text-sm font-bold text-slate-800 mt-0.5">{{ passport.recyclingRates ? JSON.stringify(passport.recyclingRates) : 'N/A' }}</p>
+                      <p class="text-sm font-bold text-slate-800 mt-0.5">{{ passport.recyclingRates && Object.keys(passport.recyclingRates).length > 0 ? Object.entries(passport.recyclingRates).map(([k,v]) => k + ' ' + v + '%').join(', ') : 'N/A' }}</p>
                     </div>
                     <div>
                       <p class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">제조국가</p>
