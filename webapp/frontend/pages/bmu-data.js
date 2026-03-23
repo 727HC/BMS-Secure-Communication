@@ -284,12 +284,12 @@ app.component('bmu-data-page', {
               <td class="px-5 py-3.5 whitespace-nowrap text-right">
                 <span :class="['text-sm font-bold tabular-nums',
                   scaleSOC(r.soc) > 50 ? 'text-emerald-600' : scaleSOC(r.soc) > 20 ? 'text-amber-600' : 'text-red-600']">
-                  {{ scaleSOC(r.soc) }}%
+                  {{ scaleSOC(r.soc) }}
                 </span>
               </td>
-              <td class="px-5 py-3.5 whitespace-nowrap text-sm text-right text-gray-700 tabular-nums">{{ formatNumber(r.voltage, 2) }}V</td>
-              <td class="px-5 py-3.5 whitespace-nowrap text-sm text-right text-gray-700 tabular-nums">{{ formatNumber(r.current, 2) }}A</td>
-              <td class="px-5 py-3.5 whitespace-nowrap text-sm text-right text-gray-700 tabular-nums">{{ scaleTemp(r.temperature) }}°C</td>
+              <td class="px-5 py-3.5 whitespace-nowrap text-sm text-right text-gray-700 tabular-nums">{{ formatNumber(r.voltage, 2) }}</td>
+              <td class="px-5 py-3.5 whitespace-nowrap text-sm text-right text-gray-700 tabular-nums">{{ formatNumber(r.current, 2) }}</td>
+              <td class="px-5 py-3.5 whitespace-nowrap text-sm text-right text-gray-700 tabular-nums">{{ scaleTemp(r.temperature) }}</td>
               <td class="px-5 py-3.5 whitespace-nowrap text-sm text-right text-gray-700 tabular-nums">{{ r.dischargeCycles != null ? r.dischargeCycles : '-' }}</td>
               <td class="px-5 py-3.5 whitespace-nowrap">
                 <div class="flex flex-wrap gap-1.5">

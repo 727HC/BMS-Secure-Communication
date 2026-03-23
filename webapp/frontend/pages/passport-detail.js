@@ -186,7 +186,10 @@ app.component('passport-detail-page', {
           if (isFirst || isLast || statusChanged || vinChanged || maintChanged) {
             let changeDesc = '';
             if (isFirst) changeDesc = '여권 생성';
-            else if (statusChanged && prevStatus) changeDesc = prevStatus + ' → ' + status;
+            else if (statusChanged && prevStatus) {
+              const statusKorean = { MANUFACTURED:'제조완료', ACTIVE:'운행중', MAINTENANCE:'정비중', ANALYSIS:'분석중', RECYCLING:'재활용', DISPOSED:'폐기' };
+              changeDesc = (statusKorean[prevStatus]||prevStatus) + ' → ' + (statusKorean[status]||status);
+            }
             else if (vinChanged) changeDesc = 'VIN 바인딩: ' + vin;
             else if (maintChanged) changeDesc = '정비 기록 추가 (#' + maintCount + ')';
             else if (isLast) changeDesc = '최신 상태';
@@ -778,7 +781,7 @@ app.component('passport-detail-page', {
                 </div>
                 <div>
                   <dt class="text-xs font-medium text-gray-400 uppercase tracking-wider mb-1">제조일자</dt>
-                  <dd class="text-sm text-gray-900">{{ passport.manufactureDate || '-' }}</dd>
+                  <dd class="text-sm text-gray-900">{{ formatDate(passport.manufactureDate) }}</dd>
                 </div>
                 <div>
                   <dt class="text-xs font-medium text-gray-400 uppercase tracking-wider mb-1">셀 유형</dt>
@@ -833,11 +836,11 @@ app.component('passport-detail-page', {
                 </div>
                 <div>
                   <dt class="text-xs font-medium text-gray-400 uppercase tracking-wider mb-1">전압 범위</dt>
-                  <dd class="text-sm text-gray-900">{{ passport.voltageRange ? passport.voltageRange + ' V' : '-' }}</dd>
+                  <dd class="text-sm text-gray-900">{{ passport.voltageRange || '-' }}</dd>
                 </div>
                 <div>
                   <dt class="text-xs font-medium text-gray-400 uppercase tracking-wider mb-1">온도 범위</dt>
-                  <dd class="text-sm text-gray-900">{{ passport.temperatureRange ? passport.temperatureRange + ' °C' : '-' }}</dd>
+                  <dd class="text-sm text-gray-900">{{ passport.temperatureRange || '-' }}</dd>
                 </div>
               </div>
             </div>
@@ -873,7 +876,7 @@ app.component('passport-detail-page', {
                 </div>
                 <div>
                   <dt class="text-xs font-medium text-gray-400 uppercase tracking-wider mb-1">장착일자</dt>
-                  <dd class="text-sm text-gray-900">{{ passport.installDate || '-' }}</dd>
+                  <dd class="text-sm text-gray-900">{{ formatDate(passport.installDate) }}</dd>
                 </div>
                 <div>
                   <dt class="text-xs font-medium text-gray-400 uppercase tracking-wider mb-1">EV 제조사</dt>
@@ -1045,9 +1048,9 @@ app.component('passport-detail-page', {
                 <tbody>
                   <tr v-for="(log, i) in maintenanceLogs" :key="i"
                     :class="['transition-colors', i % 2 === 0 ? 'bg-white' : 'bg-gray-50/40', 'hover:bg-blue-50/40']">
-                    <td class="px-5 py-3 text-gray-700 whitespace-nowrap">{{ log.date || '-' }}</td>
+                    <td class="px-5 py-3 text-gray-700 whitespace-nowrap">{{ formatDate(log.date) }}</td>
                     <td class="px-5 py-3">
-                      <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-100">{{ log.type || '-' }}</span>
+                      <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-100">{{ {routine:'정기점검',repair:'수리',recall:'리콜',emergency:'긴급'}[log.type] || log.type || '-' }}</span>
                     </td>
                     <td class="px-5 py-3 text-gray-700 max-w-xs truncate">{{ log.description || '-' }}</td>
                     <td class="px-5 py-3 text-gray-600">{{ log.technician || '-' }}</td>
@@ -1084,7 +1087,7 @@ app.component('passport-detail-page', {
                 <tbody>
                   <tr v-for="(log, i) in accidentLogs" :key="i"
                     :class="['transition-colors', i % 2 === 0 ? 'bg-white' : 'bg-gray-50/40', 'hover:bg-red-50/30']">
-                    <td class="px-5 py-3 text-gray-700 whitespace-nowrap">{{ log.date || '-' }}</td>
+                    <td class="px-5 py-3 text-gray-700 whitespace-nowrap">{{ formatDate(log.date) }}</td>
                     <td class="px-5 py-3">
                       <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-red-50 text-red-700 border border-red-100">{{ log.type || '-' }}</span>
                     </td>
