@@ -512,21 +512,25 @@ app.component('passport-detail-page', {
             </div>
           </div>
 
-          <!-- Battery SVG icon with SOC fill -->
-          <div class="flex-shrink-0">
-            <div class="bg-slate-50 rounded-xl border border-slate-200 p-4 flex flex-col items-center gap-2">
-              <svg width="140" height="70" viewBox="0 0 140 70" xmlns="http://www.w3.org/2000/svg">
-                <rect x="3" y="8" width="115" height="54" rx="8" fill="none" stroke="#94a3b8" stroke-width="3"/>
-                <rect x="118" y="22" width="16" height="26" rx="4" fill="#94a3b8"/>
-                <rect x="7" y="12" :width="Math.max((batteryFillAnimated / 100) * 107, 0)" height="46" rx="5"
-                  :fill="getSocHex(scaleSOC(passport.currentSoc))"
-                  style="transition: width 1.2s cubic-bezier(0.4,0,0.2,1), fill 0.6s ease;"/>
-                <text x="60" y="42" text-anchor="middle" font-size="18" font-weight="bold"
-                  :fill="batteryFillAnimated > 40 ? '#ffffff' : '#334155'" font-family="system-ui, sans-serif">
-                  {{ passport.currentSoc != null ? scaleSOC(passport.currentSoc) + '%' : '--' }}
-                </text>
-              </svg>
-              <span class="text-xs text-slate-400">SOC</span>
+          <!-- Battery illustration -->
+          <div class="flex-shrink-0 hidden md:block">
+            <div class="bg-slate-50 rounded-xl border border-slate-200 p-4 flex flex-col items-center gap-3 w-64">
+              <img src="https://images.unsplash.com/photo-1620714223084-8fcacc6dfd8d?w=400&h=250&fit=crop&auto=format"
+                alt="EV Battery Pack" class="w-full h-36 object-cover rounded-lg" loading="lazy"
+                onerror="this.style.display='none'"/>
+              <p class="text-[10px] text-slate-400 text-center italic">실제 배터리와 다를 수 있으며, 참고용 이미지입니다</p>
+              <!-- SOC indicator -->
+              <div class="w-full">
+                <div class="flex items-center justify-between mb-1">
+                  <span class="text-xs font-medium text-slate-500">SOC</span>
+                  <span class="text-xs font-bold text-slate-700">{{ passport.currentSoc != null ? scaleSOC(passport.currentSoc) + '%' : '--' }}</span>
+                </div>
+                <div class="w-full h-2.5 bg-slate-200 rounded-full overflow-hidden">
+                  <div class="h-full rounded-full transition-all duration-1000"
+                    :style="{ width: Math.min(Math.max(scaleSOC(passport.currentSoc) || 0, 0), 100) + '%' }"
+                    :class="scaleSOC(passport.currentSoc) > 60 ? 'bg-emerald-500' : scaleSOC(passport.currentSoc) > 25 ? 'bg-amber-500' : 'bg-red-500'"></div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
