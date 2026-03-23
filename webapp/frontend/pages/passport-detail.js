@@ -515,8 +515,8 @@ app.component('passport-detail-page', {
           <!-- Battery illustration -->
           <div class="flex-shrink-0 hidden md:block">
             <div class="bg-slate-50 rounded-xl border border-slate-200 p-4 flex flex-col items-center gap-3 w-64">
-              <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/9/9f/Lithium-Ion_Battery_for_BMW_i3_-_Battery_Pack.JPG/640px-Lithium-Ion_Battery_for_BMW_i3_-_Battery_Pack.JPG"
-                alt="EV Battery Pack" class="w-full h-36 object-cover rounded-lg" loading="lazy"
+              <img src="battery-chassis.png"
+                alt="EV Battery Pack" class="w-full h-40 object-contain rounded-lg" loading="lazy"
                 onerror="this.style.display='none'"/>
               <p class="text-[10px] text-slate-400 text-center italic">실제 배터리와 다를 수 있으며, 참고용 이미지입니다</p>
               <!-- SOC indicator -->
