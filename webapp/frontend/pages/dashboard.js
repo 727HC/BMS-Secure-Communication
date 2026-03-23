@@ -112,17 +112,10 @@ app.component('dashboard-page', {
       (countByStatus.value['RECYCLING'] || 0) + (countByStatus.value['DISPOSED'] || 0)
     );
 
-    const avgSoc = computed(() => {
-      const items = passports.value.filter(p => p.currentSoc != null);
-      if (items.length === 0) return 0;
-      return Math.round(items.reduce((s, p) => s + scaleSOC(p.currentSoc), 0) / items.length);
-    });
-
-    const avgSoh = computed(() => {
-      const items = passports.value.filter(p => p.currentSoh != null);
-      if (items.length === 0) return 0;
-      return Math.round(items.reduce((s, p) => s + Number(p.currentSoh), 0) / items.length);
-    });
+    // SOH 80% 미만 배터리 수 (관리 필요)
+    const sohWarningCount = computed(() =>
+      passports.value.filter(p => p.currentSoh != null && Number(p.currentSoh) < 80).length
+    );
 
     const orgDisplayName = computed(() => {
       const map = {
@@ -257,25 +250,17 @@ app.component('dashboard-page', {
       return sorted.slice(0, 5);
     });
 
-    /* ---------- gauge helpers ---------- */
-    const gaugeCircumference = 2 * Math.PI * 36;
-    const gaugeReady = ref(false);
-    onMounted(() => {
-      setTimeout(() => { gaugeReady.value = true; }, 150);
-    });
-
     function nav(page) { emit('navigate', page); }
 
     return {
       loading, fabricStatus, passports, currentTime,
       totalCount, activeCount, maintenanceCount, recyclingDisposedCount,
-      avgSoc, avgSoh, orgDisplayName,
+      sohWarningCount, orgDisplayName,
       statusList, statusLabels, statusHexColors, statusBgClasses, statusBadgeClasses,
       countByStatus, statusDistribution,
       gba21Fields, gbaComplianceOverview,
       recentActivity, timeAgo,
       recentPassports,
-      gaugeCircumference, gaugeReady,
       scaleSOC, truncate, formatDate, nav,
     };
   },
@@ -354,45 +339,36 @@ app.component('dashboard-page', {
             </div>
           </div>
 
-          <!-- Card 3: 평균 SOC (mini gauge) -->
-          <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
+          <!-- Card 3: SOH 주의 배터리 -->
+          <div @click="nav('passports')"
+               class="bg-white rounded-xl border border-slate-200 shadow-sm p-5 hover:shadow-md hover:border-red-300 transition-all cursor-pointer">
             <div class="flex items-start justify-between">
               <div>
-                <p class="text-sm font-medium text-slate-500">평균 SOC</p>
-                <p class="mt-2 text-3xl font-bold text-slate-900 tabular-nums">{{ avgSoc }}<span class="text-lg text-slate-400">%</span></p>
+                <p class="text-sm font-medium text-slate-500">SOH 주의</p>
+                <p class="mt-2 text-3xl font-bold tabular-nums" :class="sohWarningCount > 0 ? 'text-red-600' : 'text-slate-900'">{{ sohWarningCount }}</p>
+                <p class="mt-1 text-xs text-slate-400">SOH 80% 미만 배터리</p>
               </div>
-              <svg viewBox="0 0 80 80" class="w-14 h-14 flex-shrink-0">
-                <circle cx="40" cy="40" r="36" fill="none" stroke="#e2e8f0" stroke-width="5"/>
-                <circle cx="40" cy="40" r="36" fill="none"
-                        stroke="#10b981" stroke-width="5" stroke-linecap="round"
-                        :stroke-dasharray="gaugeCircumference"
-                        :stroke-dashoffset="gaugeReady ? gaugeCircumference * (1 - avgSoc / 100) : gaugeCircumference"
-                        transform="rotate(-90 40 40)"
-                        style="transition: stroke-dashoffset 1s ease;"/>
-                <text x="40" y="44" text-anchor="middle" dominant-baseline="middle"
-                      fill="#10b981" font-size="14" font-weight="700">{{ avgSoc }}</text>
-              </svg>
+              <div class="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0" :class="sohWarningCount > 0 ? 'bg-red-100' : 'bg-slate-100'">
+                <svg class="w-5 h-5" :class="sohWarningCount > 0 ? 'text-red-600' : 'text-slate-400'" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+              </div>
             </div>
           </div>
 
-          <!-- Card 4: 평균 SOH (mini gauge) -->
+          <!-- Card 4: GBA 21 준수율 -->
           <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
             <div class="flex items-start justify-between">
               <div>
-                <p class="text-sm font-medium text-slate-500">평균 SOH</p>
-                <p class="mt-2 text-3xl font-bold text-slate-900 tabular-nums">{{ avgSoh }}<span class="text-lg text-slate-400">%</span></p>
+                <p class="text-sm font-medium text-slate-500">GBA 21 준수율</p>
+                <p class="mt-2 text-3xl font-bold text-slate-900 tabular-nums">{{ gbaComplianceOverview.pct }}<span class="text-lg text-slate-400">%</span></p>
+                <p class="mt-1 text-xs text-slate-400">{{ gbaComplianceOverview.filled }}/21 필드 완성</p>
               </div>
-              <svg viewBox="0 0 80 80" class="w-14 h-14 flex-shrink-0">
-                <circle cx="40" cy="40" r="36" fill="none" stroke="#e2e8f0" stroke-width="5"/>
-                <circle cx="40" cy="40" r="36" fill="none"
-                        stroke="#3b82f6" stroke-width="5" stroke-linecap="round"
-                        :stroke-dasharray="gaugeCircumference"
-                        :stroke-dashoffset="gaugeReady ? gaugeCircumference * (1 - avgSoh / 100) : gaugeCircumference"
-                        transform="rotate(-90 40 40)"
-                        style="transition: stroke-dashoffset 1s ease;"/>
-                <text x="40" y="44" text-anchor="middle" dominant-baseline="middle"
-                      fill="#3b82f6" font-size="14" font-weight="700">{{ avgSoh }}</text>
-              </svg>
+              <div class="w-10 h-10 rounded-lg bg-emerald-100 flex items-center justify-center flex-shrink-0">
+                <svg class="w-5 h-5 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+              </div>
             </div>
           </div>
 
