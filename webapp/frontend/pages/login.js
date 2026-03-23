@@ -60,19 +60,19 @@ app.component('login-page', {
   },
   template: `
     <div class="min-h-screen flex items-center justify-center px-4 py-12"
-         style="background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 50%, #1e3a8a 100%);">
+         style="background: linear-gradient(135deg, #0f172a 0%, #14432a 50%, #065f46 100%);">
       <!-- Grid overlay -->
       <div class="fixed inset-0 opacity-[0.04] pointer-events-none"
-           style="background-image: url('data:image/svg+xml,%3Csvg width=&quot;60&quot; height=&quot;60&quot; xmlns=&quot;http://www.w3.org/2000/svg&quot;%3E%3Cpath d=&quot;M0 0h60v60H0z&quot; fill=&quot;none&quot;/%3E%3Cpath d=&quot;M0 0h1v60H0zM60 0h1v60h-1zM0 0v1h60V0zM0 60v1h60v-1z&quot; fill=&quot;%2393c5fd&quot;/%3E%3C/svg%3E');"></div>
+           style="background-image: url('data:image/svg+xml,%3Csvg width=&quot;60&quot; height=&quot;60&quot; xmlns=&quot;http://www.w3.org/2000/svg&quot;%3E%3Cpath d=&quot;M0 0h60v60H0z&quot; fill=&quot;none&quot;/%3E%3Cpath d=&quot;M0 0h1v60H0zM60 0h1v60h-1zM0 0v1h60V0zM0 60v1h60v-1z&quot; fill=&quot;%236ee7b7&quot;/%3E%3C/svg%3E');"></div>
 
       <!-- Floating ambient shapes -->
-      <div class="fixed top-1/4 left-1/4 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl pointer-events-none"></div>
+      <div class="fixed top-1/4 left-1/4 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none"></div>
       <div class="fixed bottom-1/4 right-1/4 w-80 h-80 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none"></div>
 
       <div class="relative z-10 w-full max-w-md">
         <!-- Logo & Branding -->
         <div class="text-center mb-8">
-          <div class="inline-flex items-center justify-center w-16 h-16 bg-white/10 backdrop-blur-sm rounded-2xl border border-white/20 mb-5 shadow-lg shadow-blue-900/30">
+          <div class="inline-flex items-center justify-center w-16 h-16 bg-white/10 backdrop-blur-sm rounded-2xl border border-white/20 mb-5 shadow-lg shadow-emerald-900/30">
             <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
               <rect x="6" y="2" width="12" height="20" rx="2" ry="2"/>
               <line x1="6" y1="6" x2="18" y2="6"/>
@@ -85,7 +85,7 @@ app.component('login-page', {
             </svg>
           </div>
           <h1 class="text-2xl font-bold text-white tracking-tight">Battery Passport</h1>
-          <p class="text-blue-300/80 text-sm font-medium mt-1 tracking-wider">GBA 21 Platform</p>
+          <p class="text-emerald-300/80 text-sm font-medium mt-1 tracking-wider">GBA 21 Platform</p>
         </div>
 
         <!-- Login Card -->
@@ -97,7 +97,7 @@ app.component('login-page', {
               :class="['flex-1 py-2.5 text-sm font-semibold rounded-lg transition-all duration-200',
                 activeTab === 'login'
                   ? 'bg-white/15 text-white shadow-sm border border-white/10'
-                  : 'text-blue-200/60 hover:text-white/80']">
+                  : 'text-emerald-200/60 hover:text-white/80']">
               <span class="inline-flex items-center justify-center gap-1.5">
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <path d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4"/>
@@ -112,7 +112,7 @@ app.component('login-page', {
               :class="['flex-1 py-2.5 text-sm font-semibold rounded-lg transition-all duration-200',
                 activeTab === 'register'
                   ? 'bg-white/15 text-white shadow-sm border border-white/10'
-                  : 'text-blue-200/60 hover:text-white/80']">
+                  : 'text-emerald-200/60 hover:text-white/80']">
               <span class="inline-flex items-center justify-center gap-1.5">
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <path d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4-4v2"/>
@@ -132,7 +132,7 @@ app.component('login-page', {
               <h2 class="text-lg font-bold text-white">
                 {{ activeTab === 'login' ? '계정에 로그인' : '새 계정 등록' }}
               </h2>
-              <p class="mt-0.5 text-sm text-blue-200/50">
+              <p class="mt-0.5 text-sm text-emerald-200/50">
                 {{ activeTab === 'login' ? '배터리 여권 플랫폼에 접속합니다.' : '조직 정보와 함께 계정을 생성합니다.' }}
               </p>
             </div>
@@ -150,7 +150,7 @@ app.component('login-page', {
             <form @submit.prevent="handleSubmit" class="space-y-4">
               <!-- User ID -->
               <div>
-                <label class="block text-sm font-medium text-blue-100/70 mb-1.5">사용자 ID</label>
+                <label class="block text-sm font-medium text-emerald-100/70 mb-1.5">사용자 ID</label>
                 <div class="relative">
                   <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -159,13 +159,13 @@ app.component('login-page', {
                     </svg>
                   </div>
                   <input v-model="userId" type="text" placeholder="아이디를 입력하세요"
-                    class="w-full pl-10 pr-4 py-2.5 bg-white/[0.06] border border-white/10 rounded-xl text-white placeholder-slate-500 focus:ring-2 focus:ring-blue-400/40 focus:border-blue-400/50 outline-none transition text-sm" />
+                    class="w-full pl-10 pr-4 py-2.5 bg-white/[0.06] border border-white/10 rounded-xl text-white placeholder-slate-500 focus:ring-2 focus:ring-emerald-400/40 focus:border-emerald-400/50 outline-none transition text-sm" />
                 </div>
               </div>
 
               <!-- Password -->
               <div>
-                <label class="block text-sm font-medium text-blue-100/70 mb-1.5">비밀번호</label>
+                <label class="block text-sm font-medium text-emerald-100/70 mb-1.5">비밀번호</label>
                 <div class="relative">
                   <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -174,13 +174,13 @@ app.component('login-page', {
                     </svg>
                   </div>
                   <input v-model="password" type="password" placeholder="비밀번호를 입력하세요"
-                    class="w-full pl-10 pr-4 py-2.5 bg-white/[0.06] border border-white/10 rounded-xl text-white placeholder-slate-500 focus:ring-2 focus:ring-blue-400/40 focus:border-blue-400/50 outline-none transition text-sm" />
+                    class="w-full pl-10 pr-4 py-2.5 bg-white/[0.06] border border-white/10 rounded-xl text-white placeholder-slate-500 focus:ring-2 focus:ring-emerald-400/40 focus:border-emerald-400/50 outline-none transition text-sm" />
                 </div>
               </div>
 
               <!-- Org Select -->
               <div>
-                <label class="block text-sm font-medium text-blue-100/70 mb-1.5">소속 기관</label>
+                <label class="block text-sm font-medium text-emerald-100/70 mb-1.5">소속 기관</label>
                 <div class="relative">
                   <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -189,7 +189,7 @@ app.component('login-page', {
                     </svg>
                   </div>
                   <select v-model="orgNum"
-                    class="w-full pl-10 pr-8 py-2.5 bg-white/[0.06] border border-white/10 rounded-xl text-white focus:ring-2 focus:ring-blue-400/40 focus:border-blue-400/50 outline-none transition text-sm appearance-none cursor-pointer">
+                    class="w-full pl-10 pr-8 py-2.5 bg-white/[0.06] border border-white/10 rounded-xl text-white focus:ring-2 focus:ring-emerald-400/40 focus:border-emerald-400/50 outline-none transition text-sm appearance-none cursor-pointer">
                     <option v-for="opt in orgOptions" :key="opt.value" :value="opt.value" class="bg-slate-800 text-white">{{ opt.label }}</option>
                   </select>
                   <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
@@ -204,8 +204,8 @@ app.component('login-page', {
               <button type="submit" :disabled="loading"
                 :class="['w-full py-3 rounded-xl font-semibold text-white transition-all duration-200 flex items-center justify-center gap-2 mt-2',
                   loading
-                    ? 'bg-blue-500/40 cursor-not-allowed'
-                    : 'bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 hover:shadow-lg hover:shadow-blue-500/25 active:scale-[0.98]']">
+                    ? 'bg-emerald-500/40 cursor-not-allowed'
+                    : 'bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 hover:shadow-lg hover:shadow-emerald-500/25 active:scale-[0.98]']">
                 <span v-if="loading" class="inline-flex items-center">
                   <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
                     <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -221,7 +221,7 @@ app.component('login-page', {
 
         <!-- Footer -->
         <div class="mt-6 text-center">
-          <p class="text-xs text-blue-300/30">Battery Passport Platform v2.0</p>
+          <p class="text-xs text-emerald-300/30">Battery Passport Platform v2.0</p>
         </div>
       </div>
     </div>

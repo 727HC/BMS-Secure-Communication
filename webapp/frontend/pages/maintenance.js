@@ -260,7 +260,7 @@ app.component('maintenance-page', {
         <div class="px-4 py-3.5 cursor-pointer" @click="navigateToDetail(p)">
           <div class="flex items-start justify-between mb-2">
             <div class="flex-1 min-w-0">
-              <h3 class="text-sm font-bold text-gray-900 truncate group-hover:text-primary-600 transition-colors" :title="p.passportId">
+              <h3 class="text-sm font-bold text-gray-900 truncate group-hover:text-emerald-600 transition-colors" :title="p.passportId">
                 {{ p.passportId }}
               </h3>
               <p class="mt-0.5 text-xs text-gray-400 font-mono">{{ p.serialNumber || '-' }}</p>

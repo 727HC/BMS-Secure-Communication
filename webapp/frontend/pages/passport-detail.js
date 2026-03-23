@@ -56,8 +56,8 @@ app.component('passport-detail-page', {
       ANALYSIS: '분석중', RECYCLING: '재활용', DISPOSED: '폐기',
     };
     const statusConfig = {
-      MANUFACTURED: { bg: 'bg-blue-50', text: 'text-blue-700', border: 'border-blue-200', dot: 'bg-blue-500', label: '제조완료' },
-      ACTIVE:       { bg: 'bg-green-50', text: 'text-green-700', border: 'border-green-200', dot: 'bg-green-500', label: '운행중' },
+      MANUFACTURED: { bg: 'bg-emerald-50', text: 'text-emerald-700', border: 'border-emerald-200', dot: 'bg-emerald-500', label: '제조완료' },
+      ACTIVE:       { bg: 'bg-emerald-50', text: 'text-emerald-700', border: 'border-emerald-200', dot: 'bg-emerald-500', label: '운행중' },
       MAINTENANCE:  { bg: 'bg-amber-50', text: 'text-amber-700', border: 'border-amber-200', dot: 'bg-amber-500', label: '정비중' },
       ANALYSIS:     { bg: 'bg-purple-50', text: 'text-purple-700', border: 'border-purple-200', dot: 'bg-purple-500', label: '분석중' },
       RECYCLING:    { bg: 'bg-orange-50', text: 'text-orange-700', border: 'border-orange-200', dot: 'bg-orange-500', label: '재활용' },
@@ -68,19 +68,19 @@ app.component('passport-detail-page', {
     }
     function getSocColor(soc) {
       if (soc == null) return 'bg-slate-300';
-      if (soc >= 60) return 'bg-green-500';
+      if (soc >= 60) return 'bg-emerald-500';
       if (soc >= 30) return 'bg-amber-500';
       return 'bg-red-500';
     }
     function getSocHex(soc) {
       if (soc == null) return '#94a3b8';
-      if (soc >= 60) return '#22c55e';
+      if (soc >= 60) return '#059669';
       if (soc >= 30) return '#f59e0b';
       return '#ef4444';
     }
     function getSohColor(soh) {
       if (soh == null) return '#94a3b8';
-      if (soh >= 80) return '#3b82f6';
+      if (soh >= 80) return '#059669';
       if (soh >= 50) return '#f59e0b';
       return '#ef4444';
     }
@@ -88,8 +88,8 @@ app.component('passport-detail-page', {
       const num = typeof flags === 'number' ? flags : parseInt(flags, 10);
       if (isNaN(num)) return [];
       const badges = [];
-      if (num & 0x01) badges.push({ label: '충전중', color: 'bg-blue-100 text-blue-700 border-blue-200' });
-      if (num & 0x02) badges.push({ label: '밸런싱', color: 'bg-green-100 text-green-700 border-green-200' });
+      if (num & 0x01) badges.push({ label: '충전중', color: 'bg-emerald-100 text-emerald-700 border-emerald-200' });
+      if (num & 0x02) badges.push({ label: '밸런싱', color: 'bg-emerald-100 text-emerald-700 border-emerald-200' });
       if (num & 0x04) badges.push({ label: '결함', color: 'bg-red-100 text-red-700 border-red-200' });
       return badges;
     }
@@ -160,6 +160,15 @@ app.component('passport-detail-page', {
       return { filled, total: 21, pct: Math.round((filled / 21) * 100), allFilled: filled === 21, groups };
     });
 
+    /* ---------- compliance grade ---------- */
+    const complianceGrade = computed(() => {
+      const pct = gbaCompliance.value.pct;
+      if (pct >= 90) return 'A';
+      if (pct >= 75) return 'B';
+      if (pct >= 50) return 'C';
+      return 'D';
+    });
+
     /* ---------- lifecycle steps ---------- */
     const lifecycleSteps = [
       { key: 'RAW', label: '원자재', status: null },
@@ -200,6 +209,7 @@ app.component('passport-detail-page', {
 
     /* ---------- gauge helpers ---------- */
     const gaugeCircumference = 2 * Math.PI * 40;
+    const complianceGaugeCircumference = 2 * Math.PI * 80;
     const gaugeReady = ref(false);
 
     /* ---------- copy to clipboard ---------- */
@@ -218,7 +228,7 @@ app.component('passport-detail-page', {
         const style = document.createElement('style');
         style.id = 'passport-detail-v2-animations';
         style.textContent = `
-          @keyframes pd-pulse { 0%,100%{box-shadow:0 0 0 0 rgba(59,130,246,0.4)} 50%{box-shadow:0 0 0 8px rgba(59,130,246,0)} }
+          @keyframes pd-pulse { 0%,100%{box-shadow:0 0 0 0 rgba(5,150,105,0.4)} 50%{box-shadow:0 0 0 8px rgba(5,150,105,0)} }
           .pd-pulse { animation: pd-pulse 2s ease-in-out infinite; }
         `;
         document.head.appendChild(style);
@@ -441,8 +451,8 @@ app.component('passport-detail-page', {
       msp, isEV, isService, isRegulator, isManufacturer,
       maintenanceLogs, accidentLogs,
       batteryFillAnimated, lifecycleSteps, statusOrder,
-      gba21Fields, gbaCompliance,
-      gaugeCircumference, gaugeReady,
+      gba21Fields, gbaCompliance, complianceGrade,
+      gaugeCircumference, complianceGaugeCircumference, gaugeReady,
       getStatusBadge, getSocColor, getSocHex, getSohColor, scaleSOC, scaleTemp,
       decodeStatusFlags, getLifecycleState, fieldFilled, formatDate, copyToClipboard,
       switchTab, goBack, setPassportId,
@@ -458,7 +468,7 @@ app.component('passport-detail-page', {
       <!-- ===== HEADER ===== -->
       <div class="mb-6">
         <button @click="goBack"
-          class="group inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 hover:text-blue-600 transition-colors mb-4">
+          class="group inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 hover:text-emerald-600 transition-colors mb-4">
           <svg class="w-4 h-4 transition-transform group-hover:-translate-x-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
             <path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
           </svg>
@@ -505,8 +515,8 @@ app.component('passport-detail-page', {
       <!-- ===== LOADING ===== -->
       <div v-if="loading" class="flex flex-col items-center justify-center py-24">
         <div class="relative">
-          <div class="w-12 h-12 border-4 border-blue-100 rounded-full"></div>
-          <div class="absolute top-0 left-0 w-12 h-12 border-4 border-blue-600 rounded-full animate-spin border-t-transparent"></div>
+          <div class="w-12 h-12 border-4 border-emerald-100 rounded-full"></div>
+          <div class="absolute top-0 left-0 w-12 h-12 border-4 border-emerald-600 rounded-full animate-spin border-t-transparent"></div>
         </div>
         <p class="mt-4 text-sm text-slate-500">데이터를 불러오는 중...</p>
       </div>
@@ -520,7 +530,7 @@ app.component('passport-detail-page', {
         </div>
         <h3 class="text-lg font-semibold text-slate-700 mb-1">여권 정보를 찾을 수 없습니다</h3>
         <p class="text-sm text-slate-400 mb-6">요청한 여권 ID에 해당하는 데이터가 없습니다.</p>
-        <button @click="goBack" class="inline-flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-medium text-sm rounded-xl transition-colors">
+        <button @click="goBack" class="inline-flex items-center gap-2 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-sm rounded-xl transition-colors">
           목록으로 돌아가기
         </button>
       </div>
@@ -536,7 +546,7 @@ app.component('passport-detail-page', {
               :class="[
                 'relative flex items-center gap-2 px-5 py-3.5 text-sm font-medium transition-all whitespace-nowrap border-b-2 min-w-0',
                 activeTab === tab.key
-                  ? 'border-blue-600 text-blue-600 bg-blue-50/50'
+                  ? 'border-emerald-600 text-emerald-600 bg-emerald-50/50'
                   : 'border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-50'
               ]">
               <svg class="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -550,64 +560,112 @@ app.component('passport-detail-page', {
         <!-- ==================== TAB 1: IDENTITY ==================== -->
         <div v-if="activeTab === 'identity'" class="space-y-6">
 
-          <!-- Identity grid -->
+          <!-- Identity Spec Grid — OpenBattery style: large label + big value, 3-column -->
           <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
             <div class="px-6 py-4 border-b border-slate-100 flex items-center gap-2.5">
-              <div class="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
-                <svg class="w-4 h-4 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <div class="w-8 h-8 bg-emerald-100 rounded-lg flex items-center justify-center">
+                <svg class="w-4 h-4 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0"/>
                 </svg>
               </div>
               <h3 class="text-sm font-bold text-slate-800 uppercase tracking-wider">배터리 식별정보</h3>
             </div>
             <div class="p-6">
-              <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-5">
+              <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-10 gap-y-6">
                 <div>
-                  <dt class="text-xs font-medium text-slate-400 uppercase tracking-wider mb-1">여권 ID</dt>
-                  <dd class="text-sm text-slate-900 font-mono bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-100 break-all">{{ passport.passportId || '-' }}</dd>
+                  <p class="text-xs font-medium text-slate-400 uppercase tracking-wider mb-1">여권 ID</p>
+                  <p class="text-lg font-bold text-slate-900 font-mono break-all">{{ passport.passportId || '-' }}</p>
                 </div>
                 <div>
-                  <dt class="text-xs font-medium text-slate-400 uppercase tracking-wider mb-1">배터리 ID</dt>
-                  <dd class="text-sm text-slate-900 font-mono bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-100 break-all">{{ passport.batteryId || '-' }}</dd>
+                  <p class="text-xs font-medium text-slate-400 uppercase tracking-wider mb-1">배터리 ID</p>
+                  <p class="text-lg font-bold text-slate-900 font-mono break-all">{{ passport.batteryId || '-' }}</p>
                 </div>
                 <div>
-                  <dt class="text-xs font-medium text-slate-400 uppercase tracking-wider mb-1">시리얼번호</dt>
-                  <dd class="text-sm text-slate-900 font-semibold">{{ passport.serialNumber || '-' }}</dd>
+                  <p class="text-xs font-medium text-slate-400 uppercase tracking-wider mb-1">시리얼번호</p>
+                  <p class="text-lg font-bold text-slate-900">{{ passport.serialNumber || '-' }}</p>
                 </div>
                 <div>
-                  <dt class="text-xs font-medium text-slate-400 uppercase tracking-wider mb-1">모델</dt>
-                  <dd class="text-sm text-slate-900 font-semibold">{{ passport.model || '-' }}</dd>
+                  <p class="text-xs font-medium text-slate-400 uppercase tracking-wider mb-1">모델</p>
+                  <p class="text-lg font-bold text-slate-900">{{ passport.model || '-' }}</p>
                 </div>
                 <div>
-                  <dt class="text-xs font-medium text-slate-400 uppercase tracking-wider mb-1">제조사</dt>
-                  <dd class="text-sm text-slate-900">{{ passport.manufacturerName || '-' }}</dd>
+                  <p class="text-xs font-medium text-slate-400 uppercase tracking-wider mb-1">제조사</p>
+                  <p class="text-lg font-bold text-slate-900">{{ passport.manufacturerName || '-' }}</p>
                 </div>
                 <div>
-                  <dt class="text-xs font-medium text-slate-400 uppercase tracking-wider mb-1">제조국가</dt>
-                  <dd class="text-sm text-slate-900">{{ passport.manufactureCountry || '-' }}</dd>
+                  <p class="text-xs font-medium text-slate-400 uppercase tracking-wider mb-1">제조국가</p>
+                  <p class="text-lg font-bold text-slate-900">{{ passport.manufactureCountry || '-' }}</p>
                 </div>
                 <div>
-                  <dt class="text-xs font-medium text-slate-400 uppercase tracking-wider mb-1">셀 제조사</dt>
-                  <dd class="text-sm text-slate-900">{{ passport.cellManufacturer || '-' }}</dd>
+                  <p class="text-xs font-medium text-slate-400 uppercase tracking-wider mb-1">셀 제조사</p>
+                  <p class="text-lg font-bold text-slate-900">{{ passport.cellManufacturer || '-' }}</p>
                 </div>
                 <div>
-                  <dt class="text-xs font-medium text-slate-400 uppercase tracking-wider mb-1">셀 제조국가</dt>
-                  <dd class="text-sm text-slate-900">{{ passport.cellManufactureCountry || '-' }}</dd>
+                  <p class="text-xs font-medium text-slate-400 uppercase tracking-wider mb-1">셀 제조국가</p>
+                  <p class="text-lg font-bold text-slate-900">{{ passport.cellManufactureCountry || '-' }}</p>
                 </div>
                 <div>
-                  <dt class="text-xs font-medium text-slate-400 uppercase tracking-wider mb-1">제조일자</dt>
-                  <dd class="text-sm text-slate-900">{{ formatDate(passport.manufactureDate) }}</dd>
+                  <p class="text-xs font-medium text-slate-400 uppercase tracking-wider mb-1">제조일자</p>
+                  <p class="text-lg font-bold text-slate-900">{{ formatDate(passport.manufactureDate) }}</p>
                 </div>
                 <div>
-                  <dt class="text-xs font-medium text-slate-400 uppercase tracking-wider mb-1">셀 유형</dt>
-                  <dd class="text-sm text-slate-900">{{ passport.cellType || '-' }}</dd>
+                  <p class="text-xs font-medium text-slate-400 uppercase tracking-wider mb-1">셀 유형</p>
+                  <p class="text-lg font-bold text-slate-900">{{ passport.cellType || '-' }}</p>
                 </div>
                 <div>
-                  <dt class="text-xs font-medium text-slate-400 uppercase tracking-wider mb-1">화학물질</dt>
-                  <dd class="text-sm text-slate-900">
-                    <span v-if="passport.chemistry" class="inline-flex items-center px-2 py-0.5 bg-indigo-50 text-indigo-700 rounded text-xs font-semibold border border-indigo-100">{{ passport.chemistry }}</span>
+                  <p class="text-xs font-medium text-slate-400 uppercase tracking-wider mb-1">화학물질</p>
+                  <p class="text-lg font-bold text-slate-900">
+                    <span v-if="passport.chemistry" class="inline-flex items-center px-2.5 py-0.5 bg-emerald-50 text-emerald-700 rounded text-sm font-bold border border-emerald-100">{{ passport.chemistry }}</span>
                     <span v-else>-</span>
-                  </dd>
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Performance & Durability — OpenBattery spec grid style -->
+          <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+            <div class="px-6 py-4 border-b border-slate-100 flex items-center gap-2.5">
+              <div class="w-8 h-8 bg-emerald-100 rounded-lg flex items-center justify-center">
+                <svg class="w-4 h-4 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z"/>
+                </svg>
+              </div>
+              <h3 class="text-sm font-bold text-slate-800 uppercase tracking-wider">Performance &amp; Durability</h3>
+            </div>
+            <div class="p-6">
+              <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-10 gap-y-6">
+                <div>
+                  <p class="text-xs font-medium text-slate-400 uppercase tracking-wider mb-1">Rated capacity</p>
+                  <p class="text-2xl font-bold text-slate-900 tabular-nums">{{ passport.ratedCapacity || '--' }}<span class="text-sm font-normal text-slate-400 ml-1">Ah</span></p>
+                </div>
+                <div>
+                  <p class="text-xs font-medium text-slate-400 uppercase tracking-wider mb-1">Total energy</p>
+                  <p class="text-2xl font-bold text-slate-900 tabular-nums">{{ passport.totalEnergy || '--' }}<span class="text-sm font-normal text-slate-400 ml-1">kWh</span></p>
+                </div>
+                <div>
+                  <p class="text-xs font-medium text-slate-400 uppercase tracking-wider mb-1">Energy density</p>
+                  <p class="text-2xl font-bold text-slate-900 tabular-nums">{{ passport.energyDensity || '--' }}<span class="text-sm font-normal text-slate-400 ml-1">Wh/kg</span></p>
+                </div>
+                <div>
+                  <p class="text-xs font-medium text-slate-400 uppercase tracking-wider mb-1">Weight</p>
+                  <p class="text-2xl font-bold text-slate-900 tabular-nums">{{ passport.weight || '--' }}<span class="text-sm font-normal text-slate-400 ml-1">kg</span></p>
+                </div>
+                <div>
+                  <p class="text-xs font-medium text-slate-400 uppercase tracking-wider mb-1">Cell count</p>
+                  <p class="text-2xl font-bold text-slate-900 tabular-nums">{{ passport.cellCount || '--' }}</p>
+                </div>
+                <div>
+                  <p class="text-xs font-medium text-slate-400 uppercase tracking-wider mb-1">Expected lifespan</p>
+                  <p class="text-2xl font-bold text-slate-900 tabular-nums">{{ passport.expectedLifespan || '--' }}<span class="text-sm font-normal text-slate-400 ml-1">years</span></p>
+                </div>
+                <div>
+                  <p class="text-xs font-medium text-slate-400 uppercase tracking-wider mb-1">Voltage range</p>
+                  <p class="text-2xl font-bold text-slate-900 tabular-nums">{{ passport.voltageRange || '--' }}<span class="text-sm font-normal text-slate-400 ml-1">V</span></p>
+                </div>
+                <div>
+                  <p class="text-xs font-medium text-slate-400 uppercase tracking-wider mb-1">Temperature range</p>
+                  <p class="text-2xl font-bold text-slate-900 tabular-nums">{{ passport.temperatureRange || '--' }}<span class="text-sm font-normal text-slate-400 ml-1">&deg;C</span></p>
                 </div>
               </div>
             </div>
@@ -617,15 +675,15 @@ app.component('passport-detail-page', {
           <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
             <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
               <div class="flex items-center gap-2.5">
-                <div class="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
-                  <svg class="w-4 h-4 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <div class="w-8 h-8 bg-emerald-100 rounded-lg flex items-center justify-center">
+                  <svg class="w-4 h-4 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101"/>
                   </svg>
                 </div>
                 <h3 class="text-sm font-bold text-slate-800 uppercase tracking-wider">EV 바인딩</h3>
               </div>
               <button v-if="isEV && !passport.vin" @click="showBindModal = true"
-                class="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-green-600 hover:bg-green-700 text-white font-medium text-xs rounded-lg transition-colors">
+                class="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-xs rounded-lg transition-colors">
                 <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
                 </svg>
@@ -633,25 +691,25 @@ app.component('passport-detail-page', {
               </button>
             </div>
             <div class="p-6">
-              <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-8 gap-y-5">
+              <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-10 gap-y-6">
                 <div>
-                  <dt class="text-xs font-medium text-slate-400 uppercase tracking-wider mb-1">VIN</dt>
-                  <dd class="text-sm font-mono">
-                    <span v-if="passport.vin" class="text-slate-900 bg-slate-50 px-2.5 py-1 rounded-lg border border-slate-100 inline-block">{{ passport.vin }}</span>
+                  <p class="text-xs font-medium text-slate-400 uppercase tracking-wider mb-1">VIN</p>
+                  <p class="text-lg font-bold font-mono">
+                    <span v-if="passport.vin" class="text-slate-900">{{ passport.vin }}</span>
                     <span v-else class="text-slate-300">미등록</span>
-                  </dd>
+                  </p>
                 </div>
                 <div>
-                  <dt class="text-xs font-medium text-slate-400 uppercase tracking-wider mb-1">EV 제조사</dt>
-                  <dd class="text-sm text-slate-900">{{ passport.evManufacturer || '-' }}</dd>
+                  <p class="text-xs font-medium text-slate-400 uppercase tracking-wider mb-1">EV 제조사</p>
+                  <p class="text-lg font-bold text-slate-900">{{ passport.evManufacturer || '-' }}</p>
                 </div>
                 <div>
-                  <dt class="text-xs font-medium text-slate-400 uppercase tracking-wider mb-1">장착일자</dt>
-                  <dd class="text-sm text-slate-900">{{ formatDate(passport.installDate) }}</dd>
+                  <p class="text-xs font-medium text-slate-400 uppercase tracking-wider mb-1">장착일자</p>
+                  <p class="text-lg font-bold text-slate-900">{{ formatDate(passport.installDate) }}</p>
                 </div>
                 <div>
-                  <dt class="text-xs font-medium text-slate-400 uppercase tracking-wider mb-1">EV 조립국가</dt>
-                  <dd class="text-sm text-slate-900">{{ passport.evAssemblyCountry || '-' }}</dd>
+                  <p class="text-xs font-medium text-slate-400 uppercase tracking-wider mb-1">EV 조립국가</p>
+                  <p class="text-lg font-bold text-slate-900">{{ passport.evAssemblyCountry || '-' }}</p>
                 </div>
               </div>
             </div>
@@ -719,41 +777,68 @@ app.component('passport-detail-page', {
         <!-- ==================== TAB 2: COMPLIANCE ==================== -->
         <div v-if="activeTab === 'compliance'" class="space-y-6">
 
-          <!-- GBA 21 Compliance Card -->
+          <!-- Large Circular Gauge — OpenBattery style -->
           <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
             <div class="px-6 py-5 border-b border-slate-100">
-              <div class="flex items-center justify-between">
-                <div class="flex items-center gap-3">
-                  <div class="w-9 h-9 rounded-lg flex items-center justify-center"
-                       :class="gbaCompliance.allFilled ? 'bg-green-100' : 'bg-amber-100'">
-                    <svg class="w-5 h-5" :class="gbaCompliance.allFilled ? 'text-green-600' : 'text-amber-600'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
-                      <polyline points="9 12 11 14 15 10"/>
-                    </svg>
-                  </div>
-                  <div>
-                    <h2 class="text-base font-semibold text-slate-900">GBA 21 규제 준수</h2>
-                    <p class="text-xs text-slate-400 mt-0.5">Global Battery Alliance 21가지 데이터 항목</p>
-                  </div>
+              <div class="flex items-center gap-3">
+                <div class="w-9 h-9 rounded-lg flex items-center justify-center"
+                     :class="gbaCompliance.allFilled ? 'bg-emerald-100' : 'bg-amber-100'">
+                  <svg class="w-5 h-5" :class="gbaCompliance.allFilled ? 'text-emerald-600' : 'text-amber-600'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                    <polyline points="9 12 11 14 15 10"/>
+                  </svg>
                 </div>
-                <div class="text-right">
-                  <span class="text-2xl font-bold tabular-nums" :class="gbaCompliance.pct >= 80 ? 'text-green-600' : gbaCompliance.pct >= 50 ? 'text-amber-600' : 'text-red-600'">
-                    {{ gbaCompliance.filled }}
-                  </span>
-                  <span class="text-sm text-slate-400">/21</span>
+                <div>
+                  <h2 class="text-base font-semibold text-slate-900">GBA 21 규제 준수</h2>
+                  <p class="text-xs text-slate-400 mt-0.5">Global Battery Alliance 21가지 데이터 항목</p>
                 </div>
               </div>
             </div>
-            <div class="px-6 py-5">
+            <div class="px-6 py-8">
+              <!-- Large compliance gauge + grade -->
+              <div class="flex flex-col items-center mb-8">
+                <svg viewBox="0 0 200 200" class="w-48 h-48">
+                  <circle cx="100" cy="100" r="80" fill="none" stroke="#e5e7eb" stroke-width="10"/>
+                  <circle cx="100" cy="100" r="80" fill="none"
+                    stroke="#059669" stroke-width="10" stroke-linecap="round"
+                    :stroke-dasharray="complianceGaugeCircumference"
+                    :stroke-dashoffset="gaugeReady ? complianceGaugeCircumference * (1 - gbaCompliance.pct / 100) : complianceGaugeCircumference"
+                    transform="rotate(-90 100 100)"
+                    style="transition: stroke-dashoffset 1.2s ease;"/>
+                  <text x="100" y="78" text-anchor="middle" fill="#9ca3af" font-size="14" font-weight="500">Rate</text>
+                  <text x="100" y="120" text-anchor="middle" fill="#111827" font-size="52" font-weight="800">{{ complianceGrade }}</text>
+                </svg>
+              </div>
+
+              <!-- Key metrics row -->
+              <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8 bg-slate-50 rounded-xl p-5">
+                <div class="text-center">
+                  <p class="text-xs text-slate-400 uppercase tracking-wider mb-1">GBA</p>
+                  <p class="text-xl font-bold text-slate-900">{{ gbaCompliance.pct }}%</p>
+                </div>
+                <div class="text-center">
+                  <p class="text-xs text-slate-400 uppercase tracking-wider mb-1">Weight</p>
+                  <p class="text-xl font-bold text-slate-900">{{ passport.weight || '--' }}<span class="text-sm font-normal text-slate-400 ml-0.5">kg</span></p>
+                </div>
+                <div class="text-center">
+                  <p class="text-xs text-slate-400 uppercase tracking-wider mb-1">Capacity</p>
+                  <p class="text-xl font-bold text-slate-900">{{ passport.totalEnergy || '--' }}<span class="text-sm font-normal text-slate-400 ml-0.5">kWh</span></p>
+                </div>
+                <div class="text-center">
+                  <p class="text-xs text-slate-400 uppercase tracking-wider mb-1">Recycling</p>
+                  <p class="text-xl font-bold text-slate-900">{{ passport.recycleAvailable != null ? (passport.recycleAvailable ? 'Yes' : 'No') : 'N/A' }}</p>
+                </div>
+              </div>
+
               <!-- Progress bar -->
               <div class="mb-6">
                 <div class="flex items-center justify-between mb-2">
                   <span class="text-sm font-medium text-slate-600">전체 준수율</span>
-                  <span class="text-sm font-bold tabular-nums" :class="gbaCompliance.pct >= 80 ? 'text-green-600' : gbaCompliance.pct >= 50 ? 'text-amber-600' : 'text-red-600'">{{ gbaCompliance.pct }}%</span>
+                  <span class="text-sm font-bold tabular-nums" :class="gbaCompliance.pct >= 80 ? 'text-emerald-600' : gbaCompliance.pct >= 50 ? 'text-amber-600' : 'text-red-600'">{{ gbaCompliance.filled }}/21 ({{ gbaCompliance.pct }}%)</span>
                 </div>
                 <div class="w-full h-3 bg-slate-100 rounded-full overflow-hidden">
                   <div class="h-full rounded-full transition-all duration-700"
-                       :class="gbaCompliance.pct >= 80 ? 'bg-green-500' : gbaCompliance.pct >= 50 ? 'bg-amber-500' : 'bg-red-500'"
+                       :class="gbaCompliance.pct >= 80 ? 'bg-emerald-500' : gbaCompliance.pct >= 50 ? 'bg-amber-500' : 'bg-red-500'"
                        :style="{ width: gbaCompliance.pct + '%' }"></div>
                 </div>
               </div>
@@ -764,7 +849,7 @@ app.component('passport-detail-page', {
                   <h4 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2.5">{{ group.name }}</h4>
                   <div class="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-2">
                     <div v-for="f in group.fields" :key="f.idx" class="flex items-center gap-2 py-1">
-                      <svg v-if="f.filled" class="w-4 h-4 text-green-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                      <svg v-if="f.filled" class="w-4 h-4 text-emerald-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
                       </svg>
                       <svg v-else class="w-4 h-4 text-red-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -777,15 +862,15 @@ app.component('passport-detail-page', {
               </div>
 
               <!-- Certified badge -->
-              <div v-if="gbaCompliance.allFilled" class="mt-6 p-4 bg-green-50 rounded-xl border border-green-200 flex items-center gap-3">
-                <svg class="w-8 h-8 text-green-600 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <div v-if="gbaCompliance.allFilled" class="mt-6 p-4 bg-emerald-50 rounded-xl border border-emerald-200 flex items-center gap-3">
+                <svg class="w-8 h-8 text-emerald-600 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" fill="currentColor" opacity="0.15"/>
                   <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
                   <polyline points="9 12 11 14 15 10" stroke-width="2.5"/>
                 </svg>
                 <div>
-                  <p class="text-sm font-bold text-green-800">GBA 21 Battery Passport Certified</p>
-                  <p class="text-xs text-green-600 mt-0.5">모든 21가지 필수 데이터 항목이 완료되었습니다.</p>
+                  <p class="text-sm font-bold text-emerald-800">GBA 21 Battery Passport Certified</p>
+                  <p class="text-xs text-emerald-600 mt-0.5">모든 21가지 필수 데이터 항목이 완료되었습니다.</p>
                 </div>
               </div>
             </div>
@@ -798,8 +883,8 @@ app.component('passport-detail-page', {
           <!-- Lifecycle Timeline -->
           <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
             <div class="px-6 py-4 border-b border-slate-100 flex items-center gap-2.5">
-              <div class="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
-                <svg class="w-4 h-4 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <div class="w-8 h-8 bg-emerald-100 rounded-lg flex items-center justify-center">
+                <svg class="w-4 h-4 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                   <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
                 </svg>
               </div>
@@ -814,23 +899,23 @@ app.component('passport-detail-page', {
                     <!-- Connector line -->
                     <div v-if="i < lifecycleSteps.length - 1"
                          class="absolute top-5 h-0.5 transition-all duration-500"
-                         :class="getLifecycleState(step.key, passport.status) === 'completed' ? 'bg-blue-400' : 'bg-slate-200'"
+                         :class="getLifecycleState(step.key, passport.status) === 'completed' ? 'bg-emerald-400' : 'bg-slate-200'"
                          :style="{ left: '50%', right: '-50%' }"></div>
                     <!-- Step circle -->
                     <div class="relative z-10 flex items-center justify-center w-10 h-10 rounded-full border-2 transition-all duration-500"
                          :class="[
-                           getLifecycleState(step.key, passport.status) === 'completed' ? 'bg-blue-500 border-blue-500 text-white' : '',
-                           getLifecycleState(step.key, passport.status) === 'current' ? 'bg-white border-blue-500 pd-pulse' : '',
+                           getLifecycleState(step.key, passport.status) === 'completed' ? 'bg-emerald-500 border-emerald-500 text-white' : '',
+                           getLifecycleState(step.key, passport.status) === 'current' ? 'bg-white border-emerald-500 pd-pulse' : '',
                            getLifecycleState(step.key, passport.status) === 'future' ? 'bg-white border-slate-300 text-slate-400' : '',
                          ]">
                       <svg v-if="getLifecycleState(step.key, passport.status) === 'completed'" class="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
                         <polyline points="20 6 9 17 4 12"/>
                       </svg>
-                      <div v-else-if="getLifecycleState(step.key, passport.status) === 'current'" class="w-3 h-3 rounded-full bg-blue-500"></div>
+                      <div v-else-if="getLifecycleState(step.key, passport.status) === 'current'" class="w-3 h-3 rounded-full bg-emerald-500"></div>
                       <span v-else class="text-xs font-bold text-slate-400">{{ i + 1 }}</span>
                     </div>
                     <p class="mt-2 text-xs font-medium text-center leading-tight"
-                       :class="getLifecycleState(step.key, passport.status) === 'future' ? 'text-slate-400' : 'text-blue-600'">
+                       :class="getLifecycleState(step.key, passport.status) === 'future' ? 'text-slate-400' : 'text-emerald-600'">
                       {{ step.label }}
                     </p>
                   </div>
@@ -842,21 +927,21 @@ app.component('passport-detail-page', {
                   <div class="flex flex-col items-center">
                     <div class="flex items-center justify-center w-8 h-8 rounded-full border-2 transition-all"
                          :class="[
-                           getLifecycleState(step.key, passport.status) === 'completed' ? 'bg-blue-500 border-blue-500' : '',
-                           getLifecycleState(step.key, passport.status) === 'current' ? 'bg-white border-blue-500 pd-pulse' : '',
+                           getLifecycleState(step.key, passport.status) === 'completed' ? 'bg-emerald-500 border-emerald-500' : '',
+                           getLifecycleState(step.key, passport.status) === 'current' ? 'bg-white border-emerald-500 pd-pulse' : '',
                            getLifecycleState(step.key, passport.status) === 'future' ? 'bg-white border-slate-300' : '',
                          ]">
                       <svg v-if="getLifecycleState(step.key, passport.status) === 'completed'" class="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
                         <polyline points="20 6 9 17 4 12"/>
                       </svg>
-                      <div v-else-if="getLifecycleState(step.key, passport.status) === 'current'" class="w-2.5 h-2.5 rounded-full bg-blue-500"></div>
+                      <div v-else-if="getLifecycleState(step.key, passport.status) === 'current'" class="w-2.5 h-2.5 rounded-full bg-emerald-500"></div>
                       <span v-else class="text-xs font-bold text-slate-400">{{ i + 1 }}</span>
                     </div>
                     <div v-if="i < lifecycleSteps.length - 1" class="w-0.5 h-6"
-                         :class="getLifecycleState(step.key, passport.status) === 'completed' ? 'bg-blue-400' : 'bg-slate-200'"></div>
+                         :class="getLifecycleState(step.key, passport.status) === 'completed' ? 'bg-emerald-400' : 'bg-slate-200'"></div>
                   </div>
                   <p class="text-sm font-medium pt-1.5"
-                     :class="getLifecycleState(step.key, passport.status) === 'future' ? 'text-slate-400' : 'text-blue-600'">
+                     :class="getLifecycleState(step.key, passport.status) === 'future' ? 'text-slate-400' : 'text-emerald-600'">
                     {{ step.label }}
                   </p>
                 </div>
@@ -898,7 +983,7 @@ app.component('passport-detail-page', {
                   정비 요청
                 </button>
                 <button v-if="isService" @click="showMaintenanceLogModal = true"
-                  class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-medium text-xs rounded-lg transition-colors">
+                  class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-xs rounded-lg transition-colors">
                   기록 추가
                 </button>
               </div>
@@ -916,9 +1001,9 @@ app.component('passport-detail-page', {
                 </tr></thead>
                 <tbody>
                   <tr v-for="(log, i) in maintenanceLogs" :key="i"
-                    :class="['transition-colors', i % 2 === 0 ? 'bg-white' : 'bg-slate-50/40', 'hover:bg-blue-50/40']">
+                    :class="['transition-colors', i % 2 === 0 ? 'bg-white' : 'bg-slate-50/40', 'hover:bg-emerald-50/40']">
                     <td class="px-5 py-3 text-slate-700 whitespace-nowrap">{{ formatDate(log.date) }}</td>
-                    <td class="px-5 py-3"><span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-100">{{ {routine:'정기점검',repair:'수리',recall:'리콜',emergency:'긴급'}[log.type] || log.type || '-' }}</span></td>
+                    <td class="px-5 py-3"><span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-100">{{ {routine:'정기점검',repair:'수리',recall:'리콜',emergency:'긴급'}[log.type] || log.type || '-' }}</span></td>
                     <td class="px-5 py-3 text-slate-700 max-w-xs truncate">{{ log.description || '-' }}</td>
                     <td class="px-5 py-3 text-slate-600">{{ log.technician || '-' }}</td>
                   </tr>
@@ -1006,8 +1091,8 @@ app.component('passport-detail-page', {
         <div v-if="activeTab === 'data'">
           <div v-if="bmuLoading" class="flex flex-col items-center justify-center py-20">
             <div class="relative">
-              <div class="w-10 h-10 border-4 border-blue-100 rounded-full"></div>
-              <div class="absolute top-0 left-0 w-10 h-10 border-4 border-blue-600 rounded-full animate-spin border-t-transparent"></div>
+              <div class="w-10 h-10 border-4 border-emerald-100 rounded-full"></div>
+              <div class="absolute top-0 left-0 w-10 h-10 border-4 border-emerald-600 rounded-full animate-spin border-t-transparent"></div>
             </div>
             <p class="mt-3 text-sm text-slate-500">BMU 데이터 로딩중...</p>
           </div>
@@ -1038,7 +1123,7 @@ app.component('passport-detail-page', {
                   </thead>
                   <tbody>
                     <tr v-for="(r, idx) in bmuRecords" :key="r.recordId"
-                      :class="['transition-colors', idx % 2 === 0 ? 'bg-white' : 'bg-slate-50/40', 'hover:bg-blue-50/40']">
+                      :class="['transition-colors', idx % 2 === 0 ? 'bg-white' : 'bg-slate-50/40', 'hover:bg-emerald-50/40']">
                       <td class="px-5 py-3 font-mono text-xs text-slate-500">{{ r.recordId }}</td>
                       <td class="px-5 py-3 text-slate-600 text-xs">{{ formatDate(r.timestamp) }}</td>
                       <td class="px-5 py-3">
@@ -1064,7 +1149,7 @@ app.component('passport-detail-page', {
               <div class="border-t border-slate-100 bg-slate-50/50 px-5 py-3 flex items-center justify-between">
                 <span class="text-xs text-slate-500">최근 <strong class="text-slate-700">{{ bmuRecords.length }}</strong>건 표시</span>
                 <button @click="$emit('navigate', 'bmu-data')"
-                  class="text-xs text-blue-600 hover:text-blue-800 font-medium transition-colors flex items-center gap-1">
+                  class="text-xs text-emerald-600 hover:text-emerald-800 font-medium transition-colors flex items-center gap-1">
                   전체 BMU 데이터
                   <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
                 </button>
@@ -1079,8 +1164,8 @@ app.component('passport-detail-page', {
           <!-- Blockchain Verification Card -->
           <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
             <div class="px-6 py-4 border-b border-slate-100 flex items-center gap-2.5">
-              <div class="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
-                <svg class="w-4 h-4 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <div class="w-8 h-8 bg-emerald-100 rounded-lg flex items-center justify-center">
+                <svg class="w-4 h-4 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                   <path d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
                 </svg>
               </div>
@@ -1104,11 +1189,11 @@ app.component('passport-detail-page', {
 
               <!-- Verification badge -->
               <div class="flex items-center gap-3">
-                <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-green-50 border border-green-200">
-                  <svg class="w-4 h-4 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-50 border border-emerald-200">
+                  <svg class="w-4 h-4 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
                   </svg>
-                  <span class="text-xs font-semibold text-green-700">Ed25519 서명 검증</span>
+                  <span class="text-xs font-semibold text-emerald-700">Ed25519 서명 검증</span>
                 </div>
               </div>
 
@@ -1142,8 +1227,8 @@ app.component('passport-detail-page', {
             </div>
             <div v-if="historyLoading" class="flex flex-col items-center justify-center py-16">
               <div class="relative">
-                <div class="w-10 h-10 border-4 border-blue-100 rounded-full"></div>
-                <div class="absolute top-0 left-0 w-10 h-10 border-4 border-blue-600 rounded-full animate-spin border-t-transparent"></div>
+                <div class="w-10 h-10 border-4 border-emerald-100 rounded-full"></div>
+                <div class="absolute top-0 left-0 w-10 h-10 border-4 border-emerald-600 rounded-full animate-spin border-t-transparent"></div>
               </div>
               <p class="mt-3 text-sm text-slate-500">변경 이력 로딩중...</p>
             </div>
@@ -1153,13 +1238,13 @@ app.component('passport-detail-page', {
             <div v-else class="px-6 py-5">
               <p class="text-xs text-slate-500 mb-4">총 <strong class="text-slate-700">{{ history.length }}</strong>건의 주요 변경 이력 (상태 전환/VIN/정비 기준)</p>
               <div class="relative pl-7 max-h-[500px] overflow-y-auto pr-2">
-                <div class="absolute left-[11px] top-1 bottom-1 w-0.5 bg-gradient-to-b from-blue-300 via-blue-200 to-slate-200"></div>
+                <div class="absolute left-[11px] top-1 bottom-1 w-0.5 bg-gradient-to-b from-emerald-300 via-emerald-200 to-slate-200"></div>
                 <div class="space-y-4">
                   <div v-for="(entry, i) in history.slice(-20)" :key="i" class="relative">
                     <div class="absolute -left-7 top-4 w-[22px] h-[22px] rounded-full border-[3px] border-white shadow-sm flex items-center justify-center"
-                      :class="entry.value && entry.value.status ? getStatusBadge(entry.value.status).bg : 'bg-blue-100'">
+                      :class="entry.value && entry.value.status ? getStatusBadge(entry.value.status).bg : 'bg-emerald-100'">
                       <div class="w-2 h-2 rounded-full"
-                        :class="entry.value && entry.value.status ? getStatusBadge(entry.value.status).dot : 'bg-blue-500'"></div>
+                        :class="entry.value && entry.value.status ? getStatusBadge(entry.value.status).dot : 'bg-emerald-500'"></div>
                     </div>
                     <div class="bg-slate-50/50 rounded-lg border border-slate-100 p-4 ml-3 hover:bg-white transition-colors">
                       <div class="flex items-start justify-between gap-3">
@@ -1180,7 +1265,7 @@ app.component('passport-detail-page', {
                               </svg>
                               {{ formatDate(entry.timestamp) }}
                             </span>
-                            <span class="inline-flex items-center gap-1 px-1.5 py-0.5 bg-blue-50 text-blue-600 rounded text-[10px] font-medium border border-blue-100">
+                            <span class="inline-flex items-center gap-1 px-1.5 py-0.5 bg-emerald-50 text-emerald-600 rounded text-[10px] font-medium border border-emerald-100">
                               <svg class="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
                               On-Chain TX #{{ entry.index }}
                             </span>
@@ -1207,8 +1292,8 @@ app.component('passport-detail-page', {
             <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg border border-slate-200/50 overflow-hidden">
               <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
                 <div class="flex items-center gap-3">
-                  <div class="w-9 h-9 bg-green-100 rounded-lg flex items-center justify-center">
-                    <svg class="w-5 h-5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <div class="w-9 h-9 bg-emerald-100 rounded-lg flex items-center justify-center">
+                    <svg class="w-5 h-5 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                       <path stroke-linecap="round" stroke-linejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
                     </svg>
                   </div>
@@ -1222,28 +1307,28 @@ app.component('passport-detail-page', {
                 <div>
                   <label class="block text-xs font-medium text-slate-500 mb-1.5">VIN</label>
                   <input v-model="bindForm.vin" type="text" placeholder="차량 식별번호"
-                    class="w-full px-3.5 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none text-sm" />
+                    class="w-full px-3.5 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none text-sm" />
                 </div>
                 <div>
                   <label class="block text-xs font-medium text-slate-500 mb-1.5">장착일자</label>
                   <input v-model="bindForm.installDate" type="date"
-                    class="w-full px-3.5 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none text-sm" />
+                    class="w-full px-3.5 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none text-sm" />
                 </div>
                 <div>
                   <label class="block text-xs font-medium text-slate-500 mb-1.5">EV 제조사</label>
                   <input v-model="bindForm.evManufacturer" type="text" placeholder="EV 제조사명"
-                    class="w-full px-3.5 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none text-sm" />
+                    class="w-full px-3.5 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none text-sm" />
                 </div>
                 <div>
                   <label class="block text-xs font-medium text-slate-500 mb-1.5">EV 조립국가</label>
                   <input v-model="bindForm.evAssemblyCountry" type="text" placeholder="KR"
-                    class="w-full px-3.5 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none text-sm" />
+                    class="w-full px-3.5 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none text-sm" />
                 </div>
                 <div class="flex justify-end gap-3 pt-3 border-t border-slate-100">
                   <button type="button" @click="showBindModal = false"
                     class="px-4 py-2.5 text-sm font-medium text-slate-700 bg-white border border-slate-300 hover:bg-slate-50 rounded-xl transition-colors">취소</button>
                   <button type="submit" :disabled="submitting"
-                    class="px-5 py-2.5 text-sm font-semibold text-white bg-green-600 hover:bg-green-700 rounded-xl transition-colors disabled:opacity-50">
+                    class="px-5 py-2.5 text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl transition-colors disabled:opacity-50">
                     {{ submitting ? '처리중...' : '바인딩' }}
                   </button>
                 </div>
@@ -1291,8 +1376,8 @@ app.component('passport-detail-page', {
             <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg border border-slate-200/50 overflow-hidden">
               <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
                 <div class="flex items-center gap-3">
-                  <div class="w-9 h-9 bg-blue-100 rounded-lg flex items-center justify-center">
-                    <svg class="w-5 h-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <div class="w-9 h-9 bg-emerald-100 rounded-lg flex items-center justify-center">
+                    <svg class="w-5 h-5 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                       <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
                     </svg>
                   </div>
@@ -1306,28 +1391,28 @@ app.component('passport-detail-page', {
                 <div>
                   <label class="block text-xs font-medium text-slate-500 mb-1.5">날짜</label>
                   <input v-model="maintenanceForm.date" type="date"
-                    class="w-full px-3.5 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none text-sm" />
+                    class="w-full px-3.5 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none text-sm" />
                 </div>
                 <div>
                   <label class="block text-xs font-medium text-slate-500 mb-1.5">유형</label>
                   <input v-model="maintenanceForm.type" type="text" placeholder="정기점검 / 부품교체 / 긴급수리"
-                    class="w-full px-3.5 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none text-sm" />
+                    class="w-full px-3.5 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none text-sm" />
                 </div>
                 <div>
                   <label class="block text-xs font-medium text-slate-500 mb-1.5">내용</label>
                   <textarea v-model="maintenanceForm.description" rows="3" placeholder="정비 내용을 상세히 기입하세요"
-                    class="w-full px-3.5 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none text-sm resize-none"></textarea>
+                    class="w-full px-3.5 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none text-sm resize-none"></textarea>
                 </div>
                 <div>
                   <label class="block text-xs font-medium text-slate-500 mb-1.5">기술자</label>
                   <input v-model="maintenanceForm.technician" type="text" placeholder="기술자명"
-                    class="w-full px-3.5 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none text-sm" />
+                    class="w-full px-3.5 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none text-sm" />
                 </div>
                 <div class="flex justify-end gap-3 pt-3 border-t border-slate-100">
                   <button type="button" @click="showMaintenanceLogModal = false"
                     class="px-4 py-2.5 text-sm font-medium text-slate-700 bg-white border border-slate-300 hover:bg-slate-50 rounded-xl transition-colors">취소</button>
                   <button type="submit" :disabled="submitting"
-                    class="px-5 py-2.5 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-xl transition-colors disabled:opacity-50">
+                    class="px-5 py-2.5 text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl transition-colors disabled:opacity-50">
                     {{ submitting ? '처리중...' : '추가' }}
                   </button>
                 </div>
@@ -1360,22 +1445,22 @@ app.component('passport-detail-page', {
                 <div>
                   <label class="block text-xs font-medium text-slate-500 mb-1.5">날짜</label>
                   <input v-model="accidentForm.date" type="date"
-                    class="w-full px-3.5 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none text-sm" />
+                    class="w-full px-3.5 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none text-sm" />
                 </div>
                 <div>
                   <label class="block text-xs font-medium text-slate-500 mb-1.5">유형</label>
                   <input v-model="accidentForm.type" type="text" placeholder="충돌 / 화재 / 침수"
-                    class="w-full px-3.5 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none text-sm" />
+                    class="w-full px-3.5 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none text-sm" />
                 </div>
                 <div>
                   <label class="block text-xs font-medium text-slate-500 mb-1.5">내용</label>
                   <textarea v-model="accidentForm.description" rows="3" placeholder="사고 상세 내용"
-                    class="w-full px-3.5 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none text-sm resize-none"></textarea>
+                    class="w-full px-3.5 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none text-sm resize-none"></textarea>
                 </div>
                 <div>
                   <label class="block text-xs font-medium text-slate-500 mb-1.5">보고자</label>
                   <input v-model="accidentForm.reporter" type="text" placeholder="보고자명"
-                    class="w-full px-3.5 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none text-sm" />
+                    class="w-full px-3.5 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none text-sm" />
                 </div>
                 <div class="flex justify-end gap-3 pt-3 border-t border-slate-100">
                   <button type="button" @click="showAccidentLogModal = false"
@@ -1445,22 +1530,22 @@ app.component('passport-detail-page', {
                   <div>
                     <label class="block text-xs font-medium text-slate-500 mb-1.5">SOH (%)</label>
                     <input v-model="analysisForm.soh" type="number" step="0.1" placeholder="85"
-                      class="w-full px-3.5 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none text-sm" />
+                      class="w-full px-3.5 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none text-sm" />
                   </div>
                   <div>
                     <label class="block text-xs font-medium text-slate-500 mb-1.5">SOCE (%)</label>
                     <input v-model="analysisForm.soce" type="number" step="0.1" placeholder="90"
-                      class="w-full px-3.5 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none text-sm" />
+                      class="w-full px-3.5 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none text-sm" />
                   </div>
                 </div>
                 <div>
                   <label class="block text-xs font-medium text-slate-500 mb-1.5">잔여 수명 주기</label>
                   <input v-model="analysisForm.remainingLifeCycle" type="number" placeholder="1500"
-                    class="w-full px-3.5 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none text-sm" />
+                    class="w-full px-3.5 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none text-sm" />
                 </div>
                 <div class="flex items-center gap-3 py-2 px-3.5 bg-slate-50 rounded-lg border border-slate-100">
                   <input v-model="analysisForm.recycleAvailable" type="checkbox" id="recycleCheckDetail2"
-                    class="w-4 h-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500" />
+                    class="w-4 h-4 text-emerald-600 border-slate-300 rounded focus:ring-emerald-500" />
                   <label for="recycleCheckDetail2" class="text-sm text-slate-700 font-medium">재활용 가능</label>
                 </div>
                 <div class="flex justify-end gap-3 pt-3 border-t border-slate-100">
@@ -1501,7 +1586,7 @@ app.component('passport-detail-page', {
                     재활용 불가
                   </button>
                   <button @click="submitRecycleAvailability(true)" :disabled="submitting"
-                    class="px-5 py-2.5 text-sm font-semibold text-white bg-green-600 hover:bg-green-700 rounded-xl transition-colors disabled:opacity-50">
+                    class="px-5 py-2.5 text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl transition-colors disabled:opacity-50">
                     재활용 가능
                   </button>
                 </div>
@@ -1534,7 +1619,7 @@ app.component('passport-detail-page', {
                 <div>
                   <label class="block text-xs font-medium text-slate-500 mb-1.5">재활용 비율 (JSON)</label>
                   <textarea v-model="extractForm.recyclingRatesJson" rows="6"
-                    class="w-full px-3.5 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none text-sm font-mono resize-none bg-slate-50"></textarea>
+                    class="w-full px-3.5 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none text-sm font-mono resize-none bg-slate-50"></textarea>
                   <p class="text-xs text-slate-400 mt-1.5">예: { "cobalt": 95, "nickel": 90, "lithium": 80 }</p>
                 </div>
                 <div class="flex justify-end gap-3 pt-3 border-t border-slate-100">

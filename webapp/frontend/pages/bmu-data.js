@@ -136,7 +136,7 @@ app.component('bmu-data-page', {
     <!-- Page Header -->
     <div class="flex items-center justify-between">
       <div class="flex items-center gap-3">
-        <div class="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
+        <div class="w-10 h-10 bg-emerald-600 rounded-lg flex items-center justify-center">
           <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
           </svg>
@@ -151,7 +151,7 @@ app.component('bmu-data-page', {
         <label class="flex items-center cursor-pointer select-none">
           <div class="relative">
             <input type="checkbox" v-model="autoRefresh" class="sr-only peer"/>
-            <div class="w-9 h-5 bg-gray-200 rounded-full peer-checked:bg-blue-600 transition-colors"></div>
+            <div class="w-9 h-5 bg-gray-200 rounded-full peer-checked:bg-emerald-600 transition-colors"></div>
             <div class="absolute top-[2px] left-[2px] w-4 h-4 bg-white rounded-full shadow-sm transition-transform peer-checked:translate-x-4"></div>
           </div>
           <span class="ml-2 text-xs font-medium text-gray-700">자동 새로고침</span>
@@ -176,14 +176,14 @@ app.component('bmu-data-page', {
           <input v-model="passportId" type="text"
             placeholder="조회할 배터리 여권 ID를 입력하세요"
             @keyup.enter="handleSearch"
-            class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition placeholder-gray-400"/>
+            class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition placeholder-gray-400"/>
         </div>
         <button @click="handleSearch"
           :disabled="!passportId.trim() || loading"
           :class="['px-5 py-2.5 text-sm font-semibold rounded-lg transition-all flex items-center gap-2',
             !passportId.trim() || loading
               ? 'bg-gray-100 text-gray-400 cursor-not-allowed border border-gray-200'
-              : 'bg-blue-600 text-white hover:bg-blue-700 active:scale-[0.98]']">
+              : 'bg-emerald-600 text-white hover:bg-emerald-700 active:scale-[0.98]']">
           <svg v-if="!loading" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
           </svg>
@@ -199,8 +199,8 @@ app.component('bmu-data-page', {
     <!-- Empty State - No search yet -->
     <div v-if="!hasSearched && !loading" class="bg-white rounded-lg border border-gray-200 overflow-hidden">
       <div class="flex flex-col items-center justify-center py-16 px-6">
-        <div class="w-16 h-16 rounded-xl bg-blue-50 flex items-center justify-center mb-4">
-          <svg class="w-8 h-8 text-blue-400" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+        <div class="w-16 h-16 rounded-xl bg-emerald-50 flex items-center justify-center mb-4">
+          <svg class="w-8 h-8 text-emerald-400" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
           </svg>
         </div>
@@ -214,7 +214,7 @@ app.component('bmu-data-page', {
       <div class="flex flex-col items-center justify-center py-16">
         <div class="relative">
           <div class="w-10 h-10 rounded-full border-[3px] border-gray-200"></div>
-          <div class="absolute inset-0 w-10 h-10 rounded-full border-[3px] border-blue-600 border-t-transparent animate-spin"></div>
+          <div class="absolute inset-0 w-10 h-10 rounded-full border-[3px] border-emerald-600 border-t-transparent animate-spin"></div>
         </div>
         <p class="mt-3 text-sm text-gray-500">데이터를 조회하고 있습니다...</p>
       </div>
@@ -238,14 +238,14 @@ app.component('bmu-data-page', {
       <!-- Table Header Bar -->
       <div class="px-4 py-3 border-b border-gray-100 bg-gray-50/80 flex items-center justify-between">
         <div class="flex items-center gap-2">
-          <svg class="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <svg class="w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 10h16M4 14h16M4 18h16"/>
           </svg>
           <span class="text-sm font-semibold text-gray-700">조회 결과</span>
-          <span class="text-xs font-medium text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">{{ records.length }}건</span>
+          <span class="text-xs font-medium text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">{{ records.length }}건</span>
         </div>
         <div class="flex items-center gap-2">
-          <span v-if="refreshing" class="flex items-center text-xs text-blue-600">
+          <span v-if="refreshing" class="flex items-center text-xs text-emerald-600">
             <svg class="w-3.5 h-3.5 animate-spin mr-1" fill="none" viewBox="0 0 24 24">
               <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
               <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
@@ -272,7 +272,7 @@ app.component('bmu-data-page', {
           </thead>
           <tbody class="divide-y divide-gray-100">
             <tr v-for="(r, idx) in sortedRecords" :key="r.recordId"
-              :class="['transition-colors hover:bg-blue-50/40', idx % 2 === 0 ? 'bg-white' : 'bg-gray-50/40']">
+              :class="['transition-colors hover:bg-emerald-50/40', idx % 2 === 0 ? 'bg-white' : 'bg-gray-50/40']">
               <td class="px-4 py-3 whitespace-nowrap text-xs font-mono text-gray-500">{{ r.recordId }}</td>
               <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-700">{{ formatTimestamp(r.timestamp) }}</td>
               <td class="px-4 py-3 whitespace-nowrap text-right">
