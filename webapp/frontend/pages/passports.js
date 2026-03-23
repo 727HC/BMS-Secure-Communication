@@ -549,7 +549,7 @@ app.component('passports-page', {
                   <div>
                     <label class="block text-xs font-medium text-gray-500 mb-1">전압 범위</label>
                     <div class="flex items-center gap-2">
-                      <input v-model="form.voltageRange" type="text" placeholder="300~400"
+                      <input v-model="form.voltageRange" type="text" placeholder="최소~공칭~최대 (예: 280~350~403)"
                         class="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none text-sm" />
                       <span class="text-sm font-medium text-gray-500 shrink-0">V</span>
                     </div>
