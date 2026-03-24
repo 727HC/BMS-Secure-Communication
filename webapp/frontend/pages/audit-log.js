@@ -214,7 +214,7 @@ app.component('audit-log-page', {
                     {{ actionLabels[log.action] || log.action }}
                   </span>
                 </td>
-                <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-700 font-medium">{{ log.userId || '-' }}</td>
+                <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-700 font-medium">{{ log.userId || (log.action === 'RECORD_BMU' ? '시스템(BMU)' : '-') }}</td>
                 <td class="px-4 py-3 whitespace-nowrap">
                   <span v-if="log.orgMsp" class="text-xs font-medium px-1.5 py-0.5 rounded"
                     :class="log.orgMsp === MSP.MANUFACTURER ? 'bg-emerald-50 text-emerald-700' :
@@ -223,7 +223,7 @@ app.component('audit-log-page', {
                       log.orgMsp === MSP.REGULATOR ? 'bg-teal-50 text-teal-700' : 'bg-gray-50 text-gray-600'">
                     {{ MSP_LABELS[log.orgMsp] || log.orgMsp }}
                   </span>
-                  <span v-else class="text-xs text-gray-400">-</span>
+                  <span v-else class="text-xs text-gray-400 italic">{{ log.action === 'RECORD_BMU' ? '자동수집' : '-' }}</span>
                 </td>
                 <td class="px-4 py-3 whitespace-nowrap">
                   <span v-if="log.targetId" class="text-xs font-mono text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded truncate max-w-[150px] inline-block">{{ log.targetId }}</span>
