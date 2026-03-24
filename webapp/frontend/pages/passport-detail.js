@@ -632,8 +632,8 @@ app.component('passport-detail-page', {
       finally { submitting.value = false; }
     }
 
-    // Correct passport field
-    const correctableFields = [
+    // Correct passport field — role-based field filtering
+    const manufacturerFields = [
       { value: 'model', label: '모델' }, { value: 'serialNumber', label: '시리얼번호' },
       { value: 'manufacturerName', label: '제조사' }, { value: 'manufactureCountry', label: '제조국가' },
       { value: 'cellManufacturer', label: '셀 제조사' }, { value: 'cellManufactureCountry', label: '셀 제조국가' },
@@ -641,8 +641,19 @@ app.component('passport-detail-page', {
       { value: 'chemistry', label: '화학물질' }, { value: 'voltageRange', label: '전압범위' },
       { value: 'temperatureRange', label: '온도범위' }, { value: 'cellCount', label: '셀 수' },
       { value: 'weight', label: '무게(kg)' }, { value: 'totalEnergy', label: '총 에너지(kWh)' },
-      { value: 'ratedCapacity', label: '정격용량(Ah)' }, { value: 'carbonFootprint', label: '탄소발자국' },
+      { value: 'energyDensity', label: '에너지밀도(Wh/kg)' }, { value: 'ratedCapacity', label: '정격용량(Ah)' },
+      { value: 'expectedLifespan', label: '예상수명(cycles)' }, { value: 'carbonFootprint', label: '탄소발자국' },
     ];
+    const evFields = [
+      { value: 'vin', label: 'VIN (차대번호)' }, { value: 'installDate', label: '장착일자' },
+      { value: 'evManufacturer', label: 'EV 제조사' }, { value: 'evAssemblyCountry', label: 'EV 조립국가' },
+    ];
+    const correctableFields = computed(() => {
+      if (isRegulator.value) return [...manufacturerFields, ...evFields];
+      if (isManufacturer.value) return manufacturerFields;
+      if (isEV.value) return evFields;
+      return [];
+    });
 
     async function submitCorrection() {
       submitting.value = true;
@@ -926,7 +937,7 @@ app.component('passport-detail-page', {
         <div v-if="activeTab === 'identity'" class="space-y-6">
 
           <!-- Data Correction Button (Manufacturer/Regulator only) -->
-          <div v-if="isManufacturer || isRegulator"
+          <div v-if="isManufacturer || isEV || isRegulator"
             class="flex justify-end">
             <button @click="showCorrectModal = true"
               class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-amber-700 bg-amber-50 border border-amber-200 rounded-lg hover:bg-amber-100 transition-colors">
@@ -1907,12 +1918,12 @@ app.component('passport-detail-page', {
                 <div class="flex items-start justify-between gap-4">
                   <div class="min-w-0 flex-1">
                     <div class="flex items-center gap-2 flex-wrap mb-1">
-                      <span class="text-sm font-semibold text-slate-800">{{ c.fieldName }}</span>
+                      <span class="text-sm font-semibold text-slate-800">{{ (correctableFields.find(f => f.value === c.fieldName) || {}).label || c.fieldName }}</span>
                       <span class="text-xs text-slate-400">→</span>
                       <span class="text-sm font-mono text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded">{{ c.newValue }}</span>
                     </div>
                     <div class="flex items-center gap-3 text-xs text-slate-400">
-                      <span>이전: {{ c.originalValue || '-' }}</span>
+                      <span>이전: {{ c.originalValue && !isNaN(c.originalValue) ? parseFloat(c.originalValue) : (c.originalValue || '-') }}</span>
                       <span>사유: {{ c.reason }}</span>
                     </div>
                   </div>
@@ -1948,7 +1959,7 @@ app.component('passport-detail-page', {
             <div v-else class="px-6 py-5">
               <p class="text-xs text-slate-500 mb-4">총 <strong class="text-slate-700">{{ history.length }}</strong>건의 주요 변경 이력 (상태 전환/VIN/정비 기준)</p>
               <div class="relative pl-7 max-h-[500px] overflow-y-auto pr-2">
-                <div class="absolute left-[11px] top-1 bottom-1 w-0.5 bg-gradient-to-b from-emerald-300 via-emerald-200 to-slate-200"></div>
+                <div class="absolute left-[11px] top-0 bottom-0 w-0.5 bg-gradient-to-b from-emerald-300 via-emerald-200 to-slate-200"></div>
                 <div class="space-y-4">
                   <div v-for="(entry, i) in history.slice(-20)" :key="i" class="relative">
                     <div class="absolute -left-7 top-4 w-[22px] h-[22px] rounded-full border-[3px] border-white shadow-sm flex items-center justify-center"
@@ -2081,8 +2092,9 @@ app.component('passport-detail-page', {
                 <option v-for="f in correctableFields" :key="f.value" :value="f.value">{{ f.label }}</option>
               </select>
             </div>
-            <div v-if="correctForm.fieldName && passport">
-              <p class="text-xs text-slate-400 mb-1">현재 값: <span class="font-mono text-slate-600">{{ passport[correctForm.fieldName] || '(비어있음)' }}</span></p>
+            <div v-if="correctForm.fieldName && passport" class="bg-slate-50 rounded-lg border border-slate-200 px-4 py-3">
+              <p class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1">현재 값</p>
+              <p class="text-sm font-mono font-bold text-slate-800">{{ passport[correctForm.fieldName] || '(비어있음)' }}</p>
             </div>
             <div>
               <label class="block text-xs font-medium text-slate-500 mb-1.5">새 값 <span class="text-red-500">*</span></label>

@@ -35,6 +35,34 @@ var credTypeIssuers = map[string][]string{
 	"RECYCLING":        {"RegulatorMSP"},
 }
 
+// Field → authorized corrector MSPs (RegulatorMSP can correct all fields)
+var fieldCorrectors = map[string][]string{
+	// Manufacturer fields
+	"model":                  {"ManufacturerMSP", "RegulatorMSP"},
+	"serialNumber":           {"ManufacturerMSP", "RegulatorMSP"},
+	"manufacturerName":       {"ManufacturerMSP", "RegulatorMSP"},
+	"manufactureCountry":     {"ManufacturerMSP", "RegulatorMSP"},
+	"cellManufacturer":       {"ManufacturerMSP", "RegulatorMSP"},
+	"cellManufactureCountry": {"ManufacturerMSP", "RegulatorMSP"},
+	"manufactureDate":        {"ManufacturerMSP", "RegulatorMSP"},
+	"cellType":               {"ManufacturerMSP", "RegulatorMSP"},
+	"chemistry":              {"ManufacturerMSP", "RegulatorMSP"},
+	"voltageRange":           {"ManufacturerMSP", "RegulatorMSP"},
+	"temperatureRange":       {"ManufacturerMSP", "RegulatorMSP"},
+	"cellCount":              {"ManufacturerMSP", "RegulatorMSP"},
+	"weight":                 {"ManufacturerMSP", "RegulatorMSP"},
+	"totalEnergy":            {"ManufacturerMSP", "RegulatorMSP"},
+	"energyDensity":          {"ManufacturerMSP", "RegulatorMSP"},
+	"ratedCapacity":          {"ManufacturerMSP", "RegulatorMSP"},
+	"expectedLifespan":       {"ManufacturerMSP", "RegulatorMSP"},
+	"carbonFootprint":        {"ManufacturerMSP", "RegulatorMSP"},
+	// EV Manufacturer fields
+	"vin":               {"EVManufacturerMSP", "RegulatorMSP"},
+	"installDate":       {"EVManufacturerMSP", "RegulatorMSP"},
+	"evManufacturer":    {"EVManufacturerMSP", "RegulatorMSP"},
+	"evAssemblyCountry": {"EVManufacturerMSP", "RegulatorMSP"},
+}
+
 // RawMaterial represents a raw material used in battery manufacturing
 type RawMaterial struct {
 	DocType         string  `json:"docType"`
@@ -1761,12 +1789,17 @@ func (c *PassportContract) QueryRevokedCredentials(ctx contractapi.TransactionCo
 func (c *PassportContract) CorrectPassportData(ctx contractapi.TransactionContextInterface,
 	passportId string, fieldName string, newValue string, reason string) error {
 
-	if err := c.requireMSP(ctx, "ManufacturerMSP", "RegulatorMSP"); err != nil {
-		return err
-	}
-
 	if passportId == "" || fieldName == "" || newValue == "" || reason == "" {
 		return fmt.Errorf("passportId, fieldName, newValue, reason must not be empty")
+	}
+
+	// 필드별 권한 확인
+	allowedMSPs, fieldExists := fieldCorrectors[fieldName]
+	if !fieldExists {
+		return fmt.Errorf("field '%s' is not correctable", fieldName)
+	}
+	if err := c.requireMSP(ctx, allowedMSPs...); err != nil {
+		return fmt.Errorf("MSP not authorized to correct field '%s': %v", fieldName, err)
 	}
 
 	passportJSON, err := ctx.GetStub().GetState(passportId)
@@ -1790,6 +1823,7 @@ func (c *PassportContract) CorrectPassportData(ctx contractapi.TransactionContex
 	// 정정 가능한 필드 목록 및 원래 값 추출
 	var originalValue string
 	switch fieldName {
+	// Manufacturer fields
 	case "model":
 		originalValue = passport.Model
 		passport.Model = newValue
@@ -1844,6 +1878,13 @@ func (c *PassportContract) CorrectPassportData(ctx contractapi.TransactionContex
 			return fmt.Errorf("invalid totalEnergy value: %v", err)
 		}
 		passport.TotalEnergy = val
+	case "energyDensity":
+		originalValue = fmt.Sprintf("%f", passport.EnergyDensity)
+		val, err := strconv.ParseFloat(newValue, 64)
+		if err != nil {
+			return fmt.Errorf("invalid energyDensity value: %v", err)
+		}
+		passport.EnergyDensity = val
 	case "ratedCapacity":
 		originalValue = fmt.Sprintf("%f", passport.RatedCapacity)
 		val, err := strconv.ParseFloat(newValue, 64)
@@ -1851,6 +1892,13 @@ func (c *PassportContract) CorrectPassportData(ctx contractapi.TransactionContex
 			return fmt.Errorf("invalid ratedCapacity value: %v", err)
 		}
 		passport.RatedCapacity = val
+	case "expectedLifespan":
+		originalValue = strconv.Itoa(passport.ExpectedLifespan)
+		val, err := strconv.Atoi(newValue)
+		if err != nil {
+			return fmt.Errorf("invalid expectedLifespan value: %v", err)
+		}
+		passport.ExpectedLifespan = val
 	case "carbonFootprint":
 		originalValue = fmt.Sprintf("%f", passport.CarbonFootprint)
 		val, err := strconv.ParseFloat(newValue, 64)
@@ -1858,6 +1906,19 @@ func (c *PassportContract) CorrectPassportData(ctx contractapi.TransactionContex
 			return fmt.Errorf("invalid carbonFootprint value: %v", err)
 		}
 		passport.CarbonFootprint = val
+	// EV Manufacturer fields
+	case "vin":
+		originalValue = passport.VIN
+		passport.VIN = newValue
+	case "installDate":
+		originalValue = passport.InstallDate
+		passport.InstallDate = newValue
+	case "evManufacturer":
+		originalValue = passport.EVManufacturer
+		passport.EVManufacturer = newValue
+	case "evAssemblyCountry":
+		originalValue = passport.EVAssemblyCountry
+		passport.EVAssemblyCountry = newValue
 	default:
 		return fmt.Errorf("field '%s' is not correctable", fieldName)
 	}

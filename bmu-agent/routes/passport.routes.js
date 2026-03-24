@@ -127,7 +127,7 @@ router.get('/:id/vehicle-image', (req, res) => {
 });
 
 // POST /api/passports/:id/correct — Correct passport field
-router.post('/:id/correct', authenticateToken, requireMSP(MSP.MANUFACTURER, MSP.REGULATOR), async (req, res) => {
+router.post('/:id/correct', authenticateToken, requireMSP(MSP.MANUFACTURER, MSP.EV_MANUFACTURER, MSP.REGULATOR), async (req, res) => {
   const { fieldName, newValue, reason } = req.body;
   if (!fieldName || !newValue || !reason) {
     return res.status(400).json({ error: 'fieldName, newValue, reason required' });
