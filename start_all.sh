@@ -16,6 +16,27 @@ AGENT_DIR="${SCRIPT_DIR}/bmu-agent"
 LOG_DIR="${SCRIPT_DIR}/logs"
 AGENT_PID=""
 
+# Load .env if exists
+ENV_FILE="${AGENT_DIR}/.env"
+if [ -f "$ENV_FILE" ]; then
+    set -a
+    source "$ENV_FILE"
+    set +a
+    echo "Loaded environment from ${ENV_FILE}"
+fi
+
+# Defaults (from .env or fallback)
+VON_PORT="${VON_WEBSERVER_URL##*:}"
+VON_PORT="${VON_PORT:-9000}"
+VON_URL="${VON_WEBSERVER_URL:-http://localhost:${VON_PORT}}"
+ACAPY_IN_PORT="${ACAPY_INBOUND_PORT:-8030}"
+ACAPY_ADM_PORT="${ACAPY_ADMIN_PORT:-8031}"
+ACAPY_NET="${ACAPY_DOCKER_NETWORK:-von_von}"
+ACAPY_SD="${ACAPY_SEED:-BMU001SecureBMSDevice00000000001}"
+ACAPY_WN="${ACAPY_WALLET_NAME:-bmu_wallet2}"
+ACAPY_WK="${ACAPY_WALLET_KEY:-bmu_wallet_key}"
+AGENT_PORT="${PORT:-3001}"
+
 SKIP_VON=false
 SKIP_FABRIC=false
 
@@ -52,10 +73,9 @@ else
     else
         cd "$VON_DIR"
         docker compose up -d 2>&1 | tee "$LOG_DIR/von.log"
-        # VON 준비 대기 (최대 30초)
         echo "Waiting for VON webserver..."
         for i in $(seq 1 6); do
-            if curl -s http://localhost:9000/status 2>/dev/null | grep -q "ok"; then
+            if curl -s "${VON_URL}/status" 2>/dev/null | grep -q "ok"; then
                 echo "VON Network ready."
                 break
             fi
@@ -76,27 +96,26 @@ else
         echo "ACA-Py already running, skipping."
     else
         docker run -d --name acapy-bmu \
-            --network von_von \
-            -p 8030:8030 -p 8031:8031 \
+            --network "$ACAPY_NET" \
+            -p "${ACAPY_IN_PORT}:${ACAPY_IN_PORT}" -p "${ACAPY_ADM_PORT}:${ACAPY_ADM_PORT}" \
             ghcr.io/openwallet-foundation/acapy-agent:py3.12-1.2.2 \
             start \
             --label "BMU Agent" \
-            --inbound-transport http 0.0.0.0 8030 \
+            --inbound-transport http 0.0.0.0 "${ACAPY_IN_PORT}" \
             --outbound-transport http \
-            --admin 0.0.0.0 8031 \
+            --admin 0.0.0.0 "${ACAPY_ADM_PORT}" \
             --admin-insecure-mode \
-            --genesis-url http://host.docker.internal:9000/genesis \
-            --seed BMU001SecureBMSDevice00000000001 \
+            --genesis-url "http://host.docker.internal:${VON_PORT}/genesis" \
+            --seed "$ACAPY_SD" \
             --wallet-type askar \
-            --wallet-name bmu_wallet2 \
-            --wallet-key bmu_wallet_key \
+            --wallet-name "$ACAPY_WN" \
+            --wallet-key "$ACAPY_WK" \
             --auto-provision \
-            --endpoint http://host.docker.internal:8030 \
+            --endpoint "http://host.docker.internal:${ACAPY_IN_PORT}" \
             2>&1 | tee "$LOG_DIR/acapy.log"
-        # ACA-Py 준비 대기 (최대 30초)
         echo "Waiting for ACA-Py..."
         for i in $(seq 1 6); do
-            if curl -s http://localhost:8031/status 2>/dev/null | grep -q "version"; then
+            if curl -s "http://localhost:${ACAPY_ADM_PORT}/status" 2>/dev/null | grep -q "version"; then
                 echo "ACA-Py ready."
                 break
             fi
@@ -149,15 +168,15 @@ AGENT_PID=$!
 echo "Waiting for Fabric connection..."
 for i in $(seq 1 12); do
     sleep 5
-    if curl -s http://localhost:3001/api/status 2>/dev/null | grep -q '"fabric":"connected"'; then
+    if curl -s "http://localhost:${AGENT_PORT}/api/status" 2>/dev/null | grep -q '"fabric":"connected"'; then
         echo ""
         echo "=========================================="
         echo "  Battery Passport Platform - All Ready!"
         echo ""
-        echo "  VON Network: http://localhost:9000"
-        echo "  ACA-Py:      http://localhost:8031"
-        echo "  Agent API:   http://localhost:3001/api"
-        echo "  Status:      http://localhost:3001/api/status"
+        echo "  VON Network: ${VON_URL}"
+        echo "  ACA-Py:      http://localhost:${ACAPY_ADM_PORT}"
+        echo "  Agent API:   http://localhost:${AGENT_PORT}/api"
+        echo "  Status:      http://localhost:${AGENT_PORT}/api/status"
         echo "=========================================="
         echo ""
         echo "Press Ctrl+C to stop agent."

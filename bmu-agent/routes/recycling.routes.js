@@ -3,8 +3,9 @@ const router = express.Router();
 const { authenticateToken } = require('../middleware/auth');
 const { requireMSP } = require('../middleware/rbac');
 const fabricService = require('../services/fabric.service');
+const { MSP } = require('../config/constants');
 
-router.put('/:id/availability', authenticateToken, requireMSP('ServiceMSP', 'RegulatorMSP'), async (req, res) => {
+router.put('/:id/availability', authenticateToken, requireMSP(MSP.SERVICE, MSP.REGULATOR), async (req, res) => {
   const { available } = req.body;
   try {
     await fabricService.submitTransaction('SetRecycleAvailability', [
@@ -16,7 +17,7 @@ router.put('/:id/availability', authenticateToken, requireMSP('ServiceMSP', 'Reg
   }
 });
 
-router.post('/:id/extract', authenticateToken, requireMSP('RegulatorMSP'), async (req, res) => {
+router.post('/:id/extract', authenticateToken, requireMSP(MSP.REGULATOR), async (req, res) => {
   const { recyclingRates } = req.body;
   if (!recyclingRates) {
     return res.status(400).json({ error: 'recyclingRates required (JSON object)' });
@@ -31,7 +32,7 @@ router.post('/:id/extract', authenticateToken, requireMSP('RegulatorMSP'), async
   }
 });
 
-router.post('/:id/dispose', authenticateToken, requireMSP('RegulatorMSP'), async (req, res) => {
+router.post('/:id/dispose', authenticateToken, requireMSP(MSP.REGULATOR), async (req, res) => {
   try {
     await fabricService.submitTransaction('DisposeBattery', [req.params.id], req.user);
     res.json({ success: true, passportId: req.params.id, status: 'DISPOSED' });

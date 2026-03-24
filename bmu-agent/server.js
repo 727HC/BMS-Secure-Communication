@@ -1,7 +1,10 @@
+require('dotenv').config();
 const express = require('express');
 const path = require('path');
 const fabricService = require('./services/fabric.service');
 const fabricConfig = require('./config/fabric');
+const { createLogger } = require('./services/logger.service');
+const log = createLogger('system');
 
 const app = express();
 app.use(express.json());
@@ -19,6 +22,7 @@ apiRouter.use('/maintenance', require('./routes/maintenance.routes'));
 apiRouter.use('/analysis', require('./routes/analysis.routes'));
 apiRouter.use('/recycling', require('./routes/recycling.routes'));
 apiRouter.use('/did', require('./routes/did.routes'));
+apiRouter.use('/vc', require('./routes/vc.routes'));
 apiRouter.get('/status', (req, res) => {
   res.json({
     fabric: fabricService.isConnected() ? 'connected' : 'disconnected',
@@ -47,16 +51,17 @@ const PORT = process.env.PORT || 3001;
 fabricService.connectFabric()
   .then(() => {
     app.listen(PORT, () => {
-      console.log(`Battery Passport Agent running at http://localhost:${PORT}`);
-      console.log(`  Org: ${fabricConfig.currentOrg.mspId}`);
-      console.log(`  Channel: ${fabricConfig.channelName}`);
-      console.log(`  Contract: ${fabricConfig.contractName}`);
+      log.info('Agent started', {
+        url: `http://localhost:${PORT}`,
+        org: fabricConfig.currentOrg.mspId,
+        channel: fabricConfig.channelName,
+        contract: fabricConfig.contractName,
+      });
     });
   })
   .catch((err) => {
-    console.error('Fabric connection failed:', err.message);
-    console.log('Starting without Fabric (DID/auth API only)');
+    log.warn('Fabric connection failed, starting without Fabric', { error: err.message });
     app.listen(PORT, () => {
-      console.log(`Battery Passport Agent running at http://localhost:${PORT} (no Fabric)`);
+      log.info('Agent started (no Fabric)', { url: `http://localhost:${PORT}` });
     });
   });

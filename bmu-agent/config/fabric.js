@@ -7,6 +7,44 @@ if (!isDev && !process.env.FABRIC_ADMIN_SECRET) {
   throw new Error('FABRIC_ADMIN_SECRET is required in production.');
 }
 
+const NETWORK_BASE = path.resolve(__dirname, '..', '..', 'passport-network');
+
+function buildOrgConfig(num) {
+  const prefix = `FABRIC_ORG${num}_`;
+  const msp = process.env[`${prefix}MSP`];
+  const domain = process.env[`${prefix}DOMAIN`];
+  if (!msp || !domain) return null;
+
+  const caName = process.env[`${prefix}CA_NAME`];
+  return {
+    mspId: msp,
+    caHostname: `ca.${domain}`,
+    caName,
+    caPort: parseInt(process.env[`${prefix}CA_PORT`] || '7054', 10),
+    peerEndpoint: process.env[`${prefix}PEER_ENDPOINT`] || `localhost:7051`,
+    domain,
+    ccpPath: process.env[`${prefix}CCP_PATH`] || path.resolve(
+      NETWORK_BASE, 'organizations', 'peerOrganizations', domain,
+      `connection-${caName ? caName.replace('ca-', '') : domain.split('.')[0]}.json`
+    ),
+  };
+}
+
+// Build org configs from env (supports 1-8 orgs)
+const orgs = {};
+for (let i = 1; i <= 8; i++) {
+  const org = buildOrgConfig(i);
+  if (org) orgs[i] = org;
+}
+
+// Build MSP → orgNum reverse map
+const mspToOrg = {};
+for (const [num, org] of Object.entries(orgs)) {
+  mspToOrg[org.mspId] = parseInt(num, 10);
+}
+
+const discoveryAsLocalhost = process.env.FABRIC_DISCOVERY_AS_LOCALHOST !== 'false';
+
 const config = {
   channelName: process.env.FABRIC_CHANNEL || 'passportchannel',
   contractName: process.env.FABRIC_CONTRACT || 'passport-contract',
@@ -17,56 +55,9 @@ const config = {
   // P1-7: TLS 검증 (기본 true, dev에서만 false 허용)
   tlsVerify: process.env.FABRIC_CA_TLS_VERIFY !== 'false',
 
-  orgs: {
-    1: {
-      mspId: 'ManufacturerMSP',
-      caHostname: 'ca.manufacturer.battery.com',
-      caName: 'ca-manufacturer',
-      caPort: 7054,
-      peerEndpoint: 'localhost:7051',
-      domain: 'manufacturer.battery.com',
-      ccpPath: process.env.FABRIC_CCP_PATH || path.resolve(
-        __dirname, '..', '..', 'passport-network',
-        'organizations/peerOrganizations/manufacturer.battery.com/connection-manufacturer.json'
-      ),
-    },
-    2: {
-      mspId: 'EVManufacturerMSP',
-      caHostname: 'ca.evmanufacturer.battery.com',
-      caName: 'ca-evmanufacturer',
-      caPort: 8054,
-      peerEndpoint: 'localhost:9051',
-      domain: 'evmanufacturer.battery.com',
-      ccpPath: path.resolve(
-        __dirname, '..', '..', 'passport-network',
-        'organizations/peerOrganizations/evmanufacturer.battery.com/connection-evmanufacturer.json'
-      ),
-    },
-    3: {
-      mspId: 'ServiceMSP',
-      caHostname: 'ca.service.battery.com',
-      caName: 'ca-service',
-      caPort: 9054,
-      peerEndpoint: 'localhost:11051',
-      domain: 'service.battery.com',
-      ccpPath: path.resolve(
-        __dirname, '..', '..', 'passport-network',
-        'organizations/peerOrganizations/service.battery.com/connection-service.json'
-      ),
-    },
-    4: {
-      mspId: 'RegulatorMSP',
-      caHostname: 'ca.regulator.battery.com',
-      caName: 'ca-regulator',
-      caPort: 10054,
-      peerEndpoint: 'localhost:13051',
-      domain: 'regulator.battery.com',
-      ccpPath: path.resolve(
-        __dirname, '..', '..', 'passport-network',
-        'organizations/peerOrganizations/regulator.battery.com/connection-regulator.json'
-      ),
-    },
-  },
+  discoveryAsLocalhost,
+  orgs,
+  mspToOrg,
 
   get currentOrg() {
     const orgNum = parseInt(process.env.FABRIC_ORG || '1', 10);
