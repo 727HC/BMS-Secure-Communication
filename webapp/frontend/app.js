@@ -175,17 +175,17 @@ const app = createApp({
         const list = data.records || data || [];
         const msp = auth.value.orgMsp;
         const badges = {};
-        if (msp === 'ServiceMSP') {
+        if (msp === MSP.SERVICE) {
           const maintCount = list.filter(p => p.status === 'MAINTENANCE').length;
           const analysisCount = list.filter(p => p.status === 'ANALYSIS').length;
           if (maintCount > 0) badges['maintenance'] = maintCount;
           if (analysisCount > 0) badges['maintenance'] = (badges['maintenance'] || 0) + analysisCount;
         }
-        if (msp === 'RegulatorMSP') {
+        if (msp === MSP.REGULATOR) {
           const recycleCount = list.filter(p => p.recycleAvailable && p.status !== 'DISPOSED').length;
           if (recycleCount > 0) badges['recycling'] = recycleCount;
         }
-        if (msp === 'EVManufacturerMSP') {
+        if (msp === MSP.EV_MANUFACTURER) {
           const activeCount = list.filter(p => p.status === 'ACTIVE' && p.vin).length;
           if (activeCount > 0) badges['maintenance'] = activeCount;
         }
@@ -232,10 +232,10 @@ const app = createApp({
     // Org color classes for badge
     const orgBadgeClasses = computed(() => {
       switch (auth.value.orgMsp) {
-        case 'ManufacturerMSP': return 'bg-emerald-50 text-emerald-700 border-emerald-200';
-        case 'EVManufacturerMSP': return 'bg-purple-50 text-purple-700 border-purple-200';
-        case 'ServiceMSP': return 'bg-amber-50 text-amber-700 border-amber-200';
-        case 'RegulatorMSP': return 'bg-teal-50 text-teal-700 border-teal-200';
+        case MSP.MANUFACTURER: return 'bg-emerald-50 text-emerald-700 border-emerald-200';
+        case MSP.EV_MANUFACTURER: return 'bg-purple-50 text-purple-700 border-purple-200';
+        case MSP.SERVICE: return 'bg-amber-50 text-amber-700 border-amber-200';
+        case MSP.REGULATOR: return 'bg-teal-50 text-teal-700 border-teal-200';
         default: return 'bg-gray-50 text-gray-600 border-gray-200';
       }
     });
@@ -243,10 +243,10 @@ const app = createApp({
     // Org avatar background color
     const orgAvatarColor = computed(() => {
       switch (auth.value.orgMsp) {
-        case 'ManufacturerMSP': return 'bg-emerald-600';
-        case 'EVManufacturerMSP': return 'bg-purple-600';
-        case 'ServiceMSP': return 'bg-amber-600';
-        case 'RegulatorMSP': return 'bg-teal-600';
+        case MSP.MANUFACTURER: return 'bg-emerald-600';
+        case MSP.EV_MANUFACTURER: return 'bg-purple-600';
+        case MSP.SERVICE: return 'bg-amber-600';
+        case MSP.REGULATOR: return 'bg-teal-600';
         default: return 'bg-gray-500';
       }
     });

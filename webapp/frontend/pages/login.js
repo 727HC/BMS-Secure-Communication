@@ -60,23 +60,23 @@ app.component('login-page', {
   },
   template: `
     <div class="min-h-screen flex items-center justify-center"
-         style="background: linear-gradient(135deg, #0f172a 0%, #14432a 50%, #065f46 100%);">
+         style="background: linear-gradient(160deg, #020617 0%, #0f172a 40%, #0c1e2e 70%, #091a1a 100%);">
       <!-- Grid overlay -->
-      <div class="fixed inset-0 opacity-[0.04] pointer-events-none"
-           style="background-image: url('data:image/svg+xml,%3Csvg width=&quot;60&quot; height=&quot;60&quot; xmlns=&quot;http://www.w3.org/2000/svg&quot;%3E%3Cpath d=&quot;M0 0h60v60H0z&quot; fill=&quot;none&quot;/%3E%3Cpath d=&quot;M0 0h1v60H0zM60 0h1v60h-1zM0 0v1h60V0zM0 60v1h60v-1z&quot; fill=&quot;%236ee7b7&quot;/%3E%3C/svg%3E');"></div>
+      <div class="fixed inset-0 opacity-[0.03] pointer-events-none"
+           style="background-image: url('data:image/svg+xml,%3Csvg width=&quot;60&quot; height=&quot;60&quot; xmlns=&quot;http://www.w3.org/2000/svg&quot;%3E%3Cpath d=&quot;M0 0h60v60H0z&quot; fill=&quot;none&quot;/%3E%3Cpath d=&quot;M0 0h1v60H0zM60 0h1v60h-1zM0 0v1h60V0zM0 60v1h60v-1z&quot; fill=&quot;%2394a3b8&quot;/%3E%3C/svg%3E');"></div>
 
-      <!-- Floating ambient shapes -->
-      <div class="fixed top-1/4 left-1/4 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none"></div>
-      <div class="fixed bottom-1/3 right-1/3 w-80 h-80 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none"></div>
-      <div class="fixed top-2/3 left-1/2 w-64 h-64 bg-teal-500/8 rounded-full blur-3xl pointer-events-none"></div>
+      <!-- Floating ambient shapes — subtle -->
+      <div class="fixed top-1/4 left-1/4 w-96 h-96 bg-emerald-500/[0.06] rounded-full blur-3xl pointer-events-none"></div>
+      <div class="fixed bottom-1/3 right-1/3 w-80 h-80 bg-blue-500/[0.05] rounded-full blur-3xl pointer-events-none"></div>
+      <div class="fixed top-2/3 left-1/2 w-64 h-64 bg-slate-400/[0.04] rounded-full blur-3xl pointer-events-none"></div>
 
       <!-- Centered container -->
-      <div class="relative z-10 flex flex-col lg:flex-row items-start gap-12 xl:gap-16 px-6 py-12 max-w-5xl mx-auto">
+      <div class="relative z-10 flex flex-col lg:flex-row items-center gap-12 px-6 py-12 max-w-5xl mx-auto" style="transform:scale(1.3);transform-origin:center center;">
 
       <!-- ===== LEFT: Platform Info (hidden on mobile) ===== -->
-      <div class="hidden lg:flex flex-1 flex-col justify-start pt-4">
+      <div class="hidden lg:flex flex-1 flex-col justify-center min-w-[420px]">
         <!-- Logo -->
-        <div class="mb-10">
+        <div class="mb-6">
           <div class="inline-flex items-center justify-center w-14 h-14 bg-white/10 backdrop-blur-sm rounded-2xl border border-white/20 mb-5 shadow-lg shadow-emerald-900/30">
             <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
               <rect x="6" y="2" width="12" height="20" rx="2" ry="2"/>
@@ -86,56 +86,55 @@ app.component('login-page', {
             </svg>
           </div>
           <h1 class="text-4xl font-bold text-white tracking-tight leading-tight mb-3">Battery Passport<br/>Platform</h1>
-          <p class="text-emerald-300/70 text-base leading-relaxed max-w-md">GBA 21 기반 배터리 전주기 여권 관리 플랫폼.<br/>블록체인과 DID로 신뢰할 수 있는 배터리 이력을 제공합니다.</p>
+          <p class="text-slate-400 text-base leading-relaxed max-w-md">GBA 21 기반 배터리 전주기 여권 관리 플랫폼.<br/>블록체인과 DID로 신뢰할 수 있는 배터리 이력을 제공합니다.</p>
         </div>
 
         <!-- Feature cards 2x2 grid -->
         <div class="grid grid-cols-2 gap-3 max-w-md">
-          <div class="bg-white/[0.05] backdrop-blur-sm rounded-xl border border-white/[0.08] p-3.5">
+          <div class="bg-white/[0.04] backdrop-blur-sm rounded-xl border border-white/[0.06] p-3.5">
             <div class="w-8 h-8 rounded-lg bg-emerald-500/20 flex items-center justify-center mb-2.5">
               <svg class="w-4 h-4 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
               </svg>
             </div>
             <h3 class="text-xs font-semibold text-white mb-0.5">GBA 21 규제 준수</h3>
-            <p class="text-[10px] text-emerald-200/40 leading-relaxed">21개 필수 항목 자동 추적</p>
+            <p class="text-[10px] text-slate-500 leading-relaxed">21개 필수 항목 자동 추적</p>
           </div>
-          <div class="bg-white/[0.05] backdrop-blur-sm rounded-xl border border-white/[0.08] p-3.5">
+          <div class="bg-white/[0.04] backdrop-blur-sm rounded-xl border border-white/[0.06] p-3.5">
             <div class="w-8 h-8 rounded-lg bg-indigo-500/20 flex items-center justify-center mb-2.5">
               <svg class="w-4 h-4 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
               </svg>
             </div>
             <h3 class="text-xs font-semibold text-white mb-0.5">DID/VC 신뢰성</h3>
-            <p class="text-[10px] text-emerald-200/40 leading-relaxed">Ed25519 서명 + VC 무결성</p>
+            <p class="text-[10px] text-slate-500 leading-relaxed">Ed25519 서명 + VC 무결성</p>
           </div>
-          <div class="bg-white/[0.05] backdrop-blur-sm rounded-xl border border-white/[0.08] p-3.5">
+          <div class="bg-white/[0.04] backdrop-blur-sm rounded-xl border border-white/[0.06] p-3.5">
             <div class="w-8 h-8 rounded-lg bg-teal-500/20 flex items-center justify-center mb-2.5">
               <svg class="w-4 h-4 text-teal-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                 <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
               </svg>
             </div>
             <h3 class="text-xs font-semibold text-white mb-0.5">BMU 실시간 모니터링</h3>
-            <p class="text-[10px] text-emerald-200/40 leading-relaxed">센서 데이터 블록체인 기록</p>
+            <p class="text-[10px] text-slate-500 leading-relaxed">센서 데이터 블록체인 기록</p>
           </div>
-          <div class="bg-white/[0.05] backdrop-blur-sm rounded-xl border border-white/[0.08] p-3.5">
+          <div class="bg-white/[0.04] backdrop-blur-sm rounded-xl border border-white/[0.06] p-3.5">
             <div class="w-8 h-8 rounded-lg bg-amber-500/20 flex items-center justify-center mb-2.5">
               <svg class="w-4 h-4 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
               </svg>
             </div>
             <h3 class="text-xs font-semibold text-white mb-0.5">배터리 전주기 관리</h3>
-            <p class="text-[10px] text-emerald-200/40 leading-relaxed">제조부터 폐기까지 추적</p>
+            <p class="text-[10px] text-slate-500 leading-relaxed">제조부터 폐기까지 추적</p>
           </div>
         </div>
 
-        <!-- Org badges -->
-        <div class="mt-6 flex items-center gap-2 flex-wrap">
-          <span class="text-[10px] text-emerald-300/30 uppercase tracking-widest mr-1">참여 조직</span>
-          <span class="px-2 py-0.5 rounded-full text-[10px] font-medium bg-emerald-500/15 text-emerald-300/60 border border-emerald-500/20">제조사</span>
-          <span class="px-2 py-0.5 rounded-full text-[10px] font-medium bg-purple-500/15 text-purple-300/60 border border-purple-500/20">EV제조사</span>
-          <span class="px-2 py-0.5 rounded-full text-[10px] font-medium bg-amber-500/15 text-amber-300/60 border border-amber-500/20">정비/분석</span>
-          <span class="px-2 py-0.5 rounded-full text-[10px] font-medium bg-teal-500/15 text-teal-300/60 border border-teal-500/20">검증기관</span>
+        <!-- Org badges inline -->
+        <div class="mt-4 flex items-center gap-1.5 flex-wrap">
+          <span class="px-2 py-0.5 rounded-full text-[10px] font-medium bg-emerald-500/15 text-emerald-300/50 border border-emerald-500/15">제조사</span>
+          <span class="px-2 py-0.5 rounded-full text-[10px] font-medium bg-purple-500/15 text-purple-300/50 border border-purple-500/15">EV제조사</span>
+          <span class="px-2 py-0.5 rounded-full text-[10px] font-medium bg-amber-500/15 text-amber-300/50 border border-amber-500/15">정비/분석</span>
+          <span class="px-2 py-0.5 rounded-full text-[10px] font-medium bg-teal-500/15 text-teal-300/50 border border-teal-500/15">검증기관</span>
         </div>
       </div>
 
@@ -153,11 +152,11 @@ app.component('login-page', {
               </svg>
             </div>
             <h1 class="text-2xl font-bold text-white tracking-tight">Battery Passport</h1>
-            <p class="text-emerald-300/70 text-sm mt-1">GBA 21 Platform</p>
+            <p class="text-slate-500 text-sm mt-1">GBA 21 Platform</p>
           </div>
 
           <!-- Login Card -->
-          <div class="bg-white/[0.07] backdrop-blur-xl rounded-2xl border border-white/10 shadow-2xl shadow-black/30 overflow-hidden">
+          <div class="bg-white/[0.06] backdrop-blur-xl rounded-2xl border border-white/[0.08] shadow-2xl shadow-black/40 overflow-hidden">
             <!-- Tab Toggle -->
             <div class="flex m-5 mb-0 bg-white/5 rounded-xl p-1 border border-white/10">
               <button
@@ -288,7 +287,7 @@ app.component('login-page', {
           </div>
 
           <!-- Footer -->
-          <div class="mt-6 flex items-center justify-between text-[10px] text-emerald-300/25">
+          <div class="mt-6 flex items-center justify-between text-[10px] text-slate-600">
             <span>Hyperledger Fabric + Aries</span>
             <span>v2.0</span>
           </div>
