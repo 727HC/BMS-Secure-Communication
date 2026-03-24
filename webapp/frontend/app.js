@@ -42,16 +42,50 @@ async function retryOnConflict(fn, maxRetries = 3, delayMs = 1500) {
   }
 }
 
-// Shared utility functions (K-5: avoid duplication across pages)
+// ===== Shared constants (used across all pages) =====
+
+// Scaling constants for BMU raw data
+const SOC_SCALE_DIVISOR = 655.35;
+const TEMP_SCALE_DIVISOR = 1310.7;
+
 function scaleSOC(val) {
   if (val == null) return 0;
   const n = Number(val);
-  return n > 100 ? +(n / 655.35).toFixed(1) : +n.toFixed(1);
+  return n > 100 ? +(n / SOC_SCALE_DIVISOR).toFixed(1) : +n.toFixed(1);
 }
 function scaleTemp(val) {
   if (val == null) return 0;
   const n = Number(val);
-  return n > 100 ? +(n / 1310.7).toFixed(1) : +n.toFixed(1);
+  return n > 100 ? +(n / TEMP_SCALE_DIVISOR).toFixed(1) : +n.toFixed(1);
+}
+
+// MSP constants
+const MSP = {
+  MANUFACTURER: 'ManufacturerMSP',
+  EV_MANUFACTURER: 'EVManufacturerMSP',
+  SERVICE: 'ServiceMSP',
+  REGULATOR: 'RegulatorMSP',
+};
+
+// Status constants + config (shared across all pages)
+const STATUS_LIST = ['MANUFACTURED', 'ACTIVE', 'MAINTENANCE', 'ANALYSIS', 'RECYCLING', 'DISPOSED'];
+
+const STATUS_LABELS = {
+  MANUFACTURED: '제조완료', ACTIVE: '운행중', MAINTENANCE: '정비중',
+  ANALYSIS: '분석중', RECYCLING: '재활용', DISPOSED: '폐기',
+};
+
+const STATUS_CONFIG = {
+  MANUFACTURED: { bg: 'bg-blue-50', text: 'text-blue-700', border: 'border-blue-200', dot: 'bg-blue-500', label: '제조완료' },
+  ACTIVE:       { bg: 'bg-emerald-50', text: 'text-emerald-700', border: 'border-emerald-200', dot: 'bg-emerald-500', label: '운행중' },
+  MAINTENANCE:  { bg: 'bg-amber-50', text: 'text-amber-700', border: 'border-amber-200', dot: 'bg-amber-500', label: '정비중' },
+  ANALYSIS:     { bg: 'bg-purple-50', text: 'text-purple-700', border: 'border-purple-200', dot: 'bg-purple-500', label: '분석중' },
+  RECYCLING:    { bg: 'bg-orange-50', text: 'text-orange-700', border: 'border-orange-200', dot: 'bg-orange-500', label: '재활용' },
+  DISPOSED:     { bg: 'bg-slate-100', text: 'text-slate-500', border: 'border-slate-300', dot: 'bg-slate-400', label: '폐기' },
+};
+
+function getStatusBadge(status) {
+  return STATUS_CONFIG[status] || STATUS_CONFIG.DISPOSED;
 }
 
 // MSP label map

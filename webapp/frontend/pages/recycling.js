@@ -17,9 +17,9 @@ app.component('recycling-page', {
     const selectedPassport = ref(null);
 
     // Role checks
-    const isEVManufacturer = computed(() => props.auth.orgMsp === 'EVManufacturerMSP');
-    const isService = computed(() => props.auth.orgMsp === 'ServiceMSP');
-    const isRegulator = computed(() => props.auth.orgMsp === 'RegulatorMSP');
+    const isEVManufacturer = computed(() => props.auth.orgMsp === MSP.EV_MANUFACTURER);
+    const isService = computed(() => props.auth.orgMsp === MSP.SERVICE);
+    const isRegulator = computed(() => props.auth.orgMsp === MSP.REGULATOR);
     const canRequestAnalysis = computed(() => isEVManufacturer.value);
     const canSubmitAnalysis = computed(() => isService.value);
     const canToggleRecycle = computed(() => isService.value || isRegulator.value);
@@ -100,18 +100,8 @@ app.component('recycling-page', {
       return 'bg-red-100';
     }
 
-    const statusConfig = {
-      MANUFACTURED: { bg: 'bg-blue-50 text-blue-700 border border-blue-200', dot: 'bg-blue-500', label: '제조완료' },
-      ACTIVE:       { bg: 'bg-emerald-50 text-emerald-700 border border-emerald-200', dot: 'bg-emerald-500', label: '운행중' },
-      MAINTENANCE:  { bg: 'bg-amber-50 text-amber-700 border border-amber-200', dot: 'bg-amber-500', label: '정비중' },
-      ANALYSIS:     { bg: 'bg-purple-50 text-purple-700 border border-purple-200', dot: 'bg-purple-500', label: '분석중' },
-      RECYCLING:    { bg: 'bg-orange-50 text-orange-700 border border-orange-200', dot: 'bg-orange-500', label: '재활용' },
-      DISPOSED:     { bg: 'bg-gray-100 text-gray-600 border border-gray-200', dot: 'bg-gray-400', label: '폐기' },
-    };
-
-    function getStatusBadge(status) {
-      return statusConfig[status] || statusConfig.DISPOSED;
-    }
+    // Use global STATUS_CONFIG, getStatusBadge from app.js
+    const statusConfig = STATUS_CONFIG;
 
     function getRecyclingRateEntries(rates) {
       if (!rates || typeof rates !== 'object') return [];

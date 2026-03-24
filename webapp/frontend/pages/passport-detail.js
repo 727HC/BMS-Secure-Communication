@@ -52,14 +52,7 @@ app.component('passport-detail-page', {
     const extractForm = ref({ recyclingRatesJson: '{\n  "cobalt": 95,\n  "nickel": 90,\n  "lithium": 80,\n  "manganese": 85\n}' });
 
     /* ---------- helpers ---------- */
-    function scaleSOC(val) {
-      if (val == null) return null;
-      return val > 100 ? +(val / 655.35).toFixed(1) : +val.toFixed(1);
-    }
-    function scaleTemp(val) {
-      if (val == null) return null;
-      return val > 100 ? +(val / 1310.7).toFixed(1) : val;
-    }
+    // Use global scaleSOC/scaleTemp from app.js
     function formatDate(ts) {
       if (!ts) return '-';
       try { return new Date(ts).toLocaleString('ko-KR'); } catch { return ts; }
@@ -83,21 +76,8 @@ app.component('passport-detail-page', {
     }
 
     /* ---------- status config ---------- */
-    const statusLabels = {
-      MANUFACTURED: '제조완료', ACTIVE: '운행중', MAINTENANCE: '정비중',
-      ANALYSIS: '분석중', RECYCLING: '재활용', DISPOSED: '폐기',
-    };
-    const statusConfig = {
-      MANUFACTURED: { bg: 'bg-emerald-50', text: 'text-emerald-700', border: 'border-emerald-200', dot: 'bg-emerald-500', label: '제조완료' },
-      ACTIVE:       { bg: 'bg-emerald-50', text: 'text-emerald-700', border: 'border-emerald-200', dot: 'bg-emerald-500', label: '운행중' },
-      MAINTENANCE:  { bg: 'bg-amber-50', text: 'text-amber-700', border: 'border-amber-200', dot: 'bg-amber-500', label: '정비중' },
-      ANALYSIS:     { bg: 'bg-purple-50', text: 'text-purple-700', border: 'border-purple-200', dot: 'bg-purple-500', label: '분석중' },
-      RECYCLING:    { bg: 'bg-orange-50', text: 'text-orange-700', border: 'border-orange-200', dot: 'bg-orange-500', label: '재활용' },
-      DISPOSED:     { bg: 'bg-slate-100', text: 'text-slate-500', border: 'border-slate-300', dot: 'bg-slate-400', label: '폐기' },
-    };
-    function getStatusBadge(status) {
-      return statusConfig[status] || statusConfig.DISPOSED;
-    }
+    // Use global STATUS_LABELS, STATUS_CONFIG, getStatusBadge from app.js
+    const statusLabels = STATUS_LABELS;
     function getSocColor(soc) {
       if (soc == null) return 'bg-slate-300';
       if (soc >= 60) return 'bg-emerald-500';
@@ -128,10 +108,10 @@ app.component('passport-detail-page', {
 
     /* ---------- MSP roles ---------- */
     const msp = computed(() => props.auth.orgMsp);
-    const isEV = computed(() => msp.value === 'EVManufacturerMSP');
-    const isService = computed(() => msp.value === 'ServiceMSP');
-    const isRegulator = computed(() => msp.value === 'RegulatorMSP');
-    const isManufacturer = computed(() => msp.value === 'ManufacturerMSP');
+    const isEV = computed(() => msp.value === MSP.EV_MANUFACTURER);
+    const isService = computed(() => msp.value === MSP.SERVICE);
+    const isRegulator = computed(() => msp.value === MSP.REGULATOR);
+    const isManufacturer = computed(() => msp.value === MSP.MANUFACTURER);
 
     /* ---------- tabs ---------- */
     const tabs = [
