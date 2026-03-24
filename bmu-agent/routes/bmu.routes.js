@@ -118,4 +118,22 @@ router.get('/records/:passportId', async (req, res) => {
   }
 });
 
+// POST /api/bmu/invalidate/:recordId — Invalidate a BMU record
+router.post('/invalidate/:recordId', async (req, res) => {
+  const { reason } = req.body;
+  if (!reason) {
+    return res.status(400).json({ error: 'reason required' });
+  }
+  try {
+    await fabricService.submitTransaction('InvalidateBMURecord', [
+      req.params.recordId, reason,
+    ]);
+    log.info('BMU record invalidated', { action: 'InvalidateBMURecord', recordId: req.params.recordId, reason });
+    res.json({ success: true, recordId: req.params.recordId, status: 'INVALIDATED' });
+  } catch (err) {
+    log.error('BMU invalidation failed', { action: 'InvalidateBMURecord', recordId: req.params.recordId, error: err.message });
+    res.status(500).json({ error: err.message });
+  }
+});
+
 module.exports = router;
