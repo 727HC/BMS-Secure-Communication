@@ -1308,6 +1308,76 @@ func (c *PassportContract) QueryRawMaterials(ctx contractapi.TransactionContextI
 }
 
 // ============================================================
+// 19-1. LinkRawMaterials — 여권에 원자재 연결
+// ============================================================
+
+func (c *PassportContract) LinkRawMaterials(ctx contractapi.TransactionContextInterface,
+	passportId string, materialIds string) error {
+
+	if err := c.requireMSP(ctx, "ManufacturerMSP"); err != nil {
+		return err
+	}
+
+	if passportId == "" || materialIds == "" {
+		return fmt.Errorf("passportId, materialIds must not be empty")
+	}
+
+	passportJSON, err := ctx.GetStub().GetState(passportId)
+	if err != nil {
+		return fmt.Errorf("failed to read passport: %v", err)
+	}
+	if passportJSON == nil {
+		return fmt.Errorf("passport %s does not exist", passportId)
+	}
+
+	var passport BatteryPassport
+	if err := json.Unmarshal(passportJSON, &passport); err != nil {
+		return fmt.Errorf("failed to unmarshal passport: %v", err)
+	}
+
+	// 기존 원자재 중복 체크용 set
+	existing := make(map[string]bool)
+	for _, id := range passport.RawMaterials {
+		existing[id] = true
+	}
+
+	ids := strings.Split(materialIds, ",")
+	var added []string
+	for _, id := range ids {
+		id = strings.TrimSpace(id)
+		if id == "" {
+			continue
+		}
+		// 원자재가 실제 존재하는지 확인
+		matJSON, err := ctx.GetStub().GetState(id)
+		if err != nil {
+			return fmt.Errorf("failed to check material %s: %v", id, err)
+		}
+		if matJSON == nil {
+			return fmt.Errorf("raw material %s does not exist", id)
+		}
+		if !existing[id] {
+			passport.RawMaterials = append(passport.RawMaterials, id)
+			existing[id] = true
+			added = append(added, id)
+		}
+	}
+
+	if len(added) == 0 {
+		return fmt.Errorf("no new materials to link (all already linked or empty)")
+	}
+
+	passport.UpdatedAt = time.Now().UTC().Format(time.RFC3339)
+
+	updatedJSON, err := json.Marshal(passport)
+	if err != nil {
+		return fmt.Errorf("failed to marshal passport: %v", err)
+	}
+
+	return ctx.GetStub().PutState(passportId, updatedJSON)
+}
+
+// ============================================================
 // 20. IssueCredential — Anchor VC on Fabric
 // ============================================================
 

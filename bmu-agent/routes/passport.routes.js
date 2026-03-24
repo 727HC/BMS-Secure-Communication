@@ -126,6 +126,22 @@ router.get('/:id/vehicle-image', (req, res) => {
   res.json({ exists: false });
 });
 
+// POST /api/passports/:id/materials — Link raw materials to passport
+router.post('/:id/materials', authenticateToken, requireMSP(MSP.MANUFACTURER), async (req, res) => {
+  const { materialIds } = req.body;
+  if (!materialIds || !Array.isArray(materialIds) || materialIds.length === 0) {
+    return res.status(400).json({ error: 'materialIds (array) required' });
+  }
+  try {
+    await fabricService.submitTransaction('LinkRawMaterials', [
+      req.params.id, materialIds.join(','),
+    ], req.user);
+    res.json({ success: true, passportId: req.params.id, linked: materialIds });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // POST /api/passports/:id/correct — Correct passport field
 router.post('/:id/correct', authenticateToken, requireMSP(MSP.MANUFACTURER, MSP.EV_MANUFACTURER, MSP.REGULATOR), async (req, res) => {
   const { fieldName, newValue, reason } = req.body;
