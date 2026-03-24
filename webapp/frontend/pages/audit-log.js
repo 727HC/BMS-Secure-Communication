@@ -212,11 +212,11 @@ app.component('audit-log-page', {
                 <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-700 font-medium">{{ log.userId || '-' }}</td>
                 <td class="px-4 py-3 whitespace-nowrap">
                   <span v-if="log.orgMsp" class="text-xs font-medium px-1.5 py-0.5 rounded"
-                    :class="log.orgMsp === 'ManufacturerMSP' ? 'bg-emerald-50 text-emerald-700' :
-                      log.orgMsp === 'EVManufacturerMSP' ? 'bg-purple-50 text-purple-700' :
-                      log.orgMsp === 'ServiceMSP' ? 'bg-amber-50 text-amber-700' :
-                      log.orgMsp === 'RegulatorMSP' ? 'bg-teal-50 text-teal-700' : 'bg-gray-50 text-gray-600'">
-                    {{ {ManufacturerMSP:'제조사',EVManufacturerMSP:'EV제조사',ServiceMSP:'정비/분석',RegulatorMSP:'검증기관'}[log.orgMsp] || log.orgMsp }}
+                    :class="log.orgMsp === MSP.MANUFACTURER ? 'bg-emerald-50 text-emerald-700' :
+                      log.orgMsp === MSP.EV_MANUFACTURER ? 'bg-purple-50 text-purple-700' :
+                      log.orgMsp === MSP.SERVICE ? 'bg-amber-50 text-amber-700' :
+                      log.orgMsp === MSP.REGULATOR ? 'bg-teal-50 text-teal-700' : 'bg-gray-50 text-gray-600'">
+                    {{ MSP_LABELS[log.orgMsp] || log.orgMsp }}
                   </span>
                   <span v-else class="text-xs text-gray-400">-</span>
                 </td>

@@ -15,8 +15,8 @@ app.component('maintenance-page', {
     const showAccidentModal = ref(false);
     const selectedPassport = ref(null);
 
-    const isEVManufacturer = computed(() => props.auth.orgMsp === 'EVManufacturerMSP');
-    const isService = computed(() => props.auth.orgMsp === 'ServiceMSP');
+    const isEVManufacturer = computed(() => props.auth.orgMsp === MSP.EV_MANUFACTURER);
+    const isService = computed(() => props.auth.orgMsp === MSP.SERVICE);
     const canRequestMaintenance = computed(() => isEVManufacturer.value);
     const canLogMaintenance = computed(() => isService.value);
     const canLogAccident = computed(() => isEVManufacturer.value || isService.value);
@@ -39,14 +39,8 @@ app.component('maintenance-page', {
     const logForm = ref({ maintenanceType: 'routine', description: '', technician: '' });
     const accidentForm = ref({ severity: 'minor', description: '', reporter: '' });
 
-    const statusConfig = {
-      MANUFACTURED: { bg: 'bg-blue-50 text-blue-700 border border-blue-200', dot: 'bg-blue-500', label: '제조완료' },
-      ACTIVE:       { bg: 'bg-emerald-50 text-emerald-700 border border-emerald-200', dot: 'bg-emerald-500', label: '운행중' },
-      MAINTENANCE:  { bg: 'bg-amber-50 text-amber-700 border border-amber-200', dot: 'bg-amber-500', label: '정비중' },
-      ANALYSIS:     { bg: 'bg-purple-50 text-purple-700 border border-purple-200', dot: 'bg-purple-500', label: '분석중' },
-      RECYCLING:    { bg: 'bg-orange-50 text-orange-700 border border-orange-200', dot: 'bg-orange-500', label: '재활용' },
-      DISPOSED:     { bg: 'bg-gray-100 text-gray-600 border border-gray-200', dot: 'bg-gray-400', label: '폐기' },
-    };
+    // Use global STATUS_CONFIG from app.js
+    const statusConfig = STATUS_CONFIG;
 
     const filteredPassports = computed(() => {
       if (activeTab.value === 'maintenance') {
@@ -91,9 +85,7 @@ app.component('maintenance-page', {
       }
     }
 
-    function getStatusBadge(status) {
-      return statusConfig[status] || statusConfig.DISPOSED;
-    }
+    // Use global getStatusBadge from app.js
 
     function openMaintenanceRequest(passport) {
       selectedPassport.value = passport;
