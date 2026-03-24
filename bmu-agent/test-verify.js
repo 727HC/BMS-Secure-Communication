@@ -4,7 +4,7 @@ const axios = require('axios')
 
 // [T-01] 환경변수 우선, 기본값 fallback
 const ACA_PY_URL = process.env.ACA_PY_URL || 'http://localhost:8031'
-const AGENT_URL = process.env.AGENT_URL || 'http://localhost:3000'
+const AGENT_URL = process.env.AGENT_URL || 'http://localhost:3001'
 const VON_URL = process.env.VON_URL || 'http://localhost:9000'
 
 async function main() {
