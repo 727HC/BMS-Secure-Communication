@@ -120,7 +120,7 @@ type BatteryPassport struct {
 	AccidentLogs     []AccidentLog    `json:"accidentLogs"`
 
 	// Corrections
-	CorrectionLogs []CorrectionLog `json:"correctionLogs"`
+	CorrectionLogs []CorrectionLog `json:"correctionLogs,omitempty"`
 
 	// Audit
 	CreatedAt  string `json:"createdAt"`
@@ -145,7 +145,7 @@ type BMURecord struct {
 	StatusFlags     uint8   `json:"statusFlags"`
 	DischargeCycles uint16  `json:"dischargeCycles"`
 	Timestamp       string  `json:"timestamp"`
-	Status          string  `json:"status"`
+	Status          string  `json:"status,omitempty"`
 	InvalidatedBy   string  `json:"invalidatedBy,omitempty"`
 	InvalidatedAt   string  `json:"invalidatedAt,omitempty"`
 	InvalidReason   string  `json:"invalidReason,omitempty"`
@@ -233,6 +233,25 @@ func (c *PassportContract) requireMSP(ctx contractapi.TransactionContextInterfac
 		}
 	}
 	return fmt.Errorf("access denied: MSP %s not in allowed list %v", msp, allowedMSPs)
+}
+
+// normalizePassport ensures nil slices/maps are initialized (for legacy data compatibility)
+func normalizePassport(p *BatteryPassport) {
+	if p.RawMaterials == nil {
+		p.RawMaterials = []string{}
+	}
+	if p.RecyclingRates == nil {
+		p.RecyclingRates = map[string]float64{}
+	}
+	if p.MaintenanceLogs == nil {
+		p.MaintenanceLogs = []MaintenanceLog{}
+	}
+	if p.AccidentLogs == nil {
+		p.AccidentLogs = []AccidentLog{}
+	}
+	if p.CorrectionLogs == nil {
+		p.CorrectionLogs = []CorrectionLog{}
+	}
 }
 
 // checkPassportAccess verifies the caller's MSP has permission to view the passport
@@ -1015,6 +1034,7 @@ func (c *PassportContract) QueryPassport(ctx contractapi.TransactionContextInter
 		return nil, err
 	}
 
+	normalizePassport(&passport)
 	return &passport, nil
 }
 
@@ -1063,6 +1083,7 @@ func (c *PassportContract) QueryPassportsWithPagination(ctx contractapi.Transact
 		if err != nil {
 			return nil, err
 		}
+		normalizePassport(&passport)
 		records = append(records, &passport)
 	}
 
@@ -1208,6 +1229,7 @@ func (c *PassportContract) QueryBatteryByDID(ctx contractapi.TransactionContextI
 		if err != nil {
 			return nil, fmt.Errorf("failed to unmarshal passport: %v", err)
 		}
+		normalizePassport(&passport)
 		return &passport, nil
 	}
 
