@@ -394,11 +394,11 @@ app.component('passport-detail-page', {
     }
 
     const vcCredTypes = [
-      { value: 'BATTERY_PASSPORT', label: '배터리 여권', org: 'ManufacturerMSP' },
-      { value: 'BATTERY_HEALTH', label: '배터리 건강', org: 'ServiceMSP' },
-      { value: 'MAINTENANCE', label: '정비 인증', org: 'ServiceMSP' },
-      { value: 'COMPLIANCE', label: '규제 적합', org: 'RegulatorMSP' },
-      { value: 'RECYCLING', label: '재활용 인증', org: 'RegulatorMSP' },
+      { value: 'BATTERY_PASSPORT', label: '배터리 여권', org: MSP.MANUFACTURER },
+      { value: 'BATTERY_HEALTH', label: '배터리 건강', org: MSP.SERVICE },
+      { value: 'MAINTENANCE', label: '정비 인증', org: MSP.SERVICE },
+      { value: 'COMPLIANCE', label: '규제 적합', org: MSP.REGULATOR },
+      { value: 'RECYCLING', label: '재활용 인증', org: MSP.REGULATOR },
     ];
 
     const canIssueVc = computed(() => {
