@@ -75,6 +75,11 @@ app.component('audit-log-page', {
         const data = await props.api.get('/audit?' + params.toString());
         logs.value = data.records || [];
         total.value = data.total || 0;
+        // Auto return to page 1 if current page has no results
+        if (logs.value.length === 0 && page.value > 1) {
+          page.value = 1;
+          await fetchLogs();
+        }
       } catch (e) {
         logs.value = [];
       } finally {
