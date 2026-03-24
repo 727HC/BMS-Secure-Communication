@@ -126,4 +126,30 @@ router.get('/:id/vehicle-image', (req, res) => {
   res.json({ exists: false });
 });
 
+// POST /api/passports/:id/correct — Correct passport field
+router.post('/:id/correct', authenticateToken, requireMSP(MSP.MANUFACTURER, MSP.REGULATOR), async (req, res) => {
+  const { fieldName, newValue, reason } = req.body;
+  if (!fieldName || !newValue || !reason) {
+    return res.status(400).json({ error: 'fieldName, newValue, reason required' });
+  }
+  try {
+    await fabricService.submitTransaction('CorrectPassportData', [
+      req.params.id, fieldName, newValue, reason,
+    ], req.user);
+    res.json({ success: true, passportId: req.params.id, fieldName, newValue });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// GET /api/passports/:id/corrections — Get correction history
+router.get('/:id/corrections', async (req, res) => {
+  try {
+    const result = await fabricService.evaluateTransaction('QueryCorrectionHistory', req.params.id);
+    res.json(parseResult(result));
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 module.exports = router;

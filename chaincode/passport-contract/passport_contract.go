@@ -119,6 +119,9 @@ type BatteryPassport struct {
 	MaintenanceLogs  []MaintenanceLog `json:"maintenanceLogs"`
 	AccidentLogs     []AccidentLog    `json:"accidentLogs"`
 
+	// Corrections
+	CorrectionLogs []CorrectionLog `json:"correctionLogs"`
+
 	// Audit
 	CreatedAt  string `json:"createdAt"`
 	UpdatedAt  string `json:"updatedAt"`
@@ -142,8 +145,22 @@ type BMURecord struct {
 	StatusFlags     uint8   `json:"statusFlags"`
 	DischargeCycles uint16  `json:"dischargeCycles"`
 	Timestamp       string  `json:"timestamp"`
+	Status          string  `json:"status"`
+	InvalidatedBy   string  `json:"invalidatedBy,omitempty"`
+	InvalidatedAt   string  `json:"invalidatedAt,omitempty"`
+	InvalidReason   string  `json:"invalidReason,omitempty"`
 	CreatedAt       string  `json:"createdAt"`
 	CreatorMSP      string  `json:"creatorMsp"`
+}
+
+// CorrectionLog represents a data correction event
+type CorrectionLog struct {
+	Date          string `json:"date"`
+	FieldName     string `json:"fieldName"`
+	OriginalValue string `json:"originalValue"`
+	NewValue      string `json:"newValue"`
+	Reason        string `json:"reason"`
+	CorrectedBy   string `json:"correctedBy"`
 }
 
 // VerifiableCredential represents a VC anchored on Fabric
@@ -430,6 +447,7 @@ func (c *PassportContract) CreateBatteryPassport(ctx contractapi.TransactionCont
 		Status:                 "MANUFACTURED",
 		MaintenanceLogs:        []MaintenanceLog{},
 		AccidentLogs:           []AccidentLog{},
+		CorrectionLogs:         []CorrectionLog{},
 		CreatedAt:              now,
 		UpdatedAt:              now,
 		CreatorMSP:             msp,
@@ -544,6 +562,7 @@ func (c *PassportContract) RecordBMUData(ctx contractapi.TransactionContextInter
 		StatusFlags:     uint8(statusFlagsVal),
 		DischargeCycles: uint16(dischargeCyclesVal),
 		Timestamp:       timestamp,
+		Status:          "VALID",
 		CreatedAt:       now,
 		CreatorMSP:      msp,
 	}
@@ -1704,6 +1723,214 @@ func (c *PassportContract) QueryRevokedCredentials(ctx contractapi.TransactionCo
 		Bookmark: responseMetadata.GetBookmark(),
 		Count:    int(responseMetadata.GetFetchedRecordsCount()),
 	}, nil
+}
+
+// ============================================================
+// 30. CorrectPassportData — 배터리여권 필드 정정 (감사 기록 포함)
+// ============================================================
+
+func (c *PassportContract) CorrectPassportData(ctx contractapi.TransactionContextInterface,
+	passportId string, fieldName string, newValue string, reason string) error {
+
+	if err := c.requireMSP(ctx, "ManufacturerMSP", "RegulatorMSP"); err != nil {
+		return err
+	}
+
+	if passportId == "" || fieldName == "" || newValue == "" || reason == "" {
+		return fmt.Errorf("passportId, fieldName, newValue, reason must not be empty")
+	}
+
+	passportJSON, err := ctx.GetStub().GetState(passportId)
+	if err != nil {
+		return fmt.Errorf("failed to read passport: %v", err)
+	}
+	if passportJSON == nil {
+		return fmt.Errorf("passport %s does not exist", passportId)
+	}
+
+	var passport BatteryPassport
+	if err := json.Unmarshal(passportJSON, &passport); err != nil {
+		return fmt.Errorf("failed to unmarshal passport: %v", err)
+	}
+
+	msp, err := c.getClientMSP(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to get client MSP: %v", err)
+	}
+
+	// 정정 가능한 필드 목록 및 원래 값 추출
+	var originalValue string
+	switch fieldName {
+	case "model":
+		originalValue = passport.Model
+		passport.Model = newValue
+	case "serialNumber":
+		originalValue = passport.SerialNumber
+		passport.SerialNumber = newValue
+	case "manufacturerName":
+		originalValue = passport.ManufacturerName
+		passport.ManufacturerName = newValue
+	case "manufactureCountry":
+		originalValue = passport.ManufactureCountry
+		passport.ManufactureCountry = newValue
+	case "cellManufacturer":
+		originalValue = passport.CellManufacturer
+		passport.CellManufacturer = newValue
+	case "cellManufactureCountry":
+		originalValue = passport.CellManufactureCountry
+		passport.CellManufactureCountry = newValue
+	case "manufactureDate":
+		originalValue = passport.ManufactureDate
+		passport.ManufactureDate = newValue
+	case "cellType":
+		originalValue = passport.CellType
+		passport.CellType = newValue
+	case "chemistry":
+		originalValue = passport.Chemistry
+		passport.Chemistry = newValue
+	case "voltageRange":
+		originalValue = passport.VoltageRange
+		passport.VoltageRange = newValue
+	case "temperatureRange":
+		originalValue = passport.TemperatureRange
+		passport.TemperatureRange = newValue
+	case "cellCount":
+		originalValue = strconv.Itoa(passport.CellCount)
+		val, err := strconv.Atoi(newValue)
+		if err != nil {
+			return fmt.Errorf("invalid cellCount value: %v", err)
+		}
+		passport.CellCount = val
+	case "weight":
+		originalValue = fmt.Sprintf("%f", passport.Weight)
+		val, err := strconv.ParseFloat(newValue, 64)
+		if err != nil {
+			return fmt.Errorf("invalid weight value: %v", err)
+		}
+		passport.Weight = val
+	case "totalEnergy":
+		originalValue = fmt.Sprintf("%f", passport.TotalEnergy)
+		val, err := strconv.ParseFloat(newValue, 64)
+		if err != nil {
+			return fmt.Errorf("invalid totalEnergy value: %v", err)
+		}
+		passport.TotalEnergy = val
+	case "ratedCapacity":
+		originalValue = fmt.Sprintf("%f", passport.RatedCapacity)
+		val, err := strconv.ParseFloat(newValue, 64)
+		if err != nil {
+			return fmt.Errorf("invalid ratedCapacity value: %v", err)
+		}
+		passport.RatedCapacity = val
+	case "carbonFootprint":
+		originalValue = fmt.Sprintf("%f", passport.CarbonFootprint)
+		val, err := strconv.ParseFloat(newValue, 64)
+		if err != nil {
+			return fmt.Errorf("invalid carbonFootprint value: %v", err)
+		}
+		passport.CarbonFootprint = val
+	default:
+		return fmt.Errorf("field '%s' is not correctable", fieldName)
+	}
+
+	now := time.Now().UTC().Format(time.RFC3339)
+
+	correction := CorrectionLog{
+		Date:          now,
+		FieldName:     fieldName,
+		OriginalValue: originalValue,
+		NewValue:      newValue,
+		Reason:        reason,
+		CorrectedBy:   msp,
+	}
+
+	passport.CorrectionLogs = append(passport.CorrectionLogs, correction)
+	passport.UpdatedAt = now
+
+	updatedJSON, err := json.Marshal(passport)
+	if err != nil {
+		return fmt.Errorf("failed to marshal passport: %v", err)
+	}
+
+	return ctx.GetStub().PutState(passportId, updatedJSON)
+}
+
+// ============================================================
+// 31. InvalidateBMURecord — BMU 데이터 무효화 (원본 보존)
+// ============================================================
+
+func (c *PassportContract) InvalidateBMURecord(ctx contractapi.TransactionContextInterface,
+	recordId string, reason string) error {
+
+	if err := c.requireMSP(ctx, "ManufacturerMSP", "RegulatorMSP"); err != nil {
+		return err
+	}
+
+	if recordId == "" || reason == "" {
+		return fmt.Errorf("recordId and reason must not be empty")
+	}
+
+	recordJSON, err := ctx.GetStub().GetState(recordId)
+	if err != nil {
+		return fmt.Errorf("failed to read BMU record: %v", err)
+	}
+	if recordJSON == nil {
+		return fmt.Errorf("BMU record %s does not exist", recordId)
+	}
+
+	var record BMURecord
+	if err := json.Unmarshal(recordJSON, &record); err != nil {
+		return fmt.Errorf("failed to unmarshal BMU record: %v", err)
+	}
+
+	if record.Status == "INVALIDATED" {
+		return fmt.Errorf("BMU record %s is already invalidated", recordId)
+	}
+
+	msp, err := c.getClientMSP(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to get client MSP: %v", err)
+	}
+
+	now := time.Now().UTC().Format(time.RFC3339)
+	record.Status = "INVALIDATED"
+	record.InvalidatedBy = msp
+	record.InvalidatedAt = now
+	record.InvalidReason = reason
+
+	updatedJSON, err := json.Marshal(record)
+	if err != nil {
+		return fmt.Errorf("failed to marshal BMU record: %v", err)
+	}
+
+	return ctx.GetStub().PutState(recordId, updatedJSON)
+}
+
+// ============================================================
+// 32. QueryCorrectionHistory — 배터리여권 정정 이력 조회
+// ============================================================
+
+func (c *PassportContract) QueryCorrectionHistory(ctx contractapi.TransactionContextInterface,
+	passportId string) ([]CorrectionLog, error) {
+
+	passportJSON, err := ctx.GetStub().GetState(passportId)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read passport: %v", err)
+	}
+	if passportJSON == nil {
+		return nil, fmt.Errorf("passport %s does not exist", passportId)
+	}
+
+	var passport BatteryPassport
+	if err := json.Unmarshal(passportJSON, &passport); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal passport: %v", err)
+	}
+
+	if err := c.checkPassportAccess(ctx, &passport); err != nil {
+		return nil, err
+	}
+
+	return passport.CorrectionLogs, nil
 }
 
 // ============================================================
