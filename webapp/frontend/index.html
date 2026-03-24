@@ -290,6 +290,18 @@
   <script src="pages/qr-scan.js"></script>
   <script src="pages/audit-log.js"></script>
   <!-- Mount after all components are registered -->
-  <script>app.mount('#app');</script>
+  <script>
+    // Expose global constants to all Vue templates
+    app.config.globalProperties.MSP = MSP;
+    app.config.globalProperties.MSP_LABELS = MSP_LABELS;
+    app.config.globalProperties.STATUS_LIST = STATUS_LIST;
+    app.config.globalProperties.STATUS_LABELS = STATUS_LABELS;
+    app.config.globalProperties.STATUS_CONFIG = STATUS_CONFIG;
+    app.config.globalProperties.getStatusBadge = getStatusBadge;
+    app.config.globalProperties.scaleSOC = scaleSOC;
+    app.config.globalProperties.scaleTemp = scaleTemp;
+    app.config.globalProperties.retryOnConflict = retryOnConflict;
+    app.mount('#app');
+  </script>
 </body>
 </html>
