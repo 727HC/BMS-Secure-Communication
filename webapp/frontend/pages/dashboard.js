@@ -6,7 +6,6 @@ app.component('dashboard-page', {
 
     const passports = ref([]);
     const loading = ref(true);
-    const fabricStatus = ref('disconnected');
     const materials = ref([]);
 
     /* ---------- data fetching ---------- */
@@ -21,9 +20,7 @@ app.component('dashboard-page', {
           const d = passportData.value;
           passports.value = d.records || d || [];
         }
-        if (statusData.status === 'fulfilled') {
-          fabricStatus.value = statusData.value.fabric || 'disconnected';
-        }
+        // fabricStatus is managed globally in app.js
         if (materialData.status === 'fulfilled') {
           const m = materialData.value;
           materials.value = Array.isArray(m) ? m : (m.records || []);
@@ -197,7 +194,7 @@ app.component('dashboard-page', {
     function nav(page) { emit('navigate', page); }
 
     return {
-      loading, fabricStatus, passports, materials,
+      loading, passports, materials,
       totalCount, activeCount,
       statusList, statusLabels,
       countByStatus, statusDistribution,
