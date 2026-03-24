@@ -27,6 +27,18 @@ function createApi(auth) {
   };
 }
 
+// Shared utility functions (K-5: avoid duplication across pages)
+function scaleSOC(val) {
+  if (val == null) return 0;
+  const n = Number(val);
+  return n > 100 ? +(n / 655.35).toFixed(1) : +n.toFixed(1);
+}
+function scaleTemp(val) {
+  if (val == null) return 0;
+  const n = Number(val);
+  return n > 100 ? +(n / 1310.7).toFixed(1) : +n.toFixed(1);
+}
+
 // MSP label map
 const MSP_LABELS = {
   ManufacturerMSP: '제조사',
@@ -50,6 +62,7 @@ const SIDEBAR_NAV = [
   { route: 'bmu-data', label: '배터리 데이터', icon: 'pulse', section: '모니터링' },
   { route: 'maintenance', label: '정비/서비스', icon: 'wrench', section: '운영' },
   { route: 'recycling', label: '재활용', icon: 'recycle', section: '운영' },
+  { route: 'qr-scan', label: 'QR 스캔', icon: 'qr', section: '도구' },
 ];
 
 // Page component map
@@ -62,6 +75,7 @@ const PAGE_COMPONENTS = {
   'bmu-data': 'bmu-data-page',
   maintenance: 'maintenance-page',
   recycling: 'recycling-page',
+  'qr-scan': 'qr-scan-page',
 };
 
 const app = createApp({
@@ -72,22 +86,65 @@ const app = createApp({
       orgMsp: localStorage.getItem('bp_orgMsp') || null,
     });
 
-    // Restore page from URL hash on refresh
-    const hashPage = window.location.hash.replace('#', '');
+    // Restore page from URL hash on refresh (supports #passport-detail?passportId=XXX)
+    const rawHash = window.location.hash.replace('#', '');
+    const [hashPage, hashQuery] = rawHash.split('?');
+    const hashParams = new URLSearchParams(hashQuery || '');
     const initialPage = auth.value.token
       ? (hashPage && PAGE_COMPONENTS[hashPage] ? hashPage : 'dashboard')
       : 'login';
     const currentPage = ref(initialPage);
-    const pageProps = ref({});
+    const initialProps = {};
+    if (hashParams.get('passportId')) initialProps.passportId = hashParams.get('passportId');
+    window.__pageProps = initialProps;
+    const pageProps = ref(initialProps);
     const toasts = ref([]);
     const mobileMenuOpen = ref(false);
 
     const api = computed(() => createApi(auth.value));
 
-    const orgLabel = computed(() => MSP_LABELS[auth.value.orgMsp] || auth.value.orgMsp);
+    // Fabric connection status (polled from /api/status)
+    const fabricStatus = ref('checking');
+    async function checkFabricStatus() {
+      try {
+        const data = await api.value.get('/status');
+        fabricStatus.value = data.fabric || 'connected';
+      } catch {
+        fabricStatus.value = 'disconnected';
+      }
+    }
+    if (auth.value.token) checkFabricStatus();
+    setInterval(() => { if (auth.value.token) checkFabricStatus(); }, 30000);
 
-    // Unified nav items for sidebar
-    const navItems = computed(() => SIDEBAR_NAV);
+    // Notification badges — pending request counts per route
+    const navBadges = ref({});
+    async function fetchNavBadges() {
+      try {
+        const data = await api.value.get('/passports');
+        const list = data.records || data || [];
+        const msp = auth.value.orgMsp;
+        const badges = {};
+        if (msp === 'ServiceMSP') {
+          const maintCount = list.filter(p => p.status === 'MAINTENANCE').length;
+          const analysisCount = list.filter(p => p.status === 'ANALYSIS').length;
+          if (maintCount > 0) badges['maintenance'] = maintCount;
+          if (analysisCount > 0) badges['maintenance'] = (badges['maintenance'] || 0) + analysisCount;
+        }
+        if (msp === 'RegulatorMSP') {
+          const recycleCount = list.filter(p => p.recycleAvailable && p.status !== 'DISPOSED').length;
+          if (recycleCount > 0) badges['recycling'] = recycleCount;
+        }
+        if (msp === 'EVManufacturerMSP') {
+          const activeCount = list.filter(p => p.status === 'ACTIVE' && p.vin).length;
+          if (activeCount > 0) badges['maintenance'] = activeCount;
+        }
+        navBadges.value = badges;
+      } catch (e) { console.warn('fetchNavBadges error:', e.message); }
+    }
+    if (auth.value.token) fetchNavBadges();
+    setInterval(() => { if (auth.value.token) fetchNavBadges(); }, 15000);
+
+    const orgLabel = computed(() => MSP_LABELS[auth.value.orgMsp] || auth.value.orgMsp);
 
     // Grouped nav items by section for sidebar rendering
     const groupedNavItems = computed(() => {
@@ -158,8 +215,11 @@ const app = createApp({
         window.__pageProps = {};
       }
       if (!skipHistory) {
-        history.pushState({ page, props: navProps || {} }, '', `#${page}`);
+        let hashUrl = `#${page}`;
+        if (navProps && navProps.passportId) hashUrl += `?passportId=${encodeURIComponent(navProps.passportId)}`;
+        history.pushState({ page, props: navProps || {} }, '', hashUrl);
       }
+      fetchNavBadges();
     }
 
     // Back/forward navigation
@@ -167,12 +227,20 @@ const app = createApp({
       if (e.state && e.state.page) {
         navigate(e.state.page, e.state.props, true);
       } else {
-        navigate(auth.value.token ? 'dashboard' : 'login', {}, true);
+        // Fallback: parse hash for page & props (B-2 fix)
+        const hash = window.location.hash.replace('#', '');
+        const [pg, q] = hash.split('?');
+        const page = PAGE_COMPONENTS[pg] ? pg : (auth.value.token ? 'dashboard' : 'login');
+        const props = Object.fromEntries(new URLSearchParams(q || ''));
+        navigate(page, props, true);
       }
     });
 
-    // Register initial state
-    history.replaceState({ page: currentPage.value, props: {} }, '', `#${currentPage.value}`);
+    // Register initial state (include initialProps for passport-detail refresh)
+    const initHash = initialProps.passportId
+      ? `#${currentPage.value}?passportId=${encodeURIComponent(initialProps.passportId)}`
+      : `#${currentPage.value}`;
+    history.replaceState({ page: currentPage.value, props: initialProps }, '', initHash);
 
     function onLogin(data) {
       auth.value = { token: data.token, userId: data.userId, orgMsp: data.mspId };
@@ -181,6 +249,8 @@ const app = createApp({
       localStorage.setItem('bp_orgMsp', data.mspId);
       showToast('success', `${data.userId}님 환영합니다`);
       navigate('dashboard');
+      checkFabricStatus();
+      setTimeout(fetchNavBadges, 1000);
     }
 
     function logout() {
@@ -200,8 +270,8 @@ const app = createApp({
     window.$toast = showToast;
 
     return {
-      auth, currentPage, pageProps, toasts, api,
-      orgLabel, navItems, groupedNavItems, currentPageComponent,
+      auth, currentPage, pageProps, toasts, api, fabricStatus, navBadges,
+      orgLabel, groupedNavItems, currentPageComponent,
       currentPageTitle, userInitials, orgBadgeClasses, orgAvatarColor,
       mobileMenuOpen,
       navigate, onLogin, logout, showToast,

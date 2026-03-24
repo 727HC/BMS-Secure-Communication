@@ -17,6 +17,14 @@ app.component('passport-detail-page', {
     const history = ref([]);
     const historyLoading = ref(false);
 
+    // VC (Verifiable Credentials)
+    const vcList = ref([]);
+    const vcLoading = ref(false);
+    const showVcIssueModal = ref(false);
+    const showVcDetailModal = ref(false);
+    const selectedVc = ref(null);
+    const vcForm = ref({ credType: 'BATTERY_PASSPORT', holderDid: '', expiresAt: '' });
+
     // Modal toggles
     const showBindModal = ref(false);
     const showMaintenanceLogModal = ref(false);
@@ -31,8 +39,10 @@ app.component('passport-detail-page', {
 
     // Forms
     const bindForm = ref({ vin: '', installDate: '', evManufacturer: '', evAssemblyCountry: '' });
+    const vehicleImageFile = ref(null);
+    const vehicleImagePath = ref(null);
     const maintenanceForm = ref({ date: '', type: '', description: '', technician: '' });
-    const accidentForm = ref({ date: '', type: '', description: '', reporter: '' });
+    const accidentForm = ref({ severity: 'minor', description: '', reporter: '' });
     const analysisForm = ref({ soh: '', soce: '', remainingLifeCycle: '', recycleAvailable: false });
     const extractForm = ref({ recyclingRatesJson: '{\n  "cobalt": 95,\n  "nickel": 90,\n  "lithium": 80,\n  "manganese": 85\n}' });
 
@@ -166,7 +176,10 @@ app.component('passport-detail-page', {
       if (!p) return { filled: 0, total: 21, pct: 0, allFilled: false, groups: [] };
       let filled = 0;
       const fields = gba21Fields.map(f => {
-        const isFilled = fieldFilled(p, f.key);
+        // carbonFootprint: count as filled if value exists OR estimation is available
+        const isFilled = f.key === 'carbonFootprint'
+          ? (fieldFilled(p, f.key) || estimatedCarbonFootprint.value != null)
+          : fieldFilled(p, f.key);
         if (isFilled) filled++;
         return { ...f, filled: isFilled };
       });
@@ -251,12 +264,12 @@ app.component('passport-detail-page', {
         document.head.appendChild(style);
       }
 
-      const urlParams = new URLSearchParams(window.location.search);
-      passportId.value = urlParams.get('passportId') || '';
-      if (!passportId.value) {
-        const el = document.querySelector('[data-passport-id]');
-        if (el) passportId.value = el.dataset.passportId;
-      }
+      // B-6 fix: parse passportId from hash first (SPA hash routing)
+      const hashStr = window.location.hash.replace('#', '');
+      const [, hq] = hashStr.split('?');
+      const hashParams = new URLSearchParams(hq || '');
+      passportId.value = hashParams.get('passportId') || '';
+      // Fallback to window.__pageProps
       if (!passportId.value && window.__pageProps && window.__pageProps.passportId) {
         passportId.value = window.__pageProps.passportId;
       }
@@ -269,6 +282,7 @@ app.component('passport-detail-page', {
       loading.value = true;
       try {
         passport.value = await props.api.get('/passports/' + passportId.value);
+        checkVehicleImage();
       } catch (e) {
         window.$toast('error', '여권 정보를 불러오지 못했습니다: ' + e.message);
       } finally {
@@ -295,32 +309,37 @@ app.component('passport-detail-page', {
       try {
         const data = await props.api.get('/passports/' + passportId.value + '/history');
         const raw = data.records || data || [];
-        const all = raw.map((entry, i) => {
-          let parsed = entry;
+        // Parse and reverse to chronological order (oldest first)
+        const parsed = raw.map(entry => {
           if (typeof entry === 'string') {
-            try { parsed = JSON.parse(entry); } catch (e) { parsed = {}; }
+            try { return JSON.parse(entry); } catch (e) { return {}; }
           }
-          return { value: parsed, index: i + 1 };
+          return entry;
         });
+        parsed.reverse();
+        const all = parsed.map((value, i) => ({ value, index: i + 1 }));
         const filtered = [];
-        let prevStatus = null, prevVin = null, prevMaintCount = 0;
+        let prevStatus = null, prevVin = null, prevMaintCount = 0, prevAccidentCount = 0;
         all.forEach((entry, i) => {
           const v = entry.value;
           const status = v.status || '';
           const vin = v.vin || '';
           const maintCount = (v.maintenanceLogs || []).length;
+          const accidentCount = (v.accidentLogs || []).length;
           const isFirst = i === 0;
           const isLast = i === all.length - 1;
           const statusChanged = status !== prevStatus;
           const vinChanged = vin && vin !== prevVin;
           const maintChanged = maintCount > prevMaintCount;
-          if (isFirst || isLast || statusChanged || vinChanged || maintChanged) {
+          const accidentChanged = accidentCount > prevAccidentCount;
+          if (isFirst || isLast || statusChanged || vinChanged || maintChanged || accidentChanged) {
             let changeDesc = '';
             if (isFirst) changeDesc = '여권 생성';
             else if (statusChanged && prevStatus) {
               changeDesc = (statusLabels[prevStatus] || prevStatus) + ' -> ' + (statusLabels[status] || status);
             }
             else if (vinChanged) changeDesc = 'VIN 바인딩: ' + vin;
+            else if (accidentChanged) changeDesc = '사고 기록 추가 (#' + accidentCount + ')';
             else if (maintChanged) changeDesc = '정비 기록 추가 (#' + maintCount + ')';
             else if (isLast) changeDesc = '최신 상태';
             filtered.push({
@@ -328,7 +347,7 @@ app.component('passport-detail-page', {
               changeDesc, index: entry.index, blockNumber: entry.index,
             });
           }
-          prevStatus = status; prevVin = vin; prevMaintCount = maintCount;
+          prevStatus = status; prevVin = vin; prevMaintCount = maintCount; prevAccidentCount = accidentCount;
         });
         history.value = filtered;
       } catch (e) {
@@ -338,10 +357,137 @@ app.component('passport-detail-page', {
       }
     }
 
+    async function fetchVcList() {
+      if (vcList.value.length > 0) return;
+      vcLoading.value = true;
+      try {
+        const data = await props.api.get('/vc/passport/' + passportId.value);
+        vcList.value = data.records || data || [];
+      } catch (e) {
+        vcList.value = [];
+      } finally {
+        vcLoading.value = false;
+      }
+    }
+
+    async function issueVc() {
+      submitting.value = true;
+      try {
+        await props.api.post('/vc/issue', {
+          passportId: passportId.value,
+          credType: vcForm.value.credType,
+          holderDid: vcForm.value.holderDid || passport.value.did || '',
+          expiresAt: vcForm.value.expiresAt || '',
+        });
+        window.$toast('success', '인증서가 발급되었습니다.');
+        showVcIssueModal.value = false;
+        vcList.value = [];
+        await fetchVcList();
+      } catch (e) { window.$toast('error', '인증서 발급 실패: ' + e.message); }
+      finally { submitting.value = false; }
+    }
+
+    async function verifyVc(credentialId) {
+      try {
+        const result = await props.api.get('/vc/verify/' + credentialId);
+        const vc = vcList.value.find(v => v.credentialId === credentialId);
+        if (vc) vc._verified = result;
+        window.$toast('success', result.valid ? '유효한 인증서입니다.' : '유효하지 않은 인증서입니다.');
+      } catch (e) { window.$toast('error', '검증 실패: ' + e.message); }
+    }
+
+    async function revokeVc(credentialId) {
+      if (!confirm('이 인증서를 폐기하시겠습니까?')) return;
+      submitting.value = true;
+      try {
+        await props.api.post('/vc/revoke', { credentialId, reason: '수동 폐기' });
+        window.$toast('success', '인증서가 폐기되었습니다.');
+        vcList.value = [];
+        await fetchVcList();
+      } catch (e) { window.$toast('error', '폐기 실패: ' + e.message); }
+      finally { submitting.value = false; }
+    }
+
+    const vcCredTypes = [
+      { value: 'BATTERY_PASSPORT', label: '배터리 여권', org: 'ManufacturerMSP' },
+      { value: 'BATTERY_HEALTH', label: '배터리 건강', org: 'ServiceMSP' },
+      { value: 'MAINTENANCE', label: '정비 인증', org: 'ServiceMSP' },
+      { value: 'COMPLIANCE', label: '규제 적합', org: 'RegulatorMSP' },
+      { value: 'RECYCLING', label: '재활용 인증', org: 'RegulatorMSP' },
+    ];
+
+    const canIssueVc = computed(() => {
+      return vcCredTypes.some(t => t.org === props.auth.orgMsp);
+    });
+
+    const availableCredTypes = computed(() => {
+      return vcCredTypes.filter(t => t.org === props.auth.orgMsp);
+    });
+
+    // Carbon footprint estimation from raw materials
+    const EMISSION_FACTORS = { '리튬': 15, '코발트': 35, '니켈': 12, '망간': 8, '흑연': 5, '인산': 4, '철': 2, '구리': 4, '알루미늄': 10 };
+    const estimatedCarbonFootprint = computed(() => {
+      const p = passport.value;
+      if (!p) return null;
+      if (p.carbonFootprint && p.carbonFootprint > 0) return p.carbonFootprint;
+      // Estimate from rawMaterials if available
+      if (p.rawMaterials && Array.isArray(p.rawMaterials) && p.rawMaterials.length > 0) {
+        // rawMaterials could be array of objects or strings
+        return null; // Need material details to estimate
+      }
+      // Rough estimate based on weight + chemistry
+      if (p.weight > 0 && p.totalEnergy > 0) {
+        const factor = (p.chemistry || '').includes('LFP') ? 60 : 75;
+        return +(factor * p.totalEnergy / 1000).toFixed(1);
+      }
+      return null;
+    });
+
+    const carbonGrade = computed(() => {
+      const cf = estimatedCarbonFootprint.value;
+      if (cf == null) return null;
+      const perKwh = passport.value?.totalEnergy > 0 ? cf / passport.value.totalEnergy * 1000 : null;
+      if (perKwh == null) return null;
+      if (perKwh <= 50) return { grade: 'A', color: 'text-emerald-600', bg: 'bg-emerald-50', label: '매우 우수' };
+      if (perKwh <= 75) return { grade: 'B', color: 'text-blue-600', bg: 'bg-blue-50', label: '우수' };
+      if (perKwh <= 100) return { grade: 'C', color: 'text-amber-600', bg: 'bg-amber-50', label: '보통' };
+      return { grade: 'D', color: 'text-red-600', bg: 'bg-red-50', label: '개선 필요' };
+    });
+
+    // QR Code
+    const qrUrl = computed(() => {
+      if (!passport.value) return '';
+      return window.location.origin + '/#passport-detail?passportId=' + encodeURIComponent(passport.value.passportId);
+    });
+
+    function generateQr() {
+      if (!passport.value || typeof QRCode === 'undefined') return;
+      const tryRender = () => {
+        const canvas = document.getElementById('qr-canvas');
+        if (!canvas) return setTimeout(tryRender, 200);
+        QRCode.toCanvas(canvas, qrUrl.value, { width: 160, margin: 2, color: { dark: '#0f172a', light: '#ffffff' } });
+      };
+      Vue.nextTick(tryRender);
+    }
+
+    // Auto-generate QR when passport loads and trust tab is active
+    watch(() => [passport.value, activeTab.value], ([p, tab]) => {
+      if (p && tab === 'trust') setTimeout(generateQr, 100);
+    });
+
+    function downloadQr() {
+      const canvas = document.getElementById('qr-canvas');
+      if (!canvas) return;
+      const link = document.createElement('a');
+      link.download = (passport.value?.passportId || 'qr') + '-qrcode.png';
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+    }
+
     function switchTab(tab) {
       activeTab.value = tab;
       if (tab === 'data') fetchBmuData();
-      if (tab === 'trust') fetchHistory();
+      if (tab === 'trust') { fetchHistory(); fetchVcList(); setTimeout(generateQr, 300); }
     }
 
     /* ---------- actions ---------- */
@@ -349,17 +495,60 @@ app.component('passport-detail-page', {
       submitting.value = true;
       try {
         await props.api.put('/passports/' + passportId.value + '/bind', bindForm.value);
+        // Upload vehicle image if selected
+        if (vehicleImageFile.value) {
+          const formData = new FormData();
+          formData.append('image', vehicleImageFile.value);
+          const res = await fetch('/api/passports/' + passportId.value + '/vehicle-image', {
+            method: 'POST',
+            headers: { 'Authorization': 'Bearer ' + props.auth.token },
+            body: formData,
+          });
+          if (res.ok) {
+            const data = await res.json();
+            vehicleImagePath.value = data.path;
+          }
+          vehicleImageFile.value = null;
+        }
         window.$toast('success', 'VIN 바인딩이 완료되었습니다.');
         showBindModal.value = false;
         await fetchPassport();
+        await checkVehicleImage();
       } catch (e) { window.$toast('error', 'VIN 바인딩 실패: ' + e.message); }
       finally { submitting.value = false; }
+    }
+
+    async function uploadVehicleImage(file) {
+      if (!file) return;
+      try {
+        const formData = new FormData();
+        formData.append('image', file);
+        const res = await fetch('/api/passports/' + passportId.value + '/vehicle-image', {
+          method: 'POST',
+          headers: { 'Authorization': 'Bearer ' + props.auth.token },
+          body: formData,
+        });
+        const data = await res.json();
+        if (res.ok) {
+          vehicleImagePath.value = data.path + '?t=' + Date.now();
+          window.$toast('success', '차량 사진이 등록되었습니다.');
+        } else {
+          window.$toast('error', data.error || '업로드 실패');
+        }
+      } catch (e) { window.$toast('error', '업로드 실패: ' + e.message); }
+    }
+
+    async function checkVehicleImage() {
+      try {
+        const data = await props.api.get('/passports/' + passportId.value + '/vehicle-image');
+        vehicleImagePath.value = data.exists ? data.path : null;
+      } catch { vehicleImagePath.value = null; }
     }
 
     async function submitMaintenanceRequest() {
       submitting.value = true;
       try {
-        await props.api.put('/passports/' + passportId.value + '/request-maintenance', {});
+        await props.api.post('/maintenance/' + passportId.value + '/request', { maintenanceType: 'routine', description: '정비 요청' });
         window.$toast('success', '정비 요청이 접수되었습니다.');
         showMaintenanceRequestModal.value = false;
         await fetchPassport();
@@ -370,7 +559,11 @@ app.component('passport-detail-page', {
     async function submitMaintenanceLog() {
       submitting.value = true;
       try {
-        await props.api.put('/passports/' + passportId.value + '/maintenance-log', maintenanceForm.value);
+        await props.api.post('/maintenance/' + passportId.value + '/log', {
+          maintenanceType: maintenanceForm.value.type || 'routine',
+          description: maintenanceForm.value.description,
+          technician: maintenanceForm.value.technician,
+        });
         window.$toast('success', '정비 기록이 추가되었습니다.');
         showMaintenanceLogModal.value = false;
         maintenanceForm.value = { date: '', type: '', description: '', technician: '' };
@@ -382,10 +575,10 @@ app.component('passport-detail-page', {
     async function submitAccidentLog() {
       submitting.value = true;
       try {
-        await props.api.put('/passports/' + passportId.value + '/accident-log', accidentForm.value);
+        await props.api.post('/maintenance/' + passportId.value + '/accident', accidentForm.value);
         window.$toast('success', '사고 기록이 추가되었습니다.');
         showAccidentLogModal.value = false;
-        accidentForm.value = { date: '', type: '', description: '', reporter: '' };
+        accidentForm.value = { severity: 'minor', description: '', reporter: '' };
         await fetchPassport();
       } catch (e) { window.$toast('error', '사고 기록 추가 실패: ' + e.message); }
       finally { submitting.value = false; }
@@ -394,7 +587,7 @@ app.component('passport-detail-page', {
     async function submitAnalysisRequest() {
       submitting.value = true;
       try {
-        await props.api.put('/passports/' + passportId.value + '/request-analysis', {});
+        await props.api.post('/analysis/' + passportId.value + '/request', {});
         window.$toast('success', '분석 요청이 접수되었습니다.');
         showAnalysisRequestModal.value = false;
         await fetchPassport();
@@ -410,7 +603,7 @@ app.component('passport-detail-page', {
           remainingLifeCycle: Number(analysisForm.value.remainingLifeCycle),
           recycleAvailable: analysisForm.value.recycleAvailable,
         };
-        await props.api.put('/passports/' + passportId.value + '/analysis-result', body);
+        await props.api.post('/analysis/' + passportId.value + '/result', body);
         window.$toast('success', '분석 결과가 제출되었습니다.');
         showAnalysisResultModal.value = false;
         analysisForm.value = { soh: '', soce: '', remainingLifeCycle: '', recycleAvailable: false };
@@ -422,7 +615,7 @@ app.component('passport-detail-page', {
     async function submitRecycleAvailability(available) {
       submitting.value = true;
       try {
-        await props.api.put('/passports/' + passportId.value + '/recycle-availability', { recycleAvailable: available });
+        await props.api.put('/recycling/' + passportId.value + '/availability', { available });
         window.$toast('success', '재활용 판정이 완료되었습니다.');
         showRecycleModal.value = false;
         await fetchPassport();
@@ -434,7 +627,7 @@ app.component('passport-detail-page', {
       submitting.value = true;
       try {
         const rates = JSON.parse(extractForm.value.recyclingRatesJson);
-        await props.api.put('/passports/' + passportId.value + '/extract-materials', { recyclingRates: rates });
+        await props.api.post('/recycling/' + passportId.value + '/extract', { recyclingRates: rates });
         window.$toast('success', '원자재 추출 정보가 등록되었습니다.');
         showExtractModal.value = false;
         await fetchPassport();
@@ -446,7 +639,7 @@ app.component('passport-detail-page', {
     async function disposeBattery() {
       submitting.value = true;
       try {
-        await props.api.put('/passports/' + passportId.value + '/dispose', {});
+        await props.api.post('/recycling/' + passportId.value + '/dispose', {});
         window.$toast('success', '배터리가 폐기 처리되었습니다.');
         showDisposeConfirm.value = false;
         await fetchPassport();
@@ -464,7 +657,7 @@ app.component('passport-detail-page', {
       showMaintenanceRequestModal, showAnalysisRequestModal,
       showAnalysisResultModal, showRecycleModal, showExtractModal,
       showDisposeConfirm, submitting,
-      bindForm, maintenanceForm, accidentForm, analysisForm, extractForm,
+      bindForm, maintenanceForm, accidentForm, analysisForm, extractForm, vehicleImageFile, vehicleImagePath, uploadVehicleImage,
       msp, isEV, isService, isRegulator, isManufacturer,
       maintenanceLogs, accidentLogs,
       batteryFillAnimated, lifecycleSteps, statusOrder,
@@ -477,6 +670,11 @@ app.component('passport-detail-page', {
       submitAnalysisRequest, submitAnalysisResult, submitRecycleAvailability,
       submitExtractMaterials, disposeBattery,
       statusLabels,
+      vcList, vcLoading, showVcIssueModal, showVcDetailModal, selectedVc, vcForm,
+      vcCredTypes, canIssueVc, availableCredTypes,
+      issueVc, verifyVc, revokeVc,
+      estimatedCarbonFootprint, carbonGrade,
+      qrUrl, generateQr, downloadQr,
     };
   },
   template: `
@@ -492,7 +690,8 @@ app.component('passport-detail-page', {
           배터리 여권 목록
         </button>
 
-        <div v-if="passport" class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+        <div v-if="passport" class="flex flex-col lg:flex-row lg:items-start gap-6">
+          <!-- Left: Title + Key Specs -->
           <div class="flex-1 min-w-0">
             <div class="flex items-center gap-3 flex-wrap mb-1.5">
               <h1 class="text-2xl font-bold text-slate-900">{{ passport.model || '배터리 여권 상세' }}</h1>
@@ -506,20 +705,112 @@ app.component('passport-detail-page', {
                 {{ getStatusBadge(passport.status).label }}
               </span>
             </div>
-            <div class="flex items-center gap-4 flex-wrap">
+            <div class="flex items-center gap-4 flex-wrap mb-4">
               <span class="text-sm text-slate-400 font-mono">{{ passport.passportId }}</span>
               <span v-if="passport.serialNumber" class="text-sm text-slate-400">S/N: {{ passport.serialNumber }}</span>
             </div>
+
+            <!-- Key specs grid -->
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <div class="bg-slate-50 rounded-lg px-3 py-2.5 border border-slate-100">
+                <p class="text-[10px] font-medium text-slate-400 uppercase tracking-wider mb-0.5">제조사</p>
+                <p class="text-sm font-semibold text-slate-700 truncate">{{ passport.manufacturerName || '-' }}</p>
+              </div>
+              <div class="bg-slate-50 rounded-lg px-3 py-2.5 border border-slate-100">
+                <p class="text-[10px] font-medium text-slate-400 uppercase tracking-wider mb-0.5">화학물질</p>
+                <p class="text-sm font-semibold text-slate-700 truncate">{{ passport.chemistry || '-' }}</p>
+              </div>
+              <div class="bg-slate-50 rounded-lg px-3 py-2.5 border border-slate-100">
+                <p class="text-[10px] font-medium text-slate-400 uppercase tracking-wider mb-0.5">총 에너지</p>
+                <p class="text-sm font-semibold text-slate-700">{{ passport.totalEnergy ? passport.totalEnergy + ' kWh' : '-' }}</p>
+              </div>
+              <div class="bg-slate-50 rounded-lg px-3 py-2.5 border border-slate-100">
+                <p class="text-[10px] font-medium text-slate-400 uppercase tracking-wider mb-0.5">무게</p>
+                <p class="text-sm font-semibold text-slate-700">{{ passport.weight ? passport.weight + ' kg' : '-' }}</p>
+              </div>
+              <div v-if="passport.vin" class="bg-slate-50 rounded-lg px-3 py-2.5 border border-slate-100">
+                <p class="text-[10px] font-medium text-slate-400 uppercase tracking-wider mb-0.5">VIN</p>
+                <p class="text-sm font-semibold text-slate-700 font-mono truncate">{{ passport.vin }}</p>
+              </div>
+              <div class="bg-slate-50 rounded-lg px-3 py-2.5 border border-slate-100">
+                <p class="text-[10px] font-medium text-slate-400 uppercase tracking-wider mb-0.5">셀 수</p>
+                <p class="text-sm font-semibold text-slate-700">{{ passport.cellCount || '-' }}</p>
+              </div>
+              <div class="bg-slate-50 rounded-lg px-3 py-2.5 border border-slate-100">
+                <p class="text-[10px] font-medium text-slate-400 uppercase tracking-wider mb-0.5">셀 유형</p>
+                <p class="text-sm font-semibold text-slate-700 truncate">{{ passport.cellType || '-' }}</p>
+              </div>
+              <div class="bg-slate-50 rounded-lg px-3 py-2.5 border border-slate-100">
+                <p class="text-[10px] font-medium text-slate-400 uppercase tracking-wider mb-0.5">정격용량</p>
+                <p class="text-sm font-semibold text-slate-700">{{ passport.ratedCapacity ? passport.ratedCapacity + ' Ah' : '-' }}</p>
+              </div>
+            </div>
           </div>
 
-          <!-- Battery illustration -->
+          <!-- Right: Vehicle/Battery image + SOC -->
           <div class="flex-shrink-0 hidden md:block">
-            <div class="bg-slate-50 rounded-xl border border-slate-200 p-4 flex flex-col items-center gap-3 w-64">
-              <img src="battery-chassis.png"
-                alt="EV Battery Pack" class="w-full h-40 object-contain rounded-lg" loading="lazy"
-                onerror="this.style.display='none'"/>
-              <p class="text-[10px] text-slate-400 text-center italic">실제 배터리와 다를 수 있으며, 참고용 이미지입니다</p>
-              <!-- SOC indicator -->
+            <div class="bg-slate-50 rounded-xl border border-slate-200 p-4 flex flex-col items-center gap-3" :class="vehicleImagePath ? 'w-72' : 'w-56'">
+              <!-- Vehicle + Battery side by side -->
+              <div v-if="vehicleImagePath" class="w-full flex items-center gap-3">
+                <!-- Vehicle image (left) -->
+                <div class="flex-1 relative group">
+                  <img :src="vehicleImagePath" alt="차량 이미지" class="w-full h-28 object-contain rounded-lg" />
+                  <label class="absolute inset-0 bg-black/40 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer">
+                    <span class="text-white text-xs font-medium">사진 변경</span>
+                    <input type="file" accept="image/*" class="hidden" @change="uploadVehicleImage($event.target.files[0])" />
+                  </label>
+                </div>
+                <!-- Battery icon (right) -->
+                <div class="relative w-14 h-28 flex-shrink-0 flex items-center justify-center">
+                <svg viewBox="0 0 80 140" class="w-full h-full">
+                  <!-- Battery terminal -->
+                  <rect x="25" y="0" width="30" height="8" rx="2" fill="#94a3b8"/>
+                  <!-- Battery body -->
+                  <rect x="10" y="8" width="60" height="126" rx="6" fill="none" stroke="#cbd5e1" stroke-width="3"/>
+                  <!-- Battery fill -->
+                  <rect x="14" y="12" :width="52" :height="118"
+                    rx="4" fill="#f1f5f9"/>
+                  <rect x="14" :y="12 + 118 * (1 - batteryFillAnimated / 100)" width="52"
+                    :height="118 * batteryFillAnimated / 100"
+                    rx="4"
+                    :fill="getSocHex(scaleSOC(passport.currentSoc))"
+                    class="transition-all duration-1000"
+                    opacity="0.7"/>
+                  <!-- Percentage text -->
+                  <text x="40" y="78" text-anchor="middle" dominant-baseline="middle"
+                    :fill="batteryFillAnimated > 50 ? '#fff' : '#334155'"
+                    font-size="18" font-weight="bold">
+                    {{ passport.currentSoc != null ? scaleSOC(passport.currentSoc) + '%' : '--' }}
+                  </text>
+                </svg>
+                </div>
+              </div>
+              <!-- Upload button (no image yet, VIN exists) -->
+              <label v-else-if="passport.vin" class="w-full h-28 border-2 border-dashed border-slate-300 rounded-lg flex flex-col items-center justify-center gap-2 cursor-pointer hover:border-emerald-400 hover:bg-emerald-50/30 transition-colors">
+                <svg class="w-7 h-7 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                </svg>
+                <span class="text-[10px] text-slate-400">차량 사진 등록</span>
+                <input type="file" accept="image/*" class="hidden" @change="uploadVehicleImage($event.target.files[0])" />
+              </label>
+              <!-- Battery icon only (no vehicle image, no VIN) -->
+              <div v-else class="relative w-20 h-32 flex items-center justify-center">
+                <svg viewBox="0 0 80 140" class="w-full h-full">
+                  <rect x="25" y="0" width="30" height="8" rx="2" fill="#94a3b8"/>
+                  <rect x="10" y="8" width="60" height="126" rx="6" fill="none" stroke="#cbd5e1" stroke-width="3"/>
+                  <rect x="14" y="12" :width="52" :height="118" rx="4" fill="#f1f5f9"/>
+                  <rect x="14" :y="12 + 118 * (1 - batteryFillAnimated / 100)" width="52"
+                    :height="118 * batteryFillAnimated / 100" rx="4"
+                    :fill="getSocHex(scaleSOC(passport.currentSoc))"
+                    class="transition-all duration-1000" opacity="0.7"/>
+                  <text x="40" y="78" text-anchor="middle" dominant-baseline="middle"
+                    :fill="batteryFillAnimated > 50 ? '#fff' : '#334155'"
+                    font-size="18" font-weight="bold">
+                    {{ passport.currentSoc != null ? scaleSOC(passport.currentSoc) + '%' : '--' }}
+                  </text>
+                </svg>
+              </div>
+              <!-- SOC bar -->
               <div class="w-full">
                 <div class="flex items-center justify-between mb-1">
                   <span class="text-xs font-medium text-slate-500">SOC</span>
@@ -529,6 +820,17 @@ app.component('passport-detail-page', {
                   <div class="h-full rounded-full transition-all duration-1000"
                     :style="{ width: Math.min(Math.max(scaleSOC(passport.currentSoc) || 0, 0), 100) + '%' }"
                     :class="scaleSOC(passport.currentSoc) > 60 ? 'bg-emerald-500' : scaleSOC(passport.currentSoc) > 25 ? 'bg-amber-500' : 'bg-red-500'"></div>
+                </div>
+              </div>
+              <!-- SOH if available -->
+              <div v-if="passport.currentSoh != null" class="w-full">
+                <div class="flex items-center justify-between mb-1">
+                  <span class="text-xs font-medium text-slate-500">SOH</span>
+                  <span class="text-xs font-bold text-slate-700">{{ passport.currentSoh }}%</span>
+                </div>
+                <div class="w-full h-2.5 bg-slate-200 rounded-full overflow-hidden">
+                  <div class="h-full rounded-full transition-all duration-1000 bg-blue-500"
+                    :style="{ width: Math.min(passport.currentSoh, 100) + '%' }"></div>
                 </div>
               </div>
             </div>
@@ -865,7 +1167,7 @@ app.component('passport-detail-page', {
                 </svg>
               </div>
 
-              <!-- Key metrics row — 6 boxes like OpenBattery -->
+              <!-- Key metrics row -->
               <div class="grid grid-cols-3 sm:grid-cols-6 gap-3 mb-8">
                 <div class="bg-slate-50 rounded-xl p-4 text-center border border-slate-100">
                   <p class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1.5">GBA 준수</p>
@@ -885,11 +1187,11 @@ app.component('passport-detail-page', {
                 </div>
                 <div class="bg-slate-50 rounded-xl p-4 text-center border border-slate-100">
                   <p class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1.5">유해물질</p>
-                  <p class="text-xl font-bold text-slate-900">N/A</p>
+                  <p class="text-xl font-bold text-slate-900">{{ passport.containsHazardous ? '포함' : '미포함' }}</p>
                 </div>
                 <div class="bg-slate-50 rounded-xl p-4 text-center border border-slate-100">
-                  <p class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1.5">핵심원자재</p>
-                  <p class="text-xl font-bold text-slate-900">N/A</p>
+                  <p class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1.5">탄소발자국</p>
+                  <p class="text-xl font-bold text-slate-900">{{ estimatedCarbonFootprint != null ? estimatedCarbonFootprint : 'N/A' }}<span v-if="estimatedCarbonFootprint" class="text-xs font-normal text-slate-400 ml-0.5">kg</span></p>
                 </div>
               </div>
 
@@ -924,8 +1226,7 @@ app.component('passport-detail-page', {
                 </div>
               </div>
 
-
-              <!-- Certified badge — subtle -->
+              <!-- Certified badge -->
               <div v-if="gbaCompliance.allFilled" class="mt-6 px-4 py-3 bg-emerald-50/60 rounded-lg border border-emerald-100 flex items-center gap-2.5">
                 <svg class="w-5 h-5 text-emerald-500 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
@@ -935,10 +1236,103 @@ app.component('passport-detail-page', {
               </div>
             </div>
           </div>
+
+          <!-- Carbon Footprint Card (GBA 21 #20) -->
+          <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+            <div class="px-6 py-4 border-b border-slate-100 flex items-center gap-2.5">
+              <div class="w-8 h-8 bg-teal-100 rounded-lg flex items-center justify-center">
+                <svg class="w-4 h-4 text-teal-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+              </div>
+              <div>
+                <h3 class="text-sm font-bold text-slate-800 uppercase tracking-wider">탄소 발자국</h3>
+                <p class="text-[10px] text-slate-400">GBA 21 #20 — Carbon Footprint (kg CO₂e)</p>
+              </div>
+            </div>
+            <div class="p-6">
+              <div v-if="estimatedCarbonFootprint != null" class="flex items-center gap-6">
+                <!-- Value -->
+                <div class="text-center">
+                  <p class="text-3xl font-bold text-slate-900 tabular-nums">{{ estimatedCarbonFootprint }}</p>
+                  <p class="text-xs text-slate-400 mt-1">kg CO₂e</p>
+                </div>
+                <!-- Grade badge -->
+                <div v-if="carbonGrade" :class="['flex items-center gap-3 px-4 py-3 rounded-xl border', carbonGrade.bg]">
+                  <span :class="['text-2xl font-black', carbonGrade.color]">{{ carbonGrade.grade }}</span>
+                  <div>
+                    <p :class="['text-sm font-semibold', carbonGrade.color]">{{ carbonGrade.label }}</p>
+                    <p class="text-[10px] text-slate-400">{{ passport.totalEnergy > 0 ? (estimatedCarbonFootprint / passport.totalEnergy * 1000).toFixed(1) + ' kg CO₂e/kWh' : '' }}</p>
+                  </div>
+                </div>
+                <!-- Info -->
+                <div class="flex-1 text-xs text-slate-400 leading-relaxed">
+                  <p v-if="passport.carbonFootprint > 0">제조사 신고값</p>
+                  <p v-else>배터리 무게/에너지 기반 추정값입니다. 정확한 값은 제조사의 LCA 결과를 참조하세요.</p>
+                </div>
+              </div>
+              <div v-else class="text-center py-4">
+                <p class="text-sm text-slate-400">탄소 발자국 데이터가 없습니다</p>
+                <p class="text-xs text-slate-300 mt-1">무게(kg)와 총 에너지(kWh) 정보가 있으면 자동 추정됩니다.</p>
+              </div>
+            </div>
+          </div>
         </div>
 
         <!-- ==================== TAB 3: TRACEABILITY ==================== -->
         <div v-if="activeTab === 'traceability'" class="space-y-6">
+
+          <!-- Pending Request Alert Banner -->
+          <div v-if="passport.status === 'MAINTENANCE'"
+            class="flex items-center gap-3 px-5 py-4 bg-amber-50 border border-amber-200 rounded-xl">
+            <div class="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center flex-shrink-0">
+              <svg class="w-5 h-5 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+              </svg>
+            </div>
+            <div class="flex-1">
+              <p class="text-sm font-semibold text-amber-800">정비 요청 접수됨</p>
+              <p class="text-xs text-amber-600 mt-0.5">EV 제조사로부터 정비 요청이 접수되었습니다. 정비를 수행하고 기록을 추가해주세요.</p>
+            </div>
+            <button v-if="isService" @click="showMaintenanceLogModal = true"
+              class="flex-shrink-0 px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold rounded-lg transition-colors">
+              정비 기록 추가
+            </button>
+          </div>
+
+          <div v-if="passport.status === 'ANALYSIS'"
+            class="flex items-center gap-3 px-5 py-4 bg-purple-50 border border-purple-200 rounded-xl">
+            <div class="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center flex-shrink-0">
+              <svg class="w-5 h-5 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
+              </svg>
+            </div>
+            <div class="flex-1">
+              <p class="text-sm font-semibold text-purple-800">분석 요청 접수됨</p>
+              <p class="text-xs text-purple-600 mt-0.5">EV 제조사로부터 배터리 분석 요청이 접수되었습니다. SOH/SOCE 분석 후 결과를 제출해주세요.</p>
+            </div>
+            <button v-if="isService" @click="showAnalysisResultModal = true"
+              class="flex-shrink-0 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-xs font-semibold rounded-lg transition-colors">
+              분석 결과 제출
+            </button>
+          </div>
+
+          <div v-if="passport.status === 'RECYCLING'"
+            class="flex items-center gap-3 px-5 py-4 bg-teal-50 border border-teal-200 rounded-xl">
+            <div class="w-10 h-10 rounded-full bg-teal-100 flex items-center justify-center flex-shrink-0">
+              <svg class="w-5 h-5 text-teal-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+              </svg>
+            </div>
+            <div class="flex-1">
+              <p class="text-sm font-semibold text-teal-800">재활용 대기 중</p>
+              <p class="text-xs text-teal-600 mt-0.5">재활용 가능 판정이 완료되었습니다. 원자재 추출 또는 폐기를 진행해주세요.</p>
+            </div>
+            <button v-if="isRegulator" @click="showExtractModal = true"
+              class="flex-shrink-0 px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white text-xs font-semibold rounded-lg transition-colors">
+              원자재 추출
+            </button>
+          </div>
 
           <!-- Lifecycle Timeline -->
           <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
@@ -1096,7 +1490,7 @@ app.component('passport-detail-page', {
               <table class="w-full text-sm">
                 <thead><tr class="bg-slate-50/60 border-b border-slate-100">
                   <th class="text-left px-5 py-3 font-semibold text-slate-500 text-xs uppercase tracking-wider">날짜</th>
-                  <th class="text-left px-5 py-3 font-semibold text-slate-500 text-xs uppercase tracking-wider">유형</th>
+                  <th class="text-left px-5 py-3 font-semibold text-slate-500 text-xs uppercase tracking-wider">심각도</th>
                   <th class="text-left px-5 py-3 font-semibold text-slate-500 text-xs uppercase tracking-wider">내용</th>
                   <th class="text-left px-5 py-3 font-semibold text-slate-500 text-xs uppercase tracking-wider">보고자</th>
                 </tr></thead>
@@ -1104,7 +1498,7 @@ app.component('passport-detail-page', {
                   <tr v-for="(log, i) in accidentLogs" :key="i"
                     :class="['transition-colors', i % 2 === 0 ? 'bg-white' : 'bg-slate-50/40', 'hover:bg-red-50/30']">
                     <td class="px-5 py-3 text-slate-700 whitespace-nowrap">{{ formatDate(log.date) }}</td>
-                    <td class="px-5 py-3"><span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-red-50 text-red-700 border border-red-100">{{ log.type || '-' }}</span></td>
+                    <td class="px-5 py-3"><span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-red-50 text-red-700 border border-red-100">{{ {minor:'경미',moderate:'보통',severe:'심각',critical:'위험'}[log.severity] || log.severity || '-' }}</span></td>
                     <td class="px-5 py-3 text-slate-700 max-w-xs truncate">{{ log.description || '-' }}</td>
                     <td class="px-5 py-3 text-slate-600">{{ log.reporter || '-' }}</td>
                   </tr>
@@ -1176,7 +1570,7 @@ app.component('passport-detail-page', {
                       <th class="text-left px-5 py-3.5 font-semibold text-slate-500 text-xs uppercase tracking-wider">SOC(%)</th>
                       <th class="text-left px-5 py-3.5 font-semibold text-slate-500 text-xs uppercase tracking-wider">전압(V)</th>
                       <th class="text-left px-5 py-3.5 font-semibold text-slate-500 text-xs uppercase tracking-wider">전류(A)</th>
-                      <th class="text-left px-5 py-3.5 font-semibold text-slate-500 text-xs uppercase tracking-wider">온도(C)</th>
+                      <th class="text-left px-5 py-3.5 font-semibold text-slate-500 text-xs uppercase tracking-wider">온도 (&deg;C)</th>
                       <th class="text-left px-5 py-3.5 font-semibold text-slate-500 text-xs uppercase tracking-wider">방전주기</th>
                       <th class="text-left px-5 py-3.5 font-semibold text-slate-500 text-xs uppercase tracking-wider">상태</th>
                     </tr>
@@ -1191,7 +1585,7 @@ app.component('passport-detail-page', {
                       </td>
                       <td class="px-5 py-3 text-slate-700 tabular-nums">{{ r.voltage != null ? r.voltage + 'V' : '-' }}</td>
                       <td class="px-5 py-3 text-slate-700 tabular-nums">{{ r.current != null ? r.current + 'A' : '-' }}</td>
-                      <td class="px-5 py-3 text-slate-700 tabular-nums">{{ r.temperature != null ? scaleTemp(r.temperature) + 'C' : '-' }}</td>
+                      <td class="px-5 py-3 text-slate-700 tabular-nums">{{ r.temperature != null ? scaleTemp(r.temperature) + '°C' : '-' }}</td>
                       <td class="px-5 py-3 text-slate-700 tabular-nums">{{ r.dischargeCycles != null ? r.dischargeCycles : '-' }}</td>
                       <td class="px-5 py-3">
                         <div class="flex flex-wrap gap-1">
@@ -1260,7 +1654,7 @@ app.component('passport-detail-page', {
               <!-- Meta fields -->
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-4">
                 <div>
-                  <dt class="text-xs font-medium text-slate-400 uppercase tracking-wider mb-1">Creator MSP</dt>
+                  <dt class="text-xs font-medium text-slate-400 uppercase tracking-wider mb-1">발급 기관</dt>
                   <dd class="text-sm text-slate-900 font-medium">{{ passport.creatorMsp || passport.creatorOrg || '-' }}</dd>
                 </div>
                 <div>
@@ -1272,6 +1666,166 @@ app.component('passport-detail-page', {
                   <dd class="text-sm text-slate-900">{{ formatDate(passport.updatedAt) }}</dd>
                 </div>
               </div>
+            </div>
+          </div>
+
+          <!-- ===== QR Code ===== -->
+          <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+            <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+              <div class="flex items-center gap-2.5">
+                <div class="w-8 h-8 bg-slate-100 rounded-lg flex items-center justify-center">
+                  <svg class="w-4 h-4 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>
+                    <line x1="14" y1="14" x2="14" y2="14.01"/><line x1="21" y1="14" x2="21" y2="14.01"/>
+                  </svg>
+                </div>
+                <div>
+                  <h3 class="text-sm font-bold text-slate-800 uppercase tracking-wider">QR 코드</h3>
+                  <p class="text-[10px] text-slate-400 mt-0.5">이 여권의 QR 코드를 스캔하여 정보를 조회할 수 있습니다</p>
+                </div>
+              </div>
+              <button @click="downloadQr"
+                class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-600 bg-slate-100 rounded-lg hover:bg-slate-200 transition-colors">
+                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                </svg>
+                다운로드
+              </button>
+            </div>
+            <div class="p-6 flex items-center gap-6">
+              <div class="flex-shrink-0">
+                <canvas ref="qrCanvas" id="qr-canvas" class="rounded-lg border border-slate-100"></canvas>
+              </div>
+              <div class="flex-1 space-y-2">
+                <div>
+                  <p class="text-[10px] text-slate-400 uppercase font-medium">여권 ID</p>
+                  <p class="text-sm font-mono text-slate-700">{{ passport.passportId }}</p>
+                </div>
+                <div>
+                  <p class="text-[10px] text-slate-400 uppercase font-medium">QR 내용</p>
+                  <p class="text-xs font-mono text-slate-500 break-all">{{ qrUrl }}</p>
+                </div>
+                <p class="text-[10px] text-slate-400 leading-relaxed">이 QR 코드를 스캔하면 배터리 여권 상세 페이지로 이동합니다. 인쇄하여 배터리 팩에 부착할 수 있습니다.</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- ===== VC (Verifiable Credentials) ===== -->
+          <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+            <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+              <div class="flex items-center gap-2.5">
+                <div class="w-8 h-8 bg-indigo-100 rounded-lg flex items-center justify-center">
+                  <svg class="w-4 h-4 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+                  </svg>
+                </div>
+                <div>
+                  <h3 class="text-sm font-bold text-slate-800 uppercase tracking-wider">검증 가능 인증서 (VC)</h3>
+                  <p class="text-[10px] text-slate-400 mt-0.5">DID 기반 Verifiable Credentials</p>
+                </div>
+              </div>
+              <button v-if="canIssueVc" @click="showVcIssueModal = true"
+                class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 text-white text-xs font-semibold rounded-lg hover:bg-indigo-700 transition-colors">
+                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                인증서 발급
+              </button>
+            </div>
+            <div v-if="vcLoading" class="flex items-center justify-center py-12">
+              <div class="w-8 h-8 border-[3px] border-indigo-100 border-t-indigo-600 rounded-full animate-spin"></div>
+            </div>
+            <div v-else-if="vcList.length === 0" class="py-10 text-center">
+              <svg class="mx-auto w-10 h-10 text-slate-200 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+              </svg>
+              <p class="text-sm text-slate-400">발급된 인증서가 없습니다</p>
+            </div>
+            <div v-else class="divide-y divide-slate-100">
+              <div v-for="vc in vcList" :key="vc.credentialId"
+                class="px-6 py-4 hover:bg-slate-50/50 transition-colors">
+                <div class="flex items-start justify-between gap-4">
+                  <div class="min-w-0 flex-1">
+                    <div class="flex items-center gap-2 flex-wrap mb-1.5">
+                      <span class="text-sm font-semibold text-slate-800">
+                        {{ {BATTERY_PASSPORT:'배터리 여권',BATTERY_HEALTH:'배터리 건강',MAINTENANCE:'정비 인증',COMPLIANCE:'규제 적합',RECYCLING:'재활용 인증'}[vc.credType] || vc.credType }}
+                      </span>
+                      <span :class="['inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold border',
+                        vc.status === 'ACTIVE' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
+                        vc.status === 'REVOKED' ? 'bg-red-50 text-red-700 border-red-200' :
+                        'bg-slate-50 text-slate-500 border-slate-200']">
+                        <span :class="['w-1.5 h-1.5 rounded-full',
+                          vc.status === 'ACTIVE' ? 'bg-emerald-500' : vc.status === 'REVOKED' ? 'bg-red-500' : 'bg-slate-400']"></span>
+                        {{ vc.status === 'ACTIVE' ? '유효' : vc.status === 'REVOKED' ? '폐기' : vc.status }}
+                      </span>
+                    </div>
+                    <div class="flex items-center gap-3 text-xs text-slate-400 flex-wrap">
+                      <span class="font-mono">{{ vc.credentialId }}</span>
+                      <span>발급: {{ vc.issuerMsp || '-' }}</span>
+                      <span>{{ formatDate(vc.issuedAt) }}</span>
+                    </div>
+                  </div>
+                  <div class="flex items-center gap-1.5 flex-shrink-0">
+                    <button @click="verifyVc(vc.credentialId)"
+                      class="px-2.5 py-1.5 text-[11px] font-medium text-indigo-600 bg-indigo-50 rounded-lg hover:bg-indigo-100 border border-indigo-100 transition-colors">
+                      검증
+                    </button>
+                    <button v-if="vc.status === 'ACTIVE' && vc.issuerMsp === auth.orgMsp"
+                      @click="revokeVc(vc.credentialId)"
+                      class="px-2.5 py-1.5 text-[11px] font-medium text-red-600 bg-red-50 rounded-lg hover:bg-red-100 border border-red-100 transition-colors">
+                      폐기
+                    </button>
+                  </div>
+                </div>
+                <!-- Verification result inline -->
+                <div v-if="vc._verified" class="mt-2 px-3 py-2 rounded-lg text-xs"
+                  :class="vc._verified.valid ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-red-50 text-red-700 border border-red-200'">
+                  {{ vc._verified.valid ? '검증 성공: 유효한 인증서입니다.' : '검증 실패: ' + (vc._verified.reason || '인증서가 유효하지 않습니다.') }}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- VC Issue Modal -->
+          <div v-if="showVcIssueModal" class="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div class="fixed inset-0 bg-black/40 backdrop-blur-sm" @click="showVcIssueModal = false"></div>
+            <div class="relative bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-md">
+              <div class="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+                <h3 class="text-base font-bold text-slate-900">인증서 발급</h3>
+                <button @click="showVcIssueModal = false" class="text-slate-400 hover:text-slate-600 transition-colors">
+                  <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
+              </div>
+              <form @submit.prevent="issueVc" class="p-6 space-y-4">
+                <div>
+                  <label class="block text-xs font-medium text-slate-500 mb-1.5">인증서 유형 <span class="text-red-500">*</span></label>
+                  <div class="flex flex-wrap gap-2">
+                    <button v-for="ct in availableCredTypes" :key="ct.value"
+                      @click="vcForm.credType = ct.value" type="button"
+                      :class="['px-3 py-2 rounded-lg text-sm font-medium border transition-all',
+                        vcForm.credType === ct.value ? 'bg-indigo-50 text-indigo-700 border-indigo-300' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50']">
+                      {{ ct.label }}
+                    </button>
+                  </div>
+                </div>
+                <div>
+                  <label class="block text-xs font-medium text-slate-500 mb-1.5">소유자 DID</label>
+                  <input v-model="vcForm.holderDid" type="text" :placeholder="passport?.did || 'did:example:...'"
+                    class="w-full px-3.5 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none text-sm" />
+                  <p class="text-[10px] text-slate-400 mt-1">비워두면 여권의 DID가 사용됩니다.</p>
+                </div>
+                <div>
+                  <label class="block text-xs font-medium text-slate-500 mb-1.5">만료일</label>
+                  <input v-model="vcForm.expiresAt" type="date"
+                    class="w-full px-3.5 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none text-sm" />
+                </div>
+                <div class="flex justify-end gap-3 pt-3 border-t border-slate-100">
+                  <button type="button" @click="showVcIssueModal = false"
+                    class="px-4 py-2.5 text-sm font-medium text-slate-700 bg-white border border-slate-300 hover:bg-slate-50 rounded-xl transition-colors">취소</button>
+                  <button type="submit" :disabled="submitting"
+                    class="px-5 py-2.5 text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl transition-colors disabled:opacity-50">
+                    {{ submitting ? '발급 중...' : '발급' }}
+                  </button>
+                </div>
+              </form>
             </div>
           </div>
 
@@ -1302,9 +1856,9 @@ app.component('passport-detail-page', {
                 <div class="space-y-4">
                   <div v-for="(entry, i) in history.slice(-20)" :key="i" class="relative">
                     <div class="absolute -left-7 top-4 w-[22px] h-[22px] rounded-full border-[3px] border-white shadow-sm flex items-center justify-center"
-                      :class="entry.value && entry.value.status ? getStatusBadge(entry.value.status).bg : 'bg-emerald-100'">
+                      :class="entry.changeDesc && entry.changeDesc.includes('사고') ? 'bg-red-100' : (entry.value && entry.value.status ? getStatusBadge(entry.value.status).bg : 'bg-emerald-100')">
                       <div class="w-2 h-2 rounded-full"
-                        :class="entry.value && entry.value.status ? getStatusBadge(entry.value.status).dot : 'bg-emerald-500'"></div>
+                        :class="entry.changeDesc && entry.changeDesc.includes('사고') ? 'bg-red-500' : (entry.value && entry.value.status ? getStatusBadge(entry.value.status).dot : 'bg-emerald-500')"></div>
                     </div>
                     <div class="bg-slate-50/50 rounded-lg border border-slate-100 p-4 ml-3 hover:bg-white transition-colors">
                       <div class="flex items-start justify-between gap-3">
@@ -1383,6 +1937,20 @@ app.component('passport-detail-page', {
                   <label class="block text-xs font-medium text-slate-500 mb-1.5">EV 조립국가</label>
                   <input v-model="bindForm.evAssemblyCountry" type="text" placeholder="KR"
                     class="w-full px-3.5 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none text-sm" />
+                </div>
+                <div>
+                  <label class="block text-xs font-medium text-slate-500 mb-1.5">차량 사진 <span class="text-slate-400 text-[10px] font-normal">(선택)</span></label>
+                  <label class="flex items-center justify-center gap-2 w-full px-4 py-3 border-2 border-dashed border-slate-300 rounded-lg hover:border-emerald-400 hover:bg-emerald-50/30 transition-colors cursor-pointer">
+                    <svg class="w-5 h-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                    </svg>
+                    <span class="text-sm text-slate-500">{{ vehicleImageFile ? vehicleImageFile.name : '이미지 선택...' }}</span>
+                    <input type="file" accept="image/*" class="hidden" @change="vehicleImageFile = $event.target.files[0]" />
+                  </label>
+                  <div v-if="vehicleImageFile" class="mt-2 flex items-center gap-2">
+                    <span class="text-xs text-emerald-600">{{ vehicleImageFile.name }}</span>
+                    <button type="button" @click="vehicleImageFile = null" class="text-xs text-red-500 hover:text-red-700">삭제</button>
+                  </div>
                 </div>
                 <div class="flex justify-end gap-3 pt-3 border-t border-slate-100">
                   <button type="button" @click="showBindModal = false"
@@ -1503,22 +2071,23 @@ app.component('passport-detail-page', {
               </div>
               <form @submit.prevent="submitAccidentLog" class="p-6 space-y-4">
                 <div>
-                  <label class="block text-xs font-medium text-slate-500 mb-1.5">날짜</label>
-                  <input v-model="accidentForm.date" type="date"
-                    class="w-full px-3.5 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none text-sm" />
+                  <label class="block text-xs font-medium text-slate-500 mb-1.5">심각도</label>
+                  <div class="flex gap-2">
+                    <button v-for="s in [{value:'minor',label:'경미'},{value:'moderate',label:'보통'},{value:'severe',label:'심각'},{value:'critical',label:'위험'}]" :key="s.value"
+                      @click="accidentForm.severity = s.value" type="button"
+                      :class="['px-3 py-2 rounded-lg text-sm font-medium border transition-all',
+                        accidentForm.severity === s.value ? 'bg-red-50 text-red-700 border-red-300' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50']">
+                      {{ s.label }}
+                    </button>
+                  </div>
                 </div>
                 <div>
-                  <label class="block text-xs font-medium text-slate-500 mb-1.5">유형</label>
-                  <input v-model="accidentForm.type" type="text" placeholder="충돌 / 화재 / 침수"
-                    class="w-full px-3.5 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none text-sm" />
-                </div>
-                <div>
-                  <label class="block text-xs font-medium text-slate-500 mb-1.5">내용</label>
+                  <label class="block text-xs font-medium text-slate-500 mb-1.5">내용 <span class="text-red-500">*</span></label>
                   <textarea v-model="accidentForm.description" rows="3" placeholder="사고 상세 내용"
                     class="w-full px-3.5 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none text-sm resize-none"></textarea>
                 </div>
                 <div>
-                  <label class="block text-xs font-medium text-slate-500 mb-1.5">보고자</label>
+                  <label class="block text-xs font-medium text-slate-500 mb-1.5">보고자 <span class="text-red-500">*</span></label>
                   <input v-model="accidentForm.reporter" type="text" placeholder="보고자명"
                     class="w-full px-3.5 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none text-sm" />
                 </div>

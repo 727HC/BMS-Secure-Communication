@@ -4,11 +4,14 @@ const router = express.Router();
 const fabricService = require('../services/fabric.service');
 const didService = require('../services/did.service');
 const { parseRawPayload } = require('../services/bmu-parser.service');
+const { DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE, DID_CACHE_TTL_MS } = require('../config/constants');
+const { createLogger } = require('../services/logger.service');
+const log = createLogger('bmu');
 
 // P0-3: unsigned BMU 완전 거부 (임베디드 확인: BMU는 100% 서명 포함)
 
-// P1-8: DID → passportId cache with TTL (5분)
-const CACHE_TTL = 5 * 60 * 1000;
+// P1-8: DID → passportId cache with TTL
+const CACHE_TTL = DID_CACHE_TTL_MS;
 const didPassportCache = new Map();
 
 async function resolvePassportId(did) {
@@ -62,7 +65,7 @@ router.post('/data', async (req, res) => {
     try {
       passportId = await resolvePassportId(did);
     } catch (err) {
-      console.warn('DID→passport lookup failed:', err.message);
+      log.warn('DID->passport lookup failed', { did, error: err.message });
     }
 
     const recordId = `BMU-${Date.now()}-${parsed.freshnessCounter}`;
@@ -79,7 +82,13 @@ router.post('/data', async (req, res) => {
       timestamp,
     ]);
 
-    console.log(`BMU recorded: ${recordId} FC=${parsed.freshnessCounter} SOC=${parsed.soc}`);
+    log.info('BMU recorded', {
+      action: 'RecordBMUData', recordId, passportId: passportId || null,
+      did, fc: parsed.freshnessCounter, soc: parsed.soc,
+      voltage: parsed.voltage, temperature: parsed.temperature,
+      statusFlags: parsed.statusFlags, dischargeCycles: parsed.dischargeCycles,
+      data: { soc: parsed.soc, voltage: parsed.voltage, current: parsed.current, temperature: parsed.temperature },
+    });
     res.json({
       success: true, recordId,
       passportId: passportId || null,
@@ -90,7 +99,7 @@ router.post('/data', async (req, res) => {
       },
     });
   } catch (err) {
-    console.error('BMU record failed:', err.message);
+    log.error('BMU record failed', { action: 'RecordBMUData', did, error: err.message });
     res.status(500).json({ error: err.message });
   }
 });
@@ -98,7 +107,7 @@ router.post('/data', async (req, res) => {
 // GET /api/bmu/records/:passportId
 router.get('/records/:passportId', async (req, res) => {
   try {
-    const pageSize = Math.min(parseInt(req.query.pageSize || '100', 10), 500);
+    const pageSize = Math.min(parseInt(req.query.pageSize || String(DEFAULT_PAGE_SIZE), 10), MAX_PAGE_SIZE);
     const bookmark = req.query.bookmark || '';
     const result = await fabricService.evaluateTransaction(
       'QueryBMURecordsByPassport', req.params.passportId, String(pageSize), bookmark

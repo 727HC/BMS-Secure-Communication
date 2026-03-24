@@ -3,6 +3,8 @@ const FabricCAServices = require('fabric-ca-client');
 const path = require('path');
 const fs = require('fs');
 const fabricConfig = require('../config/fabric');
+const { createLogger } = require('./logger.service');
+const log = createLogger('fabric');
 
 // P0-1: Org별 Gateway pool — 요청자의 org identity로 트랜잭션 실행
 const gatewayPool = new Map(); // key: walletLabel, value: { gateway, contract }
@@ -14,14 +16,6 @@ function walletLabel(userId, mspId) {
   if (!mspId) return userId; // backward compat for admin
   return `${mspId}:${userId}`;
 }
-
-// MSP → orgNum 매핑
-const MSP_TO_ORG = {
-  ManufacturerMSP: 1,
-  EVManufacturerMSP: 2,
-  ServiceMSP: 3,
-  RegulatorMSP: 4,
-};
 
 async function getWallet() {
   if (!wallet) {
@@ -39,7 +33,7 @@ async function connectFabric() {
 
   const adminIdentity = await w.get(adminLabel);
   if (!adminIdentity) {
-    console.log(`Enrolling ${fabricConfig.identity} for ${org.mspId}...`);
+    log.info('Enrolling admin identity', { identity: fabricConfig.identity, mspId: org.mspId });
     const caInfo = ccp.certificateAuthorities?.[org.caHostname];
     if (caInfo) {
       const caTLSCACerts = caInfo.tlsCACerts?.pem;
@@ -59,7 +53,7 @@ async function connectFabric() {
         mspId: org.mspId,
         type: 'X.509',
       });
-      console.log(`${fabricConfig.identity} enrolled via CA`);
+      log.info('Admin enrolled via CA', { identity: fabricConfig.identity, mspId: org.mspId });
     }
   }
 
@@ -67,12 +61,12 @@ async function connectFabric() {
   await gw.connect(ccp, {
     wallet: w,
     identity: adminLabel,
-    discovery: { enabled: true, asLocalhost: true },
+    discovery: { enabled: true, asLocalhost: fabricConfig.discoveryAsLocalhost },
   });
 
   const network = await gw.getNetwork(fabricConfig.channelName);
   defaultContract = network.getContract(fabricConfig.contractName);
-  console.log(`Connected to Fabric: ${fabricConfig.channelName}/${fabricConfig.contractName}`);
+  log.info('Connected to Fabric', { channel: fabricConfig.channelName, contract: fabricConfig.contractName });
 }
 
 // P0-1: 요청자 identity로 gateway/contract 획득
@@ -92,7 +86,7 @@ async function getContractForUser(userId, orgMsp) {
   }
 
   // 해당 org의 CCP로 gateway 연결
-  const orgNum = MSP_TO_ORG[orgMsp];
+  const orgNum = fabricConfig.mspToOrg[orgMsp];
   const org = fabricConfig.orgs[orgNum];
   if (!org) {
     throw new Error(`Unknown MSP: ${orgMsp}`);
@@ -108,14 +102,14 @@ async function getContractForUser(userId, orgMsp) {
   await gw.connect(ccp, {
     wallet: w,
     identity: label,
-    discovery: { enabled: true, asLocalhost: true },
+    discovery: { enabled: true, asLocalhost: fabricConfig.discoveryAsLocalhost },
   });
 
   const network = await gw.getNetwork(fabricConfig.channelName);
   const ct = network.getContract(fabricConfig.contractName);
   // P1-3: gateway도 함께 저장 (disconnect 가능하게)
   gatewayPool.set(label, { gateway: gw, contract: ct });
-  console.log(`Gateway opened for ${label}`);
+  log.info('Gateway opened', { label });
   return ct;
 }
 
@@ -150,10 +144,13 @@ async function disconnect() {
 
 // org별 CA 접속 helper
 function getCAForOrg(org) {
-  const caUrl = `https://localhost:${org.caPort}`;
+  const caHost = process.env.FABRIC_CA_HOST || 'localhost';
+  const caScheme = process.env.FABRIC_CA_SCHEME || 'https';
+  const caUrl = `${caScheme}://${caHost}:${org.caPort}`;
+  const networkBase = path.resolve(__dirname, '..', '..', 'passport-network');
   const caTlsCertPath = path.resolve(
-    __dirname, '..', '..', 'passport-network',
-    'organizations', 'fabric-ca', org.caName.replace('ca-', ''), 'ca-cert.pem'
+    networkBase, 'organizations', 'fabric-ca',
+    org.caName.replace('ca-', ''), 'ca-cert.pem'
   );
   let tlsOptions;
   if (fs.existsSync(caTlsCertPath)) {

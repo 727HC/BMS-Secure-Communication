@@ -6,6 +6,8 @@
   <title>Battery Passport Platform</title>
   <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
   <style>
     [v-cloak] { display: none; }
     .fade-enter-active, .fade-leave-active { transition: opacity 0.2s; }
@@ -138,7 +140,16 @@
                   <polyline points="2 17 7 12"/>
                   <polyline points="22 7 17 12"/>
                 </svg>
+                <!-- QR icon -->
+                <svg v-else-if="item.icon === 'qr'" class="w-[18px] h-[18px] flex-shrink-0" :class="currentPage === item.route ? 'text-emerald-600' : 'text-gray-400 group-hover:text-gray-600'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>
+                  <line x1="14" y1="14" x2="14" y2="14.01"/><line x1="21" y1="14" x2="21" y2="14.01"/><line x1="14" y1="21" x2="14" y2="21.01"/><line x1="21" y1="21" x2="21" y2="21.01"/><line x1="17.5" y1="17.5" x2="17.5" y2="17.51"/>
+                </svg>
                 <span class="truncate">{{ item.label }}</span>
+                <span v-if="navBadges[item.route]"
+                  class="ml-auto inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full text-[10px] font-bold text-white bg-red-500 leading-none">
+                  {{ navBadges[item.route] }}
+                </span>
               </button>
             </template>
           </nav>
@@ -202,12 +213,23 @@
 
             <!-- Right: connection status -->
             <div class="flex items-center space-x-2">
-              <div class="flex items-center space-x-1.5 px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-200">
+              <div :class="['flex items-center space-x-1.5 px-2.5 py-1 rounded-full border',
+                fabricStatus === 'connected' ? 'bg-emerald-50 border-emerald-200' :
+                fabricStatus === 'checking' ? 'bg-amber-50 border-amber-200' :
+                'bg-red-50 border-red-200']">
                 <span class="relative flex h-2 w-2">
-                  <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                  <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                  <span v-if="fabricStatus === 'connected'" class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                  <span :class="['relative inline-flex rounded-full h-2 w-2',
+                    fabricStatus === 'connected' ? 'bg-emerald-500' :
+                    fabricStatus === 'checking' ? 'bg-amber-500' :
+                    'bg-red-500']"></span>
                 </span>
-                <span class="text-xs font-medium text-emerald-700 hidden sm:inline">Fabric Connected</span>
+                <span :class="['text-xs font-medium hidden sm:inline',
+                  fabricStatus === 'connected' ? 'text-emerald-700' :
+                  fabricStatus === 'checking' ? 'text-amber-700' :
+                  'text-red-700']">
+                  {{ fabricStatus === 'connected' ? 'Fabric 연결됨' : fabricStatus === 'checking' ? '확인 중...' : 'Fabric 연결 끊김' }}
+                </span>
               </div>
             </div>
           </header>
@@ -261,6 +283,7 @@
   <script src="pages/bmu-data.js"></script>
   <script src="pages/maintenance.js"></script>
   <script src="pages/recycling.js"></script>
+  <script src="pages/qr-scan.js"></script>
   <!-- Mount after all components are registered -->
   <script>app.mount('#app');</script>
 </body>

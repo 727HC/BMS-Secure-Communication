@@ -1,21 +1,38 @@
 const express = require('express');
 const router = express.Router();
+const path = require('path');
+const multer = require('multer');
 const { authenticateToken } = require('../middleware/auth');
 const { requireMSP } = require('../middleware/rbac');
 const fabricService = require('../services/fabric.service');
+const { MSP } = require('../config/constants');
+
+// Vehicle image upload config
+const uploadDir = path.join(__dirname, '..', '..', 'webapp', 'frontend', 'uploads', 'vehicles');
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => cb(null, uploadDir),
+  filename: (req, file, cb) => {
+    const ext = path.extname(file.originalname) || '.jpg';
+    cb(null, req.params.id + ext);
+  },
+});
+const upload = multer({ storage, limits: { fileSize: 5 * 1024 * 1024 }, fileFilter: (req, file, cb) => {
+  if (file.mimetype.startsWith('image/')) cb(null, true);
+  else cb(new Error('이미지 파일만 업로드 가능합니다.'));
+}});
 
 function parseResult(buffer) {
   return JSON.parse(buffer.toString());
 }
 
 // POST /api/passports — Create battery passport
-router.post('/', authenticateToken, requireMSP('ManufacturerMSP'), async (req, res) => {
+router.post('/', authenticateToken, requireMSP(MSP.MANUFACTURER), async (req, res) => {
   const {
     passportId, batteryId, did, model, serialNumber,
     manufacturerName, manufactureCountry, cellManufacturer, cellManufactureCountry,
     manufactureDate, cellType, chemistry, cellCount, weight,
     totalEnergy, energyDensity, ratedCapacity, expectedLifespan,
-    voltageRange, temperatureRange,
+    voltageRange, temperatureRange, carbonFootprint,
   } = req.body;
 
   if (!passportId || !batteryId || !serialNumber) {
@@ -33,6 +50,7 @@ router.post('/', authenticateToken, requireMSP('ManufacturerMSP'), async (req, r
       String(totalEnergy || 0), String(energyDensity || 0),
       String(ratedCapacity || 0), String(expectedLifespan || 0),
       voltageRange || '', temperatureRange || '',
+      String(carbonFootprint || 0),
     ], req.user);
     res.json({ success: true, passportId });
   } catch (err) {
@@ -72,7 +90,7 @@ router.get('/:id/history', async (req, res) => {
 });
 
 // PUT /api/passports/:id/bind — Bind to vehicle (EV Manufacturer)
-router.put('/:id/bind', authenticateToken, requireMSP('EVManufacturerMSP'), async (req, res) => {
+router.put('/:id/bind', authenticateToken, requireMSP(MSP.EV_MANUFACTURER), async (req, res) => {
   const { vin, installDate, evManufacturer, evAssemblyCountry } = req.body;
   if (!vin) {
     return res.status(400).json({ error: 'vin required' });
@@ -85,6 +103,27 @@ router.put('/:id/bind', authenticateToken, requireMSP('EVManufacturerMSP'), asyn
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
+});
+
+// POST /api/passports/:id/vehicle-image — Upload vehicle image
+router.post('/:id/vehicle-image', authenticateToken, upload.single('image'), (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({ error: 'image file required' });
+  }
+  res.json({ success: true, filename: req.file.filename, path: '/uploads/vehicles/' + req.file.filename });
+});
+
+// GET /api/passports/:id/vehicle-image — Check if image exists
+router.get('/:id/vehicle-image', (req, res) => {
+  const fs = require('fs');
+  const exts = ['.jpg', '.jpeg', '.png', '.webp', '.svg'];
+  for (const ext of exts) {
+    const filePath = path.join(uploadDir, req.params.id + ext);
+    if (fs.existsSync(filePath)) {
+      return res.json({ exists: true, path: '/uploads/vehicles/' + req.params.id + ext });
+    }
+  }
+  res.json({ exists: false });
 });
 
 module.exports = router;

@@ -105,6 +105,12 @@ app.component('dashboard-page', {
     ];
 
     function fieldFilled(p, key) {
+      // carbonFootprint: count as filled if value > 0 OR estimation possible (weight + totalEnergy)
+      if (key === 'carbonFootprint') {
+        const v = p[key];
+        if (v != null && v !== '' && v !== 0) return true;
+        return p.weight > 0 && p.totalEnergy > 0;
+      }
       const v = p[key];
       if (v == null || v === '' || v === 0) return false;
       if (typeof v === 'object' && Object.keys(v).length === 0) return false;
@@ -114,6 +120,7 @@ app.component('dashboard-page', {
 
     const gbaComplianceOverview = computed(() => {
       if (passports.value.length === 0) return { pct: 0, filled: 0, groups: [] };
+      // Calculate average filled fields across ALL passports
       let totalFilled = 0;
       passports.value.forEach(p => {
         gba21Fields.forEach(f => {
@@ -123,11 +130,11 @@ app.component('dashboard-page', {
       const avgFilled = Math.round(totalFilled / passports.value.length);
       const pct = Math.round((avgFilled / 21) * 100);
 
-      const rep = passports.value[0];
-      const fields = gba21Fields.map(f => ({
-        ...f,
-        filled: rep ? fieldFilled(rep, f.key) : false,
-      }));
+      // Field-level compliance: count how many passports have each field filled
+      const fields = gba21Fields.map(f => {
+        const filledCount = passports.value.filter(p => fieldFilled(p, f.key)).length;
+        return { ...f, filled: filledCount > passports.value.length / 2 };
+      });
 
       const groups = ['식별정보', '제조정보', '기술사양'].map(g => ({
         name: g,
@@ -246,15 +253,15 @@ app.component('dashboard-page', {
             <p class="text-sm font-medium text-slate-500 mb-1">전체 여권</p>
             <div class="flex items-end gap-3">
               <p class="text-4xl font-bold text-slate-900 tabular-nums leading-none">{{ totalCount }}</p>
-              <span class="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-xs font-medium bg-emerald-50 text-emerald-700 mb-0.5">
-                <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><polyline points="18 15 12 9 6 15"/></svg>
-                2%
+              <span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-slate-100 text-slate-500 mb-0.5">
+                전체
               </span>
             </div>
           </div>
 
           <!-- Card 2: 운행중 -->
-          <div class="bg-white rounded-xl border border-gray-200 p-6">
+          <div @click="$emit('navigate', 'passports', { filterStatus: 'ACTIVE' })"
+               class="bg-white rounded-xl border border-gray-200 p-6 hover:shadow-md transition-all cursor-pointer">
             <p class="text-sm font-medium text-slate-500 mb-1">운행중</p>
             <div class="flex items-end gap-3">
               <p class="text-4xl font-bold text-slate-900 tabular-nums leading-none">{{ activeCount }}</p>
@@ -262,7 +269,8 @@ app.component('dashboard-page', {
           </div>
 
           <!-- Card 3: GBA 21 준수율 -->
-          <div class="bg-white rounded-xl border border-gray-200 p-6">
+          <div @click="$emit('navigate', 'passports', { sortBy: 'gba' })"
+               class="bg-white rounded-xl border border-gray-200 p-6 hover:shadow-md transition-all cursor-pointer">
             <p class="text-sm font-medium text-slate-500 mb-1">GBA 21 준수율</p>
             <div class="flex items-end gap-3">
               <p class="text-4xl font-bold text-slate-900 tabular-nums leading-none">{{ gbaComplianceOverview.pct }}<span class="text-xl text-slate-400">%</span></p>
@@ -338,14 +346,7 @@ app.component('dashboard-page', {
           </div>
         </div>
 
-        <!-- ===== SECTION 4: ADD CUSTOM REPORT ===== -->
-        <div class="text-center py-2">
-          <button class="text-sm text-slate-400 hover:text-emerald-600 transition-colors font-medium">
-            + 맞춤 보고서 추가
-          </button>
-        </div>
-
-        <!-- ===== SECTION 5: RECENT PASSPORTS TABLE ===== -->
+        <!-- ===== SECTION 4: RECENT PASSPORTS TABLE ===== -->
         <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
           <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
             <h2 class="text-base font-semibold text-slate-900">최근 등록 여권</h2>
