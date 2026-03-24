@@ -17,11 +17,23 @@ type PassportContract struct {
 
 // DocType constants
 const (
-	docTypePassport  = "batteryPassport"
-	docTypeBMURecord = "bmuRecord"
-	docTypeRawMaterial = "rawMaterial"
-	defaultPageSize  int32 = 100
+	docTypePassport      = "batteryPassport"
+	docTypeBMURecord     = "bmuRecord"
+	docTypeRawMaterial   = "rawMaterial"
+	docTypeVC            = "verifiableCredential"
+	docTypeVerification  = "vcVerification"
+	defaultPageSize int32 = 100
+	maxPageSize     int32 = 500
 )
+
+// Credential type → authorized issuer MSPs
+var credTypeIssuers = map[string][]string{
+	"BATTERY_PASSPORT": {"ManufacturerMSP"},
+	"BATTERY_HEALTH":   {"ServiceMSP"},
+	"MAINTENANCE":      {"ServiceMSP"},
+	"COMPLIANCE":       {"RegulatorMSP"},
+	"RECYCLING":        {"RegulatorMSP"},
+}
 
 // RawMaterial represents a raw material used in battery manufacturing
 type RawMaterial struct {
@@ -134,6 +146,43 @@ type BMURecord struct {
 	CreatorMSP      string  `json:"creatorMsp"`
 }
 
+// VerifiableCredential represents a VC anchored on Fabric
+type VerifiableCredential struct {
+	DocType          string `json:"docType"`
+	CredentialID     string `json:"credentialId"`
+	PassportID       string `json:"passportId"`
+	CredType         string `json:"credType"`
+	IssuerDID        string `json:"issuerDid"`
+	IssuerMSP        string `json:"issuerMsp"`
+	HolderDID        string `json:"holderDid"`
+	SchemaID         string `json:"schemaId"`
+	CredDefID        string `json:"credDefId"`
+	DataHash         string `json:"dataHash"`
+	Status           string `json:"status"`
+	IssuedAt         string `json:"issuedAt"`
+	ExpiresAt        string `json:"expiresAt"`
+	RevokedAt        string `json:"revokedAt"`
+	RevocationReason string `json:"revocationReason"`
+}
+
+// CredentialVerification represents a verification event log
+type CredentialVerification struct {
+	DocType        string `json:"docType"`
+	VerificationID string `json:"verificationId"`
+	CredentialID   string `json:"credentialId"`
+	VerifierDID    string `json:"verifierDid"`
+	VerifierMSP    string `json:"verifierMsp"`
+	Result         bool   `json:"result"`
+	Timestamp      string `json:"timestamp"`
+}
+
+// PaginatedVCResult for VC queries
+type PaginatedVCResult struct {
+	Records  []*VerifiableCredential `json:"records"`
+	Bookmark string                  `json:"bookmark"`
+	Count    int                     `json:"count"`
+}
+
 // PaginatedPassportResult for passport queries
 type PaginatedPassportResult struct {
 	Records  []*BatteryPassport `json:"records"`
@@ -167,6 +216,59 @@ func (c *PassportContract) requireMSP(ctx contractapi.TransactionContextInterfac
 		}
 	}
 	return fmt.Errorf("access denied: MSP %s not in allowed list %v", msp, allowedMSPs)
+}
+
+// checkPassportAccess verifies the caller's MSP has permission to view the passport
+func (c *PassportContract) checkPassportAccess(ctx contractapi.TransactionContextInterface, passport *BatteryPassport) error {
+	msp, err := c.getClientMSP(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to get client MSP: %v", err)
+	}
+
+	switch msp {
+	case "RegulatorMSP":
+		return nil // 규제기관: 전체 접근
+	case "ManufacturerMSP":
+		if passport.CreatorMSP == msp {
+			return nil // 자기가 만든 배터리만
+		}
+	case "EVManufacturerMSP":
+		if passport.VIN != "" {
+			return nil // 차량에 바인딩된 배터리만
+		}
+	case "ServiceMSP":
+		if passport.Status == "MAINTENANCE" || passport.Status == "ANALYSIS" {
+			return nil // 정비 의뢰된 배터리
+		}
+		for _, log := range passport.MaintenanceLogs {
+			if log.OrgMSP == msp {
+				return nil // 과거 정비 이력이 있는 배터리
+			}
+		}
+	}
+
+	return fmt.Errorf("access denied: MSP %s cannot access passport %s", msp, passport.PassportID)
+}
+
+// buildPassportQuery returns a CouchDB selector filtered by caller's MSP
+func (c *PassportContract) buildPassportQuery(ctx contractapi.TransactionContextInterface) (string, error) {
+	msp, err := c.getClientMSP(ctx)
+	if err != nil {
+		return "", fmt.Errorf("failed to get client MSP: %v", err)
+	}
+
+	switch msp {
+	case "RegulatorMSP":
+		return fmt.Sprintf(`{"selector":{"docType":"%s"}}`, docTypePassport), nil
+	case "ManufacturerMSP":
+		return fmt.Sprintf(`{"selector":{"docType":"%s","creatorMsp":"%s"}}`, docTypePassport, msp), nil
+	case "EVManufacturerMSP":
+		return fmt.Sprintf(`{"selector":{"docType":"%s","vin":{"$gt":""}}}`, docTypePassport), nil
+	case "ServiceMSP":
+		return fmt.Sprintf(`{"selector":{"docType":"%s","status":{"$in":["MAINTENANCE","ANALYSIS"]}}}`, docTypePassport), nil
+	default:
+		return "", fmt.Errorf("unknown MSP: %s", msp)
+	}
 }
 
 // ============================================================
@@ -238,7 +340,8 @@ func (c *PassportContract) CreateBatteryPassport(ctx contractapi.TransactionCont
 	manufactureDate string, cellType string, chemistry string,
 	cellCount string, weight string, totalEnergy string,
 	energyDensity string, ratedCapacity string, expectedLifespan string,
-	voltageRange string, temperatureRange string) error {
+	voltageRange string, temperatureRange string,
+	carbonFootprint string) error {
 
 	if err := c.requireMSP(ctx, "ManufacturerMSP"); err != nil {
 		return err
@@ -286,6 +389,11 @@ func (c *PassportContract) CreateBatteryPassport(ctx contractapi.TransactionCont
 		return fmt.Errorf("invalid expectedLifespan value: %v", err)
 	}
 
+	carbonFootprintVal, err := strconv.ParseFloat(carbonFootprint, 64)
+	if err != nil {
+		carbonFootprintVal = 0 // optional — 미입력 시 0
+	}
+
 	msp, err := c.getClientMSP(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to get client MSP: %v", err)
@@ -315,6 +423,7 @@ func (c *PassportContract) CreateBatteryPassport(ctx contractapi.TransactionCont
 		ExpectedLifespan:       expectedLifespanVal,
 		VoltageRange:           voltageRange,
 		TemperatureRange:       temperatureRange,
+		CarbonFootprint:        carbonFootprintVal,
 		RawMaterials:           []string{},
 		RecyclingRates:         map[string]float64{},
 		CurrentSOH:             100,
@@ -351,6 +460,15 @@ func (c *PassportContract) RecordBMUData(ctx contractapi.TransactionContextInter
 
 	if recordId == "" || passportId == "" || did == "" || dataHash == "" || timestamp == "" {
 		return fmt.Errorf("recordId, passportId, did, dataHash, timestamp must not be empty")
+	}
+
+	// Check duplicate recordId
+	existingRecord, err := ctx.GetStub().GetState(recordId)
+	if err != nil {
+		return fmt.Errorf("failed to check existing record: %v", err)
+	}
+	if existingRecord != nil {
+		return fmt.Errorf("BMU record %s already exists", recordId)
 	}
 
 	// Check passport exists
@@ -854,7 +972,7 @@ func (c *PassportContract) DisposeBattery(ctx contractapi.TransactionContextInte
 }
 
 // ============================================================
-// 13. QueryPassport (all orgs)
+// 13. QueryPassport (RBAC filtered)
 // ============================================================
 
 func (c *PassportContract) QueryPassport(ctx contractapi.TransactionContextInterface,
@@ -874,6 +992,10 @@ func (c *PassportContract) QueryPassport(ctx contractapi.TransactionContextInter
 		return nil, fmt.Errorf("failed to unmarshal passport: %v", err)
 	}
 
+	if err := c.checkPassportAccess(ctx, &passport); err != nil {
+		return nil, err
+	}
+
 	return &passport, nil
 }
 
@@ -886,13 +1008,23 @@ func (c *PassportContract) QueryAllPassports(ctx contractapi.TransactionContextI
 }
 
 // ============================================================
-// 15. QueryPassportsWithPagination (all orgs)
+// 15. QueryPassportsWithPagination (RBAC filtered)
 // ============================================================
 
 func (c *PassportContract) QueryPassportsWithPagination(ctx contractapi.TransactionContextInterface,
 	pageSize int32, bookmark string) (*PaginatedPassportResult, error) {
 
-	queryString := fmt.Sprintf(`{"selector":{"docType":"%s"}}`, docTypePassport)
+	if pageSize <= 0 {
+		pageSize = defaultPageSize
+	}
+	if pageSize > maxPageSize {
+		pageSize = maxPageSize
+	}
+
+	queryString, err := c.buildPassportQuery(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to build query: %v", err)
+	}
 
 	resultsIterator, responseMetadata, err := ctx.GetStub().GetQueryResultWithPagination(queryString, pageSize, bookmark)
 	if err != nil {
@@ -923,11 +1055,27 @@ func (c *PassportContract) QueryPassportsWithPagination(ctx contractapi.Transact
 }
 
 // ============================================================
-// 16. GetPassportHistory (all orgs)
+// 16. GetPassportHistory (RBAC filtered)
 // ============================================================
 
 func (c *PassportContract) GetPassportHistory(ctx contractapi.TransactionContextInterface,
 	passportId string) ([]string, error) {
+
+	// Access check: read current passport to verify permission
+	passportJSON, err := ctx.GetStub().GetState(passportId)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read passport: %v", err)
+	}
+	if passportJSON == nil {
+		return nil, fmt.Errorf("passport %s does not exist", passportId)
+	}
+	var passport BatteryPassport
+	if err := json.Unmarshal(passportJSON, &passport); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal passport: %v", err)
+	}
+	if err := c.checkPassportAccess(ctx, &passport); err != nil {
+		return nil, err
+	}
 
 	historyIterator, err := ctx.GetStub().GetHistoryForKey(passportId)
 	if err != nil {
@@ -952,11 +1100,34 @@ func (c *PassportContract) GetPassportHistory(ctx contractapi.TransactionContext
 }
 
 // ============================================================
-// 17. QueryBMURecordsByPassport (all orgs)
+// 17. QueryBMURecordsByPassport (RBAC filtered)
 // ============================================================
 
 func (c *PassportContract) QueryBMURecordsByPassport(ctx contractapi.TransactionContextInterface,
 	passportId string, pageSize int32, bookmark string) (*PaginatedBMUResult, error) {
+
+	// Access check: verify caller can access the parent passport
+	passportJSON, err := ctx.GetStub().GetState(passportId)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read passport: %v", err)
+	}
+	if passportJSON == nil {
+		return nil, fmt.Errorf("passport %s does not exist", passportId)
+	}
+	var passport BatteryPassport
+	if err := json.Unmarshal(passportJSON, &passport); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal passport: %v", err)
+	}
+	if err := c.checkPassportAccess(ctx, &passport); err != nil {
+		return nil, err
+	}
+
+	if pageSize <= 0 {
+		pageSize = defaultPageSize
+	}
+	if pageSize > maxPageSize {
+		pageSize = maxPageSize
+	}
 
 	queryString := fmt.Sprintf(`{"selector":{"docType":"%s","passportId":"%s"}}`, docTypeBMURecord, passportId)
 
@@ -989,11 +1160,15 @@ func (c *PassportContract) QueryBMURecordsByPassport(ctx contractapi.Transaction
 }
 
 // ============================================================
-// 18. QueryBatteryByDID (all orgs)
+// 18. QueryBatteryByDID (ManufacturerMSP, RegulatorMSP)
 // ============================================================
 
 func (c *PassportContract) QueryBatteryByDID(ctx contractapi.TransactionContextInterface,
 	did string) (*BatteryPassport, error) {
+
+	if err := c.requireMSP(ctx, "ManufacturerMSP", "RegulatorMSP"); err != nil {
+		return nil, err
+	}
 
 	queryString := fmt.Sprintf(`{"selector":{"docType":"%s","did":"%s"}}`, docTypePassport, did)
 
@@ -1021,10 +1196,14 @@ func (c *PassportContract) QueryBatteryByDID(ctx contractapi.TransactionContextI
 }
 
 // ============================================================
-// 19. QueryRawMaterials (all orgs)
+// 19. QueryRawMaterials (ManufacturerMSP, RegulatorMSP)
 // ============================================================
 
 func (c *PassportContract) QueryRawMaterials(ctx contractapi.TransactionContextInterface) ([]*RawMaterial, error) {
+
+	if err := c.requireMSP(ctx, "ManufacturerMSP", "RegulatorMSP"); err != nil {
+		return nil, err
+	}
 
 	queryString := fmt.Sprintf(`{"selector":{"docType":"%s"}}`, docTypeRawMaterial)
 
@@ -1050,6 +1229,481 @@ func (c *PassportContract) QueryRawMaterials(ctx contractapi.TransactionContextI
 	}
 
 	return materials, nil
+}
+
+// ============================================================
+// 20. IssueCredential — Anchor VC on Fabric
+// ============================================================
+
+func (c *PassportContract) IssueCredential(ctx contractapi.TransactionContextInterface,
+	credentialId string, passportId string, credType string,
+	issuerDid string, holderDid string,
+	schemaId string, credDefId string,
+	dataHash string, expiresAt string) error {
+
+	msp, err := c.getClientMSP(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to get client MSP: %v", err)
+	}
+
+	allowedIssuers, ok := credTypeIssuers[credType]
+	if !ok {
+		return fmt.Errorf("invalid credential type: %s (allowed: BATTERY_PASSPORT, BATTERY_HEALTH, MAINTENANCE, COMPLIANCE, RECYCLING)", credType)
+	}
+	authorized := false
+	for _, allowed := range allowedIssuers {
+		if msp == allowed {
+			authorized = true
+			break
+		}
+	}
+	if !authorized {
+		return fmt.Errorf("MSP %s is not authorized to issue %s credentials", msp, credType)
+	}
+
+	if credentialId == "" || passportId == "" || holderDid == "" || dataHash == "" {
+		return fmt.Errorf("credentialId, passportId, holderDid, dataHash must not be empty")
+	}
+
+	existing, err := ctx.GetStub().GetState(credentialId)
+	if err != nil {
+		return fmt.Errorf("failed to check existing credential: %v", err)
+	}
+	if existing != nil {
+		return fmt.Errorf("credential %s already exists", credentialId)
+	}
+
+	passportJSON, err := ctx.GetStub().GetState(passportId)
+	if err != nil {
+		return fmt.Errorf("failed to read passport: %v", err)
+	}
+	if passportJSON == nil {
+		return fmt.Errorf("passport %s does not exist", passportId)
+	}
+
+	now := time.Now().UTC().Format(time.RFC3339)
+
+	vc := VerifiableCredential{
+		DocType:      docTypeVC,
+		CredentialID: credentialId,
+		PassportID:   passportId,
+		CredType:     credType,
+		IssuerDID:    issuerDid,
+		IssuerMSP:    msp,
+		HolderDID:    holderDid,
+		SchemaID:     schemaId,
+		CredDefID:    credDefId,
+		DataHash:     dataHash,
+		Status:       "ACTIVE",
+		IssuedAt:     now,
+		ExpiresAt:    expiresAt,
+	}
+
+	vcJSON, err := json.Marshal(vc)
+	if err != nil {
+		return fmt.Errorf("failed to marshal credential: %v", err)
+	}
+
+	return ctx.GetStub().PutState(credentialId, vcJSON)
+}
+
+// ============================================================
+// 21. RevokeCredential — Revoke a VC
+// ============================================================
+
+func (c *PassportContract) RevokeCredential(ctx contractapi.TransactionContextInterface,
+	credentialId string, reason string) error {
+
+	msp, err := c.getClientMSP(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to get client MSP: %v", err)
+	}
+
+	vcJSON, err := ctx.GetStub().GetState(credentialId)
+	if err != nil {
+		return fmt.Errorf("failed to read credential: %v", err)
+	}
+	if vcJSON == nil {
+		return fmt.Errorf("credential %s does not exist", credentialId)
+	}
+
+	var vc VerifiableCredential
+	if err := json.Unmarshal(vcJSON, &vc); err != nil {
+		return fmt.Errorf("failed to unmarshal credential: %v", err)
+	}
+
+	if vc.Status == "REVOKED" {
+		return fmt.Errorf("credential %s is already revoked", credentialId)
+	}
+
+	// Only the original issuer or RegulatorMSP can revoke
+	if msp != vc.IssuerMSP && msp != "RegulatorMSP" {
+		return fmt.Errorf("access denied: only issuer (%s) or RegulatorMSP can revoke", vc.IssuerMSP)
+	}
+
+	now := time.Now().UTC().Format(time.RFC3339)
+	vc.Status = "REVOKED"
+	vc.RevokedAt = now
+	vc.RevocationReason = reason
+
+	updatedJSON, err := json.Marshal(vc)
+	if err != nil {
+		return fmt.Errorf("failed to marshal credential: %v", err)
+	}
+
+	return ctx.GetStub().PutState(credentialId, updatedJSON)
+}
+
+// ============================================================
+// 22. QueryCredential (all orgs)
+// ============================================================
+
+func (c *PassportContract) QueryCredential(ctx contractapi.TransactionContextInterface,
+	credentialId string) (*VerifiableCredential, error) {
+
+	vcJSON, err := ctx.GetStub().GetState(credentialId)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read credential: %v", err)
+	}
+	if vcJSON == nil {
+		return nil, fmt.Errorf("credential %s does not exist", credentialId)
+	}
+
+	var vc VerifiableCredential
+	if err := json.Unmarshal(vcJSON, &vc); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal credential: %v", err)
+	}
+
+	return &vc, nil
+}
+
+// ============================================================
+// 23. QueryCredentialsByPassport (RBAC filtered)
+// ============================================================
+
+func (c *PassportContract) QueryCredentialsByPassport(ctx contractapi.TransactionContextInterface,
+	passportId string, pageSizeStr string, bookmark string) (*PaginatedVCResult, error) {
+
+	// Access check on parent passport
+	passportJSON, err := ctx.GetStub().GetState(passportId)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read passport: %v", err)
+	}
+	if passportJSON == nil {
+		return nil, fmt.Errorf("passport %s does not exist", passportId)
+	}
+	var passport BatteryPassport
+	if err := json.Unmarshal(passportJSON, &passport); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal passport: %v", err)
+	}
+	if err := c.checkPassportAccess(ctx, &passport); err != nil {
+		return nil, err
+	}
+
+	pageSize, err := strconv.ParseInt(pageSizeStr, 10, 32)
+	if err != nil || pageSize <= 0 {
+		pageSize = int64(defaultPageSize)
+	}
+	if int32(pageSize) > maxPageSize {
+		pageSize = int64(maxPageSize)
+	}
+
+	queryString := fmt.Sprintf(`{"selector":{"docType":"%s","passportId":"%s"}}`, docTypeVC, passportId)
+
+	resultsIterator, responseMetadata, err := ctx.GetStub().GetQueryResultWithPagination(queryString, int32(pageSize), bookmark)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query credentials: %v", err)
+	}
+	defer resultsIterator.Close()
+
+	var records []*VerifiableCredential
+	for resultsIterator.HasNext() {
+		queryResponse, err := resultsIterator.Next()
+		if err != nil {
+			return nil, err
+		}
+		var vc VerifiableCredential
+		if err := json.Unmarshal(queryResponse.Value, &vc); err != nil {
+			return nil, err
+		}
+		records = append(records, &vc)
+	}
+
+	return &PaginatedVCResult{
+		Records:  records,
+		Bookmark: responseMetadata.GetBookmark(),
+		Count:    int(responseMetadata.GetFetchedRecordsCount()),
+	}, nil
+}
+
+// ============================================================
+// 24. QueryCredentialsByHolder (ManufacturerMSP, RegulatorMSP)
+// ============================================================
+
+func (c *PassportContract) QueryCredentialsByHolder(ctx contractapi.TransactionContextInterface,
+	holderDid string, pageSizeStr string, bookmark string) (*PaginatedVCResult, error) {
+
+	if err := c.requireMSP(ctx, "ManufacturerMSP", "RegulatorMSP"); err != nil {
+		return nil, err
+	}
+
+	pageSize, err := strconv.ParseInt(pageSizeStr, 10, 32)
+	if err != nil || pageSize <= 0 {
+		pageSize = int64(defaultPageSize)
+	}
+	if int32(pageSize) > maxPageSize {
+		pageSize = int64(maxPageSize)
+	}
+
+	queryString := fmt.Sprintf(`{"selector":{"docType":"%s","holderDid":"%s"}}`, docTypeVC, holderDid)
+
+	resultsIterator, responseMetadata, err := ctx.GetStub().GetQueryResultWithPagination(queryString, int32(pageSize), bookmark)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query credentials: %v", err)
+	}
+	defer resultsIterator.Close()
+
+	var records []*VerifiableCredential
+	for resultsIterator.HasNext() {
+		queryResponse, err := resultsIterator.Next()
+		if err != nil {
+			return nil, err
+		}
+		var vc VerifiableCredential
+		if err := json.Unmarshal(queryResponse.Value, &vc); err != nil {
+			return nil, err
+		}
+		records = append(records, &vc)
+	}
+
+	return &PaginatedVCResult{
+		Records:  records,
+		Bookmark: responseMetadata.GetBookmark(),
+		Count:    int(responseMetadata.GetFetchedRecordsCount()),
+	}, nil
+}
+
+// ============================================================
+// 25. QueryCredentialsByType (all orgs, filtered by MSP)
+// ============================================================
+
+func (c *PassportContract) QueryCredentialsByType(ctx contractapi.TransactionContextInterface,
+	credType string, pageSizeStr string, bookmark string) (*PaginatedVCResult, error) {
+
+	if _, ok := credTypeIssuers[credType]; !ok {
+		return nil, fmt.Errorf("invalid credential type: %s", credType)
+	}
+
+	pageSize, err := strconv.ParseInt(pageSizeStr, 10, 32)
+	if err != nil || pageSize <= 0 {
+		pageSize = int64(defaultPageSize)
+	}
+	if int32(pageSize) > maxPageSize {
+		pageSize = int64(maxPageSize)
+	}
+
+	msp, err := c.getClientMSP(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get client MSP: %v", err)
+	}
+
+	var queryString string
+	if msp == "RegulatorMSP" {
+		queryString = fmt.Sprintf(`{"selector":{"docType":"%s","credType":"%s"}}`, docTypeVC, credType)
+	} else {
+		queryString = fmt.Sprintf(`{"selector":{"docType":"%s","credType":"%s","issuerMsp":"%s"}}`, docTypeVC, credType, msp)
+	}
+
+	resultsIterator, responseMetadata, err := ctx.GetStub().GetQueryResultWithPagination(queryString, int32(pageSize), bookmark)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query credentials: %v", err)
+	}
+	defer resultsIterator.Close()
+
+	var records []*VerifiableCredential
+	for resultsIterator.HasNext() {
+		queryResponse, err := resultsIterator.Next()
+		if err != nil {
+			return nil, err
+		}
+		var vc VerifiableCredential
+		if err := json.Unmarshal(queryResponse.Value, &vc); err != nil {
+			return nil, err
+		}
+		records = append(records, &vc)
+	}
+
+	return &PaginatedVCResult{
+		Records:  records,
+		Bookmark: responseMetadata.GetBookmark(),
+		Count:    int(responseMetadata.GetFetchedRecordsCount()),
+	}, nil
+}
+
+// ============================================================
+// 26. VerifyCredentialStatus (all orgs)
+// ============================================================
+
+func (c *PassportContract) VerifyCredentialStatus(ctx contractapi.TransactionContextInterface,
+	credentialId string) (string, error) {
+
+	vcJSON, err := ctx.GetStub().GetState(credentialId)
+	if err != nil {
+		return "", fmt.Errorf("failed to read credential: %v", err)
+	}
+	if vcJSON == nil {
+		return "", fmt.Errorf("credential %s does not exist", credentialId)
+	}
+
+	var vc VerifiableCredential
+	if err := json.Unmarshal(vcJSON, &vc); err != nil {
+		return "", fmt.Errorf("failed to unmarshal credential: %v", err)
+	}
+
+	if vc.Status == "REVOKED" {
+		result := fmt.Sprintf(`{"valid":false,"reason":"revoked","revokedAt":"%s","revocationReason":"%s"}`, vc.RevokedAt, vc.RevocationReason)
+		return result, nil
+	}
+
+	if vc.ExpiresAt != "" {
+		expiresAt, err := time.Parse(time.RFC3339, vc.ExpiresAt)
+		if err == nil && time.Now().UTC().After(expiresAt) {
+			return `{"valid":false,"reason":"expired"}`, nil
+		}
+	}
+
+	return fmt.Sprintf(`{"valid":true,"credType":"%s","issuedAt":"%s","issuerMsp":"%s"}`, vc.CredType, vc.IssuedAt, vc.IssuerMSP), nil
+}
+
+// ============================================================
+// 27. LogCredentialVerification (all orgs)
+// ============================================================
+
+func (c *PassportContract) LogCredentialVerification(ctx contractapi.TransactionContextInterface,
+	verificationId string, credentialId string, verifierDid string, resultStr string) error {
+
+	if verificationId == "" || credentialId == "" {
+		return fmt.Errorf("verificationId and credentialId must not be empty")
+	}
+
+	// Check credential exists
+	vcJSON, err := ctx.GetStub().GetState(credentialId)
+	if err != nil {
+		return fmt.Errorf("failed to read credential: %v", err)
+	}
+	if vcJSON == nil {
+		return fmt.Errorf("credential %s does not exist", credentialId)
+	}
+
+	// Check duplicate
+	existing, err := ctx.GetStub().GetState(verificationId)
+	if err != nil {
+		return fmt.Errorf("failed to check existing verification: %v", err)
+	}
+	if existing != nil {
+		return fmt.Errorf("verification %s already exists", verificationId)
+	}
+
+	msp, err := c.getClientMSP(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to get client MSP: %v", err)
+	}
+
+	result := strings.ToLower(resultStr) == "true"
+	now := time.Now().UTC().Format(time.RFC3339)
+
+	verification := CredentialVerification{
+		DocType:        docTypeVerification,
+		VerificationID: verificationId,
+		CredentialID:   credentialId,
+		VerifierDID:    verifierDid,
+		VerifierMSP:    msp,
+		Result:         result,
+		Timestamp:      now,
+	}
+
+	verJSON, err := json.Marshal(verification)
+	if err != nil {
+		return fmt.Errorf("failed to marshal verification: %v", err)
+	}
+
+	return ctx.GetStub().PutState(verificationId, verJSON)
+}
+
+// ============================================================
+// 28. GetCredentialHistory
+// ============================================================
+
+func (c *PassportContract) GetCredentialHistory(ctx contractapi.TransactionContextInterface,
+	credentialId string) ([]string, error) {
+
+	historyIterator, err := ctx.GetStub().GetHistoryForKey(credentialId)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get credential history: %v", err)
+	}
+	defer historyIterator.Close()
+
+	var history []string
+	for historyIterator.HasNext() {
+		modification, err := historyIterator.Next()
+		if err != nil {
+			return nil, err
+		}
+		if modification.IsDelete {
+			history = append(history, `{"deleted":true}`)
+		} else {
+			history = append(history, string(modification.Value))
+		}
+	}
+
+	return history, nil
+}
+
+// ============================================================
+// 29. QueryRevokedCredentials (RegulatorMSP only)
+// ============================================================
+
+func (c *PassportContract) QueryRevokedCredentials(ctx contractapi.TransactionContextInterface,
+	pageSizeStr string, bookmark string) (*PaginatedVCResult, error) {
+
+	if err := c.requireMSP(ctx, "RegulatorMSP"); err != nil {
+		return nil, err
+	}
+
+	pageSize, err := strconv.ParseInt(pageSizeStr, 10, 32)
+	if err != nil || pageSize <= 0 {
+		pageSize = int64(defaultPageSize)
+	}
+	if int32(pageSize) > maxPageSize {
+		pageSize = int64(maxPageSize)
+	}
+
+	queryString := fmt.Sprintf(`{"selector":{"docType":"%s","status":"REVOKED"}}`, docTypeVC)
+
+	resultsIterator, responseMetadata, err := ctx.GetStub().GetQueryResultWithPagination(queryString, int32(pageSize), bookmark)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query revoked credentials: %v", err)
+	}
+	defer resultsIterator.Close()
+
+	var records []*VerifiableCredential
+	for resultsIterator.HasNext() {
+		queryResponse, err := resultsIterator.Next()
+		if err != nil {
+			return nil, err
+		}
+		var vc VerifiableCredential
+		if err := json.Unmarshal(queryResponse.Value, &vc); err != nil {
+			return nil, err
+		}
+		records = append(records, &vc)
+	}
+
+	return &PaginatedVCResult{
+		Records:  records,
+		Bookmark: responseMetadata.GetBookmark(),
+		Count:    int(responseMetadata.GetFetchedRecordsCount()),
+	}, nil
 }
 
 // ============================================================

@@ -3,8 +3,9 @@ const router = express.Router();
 const { authenticateToken } = require('../middleware/auth');
 const { requireMSP } = require('../middleware/rbac');
 const fabricService = require('../services/fabric.service');
+const { MSP } = require('../config/constants');
 
-router.post('/:id/request', authenticateToken, requireMSP('EVManufacturerMSP'), async (req, res) => {
+router.post('/:id/request', authenticateToken, requireMSP(MSP.EV_MANUFACTURER), async (req, res) => {
   const { maintenanceType, description } = req.body;
   try {
     await fabricService.submitTransaction('RequestMaintenance', [
@@ -16,7 +17,7 @@ router.post('/:id/request', authenticateToken, requireMSP('EVManufacturerMSP'), 
   }
 });
 
-router.post('/:id/log', authenticateToken, requireMSP('ServiceMSP'), async (req, res) => {
+router.post('/:id/log', authenticateToken, requireMSP(MSP.SERVICE), async (req, res) => {
   const { maintenanceType, description, technician } = req.body;
   try {
     await fabricService.submitTransaction('AddMaintenanceLog', [
@@ -28,7 +29,7 @@ router.post('/:id/log', authenticateToken, requireMSP('ServiceMSP'), async (req,
   }
 });
 
-router.post('/:id/accident', authenticateToken, requireMSP('EVManufacturerMSP', 'ServiceMSP'), async (req, res) => {
+router.post('/:id/accident', authenticateToken, requireMSP(MSP.EV_MANUFACTURER, MSP.SERVICE), async (req, res) => {
   const { severity, description, reporter } = req.body;
   if (!severity || !description) {
     return res.status(400).json({ error: 'severity, description required' });

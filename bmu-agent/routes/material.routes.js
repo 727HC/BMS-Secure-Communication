@@ -3,8 +3,9 @@ const router = express.Router();
 const { authenticateToken } = require('../middleware/auth');
 const { requireMSP } = require('../middleware/rbac');
 const fabricService = require('../services/fabric.service');
+const { MSP } = require('../config/constants');
 
-router.post('/', authenticateToken, requireMSP('ManufacturerMSP'), async (req, res) => {
+router.post('/', authenticateToken, requireMSP(MSP.MANUFACTURER), async (req, res) => {
   const { materialId, name, origin, supplier, quantity, unit, certificationId } = req.body;
   if (!materialId || !name || !origin) {
     return res.status(400).json({ error: 'materialId, name, origin required' });

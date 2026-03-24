@@ -7,7 +7,9 @@ app.component('passports-page', {
     const passports = ref([]);
     const loading = ref(true);
     const searchQuery = ref('');
-    const filterStatus = ref('');
+    const initFilter = (window.__pageProps && window.__pageProps.filterStatus) || '';
+    const filterStatus = ref(initFilter);
+    const sortBy = ref((window.__pageProps && window.__pageProps.sortBy) || '');
     const showCreateModal = ref(false);
     const creating = ref(false);
     const createStep = ref(1);
@@ -37,6 +39,7 @@ app.component('passports-page', {
         expectedLifespan: '',
         voltageRange: '',
         temperatureRange: '',
+        carbonFootprint: '',
       };
     }
 
@@ -67,6 +70,24 @@ app.component('passports-page', {
 
     const isManufacturer = computed(() => props.auth.orgMsp === 'ManufacturerMSP');
 
+    const gbaFields = ['passportId','batteryId','serialNumber','model','manufacturerName','manufactureCountry',
+      'cellManufacturer','cellManufactureCountry','manufactureDate','cellType','chemistry',
+      'cellCount','weight','totalEnergy','energyDensity','ratedCapacity','expectedLifespan',
+      'voltageRange','temperatureRange','carbonFootprint','rawMaterials'];
+
+    function getGbaPct(p) {
+      let filled = 0;
+      gbaFields.forEach(k => {
+        if (k === 'carbonFootprint') {
+          if ((p[k] && p[k] !== 0) || (p.weight > 0 && p.totalEnergy > 0)) filled++;
+        } else {
+          const v = p[k];
+          if (v != null && v !== '' && v !== 0 && !(Array.isArray(v) && v.length === 0)) filled++;
+        }
+      });
+      return Math.round((filled / 21) * 100);
+    }
+
     const filteredPassports = computed(() => {
       let list = passports.value;
       if (filterStatus.value) {
@@ -82,12 +103,15 @@ app.component('passports-page', {
           (p.vin || '').toLowerCase().includes(q)
         );
       }
+      if (sortBy.value === 'gba') {
+        list = [...list].sort((a, b) => getGbaPct(a) - getGbaPct(b));
+      }
       return list;
     });
 
     /* Wizard step fields count for completion gauge */
     const step1Fields = ['passportId','batteryId','did','model','serialNumber','manufacturerName','manufactureCountry','cellManufacturer','cellManufactureCountry','manufactureDate','cellType','chemistry'];
-    const step2Fields = ['cellCount','weight','totalEnergy','energyDensity','ratedCapacity','expectedLifespan','voltageRange','temperatureRange'];
+    const step2Fields = ['cellCount','weight','totalEnergy','energyDensity','ratedCapacity','expectedLifespan','voltageRange','temperatureRange','carbonFootprint'];
     const allFields = [...step1Fields, ...step2Fields];
 
     const completionPct = computed(() => {
@@ -101,8 +125,8 @@ app.component('passports-page', {
 
     function nextStep() {
       if (createStep.value === 1) {
-        if (!form.value.model || !form.value.serialNumber || !form.value.manufacturerName) {
-          window.$toast('error', '모델, 시리얼번호, 제조사명은 필수입니다.');
+        if (!form.value.model || !form.value.serialNumber || !form.value.manufacturerName || !form.value.did) {
+          window.$toast('error', '모델, 시리얼번호, 제조사명, DID는 필수입니다.');
           return;
         }
       }
@@ -138,16 +162,27 @@ app.component('passports-page', {
     }
 
     async function submitCreate() {
-      if (!form.value.serialNumber || !form.value.manufacturerName || !form.value.model) {
-        window.$toast('error', '시리얼번호, 제조사명, 모델은 필수입니다.');
+      if (!form.value.serialNumber || !form.value.manufacturerName || !form.value.model || !form.value.did) {
+        window.$toast('error', '시리얼번호, 제조사명, 모델, DID는 필수입니다.');
         return;
       }
       creating.value = true;
       try {
         const body = { ...form.value };
-        ['cellCount', 'weight', 'totalEnergy', 'energyDensity', 'ratedCapacity', 'expectedLifespan'].forEach(k => {
-          if (body[k]) body[k] = Number(body[k]);
-        });
+        const numFields = ['cellCount', 'weight', 'totalEnergy', 'energyDensity', 'ratedCapacity', 'expectedLifespan', 'carbonFootprint'];
+        for (const k of numFields) {
+          if (body[k] !== '' && body[k] != null) {
+            const n = Number(body[k]);
+            if (isNaN(n) || n < 0) {
+              window.$toast('error', `${k} 값이 올바르지 않습니다. 0 이상의 숫자를 입력하세요.`);
+              creating.value = false;
+              return;
+            }
+            body[k] = n;
+          } else {
+            delete body[k];
+          }
+        }
         await props.api.post('/passports', body);
         window.$toast('success', '배터리 여권이 생성되었습니다.');
         closeCreateModal();
@@ -304,7 +339,7 @@ app.component('passports-page', {
                 </td>
                 <td class="px-4 py-3">
                   <span v-if="p.vin" class="font-mono text-xs text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded">{{ p.vin }}</span>
-                  <span v-else class="text-gray-300">--</span>
+                  <span v-else class="text-xs text-gray-400 italic">미바인딩</span>
                 </td>
               </tr>
             </tbody>
@@ -422,7 +457,7 @@ app.component('passports-page', {
                   <svg class="w-4 h-4 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
                   </svg>
-                  <h3 class="text-sm font-bold text-gray-800 uppercase tracking-wider">Public Information</h3>
+                  <h3 class="text-sm font-bold text-gray-800 tracking-wider">기본 정보</h3>
                 </div>
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
@@ -436,7 +471,7 @@ app.component('passports-page', {
                       class="w-full px-3 py-2 border border-gray-200 rounded-lg bg-gray-50 text-sm text-gray-400 font-mono" />
                   </div>
                   <div>
-                    <label class="block text-xs font-medium text-gray-500 mb-1">DID</label>
+                    <label class="block text-xs font-medium text-gray-500 mb-1">DID <span class="text-red-500">*</span></label>
                     <input v-model="form.did" type="text" placeholder="did:example:..."
                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none text-sm" />
                   </div>
@@ -513,12 +548,12 @@ app.component('passports-page', {
                   <svg class="w-4 h-4 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z"/>
                   </svg>
-                  <h3 class="text-sm font-bold text-gray-800 uppercase tracking-wider">Technical Specs</h3>
+                  <h3 class="text-sm font-bold text-gray-800 tracking-wider">기술 사양</h3>
                 </div>
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                   <div>
                     <label class="block text-xs font-medium text-gray-500 mb-1">셀 수</label>
-                    <input v-model="form.cellCount" type="number" min="0" placeholder="96"
+                    <input v-model="form.cellCount" type="number" min="1" step="1" placeholder="96"
                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none text-sm" />
                   </div>
                   <div>
@@ -542,17 +577,14 @@ app.component('passports-page', {
                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none text-sm" />
                   </div>
                   <div>
-                    <label class="block text-xs font-medium text-gray-500 mb-1">예상 수명 (cycles)</label>
-                    <input v-model="form.expectedLifespan" type="number" min="0" placeholder="3000"
+                    <label class="block text-xs font-medium text-gray-500 mb-1">예상 수명 (년)</label>
+                    <input v-model="form.expectedLifespan" type="number" min="0" placeholder="8"
                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none text-sm" />
                   </div>
                   <div>
-                    <label class="block text-xs font-medium text-gray-500 mb-1">전압 범위</label>
-                    <div class="flex items-center gap-2">
-                      <input v-model="form.voltageRange" type="text" placeholder="최소~공칭~최대 (예: 280~350~403)"
-                        class="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none text-sm" />
-                      <span class="text-sm font-medium text-gray-500 shrink-0">V</span>
-                    </div>
+                    <label class="block text-xs font-medium text-gray-500 mb-1">전압 범위 (V)</label>
+                    <input v-model="form.voltageRange" type="text" placeholder="280~350~403"
+                      class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none text-sm" />
                   </div>
                   <div>
                     <label class="block text-xs font-medium text-gray-500 mb-1">온도 범위</label>
@@ -560,6 +592,14 @@ app.component('passports-page', {
                       <input v-model="form.temperatureRange" type="text" placeholder="-20~60"
                         class="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none text-sm" />
                       <span class="text-sm font-medium text-gray-500 shrink-0">&deg;C</span>
+                    </div>
+                  </div>
+                  <div>
+                    <label class="block text-xs font-medium text-gray-500 mb-1">탄소 발자국 (kg CO₂e)</label>
+                    <div class="flex items-center gap-2">
+                      <input v-model="form.carbonFootprint" type="number" min="0" step="0.1" placeholder="0.0"
+                        class="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none text-sm" />
+                      <span class="text-sm font-medium text-gray-500 shrink-0">kg CO₂e</span>
                     </div>
                   </div>
                 </div>
@@ -675,6 +715,10 @@ app.component('passports-page', {
                     <div class="flex justify-between py-1 border-b border-gray-50">
                       <span class="text-gray-400">예상 수명</span>
                       <span class="text-gray-900 font-medium">{{ form.expectedLifespan ? form.expectedLifespan + ' 년' : '-' }}</span>
+                    </div>
+                    <div class="flex justify-between py-1 border-b border-gray-50">
+                      <span class="text-gray-400">탄소 발자국</span>
+                      <span class="text-gray-900 font-medium">{{ form.carbonFootprint ? form.carbonFootprint + ' kg CO₂e' : '-' }}</span>
                     </div>
                     <div class="flex justify-between py-1 border-b border-gray-50">
                       <span class="text-gray-400">DID</span>
