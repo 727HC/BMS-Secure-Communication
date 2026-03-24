@@ -120,7 +120,7 @@ type BatteryPassport struct {
 	AccidentLogs     []AccidentLog    `json:"accidentLogs"`
 
 	// Corrections
-	CorrectionLogs []CorrectionLog `json:"correctionLogs,omitempty"`
+	CorrectionLogs []CorrectionLog `json:"correctionLogs"`
 
 	// Audit
 	CreatedAt  string `json:"createdAt"`
@@ -1132,7 +1132,14 @@ func (c *PassportContract) GetPassportHistory(ctx contractapi.TransactionContext
 		if modification.IsDelete {
 			history = append(history, `{"deleted":true}`)
 		} else {
-			history = append(history, string(modification.Value))
+			var p BatteryPassport
+			if err := json.Unmarshal(modification.Value, &p); err == nil {
+				normalizePassport(&p)
+				normalized, _ := json.Marshal(p)
+				history = append(history, string(normalized))
+			} else {
+				history = append(history, string(modification.Value))
+			}
 		}
 	}
 
