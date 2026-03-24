@@ -6,8 +6,11 @@ const fabricConfig = require('./config/fabric');
 const { createLogger } = require('./services/logger.service');
 const log = createLogger('system');
 
+const { auditMiddleware, getAuditLogs } = require('./middleware/audit');
+
 const app = express();
 app.use(express.json());
+app.use(auditMiddleware);
 
 // Static files — webapp frontend
 app.use(express.static(path.join(__dirname, '..', 'webapp', 'frontend')));
@@ -23,6 +26,10 @@ apiRouter.use('/analysis', require('./routes/analysis.routes'));
 apiRouter.use('/recycling', require('./routes/recycling.routes'));
 apiRouter.use('/did', require('./routes/did.routes'));
 apiRouter.use('/vc', require('./routes/vc.routes'));
+// Audit log API
+apiRouter.get('/audit', (req, res) => {
+  res.json(getAuditLogs(req.query));
+});
 apiRouter.get('/status', (req, res) => {
   res.json({
     fabric: fabricService.isConnected() ? 'connected' : 'disconnected',

@@ -35,6 +35,11 @@ app.component('passport-detail-page', {
     const showRecycleModal = ref(false);
     const showExtractModal = ref(false);
     const showDisposeConfirm = ref(false);
+    const showCorrectModal = ref(false);
+    const showInvalidateModal = ref(false);
+    const correctForm = ref({ fieldName: '', newValue: '', reason: '' });
+    const invalidateForm = ref({ recordId: '', reason: '' });
+    const correctionHistory = ref([]);
     const submitting = ref(false);
 
     // Forms
@@ -487,14 +492,14 @@ app.component('passport-detail-page', {
     function switchTab(tab) {
       activeTab.value = tab;
       if (tab === 'data') fetchBmuData();
-      if (tab === 'trust') { fetchHistory(); fetchVcList(); setTimeout(generateQr, 300); }
+      if (tab === 'trust') { fetchHistory(); fetchVcList(); fetchCorrectionHistory(); setTimeout(generateQr, 300); }
     }
 
     /* ---------- actions ---------- */
     async function submitBind() {
       submitting.value = true;
       try {
-        await props.api.put('/passports/' + passportId.value + '/bind', bindForm.value);
+        await retryOnConflict(() => props.api.put('/passports/' + passportId.value + '/bind', bindForm.value));
         // Upload vehicle image if selected
         if (vehicleImageFile.value) {
           const formData = new FormData();
@@ -548,7 +553,7 @@ app.component('passport-detail-page', {
     async function submitMaintenanceRequest() {
       submitting.value = true;
       try {
-        await props.api.post('/maintenance/' + passportId.value + '/request', { maintenanceType: 'routine', description: '정비 요청' });
+        await retryOnConflict(() => props.api.post('/maintenance/' + passportId.value + '/request', { maintenanceType: 'routine', description: '정비 요청' }));
         window.$toast('success', '정비 요청이 접수되었습니다.');
         showMaintenanceRequestModal.value = false;
         await fetchPassport();
@@ -559,11 +564,11 @@ app.component('passport-detail-page', {
     async function submitMaintenanceLog() {
       submitting.value = true;
       try {
-        await props.api.post('/maintenance/' + passportId.value + '/log', {
+        await retryOnConflict(() => props.api.post('/maintenance/' + passportId.value + '/log', {
           maintenanceType: maintenanceForm.value.type || 'routine',
           description: maintenanceForm.value.description,
           technician: maintenanceForm.value.technician,
-        });
+        }));
         window.$toast('success', '정비 기록이 추가되었습니다.');
         showMaintenanceLogModal.value = false;
         maintenanceForm.value = { date: '', type: '', description: '', technician: '' };
@@ -575,7 +580,7 @@ app.component('passport-detail-page', {
     async function submitAccidentLog() {
       submitting.value = true;
       try {
-        await props.api.post('/maintenance/' + passportId.value + '/accident', accidentForm.value);
+        await retryOnConflict(() => props.api.post('/maintenance/' + passportId.value + '/accident', accidentForm.value));
         window.$toast('success', '사고 기록이 추가되었습니다.');
         showAccidentLogModal.value = false;
         accidentForm.value = { severity: 'minor', description: '', reporter: '' };
@@ -587,7 +592,7 @@ app.component('passport-detail-page', {
     async function submitAnalysisRequest() {
       submitting.value = true;
       try {
-        await props.api.post('/analysis/' + passportId.value + '/request', {});
+        await retryOnConflict(() => props.api.post('/analysis/' + passportId.value + '/request', {}));
         window.$toast('success', '분석 요청이 접수되었습니다.');
         showAnalysisRequestModal.value = false;
         await fetchPassport();
@@ -603,7 +608,7 @@ app.component('passport-detail-page', {
           remainingLifeCycle: Number(analysisForm.value.remainingLifeCycle),
           recycleAvailable: analysisForm.value.recycleAvailable,
         };
-        await props.api.post('/analysis/' + passportId.value + '/result', body);
+        await retryOnConflict(() => props.api.post('/analysis/' + passportId.value + '/result', body));
         window.$toast('success', '분석 결과가 제출되었습니다.');
         showAnalysisResultModal.value = false;
         analysisForm.value = { soh: '', soce: '', remainingLifeCycle: '', recycleAvailable: false };
@@ -615,7 +620,7 @@ app.component('passport-detail-page', {
     async function submitRecycleAvailability(available) {
       submitting.value = true;
       try {
-        await props.api.put('/recycling/' + passportId.value + '/availability', { available });
+        await retryOnConflict(() => props.api.put('/recycling/' + passportId.value + '/availability', { available }));
         window.$toast('success', '재활용 판정이 완료되었습니다.');
         showRecycleModal.value = false;
         await fetchPassport();
@@ -627,7 +632,7 @@ app.component('passport-detail-page', {
       submitting.value = true;
       try {
         const rates = JSON.parse(extractForm.value.recyclingRatesJson);
-        await props.api.post('/recycling/' + passportId.value + '/extract', { recyclingRates: rates });
+        await retryOnConflict(() => props.api.post('/recycling/' + passportId.value + '/extract', { recyclingRates: rates }));
         window.$toast('success', '원자재 추출 정보가 등록되었습니다.');
         showExtractModal.value = false;
         await fetchPassport();
@@ -639,12 +644,63 @@ app.component('passport-detail-page', {
     async function disposeBattery() {
       submitting.value = true;
       try {
-        await props.api.post('/recycling/' + passportId.value + '/dispose', {});
+        await retryOnConflict(() => props.api.post('/recycling/' + passportId.value + '/dispose', {}));
         window.$toast('success', '배터리가 폐기 처리되었습니다.');
         showDisposeConfirm.value = false;
         await fetchPassport();
       } catch (e) { window.$toast('error', '폐기 처리 실패: ' + e.message); }
       finally { submitting.value = false; }
+    }
+
+    // Correct passport field
+    const correctableFields = [
+      { value: 'model', label: '모델' }, { value: 'serialNumber', label: '시리얼번호' },
+      { value: 'manufacturerName', label: '제조사' }, { value: 'manufactureCountry', label: '제조국가' },
+      { value: 'cellManufacturer', label: '셀 제조사' }, { value: 'cellManufactureCountry', label: '셀 제조국가' },
+      { value: 'manufactureDate', label: '제조일자' }, { value: 'cellType', label: '셀 유형' },
+      { value: 'chemistry', label: '화학물질' }, { value: 'voltageRange', label: '전압범위' },
+      { value: 'temperatureRange', label: '온도범위' }, { value: 'cellCount', label: '셀 수' },
+      { value: 'weight', label: '무게(kg)' }, { value: 'totalEnergy', label: '총 에너지(kWh)' },
+      { value: 'ratedCapacity', label: '정격용량(Ah)' }, { value: 'carbonFootprint', label: '탄소발자국' },
+    ];
+
+    async function submitCorrection() {
+      submitting.value = true;
+      try {
+        await retryOnConflict(() => props.api.post('/passports/' + passportId.value + '/correct', correctForm.value));
+        window.$toast('success', '여권 데이터가 정정되었습니다.');
+        showCorrectModal.value = false;
+        correctForm.value = { fieldName: '', newValue: '', reason: '' };
+        await fetchPassport();
+        await fetchCorrectionHistory();
+      } catch (e) { window.$toast('error', '정정 실패: ' + e.message); }
+      finally { submitting.value = false; }
+    }
+
+    async function fetchCorrectionHistory() {
+      try {
+        const data = await props.api.get('/passports/' + passportId.value + '/corrections');
+        correctionHistory.value = Array.isArray(data) ? data : (data.records || []);
+      } catch { correctionHistory.value = []; }
+    }
+
+    // Invalidate BMU record
+    async function submitInvalidate() {
+      submitting.value = true;
+      try {
+        await retryOnConflict(() => props.api.post('/bmu/invalidate/' + invalidateForm.value.recordId, { reason: invalidateForm.value.reason }));
+        window.$toast('success', 'BMU 레코드가 무효화되었습니다.');
+        showInvalidateModal.value = false;
+        invalidateForm.value = { recordId: '', reason: '' };
+        bmuRecords.value = [];
+        await fetchBmuData();
+      } catch (e) { window.$toast('error', '무효화 실패: ' + e.message); }
+      finally { submitting.value = false; }
+    }
+
+    function openInvalidateModal(recordId) {
+      invalidateForm.value = { recordId, reason: '' };
+      showInvalidateModal.value = true;
     }
 
     function goBack() { emit('navigate', 'passports'); }
@@ -675,6 +731,9 @@ app.component('passport-detail-page', {
       issueVc, verifyVc, revokeVc,
       estimatedCarbonFootprint, carbonGrade,
       qrUrl, generateQr, downloadQr,
+      showCorrectModal, correctForm, correctableFields, correctionHistory,
+      submitCorrection, fetchCorrectionHistory,
+      showInvalidateModal, invalidateForm, submitInvalidate, openInvalidateModal,
     };
   },
   template: `
@@ -885,6 +944,18 @@ app.component('passport-detail-page', {
 
         <!-- ==================== TAB 1: IDENTITY ==================== -->
         <div v-if="activeTab === 'identity'" class="space-y-6">
+
+          <!-- Data Correction Button (Manufacturer/Regulator only) -->
+          <div v-if="isManufacturer || isRegulator"
+            class="flex justify-end">
+            <button @click="showCorrectModal = true"
+              class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-amber-700 bg-amber-50 border border-amber-200 rounded-lg hover:bg-amber-100 transition-colors">
+              <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+              </svg>
+              데이터 정정
+            </button>
+          </div>
 
           <!-- Identity Spec Grid — OpenBattery style: large label + big value, 3-column -->
           <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
@@ -1573,6 +1644,7 @@ app.component('passport-detail-page', {
                       <th class="text-left px-5 py-3.5 font-semibold text-slate-500 text-xs uppercase tracking-wider">온도 (&deg;C)</th>
                       <th class="text-left px-5 py-3.5 font-semibold text-slate-500 text-xs uppercase tracking-wider">방전주기</th>
                       <th class="text-left px-5 py-3.5 font-semibold text-slate-500 text-xs uppercase tracking-wider">상태</th>
+                      <th v-if="isManufacturer || isRegulator" class="text-center px-5 py-3.5 font-semibold text-slate-500 text-xs uppercase tracking-wider">작업</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -1594,7 +1666,15 @@ app.component('passport-detail-page', {
                             {{ badge.label }}
                           </span>
                           <span v-if="decodeStatusFlags(r.statusFlags).length === 0" class="text-xs text-slate-300">--</span>
+                          <span v-if="r.status === 'INVALIDATED'" class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-red-50 text-red-600 border border-red-200">무효</span>
                         </div>
+                      </td>
+                      <td v-if="isManufacturer || isRegulator" class="px-5 py-3 text-center">
+                        <button v-if="r.status !== 'INVALIDATED'" @click="openInvalidateModal(r.recordId)"
+                          class="text-[10px] font-medium text-red-500 hover:text-red-700 hover:bg-red-50 px-2 py-1 rounded transition-colors">
+                          무효화
+                        </button>
+                        <span v-else class="text-[10px] text-slate-400">처리됨</span>
                       </td>
                     </tr>
                   </tbody>
@@ -1829,6 +1909,42 @@ app.component('passport-detail-page', {
             </div>
           </div>
 
+          <!-- Correction History -->
+          <div v-if="correctionHistory.length > 0" class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+            <div class="px-6 py-4 border-b border-slate-100 flex items-center gap-2.5">
+              <div class="w-8 h-8 bg-amber-100 rounded-lg flex items-center justify-center">
+                <svg class="w-4 h-4 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                </svg>
+              </div>
+              <div>
+                <h3 class="text-sm font-bold text-slate-800 uppercase tracking-wider">데이터 정정 이력</h3>
+                <p class="text-[10px] text-slate-400 mt-0.5">블록체인에 기록된 여권 데이터 수정 내역</p>
+              </div>
+            </div>
+            <div class="divide-y divide-slate-100">
+              <div v-for="(c, i) in correctionHistory" :key="i" class="px-6 py-3.5">
+                <div class="flex items-start justify-between gap-4">
+                  <div class="min-w-0 flex-1">
+                    <div class="flex items-center gap-2 flex-wrap mb-1">
+                      <span class="text-sm font-semibold text-slate-800">{{ c.fieldName }}</span>
+                      <span class="text-xs text-slate-400">→</span>
+                      <span class="text-sm font-mono text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded">{{ c.newValue }}</span>
+                    </div>
+                    <div class="flex items-center gap-3 text-xs text-slate-400">
+                      <span>이전: {{ c.originalValue || '-' }}</span>
+                      <span>사유: {{ c.reason }}</span>
+                    </div>
+                  </div>
+                  <div class="text-right flex-shrink-0">
+                    <p class="text-[10px] text-slate-400">{{ formatDate(c.date) }}</p>
+                    <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-slate-100 text-slate-600">{{ c.correctedBy }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <!-- Change History -->
           <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
             <div class="px-6 py-4 border-b border-slate-100 flex items-center gap-2.5">
@@ -1965,6 +2081,82 @@ app.component('passport-detail-page', {
           </div>
         </transition>
       </teleport>
+
+      <!-- Data Correction Modal -->
+      <div v-if="showCorrectModal" class="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div class="fixed inset-0 bg-black/40 backdrop-blur-sm" @click="showCorrectModal = false"></div>
+        <div class="relative bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-md">
+          <div class="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+            <h3 class="text-base font-bold text-slate-900">데이터 정정</h3>
+            <button @click="showCorrectModal = false" class="text-slate-400 hover:text-slate-600">
+              <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+          </div>
+          <form @submit.prevent="submitCorrection" class="p-6 space-y-4">
+            <div>
+              <label class="block text-xs font-medium text-slate-500 mb-1.5">정정 필드 <span class="text-red-500">*</span></label>
+              <select v-model="correctForm.fieldName"
+                class="w-full px-3.5 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 outline-none text-sm bg-white">
+                <option value="">선택하세요</option>
+                <option v-for="f in correctableFields" :key="f.value" :value="f.value">{{ f.label }}</option>
+              </select>
+            </div>
+            <div v-if="correctForm.fieldName && passport">
+              <p class="text-xs text-slate-400 mb-1">현재 값: <span class="font-mono text-slate-600">{{ passport[correctForm.fieldName] || '(비어있음)' }}</span></p>
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-slate-500 mb-1.5">새 값 <span class="text-red-500">*</span></label>
+              <input v-model="correctForm.newValue" type="text" placeholder="정정할 값을 입력하세요"
+                class="w-full px-3.5 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 outline-none text-sm" />
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-slate-500 mb-1.5">정정 사유 <span class="text-red-500">*</span></label>
+              <textarea v-model="correctForm.reason" rows="2" placeholder="정정 사유를 입력하세요"
+                class="w-full px-3.5 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 outline-none text-sm resize-none"></textarea>
+            </div>
+            <div class="flex justify-end gap-3 pt-3 border-t border-slate-100">
+              <button type="button" @click="showCorrectModal = false"
+                class="px-4 py-2.5 text-sm font-medium text-slate-700 bg-white border border-slate-300 hover:bg-slate-50 rounded-xl transition-colors">취소</button>
+              <button type="submit" :disabled="!correctForm.fieldName || !correctForm.newValue || !correctForm.reason || submitting"
+                class="px-5 py-2.5 text-sm font-semibold text-white bg-amber-600 hover:bg-amber-700 rounded-xl transition-colors disabled:opacity-50">
+                {{ submitting ? '처리중...' : '정정' }}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- BMU Invalidate Modal -->
+      <div v-if="showInvalidateModal" class="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div class="fixed inset-0 bg-black/40 backdrop-blur-sm" @click="showInvalidateModal = false"></div>
+        <div class="relative bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-sm">
+          <div class="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+            <h3 class="text-base font-bold text-red-700">BMU 레코드 무효화</h3>
+            <button @click="showInvalidateModal = false" class="text-slate-400 hover:text-slate-600">
+              <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+          </div>
+          <form @submit.prevent="submitInvalidate" class="p-6 space-y-4">
+            <div class="bg-red-50 rounded-lg border border-red-200 p-3">
+              <p class="text-xs text-red-600">레코드 ID: <span class="font-mono font-bold">{{ invalidateForm.recordId }}</span></p>
+              <p class="text-[10px] text-red-500 mt-1">무효화된 레코드는 원본이 보존되지만, 유효하지 않은 것으로 표시됩니다.</p>
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-slate-500 mb-1.5">무효화 사유 <span class="text-red-500">*</span></label>
+              <textarea v-model="invalidateForm.reason" rows="2" placeholder="무효화 사유를 입력하세요"
+                class="w-full px-3.5 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-red-500/20 focus:border-red-500 outline-none text-sm resize-none"></textarea>
+            </div>
+            <div class="flex justify-end gap-3 pt-3 border-t border-slate-100">
+              <button type="button" @click="showInvalidateModal = false"
+                class="px-4 py-2.5 text-sm font-medium text-slate-700 bg-white border border-slate-300 hover:bg-slate-50 rounded-xl transition-colors">취소</button>
+              <button type="submit" :disabled="!invalidateForm.reason || submitting"
+                class="px-5 py-2.5 text-sm font-semibold text-white bg-red-600 hover:bg-red-700 rounded-xl transition-colors disabled:opacity-50">
+                {{ submitting ? '처리중...' : '무효화' }}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
 
       <!-- Maintenance Request Modal -->
       <teleport to="body">
