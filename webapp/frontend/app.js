@@ -27,6 +27,21 @@ function createApi(auth) {
   };
 }
 
+// Retry helper for MVCC_READ_CONFLICT (Fabric concurrent write conflicts)
+async function retryOnConflict(fn, maxRetries = 3, delayMs = 1500) {
+  for (let i = 0; i < maxRetries; i++) {
+    try {
+      return await fn();
+    } catch (e) {
+      if (e.message && e.message.includes('MVCC_READ_CONFLICT') && i < maxRetries - 1) {
+        await new Promise(r => setTimeout(r, delayMs));
+        continue;
+      }
+      throw e;
+    }
+  }
+}
+
 // Shared utility functions (K-5: avoid duplication across pages)
 function scaleSOC(val) {
   if (val == null) return 0;
@@ -63,6 +78,7 @@ const SIDEBAR_NAV = [
   { route: 'maintenance', label: '정비/서비스', icon: 'wrench', section: '운영' },
   { route: 'recycling', label: '재활용', icon: 'recycle', section: '운영' },
   { route: 'qr-scan', label: 'QR 스캔', icon: 'qr', section: '도구' },
+  { route: 'audit-log', label: '감사 로그', icon: 'audit', section: '도구' },
 ];
 
 // Page component map
@@ -76,6 +92,7 @@ const PAGE_COMPONENTS = {
   maintenance: 'maintenance-page',
   recycling: 'recycling-page',
   'qr-scan': 'qr-scan-page',
+  'audit-log': 'audit-log-page',
 };
 
 const app = createApp({
