@@ -36,11 +36,7 @@ app.component('dashboard-page', {
     });
 
     /* ---------- helpers ---------- */
-    function scaleSOC(val) {
-      if (val == null) return 0;
-      const n = Number(val);
-      return n > 100 ? +(n / 655.35).toFixed(1) : +n.toFixed(1);
-    }
+    // Use global scaleSOC from app.js
 
     function truncate(str, len) {
       if (!str) return '-';
@@ -57,12 +53,9 @@ app.component('dashboard-page', {
     }
 
     /* ---------- status config ---------- */
-    const statusList = ['MANUFACTURED', 'ACTIVE', 'MAINTENANCE', 'ANALYSIS', 'RECYCLING', 'DISPOSED'];
-
-    const statusLabels = {
-      MANUFACTURED: '제조완료', ACTIVE: '운행중', MAINTENANCE: '정비중',
-      ANALYSIS: '분석중', RECYCLING: '재활용', DISPOSED: '폐기',
-    };
+    // Use global STATUS_LIST, STATUS_LABELS from app.js
+    const statusList = STATUS_LIST;
+    const statusLabels = STATUS_LABELS;
 
     /* ---------- computed ---------- */
     const totalCount = computed(() => passports.value.length);

@@ -43,11 +43,7 @@ app.component('passports-page', {
       };
     }
 
-    function scaleSOC(val) {
-      if (val == null) return null;
-      const n = Number(val);
-      return n > 100 ? +(n / 655.35).toFixed(1) : +n.toFixed(1);
-    }
+    // Use global scaleSOC from app.js
 
     const statusOptions = [
       { value: '', label: '전체 상태' },
@@ -59,16 +55,7 @@ app.component('passports-page', {
       { value: 'DISPOSED', label: '폐기' },
     ];
 
-    const statusConfig = {
-      MANUFACTURED: { bg: 'bg-blue-50', text: 'text-blue-700', border: 'border-blue-200', dot: 'bg-blue-500', label: '제조완료' },
-      ACTIVE:       { bg: 'bg-emerald-50', text: 'text-emerald-700', border: 'border-emerald-200', dot: 'bg-emerald-500', label: '운행중' },
-      MAINTENANCE:  { bg: 'bg-amber-50', text: 'text-amber-700', border: 'border-amber-200', dot: 'bg-amber-500', label: '정비중' },
-      ANALYSIS:     { bg: 'bg-purple-50', text: 'text-purple-700', border: 'border-purple-200', dot: 'bg-purple-500', label: '분석중' },
-      RECYCLING:    { bg: 'bg-orange-50', text: 'text-orange-700', border: 'border-orange-200', dot: 'bg-orange-500', label: '재활용' },
-      DISPOSED:     { bg: 'bg-gray-50', text: 'text-gray-600', border: 'border-gray-300', dot: 'bg-gray-500', label: '폐기' },
-    };
-
-    const isManufacturer = computed(() => props.auth.orgMsp === 'ManufacturerMSP');
+    const isManufacturer = computed(() => props.auth.orgMsp === MSP.MANUFACTURER);
 
     const gbaFields = ['passportId','batteryId','serialNumber','model','manufacturerName','manufactureCountry',
       'cellManufacturer','cellManufactureCountry','manufactureDate','cellType','chemistry',
@@ -198,9 +185,7 @@ app.component('passports-page', {
       emit('navigate', 'passport-detail', { passportId });
     }
 
-    function getStatusBadge(status) {
-      return statusConfig[status] || statusConfig.DISPOSED;
-    }
+    // Use global getStatusBadge from app.js
 
     function getSocColor(soc) {
       if (soc == null) return 'bg-gray-300';

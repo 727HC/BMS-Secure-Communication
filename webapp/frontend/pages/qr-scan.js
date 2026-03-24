@@ -80,18 +80,11 @@ app.component('qr-scan-page', {
       }
     }
 
-    const statusLabels = {
-      MANUFACTURED: '제조완료', ACTIVE: '운행중', MAINTENANCE: '정비중',
-      ANALYSIS: '분석중', RECYCLING: '재활용', DISPOSED: '폐기',
-    };
-    const statusColors = {
-      MANUFACTURED: 'bg-blue-50 text-blue-700 border-blue-200',
-      ACTIVE: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-      MAINTENANCE: 'bg-amber-50 text-amber-700 border-amber-200',
-      ANALYSIS: 'bg-purple-50 text-purple-700 border-purple-200',
-      RECYCLING: 'bg-orange-50 text-orange-700 border-orange-200',
-      DISPOSED: 'bg-gray-50 text-gray-600 border-gray-300',
-    };
+    // Use global STATUS_LABELS, STATUS_CONFIG from app.js
+    const statusLabels = STATUS_LABELS;
+    const statusColors = Object.fromEntries(
+      Object.entries(STATUS_CONFIG).map(([k, v]) => [k, `${v.bg} ${v.text} ${v.border}`])
+    );
 
     onUnmounted(() => { stopScan(); });
 

@@ -10,7 +10,7 @@ app.component('materials-page', {
     const submitting = ref(false);
     const searchQuery = ref('');
 
-    const isManufacturer = computed(() => props.auth.orgMsp === 'ManufacturerMSP');
+    const isManufacturer = computed(() => props.auth.orgMsp === MSP.MANUFACTURER);
 
     const form = ref({
       materialId: '',

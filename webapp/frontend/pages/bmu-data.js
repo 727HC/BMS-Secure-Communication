@@ -87,17 +87,7 @@ app.component('bmu-data-page', {
       return Number(val).toFixed(decimals !== undefined ? decimals : 1);
     }
 
-    function scaleSOC(val) {
-      if (val == null) return 0;
-      const n = Number(val);
-      return n > 100 ? +(n / 655.35).toFixed(1) : +n.toFixed(1);
-    }
-
-    function scaleTemp(val) {
-      if (val == null) return 0;
-      const n = Number(val);
-      return n > 100 ? +(n / 1310.7).toFixed(1) : +n.toFixed(1);
-    }
+    // Use global scaleSOC/scaleTemp from app.js
 
     function startAutoRefresh() {
       stopAutoRefresh();
