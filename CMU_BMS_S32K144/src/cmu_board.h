@@ -16,6 +16,7 @@
 #define PCC_PORTD_ADDR          (*(volatile uint32 *)0x40065130u)
 #define PCC_PORTE_ADDR          (*(volatile uint32 *)0x40065124u)
 #define PCC_FLEXCAN0_ADDR       (*(volatile uint32 *)0x40065090u)
+#define PCC_LPUART0_ADDR        (*(volatile uint32 *)0x400651A8u)
 #define PCC_LPUART1_ADDR        (*(volatile uint32 *)0x400651ACu)
 #define PCC_CGC_BIT             (1u << 30)
 #define PCC_PCS_FIRCDIV2        (3u << 24)
@@ -42,14 +43,25 @@
 #define CAN_TRCV_EN_PIN         11u     /* PTE11 = CAN transceiver enable */
 
 /*============================================================================
- *  LPUART1 Registers (bare-metal, data input from dataProcess.py)
+ *  LPUART Registers (bare-metal, data input from dataProcess.py)
  *  Clock source: FIRCDIV2 = 48MHz
+ *
+ *  S32K144EVB-Q100 OpenSDA Virtual COM:
+ *    LPUART1 (PTC6=RX, PTC7=TX) — original design
+ *    Some boards use LPUART0 (PTB0=RX, PTB1=TX)
+ *  Change CMU_LPUART_BASE to switch between them.
  *============================================================================*/
+#define LPUART0_BASE_ADDR      0x4006A000U
 #define LPUART1_BASE_ADDR      0x4006B000U
-#define LPUART1_BAUD_REG       (*(volatile uint32 *)(LPUART1_BASE_ADDR + 0x10U))
-#define LPUART1_STAT_REG       (*(volatile uint32 *)(LPUART1_BASE_ADDR + 0x14U))
-#define LPUART1_CTRL_REG       (*(volatile uint32 *)(LPUART1_BASE_ADDR + 0x18U))
-#define LPUART1_DATA_REG       (*(volatile uint32 *)(LPUART1_BASE_ADDR + 0x1CU))
+
+/* Select which LPUART is connected to OpenSDA Virtual COM */
+/* S32K144EVB-Q100: OpenSDA connects to LPUART1 (PTC6=RX, PTC7=TX) */
+#define CMU_LPUART_BASE         LPUART1_BASE_ADDR
+
+#define LPUART1_BAUD_REG       (*(volatile uint32 *)(CMU_LPUART_BASE + 0x10U))
+#define LPUART1_STAT_REG       (*(volatile uint32 *)(CMU_LPUART_BASE + 0x14U))
+#define LPUART1_CTRL_REG       (*(volatile uint32 *)(CMU_LPUART_BASE + 0x18U))
+#define LPUART1_DATA_REG       (*(volatile uint32 *)(CMU_LPUART_BASE + 0x1CU))
 
 /* LPUART register bits */
 #define LPUART_RDRF             (1U << 21U)     /* RX Data Register Full */
