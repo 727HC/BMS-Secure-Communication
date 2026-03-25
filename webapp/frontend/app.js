@@ -111,7 +111,7 @@ const SIDEBAR_NAV = [
   { route: 'bmu-data', label: '배터리 데이터', icon: 'pulse', section: '모니터링' },
   { route: 'maintenance', label: '정비/서비스', icon: 'wrench', section: '운영' },
   { route: 'recycling', label: '재활용', icon: 'recycle', section: '운영' },
-  { route: 'qr-scan', label: 'QR 스캔', icon: 'qr', section: '도구' },
+  { route: 'qr-scan', label: 'QR / NFC', icon: 'qr', section: '도구' },
   { route: 'audit-log', label: '감사 로그', icon: 'audit', section: '도구' },
 ];
 

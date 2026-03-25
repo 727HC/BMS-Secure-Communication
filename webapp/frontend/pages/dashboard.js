@@ -69,70 +69,6 @@ app.component('dashboard-page', {
 
     const activeCount = computed(() => countByStatus.value['ACTIVE'] || 0);
 
-    /* ---------- GBA 21 compliance ---------- */
-    const gba21Fields = [
-      { idx: 1, key: 'passportId', label: '여권 ID', group: '식별정보' },
-      { idx: 2, key: 'batteryId', label: '배터리 ID', group: '식별정보' },
-      { idx: 3, key: 'serialNumber', label: '시리얼번호', group: '식별정보' },
-      { idx: 4, key: 'model', label: '모델명', group: '제조정보' },
-      { idx: 5, key: 'manufacturerName', label: '제조사', group: '제조정보' },
-      { idx: 6, key: 'manufactureCountry', label: '제조국가', group: '제조정보' },
-      { idx: 7, key: 'cellManufacturer', label: '셀 제조사', group: '제조정보' },
-      { idx: 8, key: 'cellManufactureCountry', label: '셀 제조국가', group: '제조정보' },
-      { idx: 9, key: 'manufactureDate', label: '제조일자', group: '제조정보' },
-      { idx: 10, key: 'cellType', label: '셀 유형', group: '제조정보' },
-      { idx: 11, key: 'chemistry', label: '화학물질', group: '제조정보' },
-      { idx: 12, key: 'cellCount', label: '셀 수', group: '기술사양' },
-      { idx: 13, key: 'weight', label: '무게', group: '기술사양' },
-      { idx: 14, key: 'totalEnergy', label: '총 에너지', group: '기술사양' },
-      { idx: 15, key: 'energyDensity', label: '에너지밀도', group: '기술사양' },
-      { idx: 16, key: 'ratedCapacity', label: '정격용량', group: '기술사양' },
-      { idx: 17, key: 'expectedLifespan', label: '예상수명', group: '기술사양' },
-      { idx: 18, key: 'voltageRange', label: '전압범위', group: '기술사양' },
-      { idx: 19, key: 'temperatureRange', label: '온도범위', group: '기술사양' },
-      { idx: 20, key: 'carbonFootprint', label: '탄소발자국', group: '기술사양' },
-      { idx: 21, key: 'rawMaterials', label: '원자재', group: '기술사양' },
-    ];
-
-    function fieldFilled(p, key) {
-      // carbonFootprint: count as filled if value > 0 OR estimation possible (weight + totalEnergy)
-      if (key === 'carbonFootprint') {
-        const v = p[key];
-        if (v != null && v !== '' && v !== 0) return true;
-        return p.weight > 0 && p.totalEnergy > 0;
-      }
-      const v = p[key];
-      if (v == null || v === '' || v === 0) return false;
-      if (typeof v === 'object' && Object.keys(v).length === 0) return false;
-      if (Array.isArray(v) && v.length === 0) return false;
-      return true;
-    }
-
-    const gbaComplianceOverview = computed(() => {
-      if (passports.value.length === 0) return { pct: 0, filled: 0, groups: [] };
-      // Calculate average filled fields across ALL passports
-      let totalFilled = 0;
-      passports.value.forEach(p => {
-        gba21Fields.forEach(f => {
-          if (fieldFilled(p, f.key)) totalFilled++;
-        });
-      });
-      const avgFilled = Math.round(totalFilled / passports.value.length);
-      const pct = Math.round((avgFilled / 21) * 100);
-
-      // Field-level compliance: count how many passports have each field filled
-      const fields = gba21Fields.map(f => {
-        const filledCount = passports.value.filter(p => fieldFilled(p, f.key)).length;
-        return { ...f, filled: filledCount > passports.value.length / 2 };
-      });
-
-      const groups = ['식별정보', '제조정보', '기술사양'].map(g => ({
-        name: g,
-        fields: fields.filter(f => f.group === g),
-      }));
-
-      return { pct, filled: avgFilled, groups };
-    });
 
     /* ---------- 화학 구성 distribution ---------- */
     const chemistryDistribution = computed(() => {
@@ -198,7 +134,6 @@ app.component('dashboard-page', {
       totalCount, activeCount,
       statusList, statusLabels,
       countByStatus, statusDistribution,
-      gba21Fields, gbaComplianceOverview,
       chemistryDistribution, chemistrySegments, chemTotal,
       statusDistribution, statTotal,
       recentPassports,
@@ -235,7 +170,7 @@ app.component('dashboard-page', {
         </div>
 
         <!-- ===== SECTION 2: KPI CARDS ===== -->
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
 
           <!-- Card 1: 전체 여권 -->
           <div @click="nav('passports')"
@@ -258,24 +193,6 @@ app.component('dashboard-page', {
             </div>
           </div>
 
-          <!-- Card 3: GBA 21 준수율 -->
-          <div @click="$emit('navigate', 'passports', { sortBy: 'gba' })"
-               class="bg-white rounded-xl border border-gray-200 p-6 hover:shadow-md transition-all cursor-pointer">
-            <p class="text-sm font-medium text-slate-500 mb-1">GBA 21 준수율</p>
-            <div class="flex items-end gap-3">
-              <p class="text-4xl font-bold text-slate-900 tabular-nums leading-none">{{ gbaComplianceOverview.pct }}<span class="text-xl text-slate-400">%</span></p>
-              <span v-if="gbaComplianceOverview.pct >= 50"
-                class="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-xs font-medium bg-emerald-50 text-emerald-700 mb-0.5">
-                <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><polyline points="18 15 12 9 6 15"/></svg>
-                {{ gbaComplianceOverview.filled }}/21
-              </span>
-              <span v-else
-                class="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-xs font-medium bg-red-50 text-red-600 mb-0.5">
-                <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
-                {{ gbaComplianceOverview.filled }}/21
-              </span>
-            </div>
-          </div>
         </div>
 
         <!-- ===== SECTION 3: DONUT CHARTS ===== -->
