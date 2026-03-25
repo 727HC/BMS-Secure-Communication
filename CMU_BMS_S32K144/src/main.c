@@ -102,7 +102,12 @@ volatile uint32 g_lastESR1 = 0U;
 volatile uint32 g_lastECR  = 0U;
 volatile uint32 g_txOkCount = 0U;
 volatile uint32 g_txFailCount = 0U;
-volatile uint32 g_uartRxOkCount = 0U;  /* UART frames successfully parsed */
+volatile uint32 g_uartRxOkCount = 0U;    /* UART frames successfully parsed */
+volatile uint32 g_uartRxCompleteCount = 0U; /* UART rx complete (52 bytes received) */
+volatile uint32 g_uartParseFailCount = 0U;  /* UART parse failures */
+volatile uint32 g_uartRxBytes = 0U;         /* Total UART bytes received */
+volatile uint8  g_uartRxDump[64];           /* First 64 raw bytes for debug */
+volatile uint32 g_uartRxDumpIdx = 0U;
 volatile uint32 g_CTRL1 = 0U;
 volatile uint32 g_CBT   = 0U;
 volatile uint32 g_FDCBT = 0U;
@@ -357,6 +362,8 @@ static void CMU_PollUartRx(void)
 
         g_uart_rx_buf[g_uart_rx_idx] = byte;
         g_uart_rx_idx++;
+        g_uartRxBytes++;
+        if (g_uartRxDumpIdx < 64U) { g_uartRxDump[g_uartRxDumpIdx++] = byte; }
     }
     if (g_uart_rx_idx >= UART_FRAME_TOTAL)
     {
@@ -441,12 +448,7 @@ int main(void)
     /* 3c. LPUART1 IRQ — disabled until LPUART1 works */
     /* (*(volatile uint32 *)0xE000E104U) = (1U << 1U); */
 
-    /* 3d. LPUART1 init (UART RX from Simulink/dataProcess.py) */
-    PCC_LPUART1_ADDR = 0U;
-    PCC_LPUART1_ADDR = PCC_CGC_BIT | PCC_PCS_FIRCDIV2;
-    LPUART1_CTRL_REG = 0U;
-    LPUART1_BAUD_REG = (LPUART1_OSR_VALUE << 24) | LPUART1_SBR_VALUE;
-    LPUART1_CTRL_REG = LPUART_CTRL_RE | LPUART_CTRL_TE;
+    /* 3d. LPUART1 init moved to after CSEc init (step 9b) to avoid Clock_Ip overwrite */
 
     /* 4. FlexCAN0 clock enable */
     PCC_FLEXCAN0_ADDR |= PCC_CGC_BIT;
@@ -506,6 +508,25 @@ int main(void)
     else
     {
         g_proto_state = PROTO_STATE_ERROR;
+    }
+
+    /* 9b. LPUART1 init (after all RTD init to avoid Clock_Ip overwrite) */
+    {
+        /* PCC: enable LPUART1 clock with FIRCDIV2 source */
+        PCC_LPUART1_ADDR = 0U;
+        PCC_LPUART1_ADDR = PCC_CGC_BIT | PCC_PCS_FIRCDIV2;
+
+        /* PORTC pin mux: PTC6=LPUART1_RX (ALT2), PTC7=LPUART1_TX (ALT2) */
+        #define PCC_PORTC_ADDR  (*(volatile uint32 *)0x40065128u)
+        #define PORTC_PCR_BASE  ((volatile uint32 *)0x4004B000u)
+        PCC_PORTC_ADDR |= PCC_CGC_BIT;
+        PORTC_PCR_BASE[6] = (2U << 8);  /* MUX=ALT2 = LPUART1_RX */
+        PORTC_PCR_BASE[7] = (2U << 8);  /* MUX=ALT2 = LPUART1_TX */
+
+        /* LPUART1 baud and enable */
+        LPUART1_CTRL_REG = 0U;
+        LPUART1_BAUD_REG = (LPUART1_OSR_VALUE << 24) | LPUART1_SBR_VALUE;
+        LPUART1_CTRL_REG = LPUART_CTRL_RE | LPUART_CTRL_TE;
     }
 
     /* 10. Start UART reception for battery data from Simulink */
@@ -772,9 +793,14 @@ static void CMU_UartRxTask(void *pvParameters)
         CMU_PollUartRx();
         if (g_uart_rx_complete)
         {
+            g_uartRxCompleteCount++;
             if (CMU_ParseUartFrame(g_uart_rx_buf, UART_FRAME_TOTAL, g_battery_data))
             {
                 xQueueOverwrite(txDataQueue, g_battery_data);
+            }
+            else
+            {
+                g_uartParseFailCount++;
             }
             CMU_StartUartReception();
         }
