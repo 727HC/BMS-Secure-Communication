@@ -44,6 +44,7 @@ app.component('passport-detail-page', {
     const availableMaterials = ref([]);
     const selectedMaterialIds = ref([]);
     const submitting = ref(false);
+    const linkedMaterialDetails = ref([]);
 
     // Forms
     const bindForm = ref({ vin: '', installDate: '', evManufacturer: '', evAssemblyCountry: '' });
@@ -271,6 +272,7 @@ app.component('passport-detail-page', {
       try {
         passport.value = await props.api.get('/passports/' + passportId.value);
         checkVehicleImage();
+        fetchLinkedMaterials();
       } catch (e) {
         window.$toast('error', '여권 정보를 불러오지 못했습니다: ' + e.message);
       } finally {
@@ -697,6 +699,17 @@ app.component('passport-detail-page', {
       showInvalidateModal.value = true;
     }
 
+    // Fetch linked material details
+    async function fetchLinkedMaterials() {
+      const ids = passport.value?.rawMaterials || [];
+      if (ids.length === 0) { linkedMaterialDetails.value = []; return; }
+      try {
+        const data = await props.api.get('/materials');
+        const all = Array.isArray(data) ? data : (data.materials || data.records || []);
+        linkedMaterialDetails.value = all.filter(m => ids.includes(m.materialId));
+      } catch { linkedMaterialDetails.value = []; }
+    }
+
     // Link raw materials
     async function openLinkMaterialsModal() {
       try {
@@ -763,7 +776,7 @@ app.component('passport-detail-page', {
       showCorrectModal, correctForm, correctableFields, correctionHistory,
       submitCorrection, fetchCorrectionHistory,
       showInvalidateModal, invalidateForm, submitInvalidate, openInvalidateModal,
-      showLinkMaterialsModal, availableMaterials, selectedMaterialIds,
+      showLinkMaterialsModal, availableMaterials, selectedMaterialIds, linkedMaterialDetails,
       openLinkMaterialsModal, toggleMaterial, submitLinkMaterials,
     };
   },
@@ -1513,7 +1526,7 @@ app.component('passport-detail-page', {
           </div>
 
           <!-- Raw Materials -->
-          <div v-if="passport.rawMaterials && ((Array.isArray(passport.rawMaterials) && passport.rawMaterials.length > 0) || (typeof passport.rawMaterials === 'object' && Object.keys(passport.rawMaterials).length > 0))"
+          <div v-if="linkedMaterialDetails.length > 0"
                class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
             <div class="px-6 py-4 border-b border-slate-100 flex items-center gap-2.5">
               <div class="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center">
@@ -1522,9 +1535,29 @@ app.component('passport-detail-page', {
                 </svg>
               </div>
               <h3 class="text-sm font-bold text-slate-800 uppercase tracking-wider">원자재 정보</h3>
+              <span class="ml-auto text-xs font-medium text-purple-600 bg-purple-50 px-2 py-0.5 rounded-full">{{ linkedMaterialDetails.length }}종</span>
             </div>
-            <div class="p-6">
-              <div class="text-sm text-slate-700 bg-slate-50 rounded-lg p-4 border border-slate-100 font-mono whitespace-pre-wrap break-all">{{ typeof passport.rawMaterials === 'object' ? JSON.stringify(passport.rawMaterials, null, 2) : passport.rawMaterials }}</div>
+            <div class="p-4">
+              <div class="grid gap-3 sm:grid-cols-2">
+                <div v-for="m in linkedMaterialDetails" :key="m.materialId"
+                  class="flex items-start gap-3 p-3 rounded-lg border border-slate-100 bg-slate-50/50">
+                  <div class="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <svg class="w-4 h-4 text-purple-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+                    </svg>
+                  </div>
+                  <div class="flex-1 min-w-0">
+                    <p class="text-sm font-semibold text-slate-800">{{ m.name }}</p>
+                    <p class="text-xs text-slate-500 mt-0.5">{{ m.materialId }}</p>
+                    <div class="flex flex-wrap gap-x-3 gap-y-1 mt-1.5 text-[11px] text-slate-500">
+                      <span v-if="m.origin">원산지: <b class="text-slate-700">{{ m.origin }}</b></span>
+                      <span v-if="m.supplier">공급자: <b class="text-slate-700">{{ m.supplier }}</b></span>
+                      <span v-if="m.quantity">수량: <b class="text-slate-700">{{ m.quantity }}{{ m.unit || '' }}</b></span>
+                      <span v-if="m.certificationId">인증: <b class="text-slate-700">{{ m.certificationId }}</b></span>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 
