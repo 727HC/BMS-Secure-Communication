@@ -441,7 +441,6 @@ int main(void)
     /* (*(volatile uint32 *)0xE000E104U) = (1U << 1U); */
 
     /* 3d. LPUART1 init (UART RX from Simulink/dataProcess.py) */
-    #define PCC_LPUART1_ADDR (*(volatile uint32 *)0x400651ACu)
     PCC_LPUART1_ADDR = 0U;
     PCC_LPUART1_ADDR = PCC_CGC_BIT | PCC_PCS_FIRCDIV2;
     LPUART1_CTRL_REG = 0U;
@@ -609,7 +608,7 @@ static void CMU_ProtocolTask(void *pvParameters)
         case PROTO_STATE_KEY_EXCHANGE:
         {
             /* Send key exchange frame on CAN ID 0x15 */
-            FlexCAN_Ip_Send(INST_FLEXCAN_0, 0U, &g_canfd_tx_key_info,
+            FlexCAN_Ip_Send(INST_FLEXCAN_0, CAN_TX_MB_IDX, &g_canfd_tx_key_info,
                             CAN_ID_KEY_EXCHANGE, g_key_frame_buf);
 
             {
@@ -658,8 +657,9 @@ static void CMU_ProtocolTask(void *pvParameters)
                 /* Verify ACK CMAC (PSK-based, 24B = 8B data + 16B CMAC) */
                 {
                     uint8 expected_mac[CMAC_TAG_SIZE];
-                    CMU_GenerateCmac(rxMsg.data, CTRL_DATA_SIZE * 8U, expected_mac);
-                    if (memcmp(expected_mac, &rxMsg.data[CTRL_DATA_SIZE], CMAC_TAG_SIZE) != 0)
+                    Csec_Ip_ErrorCodeType cmacResult = CMU_GenerateCmac(rxMsg.data, CTRL_DATA_SIZE * 8U, expected_mac);
+                    if (cmacResult != CSEC_IP_ERC_NO_ERROR ||
+                        memcmp(expected_mac, &rxMsg.data[CTRL_DATA_SIZE], CMAC_TAG_SIZE) != 0)
                     {
                         /* CMAC mismatch — ACK might be spoofed */
                         break;
@@ -713,11 +713,13 @@ static void CMU_ProtocolTask(void *pvParameters)
                 == FLEXCAN_STATUS_SUCCESS)
             {
                 xSemaphoreTake(csecMutex, portMAX_DELAY);
-                Csec_Ip_LoadPlainKey(PreSharedKey);
+                Csec_Ip_ErrorCodeType pskResult = Csec_Ip_LoadPlainKey(PreSharedKey);
                 uint8 expected_mac[CMAC_TAG_SIZE];
-                CMU_GenerateCmac(rxMsg.data, CTRL_DATA_SIZE * 8U, expected_mac);
+                Csec_Ip_ErrorCodeType macResult = CMU_GenerateCmac(rxMsg.data, CTRL_DATA_SIZE * 8U, expected_mac);
                 xSemaphoreGive(csecMutex);
-                if (memcmp(expected_mac, &rxMsg.data[CTRL_DATA_SIZE], CMAC_TAG_SIZE) == 0)
+                if (pskResult == CSEC_IP_ERC_NO_ERROR &&
+                    macResult == CSEC_IP_ERC_NO_ERROR &&
+                    memcmp(expected_mac, &rxMsg.data[CTRL_DATA_SIZE], CMAC_TAG_SIZE) == 0)
                 {
                     g_proto_state = PROTO_STATE_RESYNC;
                 }
@@ -730,8 +732,15 @@ static void CMU_ProtocolTask(void *pvParameters)
         /*--- RESYNC ---*/
         case PROTO_STATE_RESYNC:
             xSemaphoreTake(csecMutex, portMAX_DELAY);
-            Csec_Ip_LoadPlainKey(PreSharedKey);
-            xSemaphoreGive(csecMutex);
+            {
+                Csec_Ip_ErrorCodeType resyncResult = Csec_Ip_LoadPlainKey(PreSharedKey);
+                xSemaphoreGive(csecMutex);
+                if (resyncResult != CSEC_IP_ERC_NO_ERROR)
+                {
+                    g_proto_state = PROTO_STATE_ERROR;
+                    break;
+                }
+            }
             g_freshness_counter = 0U;
             g_proto_state = PROTO_STATE_INIT;
             break;
