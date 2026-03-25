@@ -4,7 +4,9 @@ const router = express.Router();
 const fabricService = require('../services/fabric.service');
 const didService = require('../services/did.service');
 const { parseRawPayload } = require('../services/bmu-parser.service');
-const { DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE, DID_CACHE_TTL_MS } = require('../config/constants');
+const { DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE, DID_CACHE_TTL_MS, MSP } = require('../config/constants');
+const { authenticateToken } = require('../middleware/auth');
+const { requireMSP } = require('../middleware/rbac');
 const { createLogger } = require('../services/logger.service');
 const log = createLogger('bmu');
 
@@ -119,7 +121,7 @@ router.get('/records/:passportId', async (req, res) => {
 });
 
 // POST /api/bmu/invalidate/:recordId — Invalidate a BMU record
-router.post('/invalidate/:recordId', async (req, res) => {
+router.post('/invalidate/:recordId', authenticateToken, requireMSP(MSP.MANUFACTURER, MSP.REGULATOR), async (req, res) => {
   const { reason } = req.body;
   if (!reason) {
     return res.status(400).json({ error: 'reason required' });
@@ -127,8 +129,8 @@ router.post('/invalidate/:recordId', async (req, res) => {
   try {
     await fabricService.submitTransaction('InvalidateBMURecord', [
       req.params.recordId, reason,
-    ]);
-    log.info('BMU record invalidated', { action: 'InvalidateBMURecord', recordId: req.params.recordId, reason });
+    ], req.user);
+    log.info('BMU record invalidated', { action: 'InvalidateBMURecord', recordId: req.params.recordId, reason, user: req.user?.userId });
     res.json({ success: true, recordId: req.params.recordId, status: 'INVALIDATED' });
   } catch (err) {
     log.error('BMU invalidation failed', { action: 'InvalidateBMURecord', recordId: req.params.recordId, error: err.message });

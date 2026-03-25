@@ -1,13 +1,57 @@
 /**
  * Audit Log Middleware
  * Records all API actions for compliance monitoring and traceability.
+ * Logs are persisted to NDJSON file with rotation.
  */
 
-const auditLogs = [];
-const MAX_LOGS = 10000;
+const fs = require('fs');
+const path = require('path');
+
+const AUDIT_DIR = path.resolve(__dirname, '..', '..', 'logs');
+const AUDIT_FILE = path.join(AUDIT_DIR, 'audit.log');
+const MAX_AUDIT_SIZE = 50 * 1024 * 1024; // 50MB rotation
+const MEMORY_BUFFER_SIZE = 1000; // recent logs in memory for fast queries
+
+// Ensure directory exists
+if (!fs.existsSync(AUDIT_DIR)) {
+  fs.mkdirSync(AUDIT_DIR, { recursive: true });
+}
+
+// In-memory buffer for recent logs (fast query)
+const recentLogs = [];
+
+// Load recent logs from file on startup
+try {
+  if (fs.existsSync(AUDIT_FILE)) {
+    const lines = fs.readFileSync(AUDIT_FILE, 'utf-8').trim().split('\n').filter(Boolean);
+    const tail = lines.slice(-MEMORY_BUFFER_SIZE);
+    for (const line of tail) {
+      try { recentLogs.push(JSON.parse(line)); } catch { /* skip malformed */ }
+    }
+  }
+} catch { /* ignore startup read errors */ }
+
+function rotateIfNeeded() {
+  try {
+    if (fs.existsSync(AUDIT_FILE)) {
+      const stat = fs.statSync(AUDIT_FILE);
+      if (stat.size > MAX_AUDIT_SIZE) {
+        const rotated = `${AUDIT_FILE}.${Date.now()}.bak`;
+        fs.renameSync(AUDIT_FILE, rotated);
+      }
+    }
+  } catch { /* ignore rotation errors */ }
+}
+
+function persistEntry(entry) {
+  try {
+    rotateIfNeeded();
+    fs.appendFileSync(AUDIT_FILE, JSON.stringify(entry) + '\n');
+  } catch { /* ignore file write errors */ }
+}
 
 function auditMiddleware(req, res, next) {
-  // Skip GET requests and non-API paths for noise reduction
+  // Skip non-API paths
   const isWrite = ['POST', 'PUT', 'DELETE', 'PATCH'].includes(req.method);
   const isApi = req.originalUrl.startsWith('/api/');
   if (!isApi) return next();
@@ -32,8 +76,12 @@ function auditMiddleware(req, res, next) {
       ip: req.ip || req.connection?.remoteAddress,
     };
 
-    auditLogs.unshift(entry);
-    if (auditLogs.length > MAX_LOGS) auditLogs.length = MAX_LOGS;
+    // Memory buffer
+    recentLogs.push(entry);
+    if (recentLogs.length > MEMORY_BUFFER_SIZE) recentLogs.shift();
+
+    // File persistence
+    persistEntry(entry);
 
     return originalJson(body);
   };
@@ -48,6 +96,8 @@ function classifyAction(method, url) {
   if (url.includes('/bind')) return 'BIND_VEHICLE';
   if (url.includes('/vehicle-image')) return 'UPLOAD_IMAGE';
   if (url.includes('/bmu/data')) return 'RECORD_BMU';
+  if (url.includes('/invalidate')) return 'INVALIDATE_BMU';
+  if (url.includes('/correct')) return 'CORRECT_DATA';
   if (url.includes('/materials') && method === 'POST') return 'REGISTER_MATERIAL';
   if (url.includes('/maintenance') && url.includes('/request')) return 'REQUEST_MAINTENANCE';
   if (url.includes('/maintenance') && url.includes('/log')) return 'LOG_MAINTENANCE';
@@ -65,7 +115,6 @@ function classifyAction(method, url) {
 }
 
 function extractTargetId(url) {
-  // Extract passport/material/credential ID from URL
   const patterns = [
     /\/passports\/([^\/\?]+)/,
     /\/maintenance\/([^\/\?]+)/,
@@ -74,6 +123,7 @@ function extractTargetId(url) {
     /\/materials\/([^\/\?]+)/,
     /\/vc\/([^\/\?]+)/,
     /\/bmu\/records\/([^\/\?]+)/,
+    /\/bmu\/invalidate\/([^\/\?]+)/,
   ];
   for (const p of patterns) {
     const m = url.match(p);
@@ -85,15 +135,15 @@ function extractTargetId(url) {
 function sanitizeBody(body) {
   if (!body) return undefined;
   const clean = { ...body };
-  // Remove sensitive fields
   delete clean.password;
   delete clean.token;
   delete clean.secret;
+  delete clean.signature;
   return clean;
 }
 
 function getAuditLogs(query = {}) {
-  let logs = [...auditLogs];
+  let logs = [...recentLogs];
 
   if (query.action) logs = logs.filter(l => l.action === query.action);
   if (query.userId) logs = logs.filter(l => l.userId === query.userId);
@@ -101,6 +151,9 @@ function getAuditLogs(query = {}) {
   if (query.success === 'true') logs = logs.filter(l => l.success);
   if (query.success === 'false') logs = logs.filter(l => !l.success);
   if (query.writeOnly === 'true') logs = logs.filter(l => l.action !== 'QUERY');
+
+  // Most recent first
+  logs.reverse();
 
   const page = parseInt(query.page || '1', 10);
   const limit = Math.min(parseInt(query.limit || '50', 10), 200);

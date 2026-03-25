@@ -1,13 +1,23 @@
 const express = require('express');
 const router = express.Router();
 const didService = require('../services/did.service');
+const { authenticateToken } = require('../middleware/auth');
+const { requireMSP } = require('../middleware/rbac');
+const { MSP } = require('../config/constants');
 
-// POST /api/did/register — Register DID on Indy ledger
-router.post('/register', async (req, res) => {
+// POST /api/did/register — Register DID on Indy ledger (JWT+RBAC or admin API key)
+router.post('/register', (req, res, next) => {
+  // Allow admin API key as fallback for M2M (e.g., embedded devices)
   const adminKey = process.env.ADMIN_API_KEY;
-  if (adminKey && req.headers['x-api-key'] !== adminKey) {
-    return res.status(403).json({ error: 'Forbidden: invalid or missing x-api-key' });
+  if (adminKey && req.headers['x-api-key'] === adminKey) {
+    return next();
   }
+  // Otherwise require JWT + MSP authorization
+  authenticateToken(req, res, (err) => {
+    if (err) return;
+    requireMSP(MSP.MANUFACTURER, MSP.REGULATOR)(req, res, next);
+  });
+}, async (req, res) => {
 
   const { did, verkey, role } = req.body;
   if (!did || !verkey) {
