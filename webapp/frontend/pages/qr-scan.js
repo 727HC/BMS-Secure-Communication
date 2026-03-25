@@ -11,6 +11,11 @@ app.component('qr-scan-page', {
     const loadingPassport = ref(false);
     const manualId = ref('');
 
+    // NFC
+    const nfcSupported = ref('NDEFReader' in window);
+    const nfcScanning = ref(false);
+    const nfcReader = ref(null);
+
     function startScan() {
       scanning.value = true;
       scanResult.value = null;
@@ -80,17 +85,62 @@ app.component('qr-scan-page', {
       }
     }
 
+    // NFC scan
+    async function startNfc() {
+      if (!nfcSupported.value) return;
+      try {
+        const reader = new NDEFReader();
+        nfcReader.value = reader;
+        await reader.scan();
+        nfcScanning.value = true;
+        window.$toast('success', 'NFC 리더 활성화됨 — 태그를 가까이 대세요');
+        reader.addEventListener('reading', ({ serialNumber, message }) => {
+          let passportId = '';
+          for (const record of message.records) {
+            if (record.recordType === 'text') {
+              const decoder = new TextDecoder(record.encoding || 'utf-8');
+              passportId = decoder.decode(record.data);
+              break;
+            }
+            if (record.recordType === 'url') {
+              const decoder = new TextDecoder();
+              const url = decoder.decode(record.data);
+              const match = url.match(/passportId=([^&]+)/);
+              if (match) { passportId = decodeURIComponent(match[1]); break; }
+            }
+          }
+          if (!passportId && serialNumber) passportId = serialNumber;
+          if (passportId) {
+            scanResult.value = 'NFC: ' + passportId;
+            lookupPassport(passportId);
+          }
+        });
+        reader.addEventListener('readingerror', () => {
+          window.$toast('error', 'NFC 태그 읽기 실패');
+        });
+      } catch (e) {
+        window.$toast('error', 'NFC 시작 실패: ' + e.message);
+        nfcScanning.value = false;
+      }
+    }
+
+    function stopNfc() {
+      nfcScanning.value = false;
+      nfcReader.value = null;
+    }
+
     // Use global STATUS_LABELS, STATUS_CONFIG from app.js
     const statusLabels = STATUS_LABELS;
     const statusColors = Object.fromEntries(
       Object.entries(STATUS_CONFIG).map(([k, v]) => [k, `${v.bg} ${v.text} ${v.border}`])
     );
 
-    onUnmounted(() => { stopScan(); });
+    onUnmounted(() => { stopScan(); stopNfc(); });
 
     return {
       scanning, scanResult, passportData, loadingPassport, manualId,
       startScan, stopScan, goToDetail, handleManualSearch,
+      nfcSupported, nfcScanning, startNfc, stopNfc,
       statusLabels, statusColors,
     };
   },
@@ -105,8 +155,8 @@ app.component('qr-scan-page', {
         </svg>
       </div>
       <div>
-        <h1 class="text-xl font-bold text-gray-900">QR 스캔</h1>
-        <p class="text-gray-500 text-xs mt-0.5">배터리 여권 QR 코드를 스캔하여 정보를 조회합니다</p>
+        <h1 class="text-xl font-bold text-gray-900">QR / NFC 스캔</h1>
+        <p class="text-gray-500 text-xs mt-0.5">배터리 여권 QR 코드 또는 NFC 태그를 스캔하여 정보를 조회합니다</p>
       </div>
     </div>
 
@@ -141,6 +191,46 @@ app.component('qr-scan-page', {
               </div>
               <p class="text-sm text-gray-500 mb-1">카메라를 열어 QR 코드를 스캔하세요</p>
               <p class="text-xs text-gray-400">배터리 여권 QR 코드를 인식하면 자동으로 조회됩니다</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- NFC Scanner -->
+        <div v-if="nfcSupported" class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+          <div class="px-5 py-3.5 border-b border-gray-100 flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <h2 class="text-sm font-semibold text-gray-800">NFC 스캔</h2>
+              <span class="text-[10px] font-medium px-1.5 py-0.5 rounded bg-blue-50 text-blue-600 border border-blue-100">Web NFC</span>
+            </div>
+            <button v-if="!nfcScanning" @click="startNfc"
+              class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white text-xs font-semibold rounded-lg hover:bg-blue-700 transition-colors">
+              <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071c3.904-3.905 10.236-3.905 14.14 0M1.394 9.393c5.857-5.858 15.355-5.858 21.213 0"/>
+              </svg>
+              NFC 활성화
+            </button>
+            <button v-else @click="stopNfc"
+              class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-red-500 text-white text-xs font-semibold rounded-lg hover:bg-red-600 transition-colors">
+              NFC 중지
+            </button>
+          </div>
+          <div class="p-4">
+            <div v-if="nfcScanning" class="flex flex-col items-center py-6 text-center">
+              <div class="w-16 h-16 rounded-2xl bg-blue-50 flex items-center justify-center mb-3 animate-pulse">
+                <svg class="w-8 h-8 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071c3.904-3.905 10.236-3.905 14.14 0M1.394 9.393c5.857-5.858 15.355-5.858 21.213 0"/>
+                </svg>
+              </div>
+              <p class="text-sm font-medium text-blue-600">NFC 대기 중...</p>
+              <p class="text-xs text-gray-400 mt-1">배터리에 부착된 NFC 태그를 디바이스에 가까이 대세요</p>
+            </div>
+            <div v-else class="flex flex-col items-center py-6 text-center">
+              <div class="w-16 h-16 rounded-2xl bg-gray-100 flex items-center justify-center mb-3">
+                <svg class="w-8 h-8 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071c3.904-3.905 10.236-3.905 14.14 0"/>
+                </svg>
+              </div>
+              <p class="text-xs text-gray-400">NFC를 활성화하여 태그를 읽으세요</p>
             </div>
           </div>
         </div>
