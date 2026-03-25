@@ -63,10 +63,10 @@ router.post('/', authenticateToken, requireMSP(MSP.MANUFACTURER), async (req, re
   }
 });
 
-// GET /api/passports — List all passports
-router.get('/', async (req, res) => {
+// GET /api/passports — List all passports (authenticated, user identity로 RBAC 적용)
+router.get('/', authenticateToken, async (req, res) => {
   try {
-    const result = await fabricService.evaluateTransaction('QueryAllPassports');
+    const result = await fabricService.evaluateTransaction('QueryAllPassports', req.user);
     res.json(parseResult(result));
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -74,9 +74,9 @@ router.get('/', async (req, res) => {
 });
 
 // GET /api/passports/:id — Get passport by ID
-router.get('/:id', async (req, res) => {
+router.get('/:id', authenticateToken, async (req, res) => {
   try {
-    const result = await fabricService.evaluateTransaction('QueryPassport', req.params.id);
+    const result = await fabricService.evaluateTransaction('QueryPassport', req.params.id, req.user);
     res.json(parseResult(result));
   } catch (err) {
     res.status(404).json({ error: err.message });
@@ -84,9 +84,9 @@ router.get('/:id', async (req, res) => {
 });
 
 // GET /api/passports/:id/history — Get passport history
-router.get('/:id/history', async (req, res) => {
+router.get('/:id/history', authenticateToken, async (req, res) => {
   try {
-    const result = await fabricService.evaluateTransaction('GetPassportHistory', req.params.id);
+    const result = await fabricService.evaluateTransaction('GetPassportHistory', req.params.id, req.user);
     res.json(parseResult(result));
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -163,9 +163,9 @@ router.post('/:id/correct', authenticateToken, requireMSP(MSP.MANUFACTURER, MSP.
 });
 
 // GET /api/passports/:id/corrections — Get correction history
-router.get('/:id/corrections', async (req, res) => {
+router.get('/:id/corrections', authenticateToken, async (req, res) => {
   try {
-    const result = await fabricService.evaluateTransaction('QueryCorrectionHistory', req.params.id);
+    const result = await fabricService.evaluateTransaction('QueryCorrectionHistory', req.params.id, req.user);
     res.json(parseResult(result));
   } catch (err) {
     res.status(500).json({ error: err.message });

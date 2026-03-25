@@ -92,7 +92,7 @@ function auditMiddleware(req, res, next) {
 function classifyAction(method, url) {
   if (url.includes('/auth/login')) return 'LOGIN';
   if (url.includes('/auth/register')) return 'REGISTER';
-  if (url.includes('/passports') && method === 'POST' && !url.includes('/')) return 'CREATE_PASSPORT';
+  if (method === 'POST' && /\/passports\/?(\?|$)/.test(url)) return 'CREATE_PASSPORT';
   if (url.includes('/bind')) return 'BIND_VEHICLE';
   if (url.includes('/vehicle-image')) return 'UPLOAD_IMAGE';
   if (url.includes('/bmu/data')) return 'RECORD_BMU';
