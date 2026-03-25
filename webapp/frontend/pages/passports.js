@@ -699,7 +699,7 @@ app.component('passports-page', {
                     </div>
                     <div class="flex justify-between py-1 border-b border-gray-50">
                       <span class="text-gray-400">예상 수명</span>
-                      <span class="text-gray-900 font-medium">{{ form.expectedLifespan ? form.expectedLifespan + ' cycles' : '-' }}</span>
+                      <span class="text-gray-900 font-medium">{{ form.expectedLifespan ? form.expectedLifespan + ' cycles (약 ' + Math.round(form.expectedLifespan / 365) + '년)' : '-' }}</span>
                     </div>
                     <div class="flex justify-between py-1 border-b border-gray-50">
                       <span class="text-gray-400">탄소 발자국</span>

@@ -1124,7 +1124,8 @@ app.component('passport-detail-page', {
               <div class="grid grid-cols-3 gap-x-8">
                 <div>
                   <p class="text-xs text-slate-400 mb-1">예상수명</p>
-                  <p class="text-2xl font-bold text-slate-900">{{ passport.expectedLifespan || '--' }} cycles</p>
+                  <p class="text-2xl font-bold text-slate-900">{{ passport.expectedLifespan || '--' }} <span class="text-base font-medium text-slate-500">cycles</span></p>
+                  <p v-if="passport.expectedLifespan" class="text-xs text-slate-400 mt-0.5">약 {{ Math.round(passport.expectedLifespan / 365) }}년</p>
                 </div>
                 <div>
                   <p class="text-xs text-slate-400 mb-1">셀 수</p>
