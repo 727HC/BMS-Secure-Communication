@@ -26,8 +26,9 @@ apiRouter.use('/analysis', require('./routes/analysis.routes'));
 apiRouter.use('/recycling', require('./routes/recycling.routes'));
 apiRouter.use('/did', require('./routes/did.routes'));
 apiRouter.use('/vc', require('./routes/vc.routes'));
-// Audit log API
-apiRouter.get('/audit', (req, res) => {
+// Audit log API (authenticated users only)
+const { authenticateToken: auditAuth } = require('./middleware/auth');
+apiRouter.get('/audit', auditAuth, (req, res) => {
   res.json(getAuditLogs(req.query));
 });
 apiRouter.get('/status', (req, res) => {
