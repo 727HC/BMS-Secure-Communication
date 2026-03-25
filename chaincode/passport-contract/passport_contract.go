@@ -181,10 +181,10 @@ type BMURecord struct {
 	StatusFlags     uint8   `json:"statusFlags"`
 	DischargeCycles uint16  `json:"dischargeCycles"`
 	Timestamp       string  `json:"timestamp"`
-	Status          string  `json:"status,omitempty"`
-	InvalidatedBy   string  `json:"invalidatedBy,omitempty"`
-	InvalidatedAt   string  `json:"invalidatedAt,omitempty"`
-	InvalidReason   string  `json:"invalidReason,omitempty"`
+	Status          string  `json:"status,omitempty" metadata:",optional"`
+	InvalidatedBy   string  `json:"invalidatedBy,omitempty" metadata:",optional"`
+	InvalidatedAt   string  `json:"invalidatedAt,omitempty" metadata:",optional"`
+	InvalidReason   string  `json:"invalidReason,omitempty" metadata:",optional"`
 	CreatedAt       string  `json:"createdAt"`
 	CreatorMSP      string  `json:"creatorMsp"`
 }
@@ -553,10 +553,24 @@ func (c *PassportContract) RecordBMUData(ctx contractapi.TransactionContextInter
 		return fmt.Errorf("passport %s does not exist", passportId)
 	}
 
-	// Parse numeric strings
+	// Parse fc and check monotonic increase per DID
 	fcVal, err := strconv.ParseUint(fc, 10, 64)
 	if err != nil {
 		return fmt.Errorf("invalid fc value: %v", err)
+	}
+
+	// FC monotonic increase check — reject replay/stale BMU data
+	fcCheckQuery := fmt.Sprintf(`{"selector":{"docType":"%s","did":"%s","status":"VALID"},"sort":[{"fc":"desc"}],"limit":1}`, docTypeBMURecord, did)
+	fcIter, err := ctx.GetStub().GetQueryResult(fcCheckQuery)
+	if err == nil {
+		defer fcIter.Close()
+		if fcIter.HasNext() {
+			lastEntry, _ := fcIter.Next()
+			var lastRec BMURecord
+			if json.Unmarshal(lastEntry.Value, &lastRec) == nil && fcVal <= lastRec.FC {
+				return fmt.Errorf("fc %d must be greater than last valid fc %d for DID %s", fcVal, lastRec.FC, did)
+			}
+		}
 	}
 
 	socVal, err := strconv.ParseUint(soc, 10, 16)
@@ -2071,7 +2085,45 @@ func (c *PassportContract) InvalidateBMURecord(ctx contractapi.TransactionContex
 		return fmt.Errorf("failed to marshal BMU record: %v", err)
 	}
 
-	return ctx.GetStub().PutState(recordId, updatedJSON)
+	if err := ctx.GetStub().PutState(recordId, updatedJSON); err != nil {
+		return fmt.Errorf("failed to store invalidated record: %v", err)
+	}
+
+	// 여권 snapshot 재계산 — 무효화된 레코드가 lastBmuDataId였으면 최근 유효 레코드로 갱신
+	if record.PassportID != "" {
+		passportJSON, err := ctx.GetStub().GetState(record.PassportID)
+		if err == nil && passportJSON != nil {
+			var passport BatteryPassport
+			if json.Unmarshal(passportJSON, &passport) == nil && passport.LastBMUDataID == recordId {
+				// 최근 유효 BMU 레코드 조회
+				reQuery := fmt.Sprintf(`{"selector":{"docType":"%s","passportId":"%s","status":"VALID"},"sort":[{"fc":"desc"}],"limit":1}`, docTypeBMURecord, record.PassportID)
+				reIter, err := ctx.GetStub().GetQueryResult(reQuery)
+				if err == nil {
+					defer reIter.Close()
+					if reIter.HasNext() {
+						entry, _ := reIter.Next()
+						var latestValid BMURecord
+						if json.Unmarshal(entry.Value, &latestValid) == nil {
+							passport.CurrentSOC = float64(latestValid.SOC)
+							passport.TotalDischargeCycles = int(latestValid.DischargeCycles)
+							passport.LastBMUDataID = latestValid.RecordID
+						}
+					} else {
+						// 유효 레코드 없음 — 초기화
+						passport.CurrentSOC = 0
+						passport.TotalDischargeCycles = 0
+						passport.LastBMUDataID = ""
+					}
+					passport.UpdatedAt = now
+					if pJSON, err := json.Marshal(passport); err == nil {
+						ctx.GetStub().PutState(record.PassportID, pJSON)
+					}
+				}
+			}
+		}
+	}
+
+	return nil
 }
 
 // ============================================================

@@ -107,12 +107,12 @@ router.post('/data', async (req, res) => {
 });
 
 // GET /api/bmu/records/:passportId
-router.get('/records/:passportId', async (req, res) => {
+router.get('/records/:passportId', authenticateToken, async (req, res) => {
   try {
     const pageSize = Math.min(parseInt(req.query.pageSize || String(DEFAULT_PAGE_SIZE), 10), MAX_PAGE_SIZE);
     const bookmark = req.query.bookmark || '';
     const result = await fabricService.evaluateTransaction(
-      'QueryBMURecordsByPassport', req.params.passportId, String(pageSize), bookmark
+      'QueryBMURecordsByPassport', req.params.passportId, String(pageSize), bookmark, req.user
     );
     res.json(JSON.parse(result.toString()));
   } catch (err) {
