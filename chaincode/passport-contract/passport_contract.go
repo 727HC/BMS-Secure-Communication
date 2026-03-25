@@ -26,41 +26,49 @@ const (
 	maxPageSize     int32 = 500
 )
 
+// MSP identity constants
+const (
+	mspManufacturer   = "ManufacturerMSP"
+	mspEVManufacturer = "EVManufacturerMSP"
+	mspService        = "ServiceMSP"
+	mspRegulator      = "RegulatorMSP"
+)
+
 // Credential type → authorized issuer MSPs
 var credTypeIssuers = map[string][]string{
-	"BATTERY_PASSPORT": {"ManufacturerMSP"},
-	"BATTERY_HEALTH":   {"ServiceMSP"},
-	"MAINTENANCE":      {"ServiceMSP"},
-	"COMPLIANCE":       {"RegulatorMSP"},
-	"RECYCLING":        {"RegulatorMSP"},
+	"BATTERY_PASSPORT": {mspManufacturer},
+	"BATTERY_HEALTH":   {mspService},
+	"MAINTENANCE":      {mspService},
+	"COMPLIANCE":       {mspRegulator},
+	"RECYCLING":        {mspRegulator},
 }
 
 // Field → authorized corrector MSPs (RegulatorMSP can correct all fields)
 var fieldCorrectors = map[string][]string{
 	// Manufacturer fields
-	"model":                  {"ManufacturerMSP", "RegulatorMSP"},
-	"serialNumber":           {"ManufacturerMSP", "RegulatorMSP"},
-	"manufacturerName":       {"ManufacturerMSP", "RegulatorMSP"},
-	"manufactureCountry":     {"ManufacturerMSP", "RegulatorMSP"},
-	"cellManufacturer":       {"ManufacturerMSP", "RegulatorMSP"},
-	"cellManufactureCountry": {"ManufacturerMSP", "RegulatorMSP"},
-	"manufactureDate":        {"ManufacturerMSP", "RegulatorMSP"},
-	"cellType":               {"ManufacturerMSP", "RegulatorMSP"},
-	"chemistry":              {"ManufacturerMSP", "RegulatorMSP"},
-	"voltageRange":           {"ManufacturerMSP", "RegulatorMSP"},
-	"temperatureRange":       {"ManufacturerMSP", "RegulatorMSP"},
-	"cellCount":              {"ManufacturerMSP", "RegulatorMSP"},
-	"weight":                 {"ManufacturerMSP", "RegulatorMSP"},
-	"totalEnergy":            {"ManufacturerMSP", "RegulatorMSP"},
-	"energyDensity":          {"ManufacturerMSP", "RegulatorMSP"},
-	"ratedCapacity":          {"ManufacturerMSP", "RegulatorMSP"},
-	"expectedLifespan":       {"ManufacturerMSP", "RegulatorMSP"},
-	"carbonFootprint":        {"ManufacturerMSP", "RegulatorMSP"},
+	"model":                  {mspManufacturer, mspRegulator},
+	"serialNumber":           {mspManufacturer, mspRegulator},
+	"manufacturerName":       {mspManufacturer, mspRegulator},
+	"manufactureCountry":     {mspManufacturer, mspRegulator},
+	"cellManufacturer":       {mspManufacturer, mspRegulator},
+	"cellManufactureCountry": {mspManufacturer, mspRegulator},
+	"manufactureDate":        {mspManufacturer, mspRegulator},
+	"cellType":               {mspManufacturer, mspRegulator},
+	"chemistry":              {mspManufacturer, mspRegulator},
+	"voltageRange":           {mspManufacturer, mspRegulator},
+	"temperatureRange":       {mspManufacturer, mspRegulator},
+	"cellCount":              {mspManufacturer, mspRegulator},
+	"weight":                 {mspManufacturer, mspRegulator},
+	"totalEnergy":            {mspManufacturer, mspRegulator},
+	"energyDensity":          {mspManufacturer, mspRegulator},
+	"ratedCapacity":          {mspManufacturer, mspRegulator},
+	"expectedLifespan":       {mspManufacturer, mspRegulator},
+	"carbonFootprint":        {mspManufacturer, mspRegulator},
 	// EV Manufacturer fields
-	"vin":               {"EVManufacturerMSP", "RegulatorMSP"},
-	"installDate":       {"EVManufacturerMSP", "RegulatorMSP"},
-	"evManufacturer":    {"EVManufacturerMSP", "RegulatorMSP"},
-	"evAssemblyCountry": {"EVManufacturerMSP", "RegulatorMSP"},
+	"vin":               {mspEVManufacturer, mspRegulator},
+	"installDate":       {mspEVManufacturer, mspRegulator},
+	"evManufacturer":    {mspEVManufacturer, mspRegulator},
+	"evAssemblyCountry": {mspEVManufacturer, mspRegulator},
 }
 
 // RawMaterial represents a raw material used in battery manufacturing
@@ -290,17 +298,17 @@ func (c *PassportContract) checkPassportAccess(ctx contractapi.TransactionContex
 	}
 
 	switch msp {
-	case "RegulatorMSP":
+	case mspRegulator:
 		return nil // 규제기관: 전체 접근
-	case "ManufacturerMSP":
+	case mspManufacturer:
 		if passport.CreatorMSP == msp {
 			return nil // 자기가 만든 배터리만
 		}
-	case "EVManufacturerMSP":
+	case mspEVManufacturer:
 		if passport.VIN != "" {
 			return nil // 차량에 바인딩된 배터리만
 		}
-	case "ServiceMSP":
+	case mspService:
 		if passport.Status == "MAINTENANCE" || passport.Status == "ANALYSIS" {
 			return nil // 정비 의뢰된 배터리
 		}
@@ -322,13 +330,13 @@ func (c *PassportContract) buildPassportQuery(ctx contractapi.TransactionContext
 	}
 
 	switch msp {
-	case "RegulatorMSP":
+	case mspRegulator:
 		return fmt.Sprintf(`{"selector":{"docType":"%s"}}`, docTypePassport), nil
-	case "ManufacturerMSP":
+	case mspManufacturer:
 		return fmt.Sprintf(`{"selector":{"docType":"%s","creatorMsp":"%s"}}`, docTypePassport, msp), nil
-	case "EVManufacturerMSP":
+	case mspEVManufacturer:
 		return fmt.Sprintf(`{"selector":{"docType":"%s","vin":{"$gt":""}}}`, docTypePassport), nil
-	case "ServiceMSP":
+	case mspService:
 		return fmt.Sprintf(`{"selector":{"docType":"%s","status":{"$in":["MAINTENANCE","ANALYSIS"]}}}`, docTypePassport), nil
 	default:
 		return "", fmt.Errorf("unknown MSP: %s", msp)
@@ -343,7 +351,7 @@ func (c *PassportContract) RegisterRawMaterial(ctx contractapi.TransactionContex
 	materialId string, name string, origin string, supplier string,
 	quantity string, unit string, certificationId string) error {
 
-	if err := c.requireMSP(ctx, "ManufacturerMSP"); err != nil {
+	if err := c.requireMSP(ctx, mspManufacturer); err != nil {
 		return err
 	}
 
@@ -407,7 +415,7 @@ func (c *PassportContract) CreateBatteryPassport(ctx contractapi.TransactionCont
 	voltageRange string, temperatureRange string,
 	carbonFootprint string) error {
 
-	if err := c.requireMSP(ctx, "ManufacturerMSP"); err != nil {
+	if err := c.requireMSP(ctx, mspManufacturer); err != nil {
 		return err
 	}
 
@@ -519,7 +527,7 @@ func (c *PassportContract) RecordBMUData(ctx contractapi.TransactionContextInter
 	temperature string, cellCount string, statusFlags string,
 	dischargeCycles string, timestamp string) error {
 
-	if err := c.requireMSP(ctx, "ManufacturerMSP"); err != nil {
+	if err := c.requireMSP(ctx, mspManufacturer); err != nil {
 		return err
 	}
 
@@ -652,7 +660,7 @@ func (c *PassportContract) BindToVehicle(ctx contractapi.TransactionContextInter
 	passportId string, vin string, installDate string,
 	evManufacturer string, evAssemblyCountry string) error {
 
-	if err := c.requireMSP(ctx, "EVManufacturerMSP"); err != nil {
+	if err := c.requireMSP(ctx, mspEVManufacturer); err != nil {
 		return err
 	}
 
@@ -696,7 +704,7 @@ func (c *PassportContract) BindToVehicle(ctx contractapi.TransactionContextInter
 func (c *PassportContract) RequestMaintenance(ctx contractapi.TransactionContextInterface,
 	passportId string, maintenanceType string, description string) error {
 
-	if err := c.requireMSP(ctx, "EVManufacturerMSP"); err != nil {
+	if err := c.requireMSP(ctx, mspEVManufacturer); err != nil {
 		return err
 	}
 
@@ -736,7 +744,7 @@ func (c *PassportContract) RequestMaintenance(ctx contractapi.TransactionContext
 func (c *PassportContract) AddMaintenanceLog(ctx contractapi.TransactionContextInterface,
 	passportId string, maintenanceType string, description string, technician string) error {
 
-	if err := c.requireMSP(ctx, "ServiceMSP"); err != nil {
+	if err := c.requireMSP(ctx, mspService); err != nil {
 		return err
 	}
 
@@ -786,7 +794,7 @@ func (c *PassportContract) AddMaintenanceLog(ctx contractapi.TransactionContextI
 func (c *PassportContract) AddAccidentLog(ctx contractapi.TransactionContextInterface,
 	passportId string, severity string, description string, reporter string) error {
 
-	if err := c.requireMSP(ctx, "EVManufacturerMSP", "ServiceMSP"); err != nil {
+	if err := c.requireMSP(ctx, mspEVManufacturer, mspService); err != nil {
 		return err
 	}
 
@@ -835,7 +843,7 @@ func (c *PassportContract) AddAccidentLog(ctx contractapi.TransactionContextInte
 func (c *PassportContract) RequestAnalysis(ctx contractapi.TransactionContextInterface,
 	passportId string) error {
 
-	if err := c.requireMSP(ctx, "EVManufacturerMSP"); err != nil {
+	if err := c.requireMSP(ctx, mspEVManufacturer); err != nil {
 		return err
 	}
 
@@ -872,7 +880,7 @@ func (c *PassportContract) SubmitAnalysisResult(ctx contractapi.TransactionConte
 	passportId string, soh string, soce string,
 	remainingLifeCycle string, recycleAvailable string) error {
 
-	if err := c.requireMSP(ctx, "ServiceMSP"); err != nil {
+	if err := c.requireMSP(ctx, mspService); err != nil {
 		return err
 	}
 
@@ -929,7 +937,7 @@ func (c *PassportContract) SubmitAnalysisResult(ctx contractapi.TransactionConte
 func (c *PassportContract) SetRecycleAvailability(ctx contractapi.TransactionContextInterface,
 	passportId string, available string) error {
 
-	if err := c.requireMSP(ctx, "ServiceMSP", "RegulatorMSP"); err != nil {
+	if err := c.requireMSP(ctx, mspService, mspRegulator); err != nil {
 		return err
 	}
 
@@ -965,7 +973,7 @@ func (c *PassportContract) SetRecycleAvailability(ctx contractapi.TransactionCon
 func (c *PassportContract) ExtractMaterials(ctx contractapi.TransactionContextInterface,
 	passportId string, recyclingRatesJSON string) error {
 
-	if err := c.requireMSP(ctx, "RegulatorMSP"); err != nil {
+	if err := c.requireMSP(ctx, mspRegulator); err != nil {
 		return err
 	}
 
@@ -1008,7 +1016,7 @@ func (c *PassportContract) ExtractMaterials(ctx contractapi.TransactionContextIn
 func (c *PassportContract) DisposeBattery(ctx contractapi.TransactionContextInterface,
 	passportId string) error {
 
-	if err := c.requireMSP(ctx, "RegulatorMSP"); err != nil {
+	if err := c.requireMSP(ctx, mspRegulator); err != nil {
 		return err
 	}
 
@@ -1241,7 +1249,7 @@ func (c *PassportContract) QueryBMURecordsByPassport(ctx contractapi.Transaction
 func (c *PassportContract) QueryBatteryByDID(ctx contractapi.TransactionContextInterface,
 	did string) (*BatteryPassport, error) {
 
-	if err := c.requireMSP(ctx, "ManufacturerMSP", "RegulatorMSP"); err != nil {
+	if err := c.requireMSP(ctx, mspManufacturer, mspRegulator); err != nil {
 		return nil, err
 	}
 
@@ -1277,7 +1285,7 @@ func (c *PassportContract) QueryBatteryByDID(ctx contractapi.TransactionContextI
 
 func (c *PassportContract) QueryRawMaterials(ctx contractapi.TransactionContextInterface) ([]*RawMaterial, error) {
 
-	if err := c.requireMSP(ctx, "ManufacturerMSP", "RegulatorMSP"); err != nil {
+	if err := c.requireMSP(ctx, mspManufacturer, mspRegulator); err != nil {
 		return nil, err
 	}
 
@@ -1314,7 +1322,7 @@ func (c *PassportContract) QueryRawMaterials(ctx contractapi.TransactionContextI
 func (c *PassportContract) LinkRawMaterials(ctx contractapi.TransactionContextInterface,
 	passportId string, materialIds string) error {
 
-	if err := c.requireMSP(ctx, "ManufacturerMSP"); err != nil {
+	if err := c.requireMSP(ctx, mspManufacturer); err != nil {
 		return err
 	}
 
@@ -1483,7 +1491,7 @@ func (c *PassportContract) RevokeCredential(ctx contractapi.TransactionContextIn
 	}
 
 	// Only the original issuer or RegulatorMSP can revoke
-	if msp != vc.IssuerMSP && msp != "RegulatorMSP" {
+	if msp != vc.IssuerMSP && msp != mspRegulator {
 		return fmt.Errorf("access denied: only issuer (%s) or RegulatorMSP can revoke", vc.IssuerMSP)
 	}
 
@@ -1589,7 +1597,7 @@ func (c *PassportContract) QueryCredentialsByPassport(ctx contractapi.Transactio
 func (c *PassportContract) QueryCredentialsByHolder(ctx contractapi.TransactionContextInterface,
 	holderDid string, pageSizeStr string, bookmark string) (*PaginatedVCResult, error) {
 
-	if err := c.requireMSP(ctx, "ManufacturerMSP", "RegulatorMSP"); err != nil {
+	if err := c.requireMSP(ctx, mspManufacturer, mspRegulator); err != nil {
 		return nil, err
 	}
 
@@ -1654,7 +1662,7 @@ func (c *PassportContract) QueryCredentialsByType(ctx contractapi.TransactionCon
 	}
 
 	var queryString string
-	if msp == "RegulatorMSP" {
+	if msp == mspRegulator {
 		queryString = fmt.Sprintf(`{"selector":{"docType":"%s","credType":"%s"}}`, docTypeVC, credType)
 	} else {
 		queryString = fmt.Sprintf(`{"selector":{"docType":"%s","credType":"%s","issuerMsp":"%s"}}`, docTypeVC, credType, msp)
@@ -1812,7 +1820,7 @@ func (c *PassportContract) GetCredentialHistory(ctx contractapi.TransactionConte
 func (c *PassportContract) QueryRevokedCredentials(ctx contractapi.TransactionContextInterface,
 	pageSizeStr string, bookmark string) (*PaginatedVCResult, error) {
 
-	if err := c.requireMSP(ctx, "RegulatorMSP"); err != nil {
+	if err := c.requireMSP(ctx, mspRegulator); err != nil {
 		return nil, err
 	}
 
@@ -2022,7 +2030,7 @@ func (c *PassportContract) CorrectPassportData(ctx contractapi.TransactionContex
 func (c *PassportContract) InvalidateBMURecord(ctx contractapi.TransactionContextInterface,
 	recordId string, reason string) error {
 
-	if err := c.requireMSP(ctx, "ManufacturerMSP", "RegulatorMSP"); err != nil {
+	if err := c.requireMSP(ctx, mspManufacturer, mspRegulator); err != nil {
 		return err
 	}
 
