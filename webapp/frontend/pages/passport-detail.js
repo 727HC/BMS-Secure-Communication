@@ -258,6 +258,10 @@ app.component('passport-detail-page', {
       const [, hq] = hashStr.split('?');
       const hashParams = new URLSearchParams(hq || '');
       passportId.value = hashParams.get('passportId') || '';
+      const savedTab = hashParams.get('tab');
+      if (savedTab && tabs.some(t => t.key === savedTab)) {
+        switchTab(savedTab);
+      }
       // Fallback to window.__pageProps
       if (!passportId.value && window.__pageProps && window.__pageProps.passportId) {
         passportId.value = window.__pageProps.passportId;
@@ -476,6 +480,12 @@ app.component('passport-detail-page', {
 
     function switchTab(tab) {
       activeTab.value = tab;
+      // persist tab in URL hash
+      const hashStr = window.location.hash.replace('#', '');
+      const [page] = hashStr.split('?');
+      const params = new URLSearchParams(hashStr.split('?')[1] || '');
+      params.set('tab', tab);
+      window.location.hash = page + '?' + params.toString();
       if (tab === 'data') fetchBmuData();
       if (tab === 'trust') { fetchHistory(); fetchVcList(); fetchCorrectionHistory(); setTimeout(generateQr, 300); }
     }
