@@ -2039,7 +2039,8 @@ app.component('passport-detail-page', {
             </div>
             <div v-else class="px-6 py-5">
               <p class="text-xs text-slate-500 mb-4">총 <strong class="text-slate-700">{{ history.length }}</strong>건의 주요 변경 이력 (상태 전환/VIN/정비 기준)</p>
-              <div class="relative pl-7 max-h-[500px] overflow-y-auto pr-2">
+              <div class="max-h-[500px] overflow-y-auto pr-2">
+                <div class="relative pl-7">
                 <div class="absolute left-[11px] top-0 bottom-0 w-0.5 bg-gradient-to-b from-emerald-300 via-emerald-200 to-slate-200"></div>
                 <div class="space-y-4">
                   <div v-for="(entry, i) in history.slice(-20)" :key="i" class="relative">
@@ -2076,6 +2077,7 @@ app.component('passport-detail-page', {
                       </div>
                     </div>
                   </div>
+                </div>
                 </div>
               </div>
             </div>
