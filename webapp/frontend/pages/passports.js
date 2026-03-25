@@ -562,8 +562,8 @@ app.component('passports-page', {
                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none text-sm" />
                   </div>
                   <div>
-                    <label class="block text-xs font-medium text-gray-500 mb-1">예상 수명 (년)</label>
-                    <input v-model="form.expectedLifespan" type="number" min="0" placeholder="8"
+                    <label class="block text-xs font-medium text-gray-500 mb-1">예상 수명 (cycles)</label>
+                    <input v-model="form.expectedLifespan" type="number" min="0" placeholder="3000"
                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none text-sm" />
                   </div>
                   <div>
@@ -699,7 +699,7 @@ app.component('passports-page', {
                     </div>
                     <div class="flex justify-between py-1 border-b border-gray-50">
                       <span class="text-gray-400">예상 수명</span>
-                      <span class="text-gray-900 font-medium">{{ form.expectedLifespan ? form.expectedLifespan + ' 년' : '-' }}</span>
+                      <span class="text-gray-900 font-medium">{{ form.expectedLifespan ? form.expectedLifespan + ' cycles' : '-' }}</span>
                     </div>
                     <div class="flex justify-between py-1 border-b border-gray-50">
                       <span class="text-gray-400">탄소 발자국</span>
