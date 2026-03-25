@@ -40,6 +40,9 @@ app.component('passport-detail-page', {
     const correctForm = ref({ fieldName: '', newValue: '', reason: '' });
     const invalidateForm = ref({ recordId: '', reason: '' });
     const correctionHistory = ref([]);
+    const showLinkMaterialsModal = ref(false);
+    const availableMaterials = ref([]);
+    const selectedMaterialIds = ref([]);
     const submitting = ref(false);
 
     // Forms
@@ -694,6 +697,41 @@ app.component('passport-detail-page', {
       showInvalidateModal.value = true;
     }
 
+    // Link raw materials
+    async function openLinkMaterialsModal() {
+      try {
+        const data = await props.api.get('/materials');
+        const all = Array.isArray(data) ? data : (data.materials || data.records || []);
+        const linked = passport.value?.rawMaterials || [];
+        availableMaterials.value = all;
+        selectedMaterialIds.value = [...linked];
+        showLinkMaterialsModal.value = true;
+      } catch (e) { window.$toast('error', '원자재 목록 조회 실패: ' + e.message); }
+    }
+
+    function toggleMaterial(id) {
+      const idx = selectedMaterialIds.value.indexOf(id);
+      if (idx >= 0) selectedMaterialIds.value.splice(idx, 1);
+      else selectedMaterialIds.value.push(id);
+    }
+
+    async function submitLinkMaterials() {
+      const linked = passport.value?.rawMaterials || [];
+      const newIds = selectedMaterialIds.value.filter(id => !linked.includes(id));
+      if (newIds.length === 0) {
+        window.$toast('error', '새로 연결할 원자재가 없습니다.');
+        return;
+      }
+      submitting.value = true;
+      try {
+        await retryOnConflict(() => props.api.post('/passports/' + passportId.value + '/materials', { materialIds: newIds }));
+        window.$toast('success', newIds.length + '개 원자재가 연결되었습니다.');
+        showLinkMaterialsModal.value = false;
+        await fetchPassport();
+      } catch (e) { window.$toast('error', '원자재 연결 실패: ' + e.message); }
+      finally { submitting.value = false; }
+    }
+
     function goBack() { emit('navigate', 'passports'); }
     function setPassportId(id) { passportId.value = id; fetchPassport(); }
 
@@ -725,6 +763,8 @@ app.component('passport-detail-page', {
       showCorrectModal, correctForm, correctableFields, correctionHistory,
       submitCorrection, fetchCorrectionHistory,
       showInvalidateModal, invalidateForm, submitInvalidate, openInvalidateModal,
+      showLinkMaterialsModal, availableMaterials, selectedMaterialIds,
+      openLinkMaterialsModal, toggleMaterial, submitLinkMaterials,
     };
   },
   template: `
@@ -936,9 +976,16 @@ app.component('passport-detail-page', {
         <!-- ==================== TAB 1: IDENTITY ==================== -->
         <div v-if="activeTab === 'identity'" class="space-y-6">
 
-          <!-- Data Correction Button (Manufacturer/Regulator only) -->
+          <!-- Action Buttons (Manufacturer/Regulator only) -->
           <div v-if="isManufacturer || isEV || isRegulator"
-            class="flex justify-end">
+            class="flex justify-end gap-2">
+            <button v-if="isManufacturer" @click="openLinkMaterialsModal"
+              class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg hover:bg-emerald-100 transition-colors">
+              <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
+              </svg>
+              원자재 연결
+            </button>
             <button @click="showCorrectModal = true"
               class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-amber-700 bg-amber-50 border border-amber-200 rounded-lg hover:bg-amber-100 transition-colors">
               <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -2147,6 +2194,48 @@ app.component('passport-detail-page', {
               </button>
             </div>
           </form>
+        </div>
+      </div>
+
+      <!-- Link Raw Materials Modal -->
+      <div v-if="showLinkMaterialsModal" class="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div class="fixed inset-0 bg-black/40 backdrop-blur-sm" @click="showLinkMaterialsModal = false"></div>
+        <div class="relative bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-md">
+          <div class="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+            <h3 class="text-base font-bold text-slate-900">원자재 연결</h3>
+            <button @click="showLinkMaterialsModal = false" class="text-slate-400 hover:text-slate-600">
+              <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+          </div>
+          <div class="p-6">
+            <p class="text-xs text-slate-500 mb-3">이 여권에 사용된 원자재를 선택하세요.</p>
+            <div v-if="availableMaterials.length === 0" class="text-center py-6">
+              <p class="text-sm text-slate-400">등록된 원자재가 없습니다.</p>
+            </div>
+            <div v-else class="space-y-2 max-h-64 overflow-y-auto">
+              <label v-for="m in availableMaterials" :key="m.materialId"
+                class="flex items-center gap-3 px-3 py-2.5 rounded-lg border cursor-pointer transition-colors"
+                :class="selectedMaterialIds.includes(m.materialId) ? 'bg-emerald-50 border-emerald-300' : 'bg-white border-slate-200 hover:bg-slate-50'">
+                <input type="checkbox" :checked="selectedMaterialIds.includes(m.materialId)"
+                  @change="toggleMaterial(m.materialId)"
+                  class="w-4 h-4 text-emerald-600 border-slate-300 rounded focus:ring-emerald-500" />
+                <div class="flex-1 min-w-0">
+                  <p class="text-sm font-medium text-slate-800">{{ m.name }}</p>
+                  <p class="text-[10px] text-slate-400">{{ m.origin }} · {{ m.supplier }} · {{ m.quantity }}{{ m.unit }}</p>
+                </div>
+                <span v-if="(passport?.rawMaterials || []).includes(m.materialId)"
+                  class="text-[10px] font-medium text-emerald-600 bg-emerald-100 px-1.5 py-0.5 rounded">연결됨</span>
+              </label>
+            </div>
+          </div>
+          <div class="px-6 py-4 border-t border-slate-100 flex justify-end gap-3">
+            <button @click="showLinkMaterialsModal = false"
+              class="px-4 py-2.5 text-sm font-medium text-slate-700 bg-white border border-slate-300 hover:bg-slate-50 rounded-xl transition-colors">취소</button>
+            <button @click="submitLinkMaterials" :disabled="submitting"
+              class="px-5 py-2.5 text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl transition-colors disabled:opacity-50">
+              {{ submitting ? '처리중...' : '연결' }}
+            </button>
+          </div>
         </div>
       </div>
 
