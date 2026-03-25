@@ -102,6 +102,7 @@ volatile uint32 g_lastESR1 = 0U;
 volatile uint32 g_lastECR  = 0U;
 volatile uint32 g_txOkCount = 0U;
 volatile uint32 g_txFailCount = 0U;
+volatile uint32 g_uartRxOkCount = 0U;  /* UART frames successfully parsed */
 volatile uint32 g_CTRL1 = 0U;
 volatile uint32 g_CBT   = 0U;
 volatile uint32 g_FDCBT = 0U;
@@ -804,15 +805,18 @@ static void CMU_CanTxTask(void *pvParameters)
         if (xQueueReceive(txDataQueue, latestData, 0U) == pdPASS)
         {
             hasRealData = TRUE;
+            g_uartRxOkCount++;
         }
 
         const uint8 *tx_data;
         if (hasRealData)
         {
+            /* Use latest UART data (keeps last value if no new data) */
             tx_data = latestData;
         }
         else
         {
+            /* Fallback: simulation data only when UART never received */
             static BatteryData_t simData;
             memset(&simData, 0, sizeof(simData));
             simData.current_A        = SIM_CURRENT_BASE + (float)(txCount % SIM_CURRENT_MOD) * SIM_CURRENT_STEP;
