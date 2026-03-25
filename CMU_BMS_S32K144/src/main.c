@@ -617,18 +617,18 @@ static void CMU_ProtocolTask(void *pvParameters)
                 while ((FlexCAN_Ip_GetTransferStatus(INST_FLEXCAN_0, CAN_TX_MB_IDX)
                         == FLEXCAN_STATUS_BUSY) && (timeout > 0U))
                 {
-                    FlexCAN_Ip_MainFunctionWrite(INST_FLEXCAN_0, 0U);
+                    FlexCAN_Ip_MainFunctionWrite(INST_FLEXCAN_0, CAN_TX_MB_IDX);
                     timeout--;
                 }
             }
 
-            g_lastCanStatus = FlexCAN_Ip_GetTransferStatus(INST_FLEXCAN_0, 0U);
+            g_lastCanStatus = FlexCAN_Ip_GetTransferStatus(INST_FLEXCAN_0, CAN_TX_MB_IDX);
 
             if (g_lastCanStatus != FLEXCAN_STATUS_SUCCESS)
             {
                 /* TX failed (no ACK on bus?), retry after delay */
                 g_txFailCount++;
-                for (volatile uint32 d = 0U; d < DELAY_KEY_RETRY; d++) {}
+                vTaskDelay(pdMS_TO_TICKS(KEY_EXCHANGE_TIMEOUT_MS));
                 break;
             }
 
@@ -641,17 +641,17 @@ static void CMU_ProtocolTask(void *pvParameters)
         case PROTO_STATE_WAIT_ACK:
         {
             /* Poll MB1 for ACK */
-            FlexCAN_Ip_Receive(INST_FLEXCAN_0, 1U, &rxMsg, TRUE);
+            FlexCAN_Ip_Receive(INST_FLEXCAN_0, CAN_RX_MB_DATA, &rxMsg, TRUE);
 
             volatile uint32 timeout = TIMEOUT_ACK_WAIT;
-            while ((FlexCAN_Ip_GetTransferStatus(INST_FLEXCAN_0, 1U)
+            while ((FlexCAN_Ip_GetTransferStatus(INST_FLEXCAN_0, CAN_RX_MB_DATA)
                     == FLEXCAN_STATUS_BUSY) && (timeout > 0U))
             {
-                FlexCAN_Ip_MainFunctionRead(INST_FLEXCAN_0, 1U);
+                FlexCAN_Ip_MainFunctionRead(INST_FLEXCAN_0, CAN_RX_MB_DATA);
                 timeout--;
             }
 
-            if ((FlexCAN_Ip_GetTransferStatus(INST_FLEXCAN_0, 1U)
+            if ((FlexCAN_Ip_GetTransferStatus(INST_FLEXCAN_0, CAN_RX_MB_DATA)
                  == FLEXCAN_STATUS_SUCCESS)
                 && (rxMsg.data[0] == ACK_MARKER))
             {

@@ -560,8 +560,13 @@ static boolean BMU_HandleKeyExchange(const uint8 *rx_data)
         /* CMAC(PSK, ack_data[8]) → append to ack_frame[8..23] */
         uint32 ackTagLen = CMAC_TAG_SIZE;
         /* ACK is sent before CMU loads session key, so use PSK for CMAC */
-        BMU_CmacGenerate(HSE_PSK_KEY_HANDLE, ack_frame, CTRL_DATA_SIZE,
-                          &ack_frame[CTRL_DATA_SIZE], &ackTagLen);
+        hse_resp = BMU_CmacGenerate(HSE_PSK_KEY_HANDLE, ack_frame, CTRL_DATA_SIZE,
+                                     &ack_frame[CTRL_DATA_SIZE], &ackTagLen);
+        if (hse_resp != HSE_SRV_RSP_OK)
+        {
+            UART_SendString("[BMU] ERR: ACK CMAC generate failed\r\n");
+            return FALSE;
+        }
         Flexcan_Ip_DataInfoType txCtrl = g_canfd_tx_info;
         txCtrl.data_length = CTRL_FRAME_SIZE;
         FlexCAN_Ip_Send(INST_FLEXCAN_0, CAN_TX_MB_IDX,
@@ -684,8 +689,15 @@ static void BMU_SendResyncRequest(void)
     resync_frame[0] = RESYNC_MARKER;
     /* CMAC(PSK, resync_data[8]) — CMU reloads PSK before verifying */
     uint32 resyncTagLen = CMAC_TAG_SIZE;
-    BMU_CmacGenerate(HSE_PSK_KEY_HANDLE, resync_frame, CTRL_DATA_SIZE,
-                      &resync_frame[CTRL_DATA_SIZE], &resyncTagLen);
+    hseSrvResponse_t resyncResp = BMU_CmacGenerate(HSE_PSK_KEY_HANDLE, resync_frame,
+                                                    CTRL_DATA_SIZE,
+                                                    &resync_frame[CTRL_DATA_SIZE],
+                                                    &resyncTagLen);
+    if (resyncResp != HSE_SRV_RSP_OK)
+    {
+        UART_SendString("[BMU] ERR: Resync CMAC generate failed\r\n");
+        return;
+    }
     Flexcan_Ip_DataInfoType txCtrl = g_canfd_tx_info;
     txCtrl.data_length = CTRL_FRAME_SIZE;
     FlexCAN_Ip_Send(INST_FLEXCAN_0, CAN_TX_MB_IDX,
