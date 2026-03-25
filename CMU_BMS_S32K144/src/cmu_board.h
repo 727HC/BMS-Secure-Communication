@@ -16,6 +16,7 @@
 #define PCC_PORTD_ADDR          (*(volatile uint32 *)0x40065130u)
 #define PCC_PORTE_ADDR          (*(volatile uint32 *)0x40065124u)
 #define PCC_FLEXCAN0_ADDR       (*(volatile uint32 *)0x40065090u)
+#define PCC_LPUART1_ADDR        (*(volatile uint32 *)0x400651ACu)
 #define PCC_CGC_BIT             (1u << 30)
 #define PCC_PCS_FIRCDIV2        (3u << 24)
 
