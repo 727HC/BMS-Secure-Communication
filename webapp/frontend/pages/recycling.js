@@ -398,7 +398,7 @@ app.component('recycling-page', {
                 <div v-if="getRecyclingRateEntries(p.recyclingRates).length > 0" class="space-y-1.5 min-w-[140px]">
                   <div v-for="entry in getRecyclingRateEntries(p.recyclingRates)" :key="entry.key"
                     class="flex items-center gap-2">
-                    <span class="text-[11px] font-medium text-gray-600 w-10 text-right shrink-0">{{ entry.key }}</span>
+                    <span class="text-[11px] font-medium text-gray-600 w-16 text-right shrink-0 truncate" :title="entry.key">{{ entry.key }}</span>
                     <div class="flex-1 bg-gray-100 rounded-full h-1.5 min-w-[50px]">
                       <div :class="['h-1.5 rounded-full transition-all', getRateBarColor(entry.value)]"
                         :style="{ width: Math.min(entry.value, 100) + '%' }"></div>
