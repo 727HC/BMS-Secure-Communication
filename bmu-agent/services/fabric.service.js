@@ -124,8 +124,15 @@ async function submitTransaction(fcn, args, userCtx) {
   return await ct.submitTransaction(fcn, ...args);
 }
 
-// Evaluate: 기본 identity로 실행 (읽기 전용)
+// Evaluate: 사용자 identity로 실행 (읽기 전용), userCtx 없으면 기본 admin
 async function evaluateTransaction(fcn, ...args) {
+  // 마지막 인자가 userCtx 객체인지 확인
+  const last = args[args.length - 1];
+  if (last && typeof last === 'object' && last.userId && last.orgMsp) {
+    const userCtx = args.pop();
+    const ct = await getContractForUser(userCtx.userId, userCtx.orgMsp);
+    return await ct.evaluateTransaction(fcn, ...args);
+  }
   return await defaultContract.evaluateTransaction(fcn, ...args);
 }
 
