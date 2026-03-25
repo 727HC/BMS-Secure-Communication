@@ -39,13 +39,13 @@ router.post('/', authenticateToken, requireMSP(MSP.MANUFACTURER), async (req, re
     voltageRange, temperatureRange, carbonFootprint,
   } = req.body;
 
-  if (!passportId || !batteryId || !serialNumber) {
-    return res.status(400).json({ error: 'passportId, batteryId, serialNumber required' });
+  if (!passportId || !batteryId || !serialNumber || !did) {
+    return res.status(400).json({ error: 'passportId, batteryId, serialNumber, did required' });
   }
 
   try {
     await fabricService.submitTransaction('CreateBatteryPassport', [
-      passportId, batteryId, did || '',
+      passportId, batteryId, did,
       model || '', serialNumber,
       manufacturerName || '', manufactureCountry || '',
       cellManufacturer || '', cellManufactureCountry || '',
@@ -110,7 +110,7 @@ router.put('/:id/bind', authenticateToken, requireMSP(MSP.EV_MANUFACTURER), asyn
 });
 
 // POST /api/passports/:id/vehicle-image — Upload vehicle image
-router.post('/:id/vehicle-image', authenticateToken, upload.single('image'), (req, res) => {
+router.post('/:id/vehicle-image', authenticateToken, requireMSP(MSP.EV_MANUFACTURER, MSP.MANUFACTURER), upload.single('image'), (req, res) => {
   if (!req.file) {
     return res.status(400).json({ error: 'image file required' });
   }
