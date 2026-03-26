@@ -221,6 +221,7 @@ case "${1:-full}" in
     nosim)     do_build_flash; do_monitor ;;
     simonly)   do_simulator; do_monitor ;;
     matlab)    do_build_flash; do_matlab_bridge; do_monitor ;;
+    matlab-e2e)      do_matlab_bridge; do_blockchain_bridge ;;
     blockchain)      do_build_flash; do_simulator; do_blockchain_bridge ;;
     blockchain-full) do_fabric_setup; do_build_flash; do_simulator; do_blockchain_bridge ;;
     *)
@@ -229,6 +230,7 @@ case "${1:-full}" in
         echo "  ./start.sh nosim            시뮬레이터 없이"
         echo "  ./start.sh simonly          시뮬레이터+모니터만"
         echo "  ./start.sh matlab           MATLAB 연결 모드"
+        echo "  ./start.sh matlab-e2e       MATLAB+블록체인 풀 E2E (Agent 수동)"
         echo "  ./start.sh blockchain       시뮬레이터+블록체인 브릿지 (Agent 수동)"
         echo "  ./start.sh blockchain-full  Fabric+Agent+빌드+시뮬+브릿지 원스탑"
         ;;
