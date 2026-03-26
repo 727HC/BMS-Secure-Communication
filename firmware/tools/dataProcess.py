@@ -191,9 +191,11 @@ def main():
             battery_bytes = compress_to_battery_data(parsed, elapsed_ms)
             frame = build_uart_frame(battery_bytes)
 
-            # Send via UART
+            # Send via UART with pacing (wait for TX complete + inter-frame gap)
             if uart and uart.is_open:
                 uart.write(frame)
+                uart.flush()        # Wait for all bytes to be transmitted
+                time.sleep(0.05)    # 50ms inter-frame gap for CMU to process
 
             frame_count += 1
             if frame_count % 20 == 0:
