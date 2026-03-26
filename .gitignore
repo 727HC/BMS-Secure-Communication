@@ -58,6 +58,7 @@ passport-network/system-genesis-block/
 chaincode/*/vendor/
 chaincode/*/*.tar.gz
 chaincode/bms-contract/bms-contract
+chaincode/passport-contract/passport-contract
 
 # Python
 __pycache__/
@@ -66,6 +67,9 @@ __pycache__/
 # OS
 Thumbs.db
 .DS_Store
+
+# AI/Tool outputs
+outputs/
 
 # Misc
 workspaceS32DS.3.6.0.zip
