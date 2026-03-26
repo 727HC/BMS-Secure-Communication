@@ -96,7 +96,7 @@ async function revokeCredential(fabricService, credentialId, reason, userCtx) {
 // ============================================================
 
 async function verifyCredentialStatus(fabricService, credentialId) {
-  const result = await fabricService.evaluateTransaction('VerifyCredentialStatus', credentialId);
+  const result = await fabricService.evaluateTransaction('VerifyCredentialStatus', [credentialId]);
   return JSON.parse(result.toString());
 }
 
@@ -114,40 +114,40 @@ async function logVerification(fabricService, {
 // ============================================================
 
 async function queryCredential(fabricService, credentialId) {
-  const result = await fabricService.evaluateTransaction('QueryCredential', credentialId);
+  const result = await fabricService.evaluateTransaction('QueryCredential', [credentialId]);
   return JSON.parse(result.toString());
 }
 
 async function queryCredentialsByPassport(fabricService, passportId, pageSize, bookmark) {
   const result = await fabricService.evaluateTransaction(
-    'QueryCredentialsByPassport', passportId, String(pageSize || 100), bookmark || ''
+    'QueryCredentialsByPassport', [passportId, String(pageSize || 100), bookmark || '']
   );
   return JSON.parse(result.toString());
 }
 
 async function queryCredentialsByHolder(fabricService, holderDid, pageSize, bookmark) {
   const result = await fabricService.evaluateTransaction(
-    'QueryCredentialsByHolder', holderDid, String(pageSize || 100), bookmark || ''
+    'QueryCredentialsByHolder', [holderDid, String(pageSize || 100), bookmark || '']
   );
   return JSON.parse(result.toString());
 }
 
 async function queryCredentialsByType(fabricService, credType, pageSize, bookmark) {
   const result = await fabricService.evaluateTransaction(
-    'QueryCredentialsByType', credType, String(pageSize || 100), bookmark || ''
+    'QueryCredentialsByType', [credType, String(pageSize || 100), bookmark || '']
   );
   return JSON.parse(result.toString());
 }
 
 async function queryRevokedCredentials(fabricService, pageSize, bookmark) {
   const result = await fabricService.evaluateTransaction(
-    'QueryRevokedCredentials', String(pageSize || 100), bookmark || ''
+    'QueryRevokedCredentials', [String(pageSize || 100), bookmark || '']
   );
   return JSON.parse(result.toString());
 }
 
 async function getCredentialHistory(fabricService, credentialId) {
-  const result = await fabricService.evaluateTransaction('GetCredentialHistory', credentialId);
+  const result = await fabricService.evaluateTransaction('GetCredentialHistory', [credentialId]);
   return JSON.parse(result.toString());
 }
 
