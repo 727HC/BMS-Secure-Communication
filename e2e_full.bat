@@ -10,7 +10,7 @@ cd /d "C:\BMS"
 :: [0] Docker 확인
 :: ============================================
 echo [0] Docker 확인...
-docker info > nul 2>&1
+docker version > nul 2>&1
 if %errorlevel% NEQ 0 (
     echo       [ERROR] Docker가 실행되지 않았습니다!
     echo       Docker Desktop을 먼저 실행하세요.
