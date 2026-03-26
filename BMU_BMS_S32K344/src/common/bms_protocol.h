@@ -81,7 +81,7 @@ extern "C" {
 /*============================================================================
  *  Timing
  *============================================================================*/
-#define CMU_TX_PERIOD_MS            50U     /* CMU data transmission period      */
+#define CMU_TX_PERIOD_MS            200U    /* CMU data transmission period (>54ms for 9600baud UART) */
 #define KEY_EXCHANGE_TIMEOUT_MS     3000U   /* Key exchange timeout              */
 #define RESYNC_TIMEOUT_MS           1000U   /* Resync timeout                    */
 
@@ -142,7 +142,7 @@ extern "C" {
 #define TASK_PROTOCOL_PRIORITY      2U      /* Protocol task priority         */
 #define TASK_DATAPROC_PRIORITY      1U      /* Data process task priority     */
 #define TASK_MONITOR_PRIORITY       1U      /* Monitor task priority          */
-#define TASK_CANRX_DELAY_MS         5U      /* CAN RX polling interval       */
+#define TASK_CANRX_DELAY_MS         1U      /* CAN RX / UART RX polling interval */
 #define TASK_PROTOCOL_DELAY_MS      10U     /* Protocol polling interval     */
 #define TASK_MONITOR_DELAY_MS       500U    /* Monitor reporting interval    */
 #define TASK_ERROR_DELAY_MS         1000U   /* Error state delay             */

@@ -106,6 +106,13 @@ volatile uint32 g_uartRxOkCount = 0U;    /* UART frames successfully parsed */
 volatile uint32 g_uartRxCompleteCount = 0U; /* UART rx complete (52 bytes received) */
 volatile uint32 g_uartParseFailCount = 0U;  /* UART parse failures */
 volatile uint32 g_uartRxBytes = 0U;         /* Total UART bytes received */
+volatile uint32 g_uartErrorCount = 0U;      /* UART OR/FE/NF error count */
+volatile uint32 g_dbg_pcc_lpuart1 = 0U;
+volatile uint32 g_dbg_portc_pcr6 = 0U;
+volatile uint32 g_dbg_lpuart1_baud = 0U;
+volatile uint32 g_dbg_lpuart1_ctrl = 0U;
+volatile uint32 g_dbg_scg_fircdiv = 0U;
+volatile uint32 g_dbg_lpuart1_init_done = 0U;
 volatile uint8  g_uartRxDump[64];           /* First 64 raw bytes for debug */
 volatile uint32 g_uartRxDumpIdx = 0U;
 volatile uint32 g_CTRL1 = 0U;
@@ -350,6 +357,7 @@ static void CMU_PollUartRx(void)
         LPUART1_STAT_REG = stat | (LPUART_OR | LPUART_FE | LPUART_NF); /* W1C */
         /* Reset reception — frame got corrupted */
         g_uart_rx_idx = 0U;
+        g_uartErrorCount++;
     }
 
     while ((LPUART1_STAT_REG & LPUART_RDRF) && (g_uart_rx_idx < UART_FRAME_TOTAL))
@@ -364,6 +372,7 @@ static void CMU_PollUartRx(void)
         g_uart_rx_idx++;
         g_uartRxBytes++;
         if (g_uartRxDumpIdx < 64U) { g_uartRxDump[g_uartRxDumpIdx++] = byte; }
+        if (g_uartRxBytes <= 3U) { GPIOD_PTOR = (1u << LED_RED_PIN); } /* LED on first bytes */
     }
     if (g_uart_rx_idx >= UART_FRAME_TOTAL)
     {
@@ -512,9 +521,13 @@ int main(void)
 
     /* 9b. LPUART1 init (after all RTD init to avoid Clock_Ip overwrite) */
     {
-        /* PCC: enable LPUART1 clock with FIRCDIV2 source */
-        PCC_LPUART1_ADDR = 0U;
-        PCC_LPUART1_ADDR = PCC_CGC_BIT | PCC_PCS_FIRCDIV2;
+        /* S32K144 PCC rule: PCS can only be changed when CGC=0 */
+        /* Step 1: disable clock gate */
+        PCC_LPUART1_ADDR &= ~PCC_CGC_BIT;
+        /* Step 2: set clock source (FIRCDIV2) with CGC still off */
+        PCC_LPUART1_ADDR = PCC_PCS_FIRCDIV2;
+        /* Step 3: enable clock gate */
+        PCC_LPUART1_ADDR |= PCC_CGC_BIT;
 
         /* PORTC pin mux: PTC6=LPUART1_RX (ALT2), PTC7=LPUART1_TX (ALT2) */
         #define PCC_PORTC_ADDR  (*(volatile uint32 *)0x40065128u)
@@ -527,6 +540,14 @@ int main(void)
         LPUART1_CTRL_REG = 0U;
         LPUART1_BAUD_REG = (LPUART1_OSR_VALUE << 24) | LPUART1_SBR_VALUE;
         LPUART1_CTRL_REG = LPUART_CTRL_RE | LPUART_CTRL_TE;
+
+        /* Debug: capture register values after init */
+        g_dbg_pcc_lpuart1 = PCC_LPUART1_ADDR;
+        g_dbg_portc_pcr6  = PORTC_PCR_BASE[6];
+        g_dbg_lpuart1_baud = LPUART1_BAUD_REG;
+        g_dbg_lpuart1_ctrl = LPUART1_CTRL_REG;
+        g_dbg_scg_fircdiv  = (*(volatile uint32 *)0x40064304U);
+        g_dbg_lpuart1_init_done = 0xBEEF;
     }
 
     /* 10. Start UART reception for battery data from Simulink */
@@ -797,6 +818,7 @@ static void CMU_UartRxTask(void *pvParameters)
             if (CMU_ParseUartFrame(g_uart_rx_buf, UART_FRAME_TOTAL, g_battery_data))
             {
                 xQueueOverwrite(txDataQueue, g_battery_data);
+                GPIOD_PTOR = (1u << LED_RED_PIN);  /* LED toggle on good frame */
             }
             else
             {
@@ -837,12 +859,11 @@ static void CMU_CanTxTask(void *pvParameters)
         const uint8 *tx_data;
         if (hasRealData)
         {
-            /* Use latest UART data (keeps last value if no new data) */
             tx_data = latestData;
         }
         else
         {
-            /* Fallback: simulation data only when UART never received */
+            /* Fallback: simulation data when no UART data */
             static BatteryData_t simData;
             memset(&simData, 0, sizeof(simData));
             simData.current_A        = SIM_CURRENT_BASE + (float)(txCount % SIM_CURRENT_MOD) * SIM_CURRENT_STEP;
