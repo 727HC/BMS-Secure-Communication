@@ -6,9 +6,15 @@ echo.
 
 cd /d "C:\Users\heechan\Desktop\BMS"
 
-echo [1/4] 블록체인 시작 (WSL)...
-wsl bash -c "cd ~/bms-blockchain && ./start_all.sh" > nul 2>&1 &
-echo       대기 중 (60초)...
+echo [1/4] 블록체인 확인...
+curl -s http://localhost:3001/status > nul 2>&1
+if %errorlevel%==0 (
+    echo       Agent 이미 실행 중! 건너뜀.
+    goto agent_ready
+)
+echo       Agent 미실행. 블록체인 시작 (WSL)...
+start "" wsl bash -c "cd ~/bms-blockchain && ./start_all.sh"
+echo       대기 중...
 
 :: Agent:3001 준비 대기
 set /a count=0
