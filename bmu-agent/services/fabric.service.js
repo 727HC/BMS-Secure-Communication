@@ -7,8 +7,9 @@ const { createLogger } = require('./logger.service');
 const log = createLogger('fabric');
 
 // P0-1: Org별 Gateway pool — 요청자의 org identity로 트랜잭션 실행
-const gatewayPool = new Map(); // key: walletLabel, value: { gateway, contract }
-let defaultContract = null; // 서버 기본 org (인증 불필요 쿼리용)
+const gatewayPool = new Map(); // key: walletLabel, value: { gateway, contract, lastUsed }
+const GATEWAY_TTL_MS = 30 * 60 * 1000; // 30분 미사용 시 제거
+let defaultContract = null; // 서버 기본 org
 let wallet = null;
 
 // P1-6: Wallet namespacing — ${mspId}:${userId}
@@ -24,7 +25,7 @@ async function getWallet() {
   return wallet;
 }
 
-// 서버 기동 시 기본 org admin으로 연결 (인증 불필요 쿼리용)
+// 서버 기동 시 기본 org admin으로 연결
 async function connectFabric() {
   const org = fabricConfig.currentOrg;
   const w = await getWallet();
@@ -67,6 +68,21 @@ async function connectFabric() {
   const network = await gw.getNetwork(fabricConfig.channelName);
   defaultContract = network.getContract(fabricConfig.contractName);
   log.info('Connected to Fabric', { channel: fabricConfig.channelName, contract: fabricConfig.contractName });
+
+  // Gateway pool 정리 타이머 시작
+  setInterval(evictStaleGateways, GATEWAY_TTL_MS);
+}
+
+// Gateway pool TTL eviction — 미사용 연결 정리
+function evictStaleGateways() {
+  const now = Date.now();
+  for (const [label, entry] of gatewayPool) {
+    if (now - entry.lastUsed > GATEWAY_TTL_MS) {
+      try { entry.gateway.disconnect(); } catch { /* ignore */ }
+      gatewayPool.delete(label);
+      log.info('Gateway evicted (TTL)', { label });
+    }
+  }
 }
 
 // P0-1: 요청자 identity로 gateway/contract 획득
@@ -76,7 +92,9 @@ async function getContractForUser(userId, orgMsp) {
 
   // Pool에서 캐시 확인
   if (gatewayPool.has(label)) {
-    return gatewayPool.get(label).contract;
+    const entry = gatewayPool.get(label);
+    entry.lastUsed = Date.now();
+    return entry.contract;
   }
 
   // 해당 user의 wallet identity 확인
@@ -107,10 +125,17 @@ async function getContractForUser(userId, orgMsp) {
 
   const network = await gw.getNetwork(fabricConfig.channelName);
   const ct = network.getContract(fabricConfig.contractName);
-  // P1-3: gateway도 함께 저장 (disconnect 가능하게)
-  gatewayPool.set(label, { gateway: gw, contract: ct });
+  gatewayPool.set(label, { gateway: gw, contract: ct, lastUsed: Date.now() });
   log.info('Gateway opened', { label });
   return ct;
+}
+
+// defaultContract null 체크 helper
+function requireDefaultContract() {
+  if (!defaultContract) {
+    throw new Error('Fabric not connected. Cannot execute transaction.');
+  }
+  return defaultContract;
 }
 
 // Submit: 인증된 사용자의 identity로 실행
@@ -119,21 +144,23 @@ async function submitTransaction(fcn, args, userCtx) {
   if (userCtx && userCtx.userId && userCtx.orgMsp) {
     ct = await getContractForUser(userCtx.userId, userCtx.orgMsp);
   } else {
-    ct = defaultContract;
+    ct = requireDefaultContract();
   }
   return await ct.submitTransaction(fcn, ...args);
 }
 
-// Evaluate: 사용자 identity로 실행 (읽기 전용), userCtx 없으면 기본 admin
-async function evaluateTransaction(fcn, ...args) {
-  // 마지막 인자가 userCtx 객체인지 확인
-  const last = args[args.length - 1];
-  if (last && typeof last === 'object' && last.userId && last.orgMsp) {
-    const userCtx = args.pop();
-    const ct = await getContractForUser(userCtx.userId, userCtx.orgMsp);
+// Evaluate: submitTransaction과 동일한 시그니처 (fcn, args, userCtx)
+async function evaluateTransaction(fcn, args, userCtx) {
+  let ct;
+  if (userCtx && userCtx.userId && userCtx.orgMsp) {
+    ct = await getContractForUser(userCtx.userId, userCtx.orgMsp);
+  } else {
+    ct = requireDefaultContract();
+  }
+  if (Array.isArray(args)) {
     return await ct.evaluateTransaction(fcn, ...args);
   }
-  return await defaultContract.evaluateTransaction(fcn, ...args);
+  return await ct.evaluateTransaction(fcn);
 }
 
 function isConnected() {
@@ -234,7 +261,7 @@ async function registerUser(userId, userSecret, orgConfig) {
   return { message: `User ${userId} registered and enrolled`, mspId: org.mspId };
 }
 
-// 로그인 — wallet 확인 → enroll 시도 → re-register fallback
+// 로그인 — wallet 확인 → enroll 시도
 async function loginUser(userId, userSecret, orgConfig) {
   const org = orgConfig || fabricConfig.currentOrg;
   const w = await getWallet();
@@ -263,46 +290,7 @@ async function loginUser(userId, userSecret, orgConfig) {
     });
     return { mspId: org.mspId, userId };
   } catch (enrollErr) {
-    // 3. enroll 실패 (횟수 소진 등) → 새 비밀번호로 re-register 후 enroll
-    const adminLabel2 = `${org.caName}-admin`;
-    let adminIdentity = await w.get(adminLabel2);
-    if (!adminIdentity) {
-      const adminEnrollment = await ca.enroll({
-        enrollmentID: 'admin',
-        enrollmentSecret: fabricConfig.adminSecret,
-      });
-      adminIdentity = {
-        credentials: {
-          certificate: adminEnrollment.certificate,
-          privateKey: adminEnrollment.key.toBytes(),
-        },
-        mspId: org.mspId,
-        type: 'X.509',
-      };
-      await w.put(adminLabel2, adminIdentity);
-    }
-
-    const provider = w.getProviderRegistry().getProvider(adminIdentity.type);
-    const adminUser = await provider.getUserContext(adminIdentity, adminLabel2);
-
-    // 기존 사용자 삭제 후 재등록 (reenroll은 CA에서 지원 안 하므로)
-    const newSecret = userSecret + '_' + Date.now();
-    try {
-      await ca.register({
-        enrollmentID: userId + '_recovery',
-        enrollmentSecret: newSecret,
-        maxEnrollments: -1,
-        attrs: [],
-      }, adminUser);
-    } catch (regErr) {
-      // 이미 recovery도 등록됨 → 원래 에러 throw
-      if (!regErr.message?.includes('already registered')) {
-        throw new Error(`계정 복구 실패: ${enrollErr.message}`);
-      }
-    }
-
-    // 원래 에러 메시지를 사용자에게 알려줌
-    throw new Error(`계정 "${userId}"의 인증 횟수가 초과되었습니다. 새 계정으로 가입해주세요.`);
+    throw new Error(`로그인 실패: ${enrollErr.message}`);
   }
 }
 

@@ -21,7 +21,7 @@ async function resolvePassportId(did) {
   if (cached && Date.now() - cached.ts < CACHE_TTL) {
     return cached.passportId;
   }
-  const result = await fabricService.evaluateTransaction('QueryBatteryByDID', did);
+  const result = await fabricService.evaluateTransaction('QueryBatteryByDID', [did]);
   const passport = JSON.parse(result.toString());
   if (passport && passport.passportId) {
     didPassportCache.set(did, { passportId: passport.passportId, ts: Date.now() });
@@ -112,7 +112,7 @@ router.get('/records/:passportId', authenticateToken, async (req, res) => {
     const pageSize = Math.min(parseInt(req.query.pageSize || String(DEFAULT_PAGE_SIZE), 10), MAX_PAGE_SIZE);
     const bookmark = req.query.bookmark || '';
     const result = await fabricService.evaluateTransaction(
-      'QueryBMURecordsByPassport', req.params.passportId, String(pageSize), bookmark, req.user
+      'QueryBMURecordsByPassport', [req.params.passportId, String(pageSize), bookmark], req.user
     );
     res.json(JSON.parse(result.toString()));
   } catch (err) {
