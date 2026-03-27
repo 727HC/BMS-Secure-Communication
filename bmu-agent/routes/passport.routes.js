@@ -126,8 +126,8 @@ router.post('/:id/vehicle-image', authenticateToken, requireMSP(MSP.EV_MANUFACTU
   res.json({ success: true, filename: req.file.filename, path: '/uploads/vehicles/' + req.file.filename });
 });
 
-// GET /api/passports/:id/vehicle-image — Check if image exists
-router.get('/:id/vehicle-image', (req, res) => {
+// GET /api/passports/:id/vehicle-image — Check if image exists (authenticated)
+router.get('/:id/vehicle-image', authenticateToken, (req, res) => {
   const fs = require('fs');
   const exts = ['.jpg', '.jpeg', '.png', '.webp', '.svg'];
   for (const ext of exts) {
