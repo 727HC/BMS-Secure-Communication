@@ -12,6 +12,25 @@ const log = createLogger('bmu');
 
 // P0-3: unsigned BMU 완전 거부 (임베디드 확인: BMU는 100% 서명 포함)
 
+// Rate limit for /api/bmu/data — sliding window per IP
+const BMU_RATE_LIMIT = parseInt(process.env.BMU_RATE_LIMIT || '200', 10); // max requests per window
+const BMU_RATE_WINDOW_MS = parseInt(process.env.BMU_RATE_WINDOW_MS || '60000', 10); // 1 min
+const rateBuckets = new Map();
+function bmuRateLimit(req, res, next) {
+  const key = req.ip;
+  const now = Date.now();
+  let bucket = rateBuckets.get(key);
+  if (!bucket || now - bucket.start > BMU_RATE_WINDOW_MS) {
+    bucket = { start: now, count: 0 };
+    rateBuckets.set(key, bucket);
+  }
+  bucket.count++;
+  if (bucket.count > BMU_RATE_LIMIT) {
+    return res.status(429).json({ error: 'rate limit exceeded' });
+  }
+  next();
+}
+
 // P1-8: DID → passportId cache with TTL + Promise deduplication
 const CACHE_TTL = DID_CACHE_TTL_MS;
 const didPassportCache = new Map();
@@ -46,7 +65,7 @@ async function resolvePassportId(did) {
 }
 
 // POST /api/bmu/data — Receive BMU data
-router.post('/data', async (req, res) => {
+router.post('/data', bmuRateLimit, async (req, res) => {
   const { rawPayload, signature, did: reqDid } = req.body;
   const did = reqDid || process.env.DEFAULT_BMU_DID;
 
