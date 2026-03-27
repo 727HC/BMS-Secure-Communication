@@ -411,7 +411,7 @@ pip install pyserial
 cd firmware/tools
 python battery_simulator.py --udp
 
-# 블록체인 에이전트 브릿지 (agent_ingest_bmu.js 포트 3001 사용)
+# BMU 시리얼 → Agent 브릿지 (server.js 포트 3001)
 cd firmware/tools
 python serial_to_agent.py --port COM4 --baud 28800 --agent http://localhost:3001 --did <BMU_DID>
 ```
