@@ -4,16 +4,6 @@ test:
   workers:
     number: 10
   rounds:
-    - label: read-passport
-      description: Single passport query (GetState) - Target 1500+ TPS
-      txNumber: 5000
-      rateControl:
-        type: fixed-rate
-        opts:
-          tps: 2000
-      workload:
-        module: workloads/queryPassport.js
-
     - label: write-bmu-data
       description: RecordBMUData write - Target 150+ TPS
       txNumber: 3000
@@ -23,3 +13,13 @@ test:
           tps: 200
       workload:
         module: workloads/recordBMUData.js
+
+    - label: read-passport
+      description: Single passport query (GetState) - Target 1500+ TPS
+      txNumber: 10000
+      rateControl:
+        type: fixed-rate
+        opts:
+          tps: 1800
+      workload:
+        module: workloads/queryPassport.js

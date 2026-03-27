@@ -3,7 +3,7 @@
 const { WorkloadModuleBase } = require('@hyperledger/caliper-core');
 const crypto = require('crypto');
 
-const NUM_PASSPORTS = 50;
+const NUM_PASSPORTS = parseInt(process.env.NUM_PASSPORTS || '50', 10);
 
 class RecordBMUDataWorkload extends WorkloadModuleBase {
     constructor() {
@@ -17,46 +17,47 @@ class RecordBMUDataWorkload extends WorkloadModuleBase {
     async initializeWorkloadModule(workerIndex, totalWorkers, roundIndex, roundArguments, sutAdapter, sutContext) {
         await super.initializeWorkloadModule(workerIndex, totalWorkers, roundIndex, roundArguments, sutAdapter, sutContext);
 
-        // Build passport/DID lists (must match what queryPassport workload created)
-        for (let i = 0; i < NUM_PASSPORTS; i++) {
-            const id = `PASSPORT-CALIPER-${String(i).padStart(3, '0')}`;
-            const did = `did-caliper-${String(i).padStart(3, '0')}`;
+        // Worker-exclusive passport assignment: each worker owns a non-overlapping range
+        const perWorker = Math.ceil(NUM_PASSPORTS / totalWorkers);
+        const startIdx = workerIndex * perWorker;
+        const endIdx = Math.min(startIdx + perWorker, NUM_PASSPORTS);
+
+        for (let i = startIdx; i < endIdx; i++) {
+            const id = `PASSPORT-CALIPER-${String(i).padStart(4, '0')}`;
+            const did = `did-caliper-${String(i).padStart(4, '0')}`;
             this.passportIds.push(id);
             this.dids.push(did);
-            // FC counter per DID, offset by worker to avoid collision
-            this.fcCounters[did] = workerIndex * 1000000;
+            this.fcCounters[did] = 0;
         }
 
-        // Worker 0 creates passports if they don't exist yet (idempotent)
-        if (workerIndex === 0) {
-            for (let i = 0; i < NUM_PASSPORTS; i++) {
-                const args = {
-                    contractId: 'passport-contract',
-                    contractFunction: 'CreateBatteryPassport',
-                    contractArguments: [
-                        this.passportIds[i], `BATTERY-${this.passportIds[i]}`, this.dids[i],
-                        'BenchModel', `SN-${i}`,
-                        'BenchMfg', 'KR',
-                        'BenchCell', 'KR',
-                        '2026-01-01', 'Prismatic', 'NMC',
-                        '96', '450', '77',
-                        '172', '200', '3000',
-                        '280', '20',
-                        '1'
-                    ],
-                    readOnly: false
-                };
-                try {
-                    await this.sutAdapter.sendRequests(args);
-                } catch (e) {
-                    // Already exists, OK
-                }
+        // Each worker creates only its own passports
+        for (let i = 0; i < this.passportIds.length; i++) {
+            const args = {
+                contractId: 'passport-contract',
+                contractFunction: 'CreateBatteryPassport',
+                contractArguments: [
+                    this.passportIds[i], `BATTERY-${this.passportIds[i]}`, this.dids[i],
+                    'BenchModel', `SN-${startIdx + i}`,
+                    'BenchMfg', 'KR',
+                    'BenchCell', 'KR',
+                    '2026-01-01', 'Prismatic', 'NMC',
+                    '96', '450', '77',
+                    '172', '200', '3000',
+                    '280', '20',
+                    '1'
+                ],
+                readOnly: false
+            };
+            try {
+                await this.sutAdapter.sendRequests(args);
+            } catch (e) {
+                // Already exists, OK
             }
         }
     }
 
     async submitTransaction() {
-        const idx = Math.floor(Math.random() * NUM_PASSPORTS);
+        const idx = Math.floor(Math.random() * this.passportIds.length);
         const passportId = this.passportIds[idx];
         const did = this.dids[idx];
 

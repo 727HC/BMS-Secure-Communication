@@ -9,14 +9,14 @@ channels:
       - id: passport-contract
 
 organizations:
-  - mspid: ManufacturerMSP
+  - mspid: ORG_MSP_PLACEHOLDER
     connectionProfile:
-      path: ../passport-network/organizations/peerOrganizations/manufacturer.battery.com/connection-manufacturer.json
+      path: ORG_CONNPROFILE_PLACEHOLDER
       discover: true
     identities:
       certificates:
         - name: admin
           clientPrivateKey:
-            path: KEYSTORE_PLACEHOLDER
+            path: ORG_KEYSTORE_PLACEHOLDER
           clientSignedCert:
-            path: ../passport-network/organizations/peerOrganizations/manufacturer.battery.com/users/Admin@manufacturer.battery.com/msp/signcerts/cert.pem
+            path: ORG_SIGNCERT_PLACEHOLDER
