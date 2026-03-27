@@ -3,6 +3,12 @@ const bs58 = require('bs58').default;
 const nacl = require('tweetnacl');
 const { acaPyUrl } = require('../config/auth');
 
+// Verkey cache: DID verkeys are immutable on ledger, so long TTL is safe
+const VERKEY_CACHE_TTL_MS = parseInt(process.env.VERKEY_CACHE_TTL_MS || '3600000', 10); // 1h
+const MAX_VERKEY_CACHE = parseInt(process.env.MAX_VERKEY_CACHE_SIZE || '10000', 10);
+const verkeyCache = new Map();
+const verkeyPending = new Map();
+
 function isHex(str) {
   return /^[0-9A-Fa-f]+$/.test(str) && str.length % 2 === 0;
 }
@@ -15,10 +21,35 @@ function decodeSignature(signature) {
 }
 
 async function getVerkey(did) {
-  const res = await axios.get(`${acaPyUrl}/ledger/did-verkey`, {
-    params: { did },
-  });
-  return res.data.verkey;
+  const cached = verkeyCache.get(did);
+  if (cached && Date.now() - cached.ts < VERKEY_CACHE_TTL_MS) {
+    return cached.verkey;
+  }
+
+  if (verkeyPending.has(did)) {
+    return verkeyPending.get(did);
+  }
+
+  const promise = (async () => {
+    try {
+      const res = await axios.get(`${acaPyUrl}/ledger/did-verkey`, {
+        params: { did },
+      });
+      const verkey = res.data.verkey;
+      verkeyCache.set(did, { verkey, ts: Date.now() });
+      // LRU-style eviction
+      if (verkeyCache.size > MAX_VERKEY_CACHE) {
+        const oldest = verkeyCache.keys().next().value;
+        verkeyCache.delete(oldest);
+      }
+      return verkey;
+    } finally {
+      verkeyPending.delete(did);
+    }
+  })();
+
+  verkeyPending.set(did, promise);
+  return promise;
 }
 
 async function verifySignature(did, verifyTarget, signature) {

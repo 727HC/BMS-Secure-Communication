@@ -8,6 +8,7 @@ const log = createLogger('fabric');
 
 // P0-1: Org별 Gateway pool — 요청자의 org identity로 트랜잭션 실행
 const gatewayPool = new Map(); // key: walletLabel, value: { gateway, contract, lastUsed }
+const gatewayPending = new Map(); // Promise dedup: 동시 요청 시 중복 gateway 생성 방지
 const GATEWAY_TTL_MS = 30 * 60 * 1000; // 30분 미사용 시 제거
 let defaultContract = null; // 서버 기본 org
 let wallet = null;
@@ -85,10 +86,9 @@ function evictStaleGateways() {
   }
 }
 
-// P0-1: 요청자 identity로 gateway/contract 획득
+// P0-1: 요청자 identity로 gateway/contract 획득 (Promise dedup으로 race condition 방지)
 async function getContractForUser(userId, orgMsp) {
   const label = walletLabel(userId, orgMsp);
-  const w = await getWallet();
 
   // Pool에서 캐시 확인
   if (gatewayPool.has(label)) {
@@ -97,37 +97,53 @@ async function getContractForUser(userId, orgMsp) {
     return entry.contract;
   }
 
-  // 해당 user의 wallet identity 확인
-  const identity = await w.get(label);
-  if (!identity) {
-    throw new Error(`Identity ${label} not found in wallet. Register first.`);
+  // 동시 요청 시 중복 gateway 생성 방지
+  if (gatewayPending.has(label)) {
+    return gatewayPending.get(label);
   }
 
-  // 해당 org의 CCP로 gateway 연결
-  const orgNum = fabricConfig.mspToOrg[orgMsp];
-  const org = fabricConfig.orgs[orgNum];
-  if (!org) {
-    throw new Error(`Unknown MSP: ${orgMsp}`);
-  }
+  const promise = (async () => {
+    try {
+      const w = await getWallet();
 
-  // P1-5: CCP fallback 제거 — fail-fast
-  if (!fs.existsSync(org.ccpPath)) {
-    throw new Error(`CCP not found for ${orgMsp}: ${org.ccpPath}`);
-  }
-  const ccp = JSON.parse(fs.readFileSync(org.ccpPath, 'utf8'));
+      // 해당 user의 wallet identity 확인
+      const identity = await w.get(label);
+      if (!identity) {
+        throw new Error(`Identity ${label} not found in wallet. Register first.`);
+      }
 
-  const gw = new Gateway();
-  await gw.connect(ccp, {
-    wallet: w,
-    identity: label,
-    discovery: { enabled: true, asLocalhost: fabricConfig.discoveryAsLocalhost },
-  });
+      // 해당 org의 CCP로 gateway 연결
+      const orgNum = fabricConfig.mspToOrg[orgMsp];
+      const org = fabricConfig.orgs[orgNum];
+      if (!org) {
+        throw new Error(`Unknown MSP: ${orgMsp}`);
+      }
 
-  const network = await gw.getNetwork(fabricConfig.channelName);
-  const ct = network.getContract(fabricConfig.contractName);
-  gatewayPool.set(label, { gateway: gw, contract: ct, lastUsed: Date.now() });
-  log.info('Gateway opened', { label });
-  return ct;
+      // P1-5: CCP fallback 제거 — fail-fast
+      if (!fs.existsSync(org.ccpPath)) {
+        throw new Error(`CCP not found for ${orgMsp}: ${org.ccpPath}`);
+      }
+      const ccp = JSON.parse(fs.readFileSync(org.ccpPath, 'utf8'));
+
+      const gw = new Gateway();
+      await gw.connect(ccp, {
+        wallet: w,
+        identity: label,
+        discovery: { enabled: true, asLocalhost: fabricConfig.discoveryAsLocalhost },
+      });
+
+      const network = await gw.getNetwork(fabricConfig.channelName);
+      const ct = network.getContract(fabricConfig.contractName);
+      gatewayPool.set(label, { gateway: gw, contract: ct, lastUsed: Date.now() });
+      log.info('Gateway opened', { label });
+      return ct;
+    } finally {
+      gatewayPending.delete(label);
+    }
+  })();
+
+  gatewayPending.set(label, promise);
+  return promise;
 }
 
 // defaultContract null 체크 helper

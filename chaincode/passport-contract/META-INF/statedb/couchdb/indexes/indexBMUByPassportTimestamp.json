@@ -1,0 +1,8 @@
+{
+  "index": {
+    "fields": ["docType", "passportId", "timestamp"]
+  },
+  "ddoc": "indexBMUByPassportTimestampDoc",
+  "name": "indexBMUByPassportTimestamp",
+  "type": "json"
+}

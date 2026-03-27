@@ -19,6 +19,7 @@ type PassportContract struct {
 const (
 	docTypePassport      = "batteryPassport"
 	docTypeBMURecord     = "bmuRecord"
+	docTypeBMUSnapshot   = "bmuSnapshot"
 	docTypeRawMaterial   = "rawMaterial"
 	docTypeVC            = "verifiableCredential"
 	docTypeVerification  = "vcVerification"
@@ -189,6 +190,16 @@ type BMURecord struct {
 	CreatorMSP      string  `json:"creatorMsp"`
 }
 
+// BMUSnapshot holds real-time BMU state separated from passport key to avoid MVCC conflicts
+type BMUSnapshot struct {
+	DocType              string  `json:"docType"`
+	PassportID           string  `json:"passportId"`
+	CurrentSOC           float64 `json:"currentSoc"`
+	TotalDischargeCycles int     `json:"totalDischargeCycles"`
+	LastBMUDataID        string  `json:"lastBmuDataId"`
+	UpdatedAt            string  `json:"updatedAt"`
+}
+
 // CorrectionLog represents a data correction event
 type CorrectionLog struct {
 	Date          string `json:"date"`
@@ -287,6 +298,28 @@ func normalizePassport(p *BatteryPassport) {
 	}
 	if p.CorrectionLogs == nil {
 		p.CorrectionLogs = []CorrectionLog{}
+	}
+}
+
+// mergeSnapshot overlays real-time BMU data from the separate snapshot key onto the passport.
+// If no snapshot exists (legacy data), the passport's embedded values are preserved.
+func (c *PassportContract) mergeSnapshot(ctx contractapi.TransactionContextInterface, passport *BatteryPassport) {
+	snapshotKey, err := ctx.GetStub().CreateCompositeKey("snapshot", []string{passport.PassportID})
+	if err != nil {
+		return
+	}
+	snapshotJSON, err := ctx.GetStub().GetState(snapshotKey)
+	if err != nil || snapshotJSON == nil {
+		return
+	}
+	var snap BMUSnapshot
+	if json.Unmarshal(snapshotJSON, &snap) == nil {
+		passport.CurrentSOC = snap.CurrentSOC
+		passport.TotalDischargeCycles = snap.TotalDischargeCycles
+		passport.LastBMUDataID = snap.LastBMUDataID
+		if snap.UpdatedAt > passport.UpdatedAt {
+			passport.UpdatedAt = snap.UpdatedAt
+		}
 	}
 }
 
@@ -560,16 +593,22 @@ func (c *PassportContract) RecordBMUData(ctx contractapi.TransactionContextInter
 	}
 
 	// FC monotonic increase check — reject replay/stale BMU data
-	fcCheckQuery := fmt.Sprintf(`{"selector":{"docType":"%s","did":"%s","status":"VALID"},"sort":[{"fc":"desc"}],"limit":1}`, docTypeBMURecord, did)
-	fcIter, err := ctx.GetStub().GetQueryResult(fcCheckQuery)
-	if err == nil {
-		defer fcIter.Close()
-		if fcIter.HasNext() {
-			lastEntry, _ := fcIter.Next()
-			var lastRec BMURecord
-			if json.Unmarshal(lastEntry.Value, &lastRec) == nil && fcVal <= lastRec.FC {
-				return fmt.Errorf("fc %d must be greater than last valid fc %d for DID %s", fcVal, lastRec.FC, did)
-			}
+	// Uses dedicated state key instead of CouchDB rich query for performance
+	lastFcKey, err := ctx.GetStub().CreateCompositeKey("lastFc", []string{did})
+	if err != nil {
+		return fmt.Errorf("failed to create lastFc composite key: %v", err)
+	}
+	lastFcBytes, err := ctx.GetStub().GetState(lastFcKey)
+	if err != nil {
+		return fmt.Errorf("failed to read lastFc for DID %s: %v", did, err)
+	}
+	if lastFcBytes != nil {
+		lastFcVal, err := strconv.ParseUint(string(lastFcBytes), 10, 64)
+		if err != nil {
+			return fmt.Errorf("failed to parse lastFc value: %v", err)
+		}
+		if fcVal <= lastFcVal {
+			return fmt.Errorf("fc %d must be greater than last valid fc %d for DID %s", fcVal, lastFcVal, did)
 		}
 	}
 
@@ -646,24 +685,30 @@ func (c *PassportContract) RecordBMUData(ctx contractapi.TransactionContextInter
 		return fmt.Errorf("failed to store BMU record: %v", err)
 	}
 
-	// Update passport with latest BMU data
-	var passport BatteryPassport
-	err = json.Unmarshal(passportJSON, &passport)
-	if err != nil {
-		return fmt.Errorf("failed to unmarshal passport: %v", err)
+	// Update lastFc state key for this DID
+	if err := ctx.GetStub().PutState(lastFcKey, []byte(strconv.FormatUint(fcVal, 10))); err != nil {
+		return fmt.Errorf("failed to update lastFc: %v", err)
 	}
 
-	passport.CurrentSOC = float64(uint16(socVal))
-	passport.TotalDischargeCycles = int(dischargeCyclesVal)
-	passport.LastBMUDataID = recordId
-	passport.UpdatedAt = now
-
-	updatedPassportJSON, err := json.Marshal(passport)
+	// Update BMU snapshot (separate key to avoid MVCC conflicts on passport key)
+	snapshotKey, err := ctx.GetStub().CreateCompositeKey("snapshot", []string{passportId})
 	if err != nil {
-		return fmt.Errorf("failed to marshal updated passport: %v", err)
+		return fmt.Errorf("failed to create snapshot key: %v", err)
+	}
+	snapshot := BMUSnapshot{
+		DocType:              docTypeBMUSnapshot,
+		PassportID:           passportId,
+		CurrentSOC:           float64(uint16(socVal)),
+		TotalDischargeCycles: int(dischargeCyclesVal),
+		LastBMUDataID:        recordId,
+		UpdatedAt:            now,
+	}
+	snapshotJSON, err := json.Marshal(snapshot)
+	if err != nil {
+		return fmt.Errorf("failed to marshal snapshot: %v", err)
 	}
 
-	return ctx.GetStub().PutState(passportId, updatedPassportJSON)
+	return ctx.GetStub().PutState(snapshotKey, snapshotJSON)
 }
 
 // ============================================================
@@ -1085,6 +1130,7 @@ func (c *PassportContract) QueryPassport(ctx contractapi.TransactionContextInter
 	}
 
 	normalizePassport(&passport)
+	c.mergeSnapshot(ctx, &passport)
 	return &passport, nil
 }
 
@@ -1134,6 +1180,7 @@ func (c *PassportContract) QueryPassportsWithPagination(ctx contractapi.Transact
 			return nil, err
 		}
 		normalizePassport(&passport)
+		c.mergeSnapshot(ctx, &passport)
 		records = append(records, &passport)
 	}
 
@@ -1226,7 +1273,7 @@ func (c *PassportContract) QueryBMURecordsByPassport(ctx contractapi.Transaction
 		pageSize = maxPageSize
 	}
 
-	queryString := fmt.Sprintf(`{"selector":{"docType":"%s","passportId":"%s"}}`, docTypeBMURecord, passportId)
+	queryString := fmt.Sprintf(`{"selector":{"docType":"%s","passportId":"%s"},"sort":[{"timestamp":"desc"}]}`, docTypeBMURecord, passportId)
 
 	resultsIterator, responseMetadata, err := ctx.GetStub().GetQueryResultWithPagination(queryString, pageSize, bookmark)
 	if err != nil {
@@ -1287,6 +1334,7 @@ func (c *PassportContract) QueryBatteryByDID(ctx contractapi.TransactionContextI
 			return nil, fmt.Errorf("failed to unmarshal passport: %v", err)
 		}
 		normalizePassport(&passport)
+		c.mergeSnapshot(ctx, &passport)
 		return &passport, nil
 	}
 
@@ -2089,13 +2137,37 @@ func (c *PassportContract) InvalidateBMURecord(ctx contractapi.TransactionContex
 		return fmt.Errorf("failed to store invalidated record: %v", err)
 	}
 
-	// 여권 snapshot 재계산 — 무효화된 레코드가 lastBmuDataId였으면 최근 유효 레코드로 갱신
+	// lastFc 동기화 — 무효화된 레코드의 FC가 lastFc와 같으면 재계산
+	lastFcKey, _ := ctx.GetStub().CreateCompositeKey("lastFc", []string{record.DID})
+	lastFcBytes, _ := ctx.GetStub().GetState(lastFcKey)
+	if lastFcBytes != nil {
+		currentLastFc, _ := strconv.ParseUint(string(lastFcBytes), 10, 64)
+		if currentLastFc == record.FC {
+			// 다음 최신 유효 FC를 rich query로 조회 (희귀 연산이므로 허용)
+			fcReQuery := fmt.Sprintf(`{"selector":{"docType":"%s","did":"%s","status":"VALID"},"sort":[{"fc":"desc"}],"limit":1}`, docTypeBMURecord, record.DID)
+			fcReIter, err := ctx.GetStub().GetQueryResult(fcReQuery)
+			if err == nil {
+				defer fcReIter.Close()
+				if fcReIter.HasNext() {
+					entry, _ := fcReIter.Next()
+					var latestValid BMURecord
+					if json.Unmarshal(entry.Value, &latestValid) == nil {
+						ctx.GetStub().PutState(lastFcKey, []byte(strconv.FormatUint(latestValid.FC, 10)))
+					}
+				} else {
+					ctx.GetStub().DelState(lastFcKey)
+				}
+			}
+		}
+	}
+
+	// BMU snapshot 재계산 — 무효화된 레코드가 snapshot의 lastBmuDataId였으면 최근 유효 레코드로 갱신
 	if record.PassportID != "" {
-		passportJSON, err := ctx.GetStub().GetState(record.PassportID)
-		if err == nil && passportJSON != nil {
-			var passport BatteryPassport
-			if json.Unmarshal(passportJSON, &passport) == nil && passport.LastBMUDataID == recordId {
-				// 최근 유효 BMU 레코드 조회
+		snapshotKey, _ := ctx.GetStub().CreateCompositeKey("snapshot", []string{record.PassportID})
+		snapshotJSON, err := ctx.GetStub().GetState(snapshotKey)
+		if err == nil && snapshotJSON != nil {
+			var snap BMUSnapshot
+			if json.Unmarshal(snapshotJSON, &snap) == nil && snap.LastBMUDataID == recordId {
 				reQuery := fmt.Sprintf(`{"selector":{"docType":"%s","passportId":"%s","status":"VALID"},"sort":[{"fc":"desc"}],"limit":1}`, docTypeBMURecord, record.PassportID)
 				reIter, err := ctx.GetStub().GetQueryResult(reQuery)
 				if err == nil {
@@ -2104,19 +2176,18 @@ func (c *PassportContract) InvalidateBMURecord(ctx contractapi.TransactionContex
 						entry, _ := reIter.Next()
 						var latestValid BMURecord
 						if json.Unmarshal(entry.Value, &latestValid) == nil {
-							passport.CurrentSOC = float64(latestValid.SOC)
-							passport.TotalDischargeCycles = int(latestValid.DischargeCycles)
-							passport.LastBMUDataID = latestValid.RecordID
+							snap.CurrentSOC = float64(latestValid.SOC)
+							snap.TotalDischargeCycles = int(latestValid.DischargeCycles)
+							snap.LastBMUDataID = latestValid.RecordID
 						}
 					} else {
-						// 유효 레코드 없음 — 초기화
-						passport.CurrentSOC = 0
-						passport.TotalDischargeCycles = 0
-						passport.LastBMUDataID = ""
+						snap.CurrentSOC = 0
+						snap.TotalDischargeCycles = 0
+						snap.LastBMUDataID = ""
 					}
-					passport.UpdatedAt = now
-					if pJSON, err := json.Marshal(passport); err == nil {
-						ctx.GetStub().PutState(record.PassportID, pJSON)
+					snap.UpdatedAt = now
+					if sJSON, err := json.Marshal(snap); err == nil {
+						ctx.GetStub().PutState(snapshotKey, sJSON)
 					}
 				}
 			}

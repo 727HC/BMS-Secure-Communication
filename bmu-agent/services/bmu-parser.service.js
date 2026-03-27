@@ -31,7 +31,6 @@ function parseRawPayload(hexString) {
 
   // Raw uint16 values — 체인코드에 그대로 저장, 프론트엔드에서 스케일링
   // soc_u16 / 655.35 = SOC %, temperature_u16 / 1310.7 = °C
-  const soc = socRaw;
   const temperature = tempRaw;
 
   // Cell voltages: 11 bytes at offset 14
@@ -47,6 +46,14 @@ function parseRawPayload(hexString) {
   const cellSocs = [];
   for (let i = 0; i < 11; i++) {
     cellSocs.push(+(buf.readUInt8(25 + i) / 255.0 * 100).toFixed(1));
+  }
+
+  // soc_u16 검증: cell_soc 평균과 10%p 이상 차이나면 cell_soc 평균으로 보정
+  const cellSocAvg = cellSocs.reduce((a, b) => a + b, 0) / cellSocs.length;
+  const socPct = socRaw / 655.35;
+  let soc = socRaw;
+  if (Math.abs(socPct - cellSocAvg) > 10) {
+    soc = Math.round(cellSocAvg * 655.35);
   }
 
   const timestampMs = buf.readUInt16LE(36);
