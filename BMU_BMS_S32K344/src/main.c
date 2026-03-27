@@ -58,6 +58,22 @@ extern "C" {
 /* randombytes() implementation for TweetNaCl — deterministic key from provisioned seed */
 static boolean g_seed_used = FALSE;
 
+static void BMU_HseGetRandom(uint8 *buf, uint32 len)
+{
+    uint8 ch = Hse_Ip_GetFreeChannel(HSE_MU_INSTANCE);
+    hseSrvDescriptor_t desc;
+    memset(&desc, 0, sizeof(desc));
+    desc.srvId = HSE_SRV_ID_GET_RANDOM_NUM;
+    desc.hseSrv.getRandomNumReq.rngClass        = HSE_RNG_CLASS_DRG3;
+    desc.hseSrv.getRandomNumReq.randomNumLength  = len;
+    desc.hseSrv.getRandomNumReq.pRandomNum       = (HOST_ADDR)buf;
+    Hse_Ip_ServiceRequest(HSE_MU_INSTANCE, ch,
+                           &(Hse_Ip_ReqType){
+                               .eReqType  = HSE_IP_REQTYPE_SYNC,
+                               .u32Timeout = HSE_TIMEOUT_TICKS
+                           }, &desc);
+}
+
 void randombytes(unsigned char *x, unsigned long long xlen)
 {
     if (!g_seed_used && xlen == 32U)
@@ -68,15 +84,8 @@ void randombytes(unsigned char *x, unsigned long long xlen)
     }
     else
     {
-        /* Subsequent calls — simple PRNG */
-        static uint32 rng = 0x12345678U;
-        for (unsigned long long i = 0; i < xlen; i++)
-        {
-            rng ^= (rng << 13);
-            rng ^= (rng >> 17);
-            rng ^= (rng << 5);
-            x[i] = (unsigned char)(rng & 0xFF);
-        }
+        /* Use HSE hardware TRNG for subsequent random bytes */
+        BMU_HseGetRandom((uint8 *)x, (uint32)xlen);
     }
 }
 
