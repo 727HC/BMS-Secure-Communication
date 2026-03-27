@@ -371,6 +371,8 @@ func (c *PassportContract) buildPassportQuery(ctx contractapi.TransactionContext
 	case mspEVManufacturer:
 		return fmt.Sprintf(`{"selector":{"docType":"%s","vin":{"$gt":""},"$or":[{"evBinderMsp":"%s"},{"evBinderMsp":""},{"evBinderMsp":{"$exists":false}}]}}`, docTypePassport, msp), nil
 	case mspService:
+		// CouchDB selector는 maintenanceLogs 내부의 orgMsp 매칭이 불가하므로
+		// list는 status 기반 필터, detail 접근은 checkPassportAccess에서 과거 이력까지 허용
 		return fmt.Sprintf(`{"selector":{"docType":"%s","status":{"$in":["MAINTENANCE","ANALYSIS"]}}}`, docTypePassport), nil
 	default:
 		return "", fmt.Errorf("unknown MSP: %s", msp)
