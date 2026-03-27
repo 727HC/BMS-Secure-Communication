@@ -1,0 +1,22 @@
+name: passport-network-caliper
+version: "2.0.0"
+caliper:
+  blockchain: fabric
+
+channels:
+  - channelName: passportchannel
+    contracts:
+      - id: passport-contract
+
+organizations:
+  - mspid: ManufacturerMSP
+    connectionProfile:
+      path: ../passport-network/organizations/peerOrganizations/manufacturer.battery.com/connection-manufacturer.json
+      discover: true
+    identities:
+      certificates:
+        - name: admin
+          clientPrivateKey:
+            path: KEYSTORE_PLACEHOLDER
+          clientSignedCert:
+            path: ../passport-network/organizations/peerOrganizations/manufacturer.battery.com/users/Admin@manufacturer.battery.com/msp/signcerts/cert.pem

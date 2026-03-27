@@ -146,11 +146,11 @@ Application: &ApplicationDefaults
 Orderer: &OrdererDefaults
   Addresses:
     - orderer.battery.com:7050
-  BatchTimeout: 2s
+  BatchTimeout: 0.5s
   BatchSize:
-    MaxMessageCount: 10
-    AbsoluteMaxBytes: 99 MB
-    PreferredMaxBytes: 512 KB
+    MaxMessageCount: 100
+    AbsoluteMaxBytes: 10 MB
+    PreferredMaxBytes: 2 MB
   Organizations:
   Policies:
     Readers:

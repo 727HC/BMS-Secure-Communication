@@ -287,9 +287,9 @@ const app = createApp({
       }
     });
 
-    // Register initial state (include initialProps for passport-detail refresh)
-    const initHash = initialProps.passportId
-      ? `#${currentPage.value}?passportId=${encodeURIComponent(initialProps.passportId)}`
+    // Register initial state (preserve full query string for tab persistence)
+    const initHash = hashQuery
+      ? `#${currentPage.value}?${hashQuery}`
       : `#${currentPage.value}`;
     history.replaceState({ page: currentPage.value, props: initialProps }, '', initHash);
 

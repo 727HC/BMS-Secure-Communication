@@ -68,13 +68,13 @@ if $SKIP_VON; then
     echo "=== [1/6] VON Network: SKIPPED ==="
 else
     echo "=== [1/6] Starting VON Network ==="
-    if docker ps --format '{{.Names}}' | grep -q 'von-node1'; then
+    if docker ps --format '{{.Names}}' | grep -q 'von.*node'; then
         echo "VON Network already running, skipping."
     else
         cd "$VON_DIR"
-        docker compose up -d 2>&1 | tee "$LOG_DIR/von.log"
+        ./manage start 2>&1 | tee "$LOG_DIR/von.log"
         echo "Waiting for VON webserver..."
-        for i in $(seq 1 6); do
+        for i in $(seq 1 12); do
             if curl -s "${VON_URL}/status" 2>/dev/null | grep -q "ok"; then
                 echo "VON Network ready."
                 break

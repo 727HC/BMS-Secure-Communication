@@ -12,22 +12,37 @@ const log = createLogger('bmu');
 
 // P0-3: unsigned BMU 완전 거부 (임베디드 확인: BMU는 100% 서명 포함)
 
-// P1-8: DID → passportId cache with TTL
+// P1-8: DID → passportId cache with TTL + Promise deduplication
 const CACHE_TTL = DID_CACHE_TTL_MS;
 const didPassportCache = new Map();
+const didPassportPending = new Map();
 
 async function resolvePassportId(did) {
   const cached = didPassportCache.get(did);
   if (cached && Date.now() - cached.ts < CACHE_TTL) {
     return cached.passportId;
   }
-  const result = await fabricService.evaluateTransaction('QueryBatteryByDID', [did]);
-  const passport = JSON.parse(result.toString());
-  if (passport && passport.passportId) {
-    didPassportCache.set(did, { passportId: passport.passportId, ts: Date.now() });
-    return passport.passportId;
+
+  if (didPassportPending.has(did)) {
+    return didPassportPending.get(did);
   }
-  return null;
+
+  const promise = (async () => {
+    try {
+      const result = await fabricService.evaluateTransaction('QueryBatteryByDID', [did]);
+      const passport = JSON.parse(result.toString());
+      if (passport && passport.passportId) {
+        didPassportCache.set(did, { passportId: passport.passportId, ts: Date.now() });
+        return passport.passportId;
+      }
+      return null;
+    } finally {
+      didPassportPending.delete(did);
+    }
+  })();
+
+  didPassportPending.set(did, promise);
+  return promise;
 }
 
 // POST /api/bmu/data — Receive BMU data
