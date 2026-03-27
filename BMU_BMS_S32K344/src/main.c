@@ -130,7 +130,12 @@ static uint32 g_eddsa_signRLen = EDDSA_SIGN_SIZE;
 static uint32 g_eddsa_signSLen = EDDSA_SIGN_SIZE;
 static uint8 g_eddsa_pubkey[EDDSA_PUBKEY_SIZE];  /* Ed25519 public key */
 volatile boolean g_eddsaReady = FALSE;
+volatile boolean g_hseEddsaReady = FALSE;  /* TRUE = HSE HW signing available */
 volatile uint32 g_eddsaSignCount = 0U;
+
+/* HSE EdDSA key import buffers (must be in SRAM, not stack) */
+static uint8 g_hse_ed_pubkey[EDDSA_KEY_SIZE];
+static uint8 g_hse_ed_privkey[EDDSA_KEY_SIZE];
 
 /* HSE DMA-safe input buffers (global BSS, not FreeRTOS task stack) */
 static uint8 g_dec_input_uid[AES_KEY_SIZE];
@@ -721,24 +726,56 @@ static void BMU_SendResyncRequest(void)
  *  CAN-FD RX Re-arm
  *============================================================================*/
 /*============================================================================
- *  EDDSA (Ed25519) Key Generation and Signing
+ *  EDDSA (Ed25519) — Byte swap + Key Import + Signing
  *============================================================================*/
-static hseSrvResponse_t BMU_GenerateEddsaKey(void)
+static void SwapArrayBytes(uint8 *buf, uint32 len)
+{
+    uint32 start = 0U;
+    uint32 end   = len - 1U;
+    uint8  tmp;
+    while (start < end)
+    {
+        tmp        = buf[start];
+        buf[start] = buf[end];
+        buf[end]   = tmp;
+        start++;
+        end--;
+    }
+}
+
+static hseSrvResponse_t BMU_ImportEddsaKey(const uint8 *pubKey, const uint8 *privKey)
 {
     uint8 ch = Hse_Ip_GetFreeChannel(HSE_MU_INSTANCE);
     hseSrvDescriptor_t *pDesc = &g_hse_srv_desc[ch];
 
-    memset(pDesc, 0, sizeof(hseSrvDescriptor_t));
-    pDesc->srvId = HSE_SRV_ID_KEY_GENERATE;
+    /* Copy to DMA-safe SRAM buffers and swap to big-endian for HSE */
+    memcpy(g_hse_ed_pubkey,  pubKey,  EDDSA_KEY_SIZE);
+    memcpy(g_hse_ed_privkey, privKey, EDDSA_KEY_SIZE);
+    SwapArrayBytes(g_hse_ed_pubkey,  EDDSA_KEY_SIZE);
+    SwapArrayBytes(g_hse_ed_privkey, EDDSA_KEY_SIZE);
 
-    hseKeyGenerateSrv_t *pGen = &pDesc->hseSrv.keyGenReq;
-    pGen->keyInfo.keyType    = HSE_KEY_TYPE_ECC_PAIR;
-    pGen->keyInfo.keyFlags   = HSE_KF_USAGE_SIGN | HSE_KF_USAGE_VERIFY | HSE_KF_ACCESS_EXPORTABLE;
-    pGen->keyInfo.keyBitLen  = HSE_KEY256_BITS;
-    pGen->keyInfo.specific.eccCurveId = HSE_EC_25519_ED25519;
-    pGen->keyGenScheme       = HSE_KEY_GEN_ECC_KEY_PAIR;
-    pGen->targetKeyHandle    = HSE_ECC_KEY_HANDLE;
-    pGen->sch.eccKey.pPubKey = (HOST_ADDR)g_eddsa_pubkey;
+    memset(pDesc, 0, sizeof(hseSrvDescriptor_t));
+    pDesc->srvId = HSE_SRV_ID_IMPORT_KEY;
+
+    hseImportKeySrv_t *pImp = &pDesc->hseSrv.importKeyReq;
+
+    /* Key info */
+    static hseKeyInfo_t edKeyInfo;
+    memset(&edKeyInfo, 0, sizeof(edKeyInfo));
+    edKeyInfo.keyType                = HSE_KEY_TYPE_ECC_PAIR;
+    edKeyInfo.keyFlags               = HSE_KF_USAGE_SIGN | HSE_KF_USAGE_VERIFY;
+    edKeyInfo.keyBitLen              = HSE_KEY256_BITS;
+    edKeyInfo.specific.eccCurveId    = HSE_EC_25519_ED25519;
+
+    pImp->pKeyInfo                   = (HOST_ADDR)&edKeyInfo;
+    pImp->targetKeyHandle            = HSE_ECC_KEY_HANDLE;
+    pImp->pKey[0]                    = (HOST_ADDR)g_hse_ed_pubkey;
+    pImp->keyLen[0]                  = EDDSA_KEY_SIZE;
+    pImp->pKey[2]                    = (HOST_ADDR)g_hse_ed_privkey;
+    pImp->keyLen[2]                  = EDDSA_KEY_SIZE;
+    pImp->cipher.cipherKeyHandle     = HSE_INVALID_KEY_HANDLE;
+    pImp->keyContainer.authKeyHandle = HSE_INVALID_KEY_HANDLE;
+    pImp->keyFormat.eccKeyFormat     = HSE_KEY_FORMAT_ECC_PUB_RAW;
 
     return Hse_Ip_ServiceRequest(HSE_MU_INSTANCE, ch,
                                  &(Hse_Ip_ReqType){
@@ -908,12 +945,28 @@ int main(void)
         UART_SendString("\r\n");
 
         #ifdef BMS_MODE_EDDSA
-        /* Software Ed25519 via TweetNaCl (HSE EdDSA corrupts HSE state) */
+        /* Ed25519: generate key pair with TweetNaCl, then try HSE HW import */
         {
             crypto_sign_keypair(g_sw_ed25519_pk, g_sw_ed25519_sk);
             g_eddsaReady = TRUE;
+
+            /* Try importing into HSE for hardware-accelerated signing */
+            /* TweetNaCl sk[0..31] = seed (private key for HSE) */
+            hseSrvResponse_t edResp = BMU_ImportEddsaKey(g_sw_ed25519_pk, g_sw_ed25519_sk);
+
             UART_Lock();
-            UART_SendString("[SW-EdDSA] PK=");
+            if (edResp == HSE_SRV_RSP_OK)
+            {
+                g_hseEddsaReady = TRUE;
+                UART_SendString("[HSE-EdDSA] Import OK, PK=");
+            }
+            else
+            {
+                UART_SendString("[SW-EdDSA] HSE import failed 0x");
+                { static const char hx[]="0123456789ABCDEF"; uint32 v=(uint32)edResp;
+                  int i; for(i=28;i>=0;i-=4) UART_SendChar(hx[(v>>i)&0xF]); }
+                UART_SendString(", fallback SW. PK=");
+            }
             UART_SendHex(g_sw_ed25519_pk, 32);
             UART_SendString("\r\n");
             UART_Unlock();
@@ -1189,15 +1242,34 @@ static void BMU_DataProcessTask(void *pvParameters)
             #ifdef BMS_MODE_EDDSA
             if (g_eddsaReady)
             {
-                /* Software Ed25519 signing via TweetNaCl — measure time */
                 TickType_t sign_start = xTaskGetTickCount();
-                uint8 sm[BATTERY_DATA_SIZE + 64];
-                unsigned long long smlen;
-                crypto_sign(sm, &smlen, item.data, BATTERY_DATA_SIZE, g_sw_ed25519_sk);
+                boolean signOk = FALSE;
+
+                if (g_hseEddsaReady)
+                {
+                    /* HSE hardware Ed25519 signing */
+                    hseSrvResponse_t sr = BMU_EddsaSign(item.data, BATTERY_DATA_SIZE);
+                    if (sr == HSE_SRV_RSP_OK)
+                    {
+                        /* HSE returns R,S in big-endian — swap back to little-endian */
+                        SwapArrayBytes(g_eddsa_signR, EDDSA_SIGN_SIZE);
+                        SwapArrayBytes(g_eddsa_signS, EDDSA_SIGN_SIZE);
+                        signOk = TRUE;
+                    }
+                }
+
+                if (!signOk)
+                {
+                    /* Software Ed25519 fallback via TweetNaCl */
+                    uint8 sm[BATTERY_DATA_SIZE + 64];
+                    unsigned long long smlen;
+                    crypto_sign(sm, &smlen, item.data, BATTERY_DATA_SIZE, g_sw_ed25519_sk);
+                    memcpy(g_eddsa_signR, &sm[0],  EDDSA_SIGN_SIZE);
+                    memcpy(g_eddsa_signS, &sm[32], EDDSA_SIGN_SIZE);
+                    signOk = TRUE;
+                }
+
                 g_perf_eddsa_ms = (uint32)(xTaskGetTickCount() - sign_start);
-                /* sm[0..63] = signature (R||S), sm[64..] = original data */
-                memcpy(g_eddsa_signR, &sm[0],  EDDSA_SIGN_SIZE);
-                memcpy(g_eddsa_signS, &sm[32], EDDSA_SIGN_SIZE);
                 g_eddsaSignCount++;
 
                 UART_Lock();

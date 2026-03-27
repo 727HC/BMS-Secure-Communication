@@ -55,7 +55,8 @@ extern "C" {
 
 /* EDDSA (Ed25519) sizes */
 #define EDDSA_SIGN_SIZE             32U     /* Ed25519 signature R or S size */
-#define EDDSA_PUBKEY_SIZE           64U     /* Ed25519 public key size       */
+#define EDDSA_KEY_SIZE              32U     /* Ed25519 key size (pub or priv) */
+#define EDDSA_PUBKEY_SIZE           64U     /* TweetNaCl pk buffer size       */
 #define FC_SIZE                     4U
 #define UID_SIZE                    16U
 #define SEED_SIZE                   16U
