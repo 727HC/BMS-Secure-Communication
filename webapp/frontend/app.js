@@ -16,7 +16,14 @@ function createApi(auth) {
       opts.body = JSON.stringify(body);
     }
     const res = await fetch(`${API_BASE}${path}`, opts);
-    const data = await res.json();
+    const contentType = res.headers.get('content-type') || '';
+    let data;
+    if (contentType.includes('application/json')) {
+      data = await res.json();
+    } else {
+      const text = await res.text();
+      throw new Error(`HTTP ${res.status}: ${text.slice(0, 200)}`);
+    }
     if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
     return data;
   }
@@ -165,7 +172,7 @@ const app = createApp({
       }
     }
     if (auth.value.token) checkFabricStatus();
-    setInterval(() => { if (auth.value.token) checkFabricStatus(); }, 30000);
+    const fabricInterval = setInterval(() => { if (auth.value.token) checkFabricStatus(); }, 30000);
 
     // Notification badges — pending request counts per route
     const navBadges = ref({});
@@ -176,10 +183,8 @@ const app = createApp({
         const msp = auth.value.orgMsp;
         const badges = {};
         if (msp === MSP.SERVICE) {
-          const maintCount = list.filter(p => p.status === 'MAINTENANCE').length;
-          const analysisCount = list.filter(p => p.status === 'ANALYSIS').length;
-          if (maintCount > 0) badges['maintenance'] = maintCount;
-          if (analysisCount > 0) badges['maintenance'] = (badges['maintenance'] || 0) + analysisCount;
+          const serviceCount = list.filter(p => p.status === 'MAINTENANCE' || p.status === 'ANALYSIS').length;
+          if (serviceCount > 0) badges['maintenance'] = serviceCount;
         }
         if (msp === MSP.REGULATOR) {
           const recycleCount = list.filter(p => p.recycleAvailable && p.status !== 'DISPOSED').length;
@@ -193,7 +198,7 @@ const app = createApp({
       } catch (e) { console.warn('fetchNavBadges error:', e.message); }
     }
     if (auth.value.token) fetchNavBadges();
-    setInterval(() => { if (auth.value.token) fetchNavBadges(); }, 15000);
+    const badgeInterval = setInterval(() => { if (auth.value.token) fetchNavBadges(); }, 15000);
 
     const orgLabel = computed(() => MSP_LABELS[auth.value.orgMsp] || auth.value.orgMsp);
 
@@ -282,7 +287,12 @@ const app = createApp({
         const hash = window.location.hash.replace('#', '');
         const [pg, q] = hash.split('?');
         const page = PAGE_COMPONENTS[pg] ? pg : (auth.value.token ? 'dashboard' : 'login');
-        const props = Object.fromEntries(new URLSearchParams(q || ''));
+        const raw = Object.fromEntries(new URLSearchParams(q || ''));
+        const ALLOWED_PROPS = ['passportId', 'tab', 'materialId', 'recordId'];
+        const props = {};
+        for (const key of ALLOWED_PROPS) {
+          if (raw[key]) props[key] = raw[key];
+        }
         navigate(page, props, true);
       }
     });
@@ -309,6 +319,8 @@ const app = createApp({
       localStorage.removeItem('bp_token');
       localStorage.removeItem('bp_userId');
       localStorage.removeItem('bp_orgMsp');
+      clearInterval(fabricInterval);
+      clearInterval(badgeInterval);
       navigate('login');
     }
 
