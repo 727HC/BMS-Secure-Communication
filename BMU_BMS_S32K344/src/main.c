@@ -67,11 +67,16 @@ static void BMU_HseGetRandom(uint8 *buf, uint32 len)
     desc.hseSrv.getRandomNumReq.rngClass        = HSE_RNG_CLASS_DRG3;
     desc.hseSrv.getRandomNumReq.randomNumLength  = len;
     desc.hseSrv.getRandomNumReq.pRandomNum       = (HOST_ADDR)buf;
-    Hse_Ip_ServiceRequest(HSE_MU_INSTANCE, ch,
+    hseSrvResponse_t resp = Hse_Ip_ServiceRequest(HSE_MU_INSTANCE, ch,
                            &(Hse_Ip_ReqType){
                                .eReqType  = HSE_IP_REQTYPE_SYNC,
                                .u32Timeout = HSE_TIMEOUT_TICKS
                            }, &desc);
+    if (resp != HSE_SRV_RSP_OK)
+    {
+        /* HSE RNG failed — zeroize buffer to avoid using uninitialized data */
+        memset(buf, 0, len);
+    }
 }
 
 void randombytes(unsigned char *x, unsigned long long xlen)
