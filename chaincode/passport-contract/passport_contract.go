@@ -339,17 +339,12 @@ func (c *PassportContract) checkPassportAccess(ctx contractapi.TransactionContex
 			return nil // 자기가 만든 배터리만
 		}
 	case mspEVManufacturer:
-		if passport.VIN != "" && (passport.EvBinderMSP == msp || passport.EvBinderMSP == "") {
-			return nil // 자기 조직이 바인딩한 배터리만 (레거시 데이터는 EvBinderMSP 없으므로 허용)
+		if passport.VIN != "" && passport.EvBinderMSP == msp {
+			return nil // 자기 조직이 바인딩한 배터리만
 		}
 	case mspService:
 		if passport.Status == "MAINTENANCE" || passport.Status == "ANALYSIS" {
-			return nil // 정비 의뢰된 배터리
-		}
-		for _, log := range passport.MaintenanceLogs {
-			if log.OrgMSP == msp {
-				return nil // 과거 정비 이력이 있는 배터리
-			}
+			return nil // 현재 정비/분석 의뢰된 배터리만 접근 허용
 		}
 	}
 
@@ -369,10 +364,9 @@ func (c *PassportContract) buildPassportQuery(ctx contractapi.TransactionContext
 	case mspManufacturer:
 		return fmt.Sprintf(`{"selector":{"docType":"%s","creatorMsp":"%s"}}`, docTypePassport, msp), nil
 	case mspEVManufacturer:
-		return fmt.Sprintf(`{"selector":{"docType":"%s","vin":{"$gt":""},"$or":[{"evBinderMsp":"%s"},{"evBinderMsp":""},{"evBinderMsp":{"$exists":false}}]}}`, docTypePassport, msp), nil
+		return fmt.Sprintf(`{"selector":{"docType":"%s","vin":{"$gt":""},"evBinderMsp":"%s"}}`, docTypePassport, msp), nil
 	case mspService:
-		// CouchDB selector는 maintenanceLogs 내부의 orgMsp 매칭이 불가하므로
-		// list는 status 기반 필터, detail 접근은 checkPassportAccess에서 과거 이력까지 허용
+		// 현재 정비/분석 의뢰 상태인 배터리만 조회 (checkPassportAccess와 일치)
 		return fmt.Sprintf(`{"selector":{"docType":"%s","status":{"$in":["MAINTENANCE","ANALYSIS"]}}}`, docTypePassport), nil
 	default:
 		return "", fmt.Errorf("unknown MSP: %s", msp)
