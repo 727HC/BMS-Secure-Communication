@@ -52,10 +52,10 @@ peer:
         enabled: true
         # endorsementTimeout is the duration the gateway waits for a response
         # from other endorsing peers before returning a timeout error to the client.
-        endorsementTimeout: 30s
+        endorsementTimeout: 10s
         # dialTimeout is the duration the gateway waits for a connection
         # to other network nodes.
-        dialTimeout: 2m
+        dialTimeout: 10s
 
 
     # Keepalive settings for peer server and clients
@@ -690,7 +690,7 @@ ledger:
        # cache. Note that CacheSize needs to be a multiple of 32 MB. If it is not a multiple
        # of 32 MB, the peer would round the size to the next multiple of 32 MB.
        # To disable the cache, 0 MB needs to be assigned to the cacheSize.
-       cacheSize: 64
+       cacheSize: 128
 
   history:
     # enableHistoryDatabase - options are true or false
