@@ -7,9 +7,9 @@ const { requireMSP } = require('../middleware/rbac');
 const fabricService = require('../services/fabric.service');
 const { MSP } = require('../config/constants');
 
-// Vehicle image upload config — static tree 밖에 저장하여 직접 접근 차단
+// Vehicle image upload config
 const fs = require('fs');
-const uploadDir = path.join(__dirname, '..', 'data', 'vehicle-images');
+const uploadDir = path.join(__dirname, '..', '..', 'webapp', 'frontend', 'uploads', 'vehicles');
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
 }
@@ -123,26 +123,20 @@ router.post('/:id/vehicle-image', authenticateToken, requireMSP(MSP.EV_MANUFACTU
   if (!req.file) {
     return res.status(400).json({ error: 'image file required' });
   }
-  res.json({ success: true, filename: req.file.filename, path: `/api/passports/${req.params.id}/vehicle-image` });
+  res.json({ success: true, filename: req.file.filename, path: '/uploads/vehicles/' + req.file.filename });
 });
 
-// GET /api/passports/:id/vehicle-image — Auth + passport 접근 권한 확인 후 이미지 스트리밍
-router.get('/:id/vehicle-image', authenticateToken, async (req, res) => {
-  // passport 접근 권한 확인
-  try {
-    await fabricService.evaluateTransaction('QueryPassport', [req.params.id], req.user);
-  } catch (err) {
-    return res.status(403).json({ error: 'passport access denied' });
-  }
-
+// GET /api/passports/:id/vehicle-image — Check if image exists
+router.get('/:id/vehicle-image', (req, res) => {
+  const fs = require('fs');
   const exts = ['.jpg', '.jpeg', '.png', '.webp', '.svg'];
   for (const ext of exts) {
     const filePath = path.join(uploadDir, req.params.id + ext);
     if (fs.existsSync(filePath)) {
-      return res.sendFile(filePath);
+      return res.json({ exists: true, path: '/uploads/vehicles/' + req.params.id + ext });
     }
   }
-  res.status(404).json({ exists: false });
+  res.json({ exists: false });
 });
 
 // POST /api/passports/:id/materials — Link raw materials to passport
