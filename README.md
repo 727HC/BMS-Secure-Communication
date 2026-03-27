@@ -474,6 +474,20 @@ BMU UART (COM4, 28800 baud)에서 확인할 수 있는 정상 동작 출력:
 
 ---
 
+## 운영 보안 권고
+
+`/api/bmu/data` 엔드포인트는 BMU 장비의 M2M 데이터 수신 경로로, 현재 Ed25519 서명 검증 + IP 기반 rate limit으로 보호됩니다. 운영/실증 환경 전환 시 아래 추가 보호를 권고합니다:
+
+| 항목 | 현재 (시제품) | 운영 권고 |
+|------|-------------|-----------|
+| 인증 | Ed25519 서명 검증 | mTLS (클라이언트 인증서) 추가 |
+| 네트워크 | 공개 HTTP | 내부망 제한 또는 VPN, reverse proxy 뒤 배치 |
+| Rate limit | 프로세스 in-memory Map | Redis 또는 API Gateway 레벨 rate limit |
+| DID fallback | dev에서만 `DEFAULT_BMU_DID` 허용 | production에서 자동 비활성화 (`NODE_ENV=production`) |
+| Fabric 연결 | 실패 시 서버만 기동 (dev) | `REQUIRE_FABRIC=true` 설정 시 즉시 종료 |
+
+---
+
 ## 주의사항
 
 - `secrets.h` 파일은 **절대 VCS(git)에 커밋하지 마십시오**. `.gitignore`에 이미 등록되어 있습니다.
