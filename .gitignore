@@ -4,6 +4,9 @@
 config.env
 !config.env.example
 
+# Agent runtime data
+bmu-agent/data/
+
 # Build outputs
 **/*.o
 **/*.d
