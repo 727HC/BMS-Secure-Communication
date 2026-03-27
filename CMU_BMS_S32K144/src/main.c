@@ -316,7 +316,7 @@ static Csec_Ip_ErrorCodeType CMU_DeriveSessionKey(const uint8 *uid,
 }
 
 /*============================================================================
- *  UART Data Reception (framed: [0xAA][0x55][LEN][DATA...][XOR])
+ *  UART Data Reception (framed: [0xAA][0x55][LEN][DATA...][CRC-8])
  *============================================================================*/
 static boolean CMU_ParseUartFrame(const uint8 *frame, uint32 frame_len,
                                    uint8 *data_out)
@@ -326,7 +326,7 @@ static boolean CMU_ParseUartFrame(const uint8 *frame, uint32 frame_len,
     if (frame[1] != UART_SYNC_1)     return FALSE;
     if (frame[2] != BATTERY_DATA_SIZE) return FALSE;
 
-    /* Verify XOR checksum */
+    /* Verify CRC-8/MAXIM checksum */
     uint8 expected_cs = BMS_CalcChecksum(&frame[3], BATTERY_DATA_SIZE);
     if (frame[3 + BATTERY_DATA_SIZE] != expected_cs) return FALSE;
 
@@ -861,9 +861,10 @@ static void CMU_CanTxTask(void *pvParameters)
         {
             tx_data = latestData;
         }
+#ifdef CMU_UART_SIM_FALLBACK
         else
         {
-            /* Fallback: simulation data when no UART data */
+            /* Fallback: simulation data when no UART data (dev/test only) */
             static BatteryData_t simData;
             memset(&simData, 0, sizeof(simData));
             simData.current_A        = SIM_CURRENT_BASE + (float)(txCount % SIM_CURRENT_MOD) * SIM_CURRENT_STEP;
@@ -881,6 +882,15 @@ static void CMU_CanTxTask(void *pvParameters)
             }
             tx_data = (const uint8 *)&simData;
         }
+#else
+        else
+        {
+            /* No UART data and no fallback — skip this cycle */
+            txCount++;
+            vTaskDelay(pdMS_TO_TICKS(TX_PERIOD_MS));
+            continue;
+        }
+#endif
 
         xSemaphoreTake(csecMutex, portMAX_DELAY);
         boolean txResult = CMU_SendSecuredData(tx_data);

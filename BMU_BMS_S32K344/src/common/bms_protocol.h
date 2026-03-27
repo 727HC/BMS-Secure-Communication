@@ -183,7 +183,7 @@ typedef struct {
 
 /*============================================================================
  *  UART Framing
- *  Frame: [0xAA][0x55][LEN][DATA...][XOR_CHECKSUM]
+ *  Frame: [0xAA][0x55][LEN][DATA...][CRC-8]
  *============================================================================*/
 #define UART_SYNC_0                 0xAAU
 #define UART_SYNC_1                 0x55U
@@ -287,7 +287,7 @@ static inline void BMS_BuildCmacInput(uint8_t *output,
 }
 
 /*============================================================================
- *  Utility: UART frame checksum (XOR of all data bytes)
+ *  Utility: UART frame checksum (CRC-8/MAXIM, polynomial 0x31)
  *============================================================================*/
 static inline uint8_t BMS_CalcChecksum(const uint8_t *data, uint32_t len)
 {
