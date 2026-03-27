@@ -109,8 +109,17 @@ router.put('/:id/bind', authenticateToken, requireMSP(MSP.EV_MANUFACTURER), asyn
   }
 });
 
-// POST /api/passports/:id/vehicle-image — Upload vehicle image
-router.post('/:id/vehicle-image', authenticateToken, requireMSP(MSP.EV_MANUFACTURER, MSP.MANUFACTURER), upload.single('image'), (req, res) => {
+// POST /api/passports/:id/vehicle-image — Upload vehicle image (ownership verified)
+router.post('/:id/vehicle-image', authenticateToken, requireMSP(MSP.EV_MANUFACTURER, MSP.MANUFACTURER), async (req, res, next) => {
+  // Verify passport exists and caller has access
+  try {
+    const result = await fabricService.evaluateTransaction('QueryPassport', [req.params.id], req.user);
+    if (!result) return res.status(404).json({ error: 'passport not found' });
+    next();
+  } catch (err) {
+    return res.status(403).json({ error: 'passport access denied: ' + err.message });
+  }
+}, upload.single('image'), (req, res) => {
   if (!req.file) {
     return res.status(400).json({ error: 'image file required' });
   }
