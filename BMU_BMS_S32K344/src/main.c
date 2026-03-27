@@ -48,24 +48,22 @@ extern "C" {
 /* Board-specific hardware configuration */
 #include "bmu_board.h"
 
+/* Pre-Shared Key + EdDSA seed — separated into secrets.h (exclude from VCS) */
+#include "common/secrets.h"
+
 #ifdef BMS_MODE_EDDSA
 /* Software Ed25519 via TweetNaCl (HSE ECC catalog unavailable on this board) */
 #include "tweetnacl.h"
 
-/* randombytes() implementation for TweetNaCl — fixed seed for deterministic keys */
-/* Fixed seed matching blockchain DID registration */
-static const uint8 g_bmu_ed25519_seed[32] = {
-    'B','M','U','D','e','v','i','c','e','0','1','S','e','c','u','r',
-    'e','C','o','m','m','0','0','0','0','0','0','0','0','0','0','1'
-};
+/* randombytes() implementation for TweetNaCl — deterministic key from provisioned seed */
 static boolean g_seed_used = FALSE;
 
 void randombytes(unsigned char *x, unsigned long long xlen)
 {
     if (!g_seed_used && xlen == 32U)
     {
-        /* First call from crypto_sign_keypair — use fixed DID seed */
-        memcpy(x, g_bmu_ed25519_seed, 32U);
+        /* First call from crypto_sign_keypair — use provisioned DID seed from secrets.h */
+        memcpy(x, EdDSA_Seed, EDDSA_KEY_SIZE);
         g_seed_used = TRUE;
     }
     else
@@ -90,14 +88,15 @@ static uint8 g_sw_ed25519_sk[64];  /* secret key (seed + pk) */
 /*============================================================================
  *  Configuration
  *============================================================================*/
-
-/* Pre-Shared Key — separated into secrets.h (exclude from VCS) */
-#include "common/secrets.h"
 static uint8 CMU_UidWhitelist[CMU_WHITELIST_SIZE][UID_SIZE] = {0};
 static uint8 g_whitelistCount = 0U;  /* Number of registered UIDs */
-/* FALSE = discovery mode (auto-register first CMU_WHITELIST_SIZE UIDs)
-   TRUE  = enforcement mode (reject unknown UIDs) */
+/* Discovery mode: auto-register first CMU_WHITELIST_SIZE UIDs (dev only)
+   Enforcement mode: reject unknown UIDs (production default) */
+#ifdef BMS_WHITELIST_DISCOVERY
 static boolean g_whitelistEnforced = FALSE;
+#else
+static boolean g_whitelistEnforced = TRUE;
+#endif
 volatile uint8 g_lastUid[UID_SIZE];  /* Last received UID (visible in debugger) */
 
 
