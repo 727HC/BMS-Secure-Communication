@@ -1,0 +1,25 @@
+test:
+  name: Battery Passport TPS Benchmark
+  description: KPI measurement - Write 150+ TPS, Read 1500+ TPS
+  workers:
+    number: 10
+  rounds:
+    - label: read-passport
+      description: Single passport query (GetState) - Target 1500+ TPS
+      txNumber: 5000
+      rateControl:
+        type: fixed-rate
+        opts:
+          tps: 2000
+      workload:
+        module: workloads/queryPassport.js
+
+    - label: write-bmu-data
+      description: RecordBMUData write - Target 150+ TPS
+      txNumber: 3000
+      rateControl:
+        type: fixed-rate
+        opts:
+          tps: 200
+      workload:
+        module: workloads/recordBMUData.js
