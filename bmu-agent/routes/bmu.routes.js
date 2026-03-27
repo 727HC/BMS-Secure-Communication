@@ -104,8 +104,7 @@ router.post('/data', bmuRateLimit, async (req, res) => {
       log.warn('DID->passport lookup failed', { did, error: err.message });
     }
 
-    const didShort = crypto.createHash('sha256').update(did).digest('hex').slice(0, 8);
-    const recordId = `BMU-${Date.now()}-${didShort}-${parsed.freshnessCounter}`;
+    const recordId = `BMU-${crypto.randomUUID()}`;
     const timestamp = new Date().toISOString();
 
     // BMU 데이터는 제조사 admin으로 기록 (M2M 통신)
