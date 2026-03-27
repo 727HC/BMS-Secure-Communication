@@ -18,6 +18,8 @@ source "$BMS_DIR/config.env"
 
 export PATH="$TOOLCHAIN_PATH:$MAKE_PATH:$PATH"
 LOG_DIR="$BMS_DIR/logs"
+# Dev builds use whitelist discovery mode; production omits this flag
+WHITELIST_FLAG="-DBMS_WHITELIST_DISCOVERY"
 mkdir -p "$LOG_DIR"
 
 PIDS=()
@@ -40,12 +42,12 @@ do_build_flash() {
 
     echo "  Building BMU..."
     cd "$BMS_DIR/BMU_BMS_S32K344/Debug_FLASH"
-    make -j8 all CFLAGS_EXTRA="-D${BMS_MODE}" 2>&1 | tee "$LOG_DIR/build_bmu.log"
+    make -j8 all CFLAGS_EXTRA="-D${BMS_MODE} ${WHITELIST_FLAG}" 2>&1 | tee "$LOG_DIR/build_bmu.log"
     echo "  BMU OK"
 
     echo "  Building CMU..."
     cd "$BMS_DIR/CMU_BMS_S32K144/Debug_FLASH"
-    make -j8 all CFLAGS_EXTRA="-D${BMS_MODE}" 2>&1 | tee "$LOG_DIR/build_cmu.log"
+    make -j8 all CFLAGS_EXTRA="-D${BMS_MODE} ${WHITELIST_FLAG}" 2>&1 | tee "$LOG_DIR/build_cmu.log"
     echo "  CMU OK"
 
     echo ""
