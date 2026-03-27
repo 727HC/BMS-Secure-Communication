@@ -2,7 +2,7 @@
 
 const { WorkloadModuleBase } = require('@hyperledger/caliper-core');
 
-const NUM_PASSPORTS = 50;
+const NUM_PASSPORTS = parseInt(process.env.NUM_PASSPORTS || '50', 10);
 
 class QueryPassportWorkload extends WorkloadModuleBase {
     constructor() {
@@ -13,42 +13,9 @@ class QueryPassportWorkload extends WorkloadModuleBase {
     async initializeWorkloadModule(workerIndex, totalWorkers, roundIndex, roundArguments, sutAdapter, sutContext) {
         await super.initializeWorkloadModule(workerIndex, totalWorkers, roundIndex, roundArguments, sutAdapter, sutContext);
 
-        // Worker 0 creates passports, others wait
-        if (workerIndex === 0) {
-            for (let i = 0; i < NUM_PASSPORTS; i++) {
-                const id = `PASSPORT-CALIPER-${String(i).padStart(3, '0')}`;
-                const did = `did-caliper-${String(i).padStart(3, '0')}`;
-                this.passportIds.push(id);
-
-                const args = {
-                    contractId: 'passport-contract',
-                    contractFunction: 'CreateBatteryPassport',
-                    contractArguments: [
-                        id, `BATTERY-${id}`, did,
-                        'BenchModel', `SN-${i}`,
-                        'BenchMfg', 'KR',
-                        'BenchCell', 'KR',
-                        '2026-01-01', 'Prismatic', 'NMC',
-                        '96', '450', '77',
-                        '172', '200', '3000',
-                        '280', '20',
-                        '1'
-                    ],
-                    readOnly: false
-                };
-
-                try {
-                    await this.sutAdapter.sendRequests(args);
-                } catch (e) {
-                    // Passport may already exist
-                }
-            }
-        }
-
-        // All workers build passport ID list
-        this.passportIds = [];
+        // Build passport ID list (passports already created by write round)
         for (let i = 0; i < NUM_PASSPORTS; i++) {
-            this.passportIds.push(`PASSPORT-CALIPER-${String(i).padStart(3, '0')}`);
+            this.passportIds.push(`PASSPORT-CALIPER-${String(i).padStart(4, '0')}`);
         }
     }
 
