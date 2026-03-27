@@ -116,6 +116,7 @@ type BatteryPassport struct {
 	SerialNumber           string `json:"serialNumber"`
 	EVManufacturer         string `json:"evManufacturer"`
 	EVAssemblyCountry      string `json:"evAssemblyCountry"`
+	EvBinderMSP            string `json:"evBinderMsp,omitempty"`
 	ManufacturerName       string `json:"manufacturerName"`
 	ManufactureCountry     string `json:"manufactureCountry"`
 	CellManufacturer       string `json:"cellManufacturer"`
@@ -338,8 +339,8 @@ func (c *PassportContract) checkPassportAccess(ctx contractapi.TransactionContex
 			return nil // 자기가 만든 배터리만
 		}
 	case mspEVManufacturer:
-		if passport.VIN != "" {
-			return nil // 차량에 바인딩된 배터리만
+		if passport.VIN != "" && (passport.EvBinderMSP == msp || passport.EvBinderMSP == "") {
+			return nil // 자기 조직이 바인딩한 배터리만 (레거시 데이터는 EvBinderMSP 없으므로 허용)
 		}
 	case mspService:
 		if passport.Status == "MAINTENANCE" || passport.Status == "ANALYSIS" {
@@ -368,7 +369,7 @@ func (c *PassportContract) buildPassportQuery(ctx contractapi.TransactionContext
 	case mspManufacturer:
 		return fmt.Sprintf(`{"selector":{"docType":"%s","creatorMsp":"%s"}}`, docTypePassport, msp), nil
 	case mspEVManufacturer:
-		return fmt.Sprintf(`{"selector":{"docType":"%s","vin":{"$gt":""}}}`, docTypePassport), nil
+		return fmt.Sprintf(`{"selector":{"docType":"%s","vin":{"$gt":""},"$or":[{"evBinderMsp":"%s"},{"evBinderMsp":""},{"evBinderMsp":{"$exists":false}}]}}`, docTypePassport, msp), nil
 	case mspService:
 		return fmt.Sprintf(`{"selector":{"docType":"%s","status":{"$in":["MAINTENANCE","ANALYSIS"]}}}`, docTypePassport), nil
 	default:
@@ -741,10 +742,16 @@ func (c *PassportContract) BindToVehicle(ctx contractapi.TransactionContextInter
 		return fmt.Errorf("passport status must be MANUFACTURED or ACTIVE, current: %s", passport.Status)
 	}
 
+	msp, err := c.getClientMSP(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to get client MSP: %v", err)
+	}
+
 	passport.VIN = vin
 	passport.InstallDate = installDate
 	passport.EVManufacturer = evManufacturer
 	passport.EVAssemblyCountry = evAssemblyCountry
+	passport.EvBinderMSP = msp
 	passport.Status = "ACTIVE"
 	passport.UpdatedAt = time.Now().UTC().Format(time.RFC3339)
 
