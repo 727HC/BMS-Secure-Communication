@@ -67,7 +67,7 @@ async function resolvePassportId(did) {
 // POST /api/bmu/data — Receive BMU data
 router.post('/data', bmuRateLimit, async (req, res) => {
   const { rawPayload, signature, did: reqDid } = req.body;
-  const did = reqDid || (process.env.NODE_ENV !== 'production' ? process.env.DEFAULT_BMU_DID : undefined);
+  const did = reqDid || process.env.DEFAULT_BMU_DID;
 
   if (!rawPayload) {
     return res.status(400).json({ error: 'rawPayload required' });
@@ -104,7 +104,7 @@ router.post('/data', bmuRateLimit, async (req, res) => {
       log.warn('DID->passport lookup failed', { did, error: err.message });
     }
 
-    const recordId = `BMU-${crypto.randomUUID()}`;
+    const recordId = `BMU-${Date.now()}-${parsed.freshnessCounter}`;
     const timestamp = new Date().toISOString();
 
     // BMU 데이터는 제조사 admin으로 기록 (M2M 통신)
