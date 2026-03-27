@@ -29,7 +29,11 @@ cd bmu-agent && FABRIC_ORG=1 node server.js  # Agent + 프론트엔드
 
 **참고**: BMU ingest는 Manufacturer M2M service identity로 실행. 일반 API는 요청자 JWT identity로 실행.
 
-**성능**: 여권생성 ~1.9초, 조회 ~55ms, BMU기록 ~2.2초 (단일 클라이언트 순차, sleep 포함)
+**성능 (Hyperledger Caliper 벤치마크, 체인코드 직접 호출 기준)**:
+- 읽기 (QueryPassport 단건): **1,532 TPS** (10 workers, 50 passports)
+- 쓰기 (RecordBMUData): **196 TPS** (10 workers, 50 passports/DIDs 랜덤 분산)
+- 측정 환경: 4-org Fabric 2.5, CouchDB, BatchTimeout 0.5s, MaxMessageCount 100
+- 참고: API end-to-end TPS (DID 서명 검증 포함)는 별도 측정 필요
 
 ---
 

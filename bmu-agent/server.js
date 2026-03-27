@@ -26,9 +26,11 @@ apiRouter.use('/analysis', require('./routes/analysis.routes'));
 apiRouter.use('/recycling', require('./routes/recycling.routes'));
 apiRouter.use('/did', require('./routes/did.routes'));
 apiRouter.use('/vc', require('./routes/vc.routes'));
-// Audit log API (authenticated users only)
+// Audit log API (ManufacturerMSP, RegulatorMSP only)
 const { authenticateToken: auditAuth } = require('./middleware/auth');
-apiRouter.get('/audit', auditAuth, (req, res) => {
+const { requireMSP: auditRbac } = require('./middleware/rbac');
+const { MSP: auditMSP } = require('./config/constants');
+apiRouter.get('/audit', auditAuth, auditRbac(auditMSP.MANUFACTURER, auditMSP.REGULATOR), (req, res) => {
   res.json(getAuditLogs(req.query));
 });
 apiRouter.get('/status', (req, res) => {
@@ -68,6 +70,10 @@ fabricService.connectFabric()
     });
   })
   .catch((err) => {
+    if (process.env.NODE_ENV === 'production' || process.env.REQUIRE_FABRIC === 'true') {
+      log.error('Fabric connection required but failed — aborting', { error: err.message });
+      process.exit(1);
+    }
     log.warn('Fabric connection failed, starting without Fabric', { error: err.message });
     app.listen(PORT, () => {
       log.info('Agent started (no Fabric)', { url: `http://localhost:${PORT}` });

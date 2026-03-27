@@ -6,13 +6,13 @@ const { requireMSP } = require('../middleware/rbac');
 const { MSP } = require('../config/constants');
 
 // POST /api/did/register — Register DID on Indy ledger (JWT+RBAC or admin API key)
+// x-api-key fallback is dev-only; production requires JWT+RBAC
 router.post('/register', (req, res, next) => {
-  // Allow admin API key as fallback for M2M (e.g., embedded devices)
   const adminKey = process.env.ADMIN_API_KEY;
-  if (adminKey && req.headers['x-api-key'] === adminKey) {
+  if (adminKey && req.headers['x-api-key'] === adminKey && process.env.NODE_ENV !== 'production') {
     return next();
   }
-  // Otherwise require JWT + MSP authorization
+  // Require JWT + MSP authorization
   authenticateToken(req, res, (err) => {
     if (err) return;
     requireMSP(MSP.MANUFACTURER, MSP.REGULATOR)(req, res, next);
