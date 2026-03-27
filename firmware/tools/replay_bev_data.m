@@ -93,7 +93,7 @@ function replay_bev_data(simOut)
             end
 
             %% Pack 27 doubles (216 bytes) — same format as dataProcess.py expects
-            packet = [I, cycles, avgSoc/100, socCells, avgTemp, vTot, vCells];
+            packet = [I, cycles, avgSoc, socCells, avgTemp, vTot, vCells];
 
             byteData = typecast(packet, 'uint8');
             dp = DatagramPacket(byteData, length(byteData), udpAddr, UDP_PORT);
