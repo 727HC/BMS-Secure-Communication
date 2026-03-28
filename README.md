@@ -29,11 +29,22 @@ cd bmu-agent && FABRIC_ORG=1 node server.js  # Agent + 프론트엔드
 
 **참고**: BMU ingest는 Manufacturer M2M service identity로 실행. 일반 API는 요청자 JWT identity로 실행.
 
-**성능 (Hyperledger Caliper 벤치마크, 체인코드 직접 호출 기준)**:
-- 읽기 (QueryPassport 단건): **1,532 TPS** (10 workers, 50 passports)
-- 쓰기 (RecordBMUData): **196 TPS** (10 workers, 50 passports/DIDs 랜덤 분산)
-- 측정 환경: 4-org Fabric 2.5, CouchDB, BatchTimeout 0.5s, MaxMessageCount 100
-- 참고: API end-to-end TPS (DID 서명 검증 포함)는 별도 측정 필요
+**성능 KPI (Hyperledger Caliper 벤치마크)**:
+
+| 구분 | 측정 대상 | TPS | 조건 | KPI 목표 |
+|------|----------|-----|------|---------|
+| **블록체인 읽기** | QueryPassport (GetState 단건 조회) | **1,757** | 10 workers, 100 passports | 1,500+ |
+| **블록체인 쓰기** | RecordBMUData (체인코드 직접 호출) | **195** | 10 workers, 100 passports, worker별 분리 | 150+ |
+
+- **측정 도구**: Hyperledger Caliper 0.6.0, Fabric Gateway SDK
+- **측정 환경**: 4-org Fabric 2.5, CouchDB, Raft 단일 오더러, BatchTimeout 0.5s, MaxMessageCount 100
+- **측정 범위**: 체인코드 직접 호출 기준 (Fabric 레이어 KPI)
+- **보조 결과**: 50 passports 기준 읽기 1,532 TPS / 쓰기 196 TPS
+- **재현**: `cd caliper-workspace && NUM_PASSPORTS=100 ./run-bench.sh`
+
+> **참고**: 위 KPI는 Caliper가 Fabric Gateway를 통해 체인코드를 직접 호출한 결과입니다.
+> BMU→Agent→DID 검증→Fabric 전체 시스템 E2E TPS는 별도 측정이 필요하며,
+> Ed25519 서명 검증, DID→passport 캐시 조회, HTTP 오버헤드가 추가되므로 체인코드 KPI보다 낮습니다.
 
 ---
 
