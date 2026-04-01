@@ -33,17 +33,17 @@ app.component('bmu-data-page', {
 
     function getBadgeClasses(color) {
       const map = {
-        blue: 'bg-[--bp-info-dim] text-blue-700 border border-blue-200',
-        green: 'bg-[--bp-signal-dim] text-[--bp-signal] border border-emerald-200',
-        red: 'bg-[--bp-danger-dim] text-red-700 border border-red-200',
+        blue: 'bg-[--bp-info-dim] text-[#60a5fa] border border-[--bp-border]',
+        green: 'bg-[--bp-signal-dim] text-[--bp-signal] border border-[--bp-border-active]',
+        red: 'bg-[--bp-danger-dim] text-[--bp-danger] border border-[--bp-border]',
       };
       return map[color] || 'bg-[--bp-surface-1] text-[--bp-text-2] border border-[--bp-border]';
     }
 
     function getDotClasses(color) {
       const map = {
-        blue: 'bg-blue-500',
-        green: 'bg-emerald-500',
+        blue: 'bg-[#60a5fa]',
+        green: 'bg-[#34d399]',
         red: 'bg-red-500',
       };
       return map[color] || 'bg-[--bp-text-3]';

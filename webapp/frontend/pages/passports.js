@@ -184,8 +184,8 @@ app.component('passports-page', {
 
     function getSocColor(soc) {
       if (soc == null) return 'bg-[--bp-surface-4]';
-      if (soc >= 60) return 'bg-emerald-500';
-      if (soc >= 30) return 'bg-amber-500';
+      if (soc >= 60) return 'bg-[#34d399]';
+      if (soc >= 30) return 'bg-[#fbbf24]';
       return 'bg-red-500';
     }
 
@@ -219,7 +219,7 @@ app.component('passports-page', {
             </div>
             <div>
               <div class="flex items-center gap-2">
-                <h1 class="text-xl bp-heading" style="font-family: var(--font-display);">배터리 여권</h1>
+                <h1 class="text-xl bp-heading" style="font-family: var(--font-display);" style="font-family: var(--font-display);">배터리 여권</h1>
                 <span class="bp-badge bp-badge-signal" style="font-family: var(--font-mono);">{{ filteredPassports.length }}</span>
               </div>
               <p class="text-xs" style="color: var(--bp-text-3);">전체 {{ passports.length }}건 등록</p>

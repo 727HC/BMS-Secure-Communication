@@ -145,177 +145,180 @@ app.component('qr-scan-page', {
     };
   },
   template: `
-  <div class="space-y-6">
-    <!-- Page Header -->
-    <div class="flex items-center gap-3">
-      <div class="w-10 h-10 bg-emerald-600 rounded-lg flex items-center justify-center">
-        <svg class="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+  <div style="display:flex;flex-direction:column;gap:24px;">
+
+    <!-- ====== PAGE HEADER ====== -->
+    <div class="bp-animate-in" style="display:flex;align-items:center;gap:14px;">
+      <div style="width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,var(--bp-signal),#059669);display:flex;align-items:center;justify-content:center;">
+        <svg width="22" height="22" fill="none" stroke="#fff" stroke-width="2" viewBox="0 0 24 24">
           <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>
           <line x1="14" y1="14" x2="14" y2="14.01"/><line x1="21" y1="14" x2="21" y2="14.01"/><line x1="14" y1="21" x2="14" y2="21.01"/><line x1="21" y1="21" x2="21" y2="21.01"/><line x1="17.5" y1="17.5" x2="17.5" y2="17.51"/>
         </svg>
       </div>
       <div>
-        <h1 class="text-xl font-bold text-[--bp-text-1]">QR / NFC 스캔</h1>
-        <p class="text-[--bp-text-3] text-xs mt-0.5">배터리 여권 QR 코드 또는 NFC 태그를 스캔하여 정보를 조회합니다</p>
+        <h1 class="bp-heading" style="font-family:var(--font-display);font-size:1.35rem;color:var(--bp-text-1);margin:0;">QR / NFC 스캔</h1>
+        <p style="font-family:var(--font-body);font-size:0.72rem;color:var(--bp-text-3);margin-top:2px;">배터리 여권 QR 코드 또는 NFC 태그를 스캔하여 정보를 조회합니다</p>
       </div>
     </div>
 
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;">
 
-      <!-- Left: Scanner -->
-      <div class="space-y-4">
+      <!-- ====== LEFT: SCANNER AREA ====== -->
+      <div style="display:flex;flex-direction:column;gap:16px;">
+
         <!-- Camera Scanner -->
-        <div class="bp-card overflow-hidden">
-          <div class="px-5 py-3.5 border-b border-[--bp-border] flex items-center justify-between">
-            <h2 class="text-sm font-semibold text-[--bp-text-1]">카메라 스캔</h2>
-            <button v-if="!scanning" @click="startScan"
-              class="inline-flex items-center gap-1.5 px-3 py-1.5 bp-btn-primary text-white text-xs font-semibold rounded-lg hover:bg-emerald-700 transition-colors">
-              <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+        <div class="bp-card bp-card-glow bp-animate-in bp-delay-1" style="overflow:hidden;">
+          <div style="padding:14px 20px;border-bottom:1px solid var(--bp-surface-3);display:flex;align-items:center;justify-content:space-between;">
+            <span style="font-family:var(--font-display);font-size:0.85rem;font-weight:600;color:var(--bp-text-1);">카메라 스캔</span>
+            <button v-if="!scanning" @click="startScan" class="bp-btn bp-btn-primary" style="font-size:0.75rem;padding:6px 12px;display:inline-flex;align-items:center;gap:6px;">
+              <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/>
               </svg>
               카메라 열기
             </button>
-            <button v-else @click="stopScan"
-              class="inline-flex items-center gap-1.5 px-3 py-1.5 bp-badge-danger text-xs font-semibold rounded-lg hover:bg-red-600 transition-colors">
+            <button v-else @click="stopScan" class="bp-btn bp-btn-danger" style="font-size:0.75rem;padding:6px 12px;">
               카메라 닫기
             </button>
           </div>
-          <div class="p-4">
-            <div v-if="scanning" id="qr-reader" class="rounded-lg overflow-hidden"></div>
-            <div v-else class="flex flex-col items-center justify-center py-12 text-center">
-              <div class="w-20 h-20 rounded-2xl bg-[--bp-surface-3] flex items-center justify-center mb-4">
-                <svg class="w-10 h-10 text-[--bp-text-muted]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
-                  <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>
-                  <line x1="14" y1="14" x2="14" y2="14.01"/><line x1="21" y1="14" x2="21" y2="14.01"/>
-                </svg>
+          <div style="padding:16px;">
+            <!-- Active scanner -->
+            <div v-if="scanning" id="qr-reader" style="border-radius:10px;overflow:hidden;"></div>
+            <!-- Idle state: viewfinder graphic -->
+            <div v-else style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:48px 0;text-align:center;">
+              <div style="width:120px;height:120px;position:relative;margin-bottom:20px;">
+                <!-- Viewfinder corners -->
+                <div style="position:absolute;top:0;left:0;width:24px;height:24px;border-top:3px solid var(--bp-signal);border-left:3px solid var(--bp-signal);border-radius:4px 0 0 0;"></div>
+                <div style="position:absolute;top:0;right:0;width:24px;height:24px;border-top:3px solid var(--bp-signal);border-right:3px solid var(--bp-signal);border-radius:0 4px 0 0;"></div>
+                <div style="position:absolute;bottom:0;left:0;width:24px;height:24px;border-bottom:3px solid var(--bp-signal);border-left:3px solid var(--bp-signal);border-radius:0 0 0 4px;"></div>
+                <div style="position:absolute;bottom:0;right:0;width:24px;height:24px;border-bottom:3px solid var(--bp-signal);border-right:3px solid var(--bp-signal);border-radius:0 0 4px 0;"></div>
+                <!-- Center QR icon -->
+                <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;">
+                  <svg width="40" height="40" fill="none" stroke="var(--bp-text-3)" stroke-width="1.5" viewBox="0 0 24 24" style="opacity:0.5;">
+                    <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>
+                    <line x1="14" y1="14" x2="14" y2="14.01"/><line x1="21" y1="14" x2="21" y2="14.01"/>
+                  </svg>
+                </div>
               </div>
-              <p class="text-sm text-[--bp-text-3] mb-1">카메라를 열어 QR 코드를 스캔하세요</p>
-              <p class="text-xs text-[--bp-text-3]">배터리 여권 QR 코드를 인식하면 자동으로 조회됩니다</p>
+              <p style="font-size:0.85rem;color:var(--bp-text-3);margin:0 0 4px;font-family:var(--font-body);">카메라를 열어 QR 코드를 스캔하세요</p>
+              <p style="font-size:0.72rem;color:var(--bp-text-3);font-family:var(--font-body);">배터리 여권 QR 코드를 인식하면 자동으로 조회됩니다</p>
             </div>
           </div>
         </div>
 
         <!-- NFC Scanner -->
-        <div v-if="nfcSupported" class="bp-card overflow-hidden">
-          <div class="px-5 py-3.5 border-b border-[--bp-border] flex items-center justify-between">
-            <div class="flex items-center gap-2">
-              <h2 class="text-sm font-semibold text-[--bp-text-1]">NFC 스캔</h2>
-              <span class="text-[10px] font-medium px-1.5 py-0.5 rounded bg-[--bp-info-dim] text-blue-600 border border-blue-100">Web NFC</span>
+        <div v-if="nfcSupported" class="bp-card bp-animate-in bp-delay-2" style="overflow:hidden;">
+          <div style="padding:14px 20px;border-bottom:1px solid var(--bp-surface-3);display:flex;align-items:center;justify-content:space-between;">
+            <div style="display:flex;align-items:center;gap:8px;">
+              <span style="font-family:var(--font-display);font-size:0.85rem;font-weight:600;color:var(--bp-text-1);">NFC 스캔</span>
+              <span class="bp-badge-info" style="font-size:0.6rem;padding:1px 6px;border-radius:4px;">Web NFC</span>
             </div>
-            <button v-if="!nfcScanning" @click="startNfc"
-              class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white text-xs font-semibold rounded-lg hover:bg-blue-700 transition-colors">
-              <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+            <button v-if="!nfcScanning" @click="startNfc" class="bp-btn" style="font-size:0.75rem;padding:6px 12px;display:inline-flex;align-items:center;gap:6px;background:var(--bp-info);color:#fff;border:none;">
+              <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071c3.904-3.905 10.236-3.905 14.14 0M1.394 9.393c5.857-5.858 15.355-5.858 21.213 0"/>
               </svg>
               NFC 활성화
             </button>
-            <button v-else @click="stopNfc"
-              class="inline-flex items-center gap-1.5 px-3 py-1.5 bp-badge-danger text-xs font-semibold rounded-lg hover:bg-red-600 transition-colors">
-              NFC 중지
-            </button>
+            <button v-else @click="stopNfc" class="bp-btn bp-btn-danger" style="font-size:0.75rem;padding:6px 12px;">NFC 중지</button>
           </div>
-          <div class="p-4">
-            <div v-if="nfcScanning" class="flex flex-col items-center py-6 text-center">
-              <div class="w-16 h-16 rounded-2xl bg-[--bp-info-dim] flex items-center justify-center mb-3 animate-pulse">
-                <svg class="w-8 h-8 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+          <div style="padding:24px 16px;display:flex;flex-direction:column;align-items:center;text-align:center;">
+            <div v-if="nfcScanning" style="display:flex;flex-direction:column;align-items:center;">
+              <div style="width:56px;height:56px;border-radius:16px;background:var(--bp-surface-3);display:flex;align-items:center;justify-content:center;margin-bottom:12px;animation:pulse 2s ease-in-out infinite;">
+                <svg width="28" height="28" fill="none" stroke="var(--bp-info)" stroke-width="1.5" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071c3.904-3.905 10.236-3.905 14.14 0M1.394 9.393c5.857-5.858 15.355-5.858 21.213 0"/>
                 </svg>
               </div>
-              <p class="text-sm font-medium text-blue-600">NFC 대기 중...</p>
-              <p class="text-xs text-[--bp-text-3] mt-1">배터리에 부착된 NFC 태그를 디바이스에 가까이 대세요</p>
+              <p style="font-size:0.85rem;font-weight:500;color:var(--bp-info);margin:0 0 4px;">NFC 대기 중...</p>
+              <p style="font-size:0.72rem;color:var(--bp-text-3);">배터리에 부착된 NFC 태그를 디바이스에 가까이 대세요</p>
             </div>
-            <div v-else class="flex flex-col items-center py-6 text-center">
-              <div class="w-16 h-16 rounded-2xl bg-[--bp-surface-3] flex items-center justify-center mb-3">
-                <svg class="w-8 h-8 text-[--bp-text-muted]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+            <div v-else style="display:flex;flex-direction:column;align-items:center;">
+              <div style="width:56px;height:56px;border-radius:16px;background:var(--bp-surface-3);display:flex;align-items:center;justify-content:center;margin-bottom:12px;">
+                <svg width="28" height="28" fill="none" stroke="var(--bp-text-3)" stroke-width="1.5" viewBox="0 0 24 24" style="opacity:0.5;">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071c3.904-3.905 10.236-3.905 14.14 0"/>
                 </svg>
               </div>
-              <p class="text-xs text-[--bp-text-3]">NFC를 활성화하여 태그를 읽으세요</p>
+              <p style="font-size:0.75rem;color:var(--bp-text-3);">NFC를 활성화하여 태그를 읽으세요</p>
             </div>
           </div>
         </div>
 
         <!-- Manual Input -->
-        <div class="bp-card p-5 transition-all duration-200">
-          <h2 class="text-sm font-semibold text-[--bp-text-1] mb-3">수동 입력</h2>
-          <div class="flex gap-2">
+        <div class="bp-card bp-animate-in bp-delay-3" style="padding:20px;">
+          <h2 style="font-family:var(--font-display);font-size:0.85rem;font-weight:600;color:var(--bp-text-1);margin:0 0 12px;">수동 입력</h2>
+          <div style="display:flex;gap:8px;">
             <input v-model="manualId" type="text" placeholder="여권 ID를 입력하세요 (예: BP-SDI-001)"
               @keyup.enter="handleManualSearch"
-              class="flex-1 px-3 py-2.5 border border-[--bp-border-hover] rounded-lg text-sm focus:ring-2 focus:ring-[--bp-signal]/20 focus:border-[--bp-signal] outline-none" />
-            <button @click="handleManualSearch"
-              :disabled="!manualId.trim()"
-              :class="['px-4 py-2.5 text-sm font-semibold rounded-lg transition-all',
-                !manualId.trim() ? 'bg-[--bp-surface-3] text-[--bp-text-3] cursor-not-allowed' : 'bp-btn-primary text-white hover:bg-emerald-700']">
+              class="bp-input" style="flex:1;" />
+            <button @click="handleManualSearch" :disabled="!manualId.trim()"
+              class="bp-btn bp-btn-primary" style="padding:8px 18px;"
+              :style="!manualId.trim() ? 'opacity:0.4;cursor:not-allowed;' : ''">
               조회
             </button>
           </div>
         </div>
       </div>
 
-      <!-- Right: Result -->
+      <!-- ====== RIGHT: RESULT AREA ====== -->
       <div>
         <!-- Loading -->
-        <div v-if="loadingPassport" class="bp-card p-12 flex flex-col items-center justify-center">
-          <div class="w-10 h-10 border-[3px] border-emerald-100 border-t-emerald-600 rounded-full animate-spin mb-3"></div>
-          <p class="text-sm text-[--bp-text-3]">여권 정보 조회 중...</p>
+        <div v-if="loadingPassport" class="bp-card bp-animate-in" style="padding:48px;display:flex;flex-direction:column;align-items:center;justify-content:center;">
+          <div style="width:40px;height:40px;border:3px solid var(--bp-surface-3);border-top-color:var(--bp-signal);border-radius:50%;animation:spin 0.8s linear infinite;margin-bottom:12px;"></div>
+          <p style="font-size:0.85rem;color:var(--bp-text-3);">여권 정보 조회 중...</p>
         </div>
 
         <!-- Result Card -->
-        <div v-else-if="passportData" class="bp-card overflow-hidden">
-          <div class="px-5 py-3.5 border-b border-[--bp-border] bg-[--bp-signal-dim]/50 flex items-center gap-2">
-            <svg class="w-4 h-4 text-[--bp-signal]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
-            </svg>
-            <span class="text-sm font-semibold text-[--bp-signal]">여권 정보 확인됨</span>
+        <div v-else-if="passportData" class="bp-card bp-card-glow bp-animate-in" style="overflow:hidden;">
+          <!-- Success header strip -->
+          <div style="padding:14px 20px;border-bottom:1px solid var(--bp-surface-3);background:var(--bp-surface-1);display:flex;align-items:center;gap:8px;">
+            <span class="bp-dot-signal" style="width:8px;height:8px;"></span>
+            <span style="font-size:0.82rem;font-weight:600;color:var(--bp-signal);">여권 정보 확인됨</span>
           </div>
-          <div class="p-5 space-y-4">
+          <div style="padding:20px;display:flex;flex-direction:column;gap:16px;">
             <!-- Model + Status -->
-            <div class="flex items-center justify-between">
-              <h3 class="text-lg font-bold text-[--bp-text-1]">{{ passportData.model || '-' }}</h3>
+            <div style="display:flex;align-items:center;justify-content:space-between;">
+              <h3 style="font-family:var(--font-display);font-size:1.15rem;font-weight:700;color:var(--bp-text-1);margin:0;">{{ passportData.model || '-' }}</h3>
               <span :class="['inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border',
                 statusColors[passportData.status] || 'bg-[--bp-surface-1] text-[--bp-text-2] border-[--bp-border-hover]']">
                 {{ statusLabels[passportData.status] || passportData.status }}
               </span>
             </div>
 
-            <!-- Key info grid -->
-            <div class="grid grid-cols-2 gap-3">
-              <div class="bg-[--bp-surface-1] rounded-lg px-3 py-2 border border-[--bp-border]">
-                <p class="text-[10px] text-[--bp-text-3] uppercase font-medium">여권 ID</p>
-                <p class="text-xs font-mono text-[--bp-text-2] mt-0.5 truncate">{{ passportData.passportId }}</p>
+            <!-- Info grid -->
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+              <div style="background:var(--bp-surface-1);border:1px solid var(--bp-surface-3);border-radius:8px;padding:10px 12px;">
+                <p style="font-size:0.6rem;color:var(--bp-text-3);text-transform:uppercase;font-weight:500;margin:0;">여권 ID</p>
+                <p class="bp-mono" style="font-size:0.75rem;color:var(--bp-text-2);margin:4px 0 0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ passportData.passportId }}</p>
               </div>
-              <div class="bg-[--bp-surface-1] rounded-lg px-3 py-2 border border-[--bp-border]">
-                <p class="text-[10px] text-[--bp-text-3] uppercase font-medium">시리얼번호</p>
-                <p class="text-xs font-mono text-[--bp-text-2] mt-0.5">{{ passportData.serialNumber || '-' }}</p>
+              <div style="background:var(--bp-surface-1);border:1px solid var(--bp-surface-3);border-radius:8px;padding:10px 12px;">
+                <p style="font-size:0.6rem;color:var(--bp-text-3);text-transform:uppercase;font-weight:500;margin:0;">시리얼번호</p>
+                <p class="bp-mono" style="font-size:0.75rem;color:var(--bp-text-2);margin:4px 0 0;">{{ passportData.serialNumber || '-' }}</p>
               </div>
-              <div class="bg-[--bp-surface-1] rounded-lg px-3 py-2 border border-[--bp-border]">
-                <p class="text-[10px] text-[--bp-text-3] uppercase font-medium">제조사</p>
-                <p class="text-sm font-medium text-[--bp-text-2] mt-0.5">{{ passportData.manufacturerName || '-' }}</p>
+              <div style="background:var(--bp-surface-1);border:1px solid var(--bp-surface-3);border-radius:8px;padding:10px 12px;">
+                <p style="font-size:0.6rem;color:var(--bp-text-3);text-transform:uppercase;font-weight:500;margin:0;">제조사</p>
+                <p style="font-size:0.85rem;font-weight:500;color:var(--bp-text-2);margin:4px 0 0;">{{ passportData.manufacturerName || '-' }}</p>
               </div>
-              <div class="bg-[--bp-surface-1] rounded-lg px-3 py-2 border border-[--bp-border]">
-                <p class="text-[10px] text-[--bp-text-3] uppercase font-medium">화학물질</p>
-                <p class="text-sm font-medium text-[--bp-text-2] mt-0.5">{{ passportData.chemistry || '-' }}</p>
+              <div style="background:var(--bp-surface-1);border:1px solid var(--bp-surface-3);border-radius:8px;padding:10px 12px;">
+                <p style="font-size:0.6rem;color:var(--bp-text-3);text-transform:uppercase;font-weight:500;margin:0;">화학물질</p>
+                <p style="font-size:0.85rem;font-weight:500;color:var(--bp-text-2);margin:4px 0 0;">{{ passportData.chemistry || '-' }}</p>
               </div>
-              <div class="bg-[--bp-surface-1] rounded-lg px-3 py-2 border border-[--bp-border]">
-                <p class="text-[10px] text-[--bp-text-3] uppercase font-medium">총 에너지</p>
-                <p class="text-sm font-medium text-[--bp-text-2] mt-0.5">{{ passportData.totalEnergy ? passportData.totalEnergy + ' kWh' : '-' }}</p>
+              <div style="background:var(--bp-surface-1);border:1px solid var(--bp-surface-3);border-radius:8px;padding:10px 12px;">
+                <p style="font-size:0.6rem;color:var(--bp-text-3);text-transform:uppercase;font-weight:500;margin:0;">총 에너지</p>
+                <p style="font-size:0.85rem;font-weight:500;color:var(--bp-text-2);margin:4px 0 0;">{{ passportData.totalEnergy ? passportData.totalEnergy + ' kWh' : '-' }}</p>
               </div>
-              <div class="bg-[--bp-surface-1] rounded-lg px-3 py-2 border border-[--bp-border]">
-                <p class="text-[10px] text-[--bp-text-3] uppercase font-medium">VIN</p>
-                <p class="text-xs font-mono text-[--bp-text-2] mt-0.5 truncate">{{ passportData.vin || '미바인딩' }}</p>
+              <div style="background:var(--bp-surface-1);border:1px solid var(--bp-surface-3);border-radius:8px;padding:10px 12px;">
+                <p style="font-size:0.6rem;color:var(--bp-text-3);text-transform:uppercase;font-weight:500;margin:0;">VIN</p>
+                <p class="bp-mono" style="font-size:0.75rem;color:var(--bp-text-2);margin:4px 0 0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ passportData.vin || '미바인딩' }}</p>
               </div>
             </div>
 
             <!-- DID -->
-            <div v-if="passportData.did" class="bg-[--bp-signal-dim] rounded-lg px-3 py-2 border border-emerald-100">
-              <p class="text-[10px] text-[--bp-signal] uppercase font-medium">DID</p>
-              <p class="text-xs font-mono text-[--bp-signal] mt-0.5 break-all">{{ passportData.did }}</p>
+            <div v-if="passportData.did" style="background:var(--bp-surface-2);border:1px solid var(--bp-signal);border-radius:8px;padding:10px 12px;">
+              <p style="font-size:0.6rem;color:var(--bp-signal);text-transform:uppercase;font-weight:500;margin:0;">DID</p>
+              <p class="bp-mono" style="font-size:0.72rem;color:var(--bp-signal);margin:4px 0 0;word-break:break-all;">{{ passportData.did }}</p>
             </div>
 
             <!-- Action -->
-            <button @click="goToDetail"
-              class="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm rounded-xl transition-colors flex items-center justify-center gap-2">
-              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <button @click="goToDetail" class="bp-btn bp-btn-primary" style="width:100%;padding:12px;font-size:0.85rem;font-weight:600;display:flex;align-items:center;justify-content:center;gap:8px;border-radius:10px;">
+              <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6"/>
               </svg>
               여권 상세 보기
@@ -324,14 +327,14 @@ app.component('qr-scan-page', {
         </div>
 
         <!-- Empty state -->
-        <div v-else class="bp-card p-12 flex flex-col items-center justify-center text-center">
-          <div class="w-16 h-16 rounded-2xl bg-[--bp-surface-3] flex items-center justify-center mb-4">
-            <svg class="w-8 h-8 text-[--bp-text-muted]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+        <div v-else class="bp-card bp-animate-in bp-delay-1" style="padding:48px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;">
+          <div style="width:64px;height:64px;border-radius:16px;background:var(--bp-surface-3);display:flex;align-items:center;justify-content:center;margin-bottom:16px;">
+            <svg width="32" height="32" fill="none" stroke="var(--bp-text-3)" stroke-width="1.5" viewBox="0 0 24 24" style="opacity:0.5;">
               <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
             </svg>
           </div>
-          <p class="text-sm font-medium text-[--bp-text-3] mb-1">QR 코드를 스캔하거나 여권 ID를 입력하세요</p>
-          <p class="text-xs text-[--bp-text-3]">스캔 결과가 여기에 표시됩니다</p>
+          <p style="font-size:0.85rem;font-weight:500;color:var(--bp-text-3);margin:0 0 4px;">QR 코드를 스캔하거나 여권 ID를 입력하세요</p>
+          <p style="font-size:0.72rem;color:var(--bp-text-3);">스캔 결과가 여기에 표시됩니다</p>
         </div>
       </div>
     </div>

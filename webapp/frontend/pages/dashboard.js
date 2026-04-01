@@ -162,7 +162,7 @@ app.component('dashboard-page', {
         <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 bp-animate-in">
           <div>
             <div class="flex items-center gap-3 mb-1">
-              <h1 class="text-2xl bp-heading" style="font-family: var(--font-display);">대시보드</h1>
+              <h1 class="text-2xl bp-heading" style="font-family: var(--font-display);" style="font-family: var(--font-display);">대시보드</h1>
               <span class="px-2 py-0.5 rounded text-[10px] font-medium" style="background: var(--bp-signal-dim); color: var(--bp-signal); font-family: var(--font-mono);">LIVE</span>
             </div>
             <p class="text-sm" style="color: var(--bp-text-3);">배터리 여권 시스템 현황을 실시간으로 모니터링합니다.</p>

@@ -98,8 +98,8 @@
 
     ::-webkit-scrollbar { width: 6px; height: 6px; }
     ::-webkit-scrollbar-track { background: var(--bp-surface-1); }
-    ::-webkit-scrollbar-thumb { background: var(--bp-surface-4); border-radius: 3px; }
-    ::-webkit-scrollbar-thumb:hover { background: var(--bp-text-3); }
+    ::-webkit-scrollbar-thumb { background: rgba(52,211,153,0.08); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(52,211,153,0.15); }
 
     /* ── Mobile Overlay ── */
     .sidebar-overlay {
@@ -118,7 +118,9 @@
       transition: border-color 0.2s ease, box-shadow 0.2s ease;
     }
     .bp-card:hover {
+      transform: translateY(-1px);
       border-color: var(--bp-border-hover);
+      box-shadow: 0 4px 16px rgba(0,0,0,0.3), 0 0 0 1px var(--bp-border-hover);
     }
     .bp-card-glow {
       background: var(--bp-surface-2);
@@ -174,6 +176,7 @@
     .bp-btn-ghost:hover {
       background: var(--bp-surface-3);
       border-color: var(--bp-border-hover);
+      box-shadow: 0 4px 16px rgba(0,0,0,0.3), 0 0 0 1px var(--bp-border-hover);
       color: var(--bp-text-1);
     }
     .bp-btn-danger {
@@ -200,6 +203,7 @@
     }
     .bp-input::placeholder { color: var(--bp-text-3); }
     .bp-input:focus {
+      background: var(--bp-surface-2);
       border-color: var(--bp-border-active);
       box-shadow: 0 0 0 3px var(--bp-signal-dim);
     }
@@ -242,6 +246,7 @@
       transition: background 0.1s ease;
     }
     .bp-table tbody tr:hover {
+      box-shadow: inset 3px 0 0 var(--bp-signal);
       background: var(--bp-surface-3);
     }
 
@@ -256,12 +261,12 @@
       font-weight: 600;
       letter-spacing: 0.01em;
     }
-    .bp-badge-signal { background: var(--bp-signal-dim); color: var(--bp-signal); }
-    .bp-badge-warn   { background: var(--bp-warn-dim); color: var(--bp-warn); }
-    .bp-badge-danger  { background: var(--bp-danger-dim); color: var(--bp-danger); }
-    .bp-badge-info    { background: var(--bp-info-dim); color: var(--bp-info); }
-    .bp-badge-purple  { background: var(--bp-purple-dim); color: var(--bp-purple); }
-    .bp-badge-muted   { background: var(--bp-surface-4); color: var(--bp-text-2); }
+    .bp-badge-signal { background: var(--bp-signal-dim); color: var(--bp-signal); border: 1px solid rgba(52,211,153,0.2); }
+    .bp-badge-warn   { background: var(--bp-warn-dim); color: var(--bp-warn); border: 1px solid rgba(251,191,36,0.2); }
+    .bp-badge-danger  { background: var(--bp-danger-dim); color: var(--bp-danger); border: 1px solid rgba(248,113,113,0.2); }
+    .bp-badge-info    { background: var(--bp-info-dim); color: var(--bp-info); border: 1px solid rgba(96,165,250,0.2); }
+    .bp-badge-purple  { background: var(--bp-purple-dim); color: var(--bp-purple); border: 1px solid rgba(167,139,250,0.2); }
+    .bp-badge-muted   { background: var(--bp-surface-4); color: var(--bp-text-2); border: 1px solid var(--bp-border); }
 
     /* ── Stat Cards ── */
     .bp-stat {
@@ -329,6 +334,19 @@
       overflow: hidden;
     }
     .bp-progress-bar {
+    }
+    .bp-progress-bar::after {
+      content: '';
+      position: absolute;
+      top: 0; left: -100%; width: 100%; height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+      animation: bp-shimmer 2s ease-in-out infinite;
+    }
+    @keyframes bp-shimmer {
+      0% { left: -100%; }
+      100% { left: 100%; }
+      position: relative;
+      overflow: hidden;
       height: 100%;
       border-radius: 3px;
       background: linear-gradient(90deg, var(--bp-signal), #6ee7b7);
@@ -395,6 +413,18 @@
       pointer-events: none;
       z-index: 9999;
       background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+    }
+    /* ── Keyboard Focus ── */
+    :focus-visible {
+      outline: 2px solid var(--bp-signal);
+      outline-offset: 2px;
+      border-radius: var(--radius-sm);
+    }
+    .bp-btn:focus-visible {
+      box-shadow: 0 0 0 3px var(--bp-signal-dim);
+    }
+    .bp-input:focus-visible {
+      outline: none; /* already has ring style */
     }
   </style>
   <script>
@@ -488,7 +518,7 @@
                     : 'pl-[10px]'
                 ]"
                 :style="currentPage === item.route
-                  ? 'background: var(--bp-signal-dim); color: var(--bp-signal); border-left: 2px solid var(--bp-signal);'
+                  ? 'background: var(--bp-signal-dim); color: var(--bp-signal); border-left: 2px solid var(--bp-signal); box-shadow: inset 3px 0 8px rgba(52,211,153,0.1);'
                   : 'color: var(--bp-text-2); border-left: 2px solid transparent;'"
                 @mouseenter="$event.target.style.background = currentPage !== item.route ? 'var(--bp-surface-3)' : 'var(--bp-signal-dim)'"
                 @mouseleave="$event.target.style.background = currentPage !== item.route ? 'transparent' : 'var(--bp-signal-dim)'"
@@ -630,7 +660,7 @@
     <!-- Toast Notifications -->
     <div class="fixed top-4 right-4 z-[100] space-y-2">
       <div v-for="(toast, i) in toasts" :key="i"
-        class="px-4 py-3 rounded-lg text-sm transition-all flex items-center space-x-2 backdrop-blur-xl"
+        class="px-4 py-3 rounded-lg text-sm flex items-center space-x-2 backdrop-blur-xl bp-animate-in"
         :style="toast.type === 'error'
           ? 'background: var(--bp-danger-dim); color: var(--bp-danger); border: 1px solid rgba(248,113,113,0.3); box-shadow: var(--shadow-elevated);'
           : 'background: var(--bp-signal-dim); color: var(--bp-signal); border: 1px solid rgba(52,211,153,0.3); box-shadow: var(--shadow-elevated);'">

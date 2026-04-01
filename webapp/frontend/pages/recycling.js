@@ -88,8 +88,8 @@ app.component('recycling-page', {
 
     function getSohBg(soh) {
       if (soh === null || soh === undefined) return 'bg-[--bp-surface-4]';
-      if (soh > 80) return 'bg-emerald-500';
-      if (soh >= 50) return 'bg-amber-500';
+      if (soh > 80) return 'bg-[#34d399]';
+      if (soh >= 50) return 'bg-[#fbbf24]';
       return 'bg-red-500';
     }
 
@@ -109,9 +109,9 @@ app.component('recycling-page', {
     }
 
     function getRateBarColor(value) {
-      if (value >= 80) return 'bg-emerald-500';
-      if (value >= 50) return 'bg-blue-500';
-      return 'bg-amber-500';
+      if (value >= 80) return 'bg-[#34d399]';
+      if (value >= 50) return 'bg-[#60a5fa]';
+      return 'bg-[#fbbf24]';
     }
 
     // Analysis request
