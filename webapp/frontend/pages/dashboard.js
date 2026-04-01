@@ -135,56 +135,56 @@ app.component('dashboard-page', {
       <!-- ═══ LOADING ═══ -->
       <div v-if="loading" class="flex flex-col justify-center items-center py-32">
         <div class="relative w-16 h-16 mb-4">
-          <div class="absolute inset-0 rounded-full" style="border: 2px solid transparent; border-top-color: var(--bp-signal); animation: dash-spin 0.8s linear infinite;"></div>
-          <div class="absolute inset-2 rounded-full" style="border: 2px solid transparent; border-bottom-color: var(--bp-signal); opacity: 0.3; animation: dash-spin 1.2s linear infinite reverse;"></div>
+          <div class="absolute inset-0 rounded-full" style="border: 2px solid transparent; border-top-color: #059669; animation: dash-spin 0.8s linear infinite;"></div>
+          <div class="absolute inset-2 rounded-full" style="border: 2px solid transparent; border-bottom-color: #059669; opacity: 0.3; animation: dash-spin 1.2s linear infinite reverse;"></div>
           <div class="absolute inset-0 flex items-center justify-center">
-            <div class="w-2 h-2 rounded-full" style="background: var(--bp-signal); animation: bp-pulse 1.5s ease-in-out infinite;"></div>
+            <div class="w-2 h-2 rounded-full" style="background: #059669; animation: bp-pulse 1.5s ease-in-out infinite;"></div>
           </div>
         </div>
-        <p class="text-xs tracking-widest" style="color: var(--bp-text-muted); font-family: var(--font-mono);">INITIALIZING DASHBOARD...</p>
+        <p class="text-xs tracking-widest" style="color: #9ca3af; font-family: 'JetBrains Mono', monospace;">INITIALIZING DASHBOARD...</p>
       </div>
 
       <div v-else class="space-y-4">
 
         <!-- ═══ SYSTEM STATUS RIBBON ═══ -->
-        <div class="bp-card px-4 py-2.5 flex items-center justify-between bp-animate-in" style="border-left: 3px solid var(--bp-signal);">
+        <div class="bg-white rounded-xl border border-gray-200 shadow-sm px-4 py-2.5 flex items-center justify-between " style="border-left: 3px solid #059669;">
           <div class="flex items-center gap-5">
             <div class="flex items-center gap-2">
-              <div class="bp-dot bp-dot-signal"></div>
-              <span class="text-[10px] font-medium" style="color: var(--bp-signal); font-family: var(--font-mono);">FABRIC CONNECTED</span>
+              <div class="w-2 h-2 rounded-full bg-emerald-500"></div>
+              <span class="text-[10px] font-medium" style="color: #059669; font-family: 'JetBrains Mono', monospace;">FABRIC CONNECTED</span>
             </div>
-            <div class="hidden sm:flex items-center gap-1.5" style="color: var(--bp-text-3);">
+            <div class="hidden sm:flex items-center gap-1.5" style="color: #6b7280;">
               <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/></svg>
-              <span class="text-[10px]" style="font-family: var(--font-mono);">{{ totalCount }} PASSPORTS</span>
+              <span class="text-[10px]" style="font-family: 'JetBrains Mono', monospace;">{{ totalCount }} PASSPORTS</span>
             </div>
-            <div class="hidden md:flex items-center gap-1.5" style="color: var(--bp-text-3);">
+            <div class="hidden md:flex items-center gap-1.5" style="color: #6b7280;">
               <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-              <span class="text-[10px]" style="font-family: var(--font-mono);">{{ materialCount }} MATERIALS</span>
+              <span class="text-[10px]" style="font-family: 'JetBrains Mono', monospace;">{{ materialCount }} MATERIALS</span>
             </div>
           </div>
           <div class="flex items-center gap-1.5">
-            <span class="text-[10px]" style="color: var(--bp-text-muted); font-family: var(--font-mono);">LAST SYNC</span>
-            <span class="text-[10px] font-medium" style="color: var(--bp-text-2); font-family: var(--font-mono);">{{ new Date().toLocaleTimeString('ko-KR', {hour:'2-digit',minute:'2-digit'}) }}</span>
+            <span class="text-[10px]" style="color: #9ca3af; font-family: 'JetBrains Mono', monospace;">LAST SYNC</span>
+            <span class="text-[10px] font-medium" style="color: #374151; font-family: 'JetBrains Mono', monospace;">{{ new Date().toLocaleTimeString('ko-KR', {hour:'2-digit',minute:'2-digit'}) }}</span>
           </div>
         </div>
 
         <!-- ═══ HEADER ═══ -->
-        <div class="flex items-end justify-between bp-animate-in bp-delay-1">
+        <div class="flex items-end justify-between  ">
           <div>
             <div class="flex items-center gap-2.5">
-              <h1 class="text-xl" style="font-family: var(--font-display); font-weight: 700; color: var(--bp-text-1);">대시보드</h1>
-              <span class="px-1.5 py-0.5 rounded text-[9px] font-bold tracking-wider" style="background: var(--bp-signal-dim); color: var(--bp-signal); font-family: var(--font-mono); border: 1px solid rgba(52,211,153,0.2);">LIVE</span>
+              <h1 class="text-xl" style="font-family: 'Pretendard Variable', sans-serif; font-weight: 700; color: #111827;">대시보드</h1>
+              <span class="px-1.5 py-0.5 rounded text-[9px] font-bold tracking-wider" style="background: rgba(16,185,129,0.08); color: #059669; font-family: 'JetBrains Mono', monospace; border: 1px solid rgba(52,211,153,0.2);">LIVE</span>
             </div>
-            <p class="text-xs mt-0.5" style="color: var(--bp-text-3);">배터리 여권 시스템 현황 모니터링</p>
+            <p class="text-xs mt-0.5" style="color: #6b7280;">배터리 여권 시스템 현황 모니터링</p>
           </div>
-          <button @click="nav('passports')" class="bp-btn bp-btn-primary text-xs">
+          <button @click="nav('passports')" class="bg-emerald-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-emerald-700 text-xs">
             <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
             여권 발급
           </button>
         </div>
 
         <!-- ═══ KPI GAUGES ═══ -->
-        <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 bp-animate-in bp-delay-1">
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-3  ">
           <div v-for="(kpi, ki) in [
             { label: '전체 여권', value: totalCount, max: Math.max(totalCount, 1), color: '#34d399', icon: 'M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z', page: 'passports' },
             { label: '운행중', value: activeCount, max: Math.max(totalCount, 1), color: '#60a5fa', icon: 'M22 12 18 12 15 21 9 3 6 12 2 12', page: 'passports' },
@@ -192,16 +192,16 @@ app.component('dashboard-page', {
             { label: '등록 원자재', value: materialCount, max: Math.max(materialCount, 1), color: '#a78bfa', icon: 'M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71', page: 'materials' }
           ]" :key="ki"
             @click="nav(kpi.page)"
-            class="bp-card-glow bp-stat p-4 cursor-pointer group transition-all duration-200 hover:translate-y-[-2px] hover:shadow-xl">
+            class="bg-white rounded-xl border border-gray-200 shadow-sm  p-4 cursor-pointer group transition-all duration-200 hover:translate-y-[-2px] hover:shadow-xl">
             <div class="flex items-start justify-between">
               <div>
-                <div class="bp-stat-label mb-2">{{ kpi.label }}</div>
-                <div class="bp-stat-value" style="font-size: 1.75rem;">{{ kpi.value }}</div>
+                <div class="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">{{ kpi.label }}</div>
+                <div class="text-4xl font-bold text-gray-900 tabular-nums" style="font-size: 1.75rem;">{{ kpi.value }}</div>
               </div>
               <!-- Mini circular gauge -->
               <div class="relative w-11 h-11 flex-shrink-0">
                 <svg viewBox="0 0 36 36" class="w-full h-full -rotate-90">
-                  <circle cx="18" cy="18" r="15" fill="none" stroke="var(--bp-surface-4)" stroke-width="3"/>
+                  <circle cx="18" cy="18" r="15" fill="none" stroke="#e2e8f0" stroke-width="3"/>
                   <circle cx="18" cy="18" r="15" fill="none"
                     :stroke="kpi.color" stroke-width="3" stroke-linecap="round"
                     :stroke-dasharray="(kpi.value / kpi.max * 94.25) + ' 94.25'"
@@ -218,18 +218,18 @@ app.component('dashboard-page', {
         </div>
 
         <!-- ═══ CHARTS + STACKED BAR ═══ -->
-        <div class="grid grid-cols-1 lg:grid-cols-5 gap-4 bp-animate-in bp-delay-2">
+        <div class="grid grid-cols-1 lg:grid-cols-5 gap-4  ">
 
           <!-- Chemistry donut — spans 3 cols -->
-          <div class="lg:col-span-3 bp-card p-5">
+          <div class="lg:col-span-3 bg-white rounded-xl border border-gray-200 shadow-sm p-5">
             <div class="flex items-center justify-between mb-4">
-              <h2 class="text-sm font-semibold" style="font-family: var(--font-display); color: var(--bp-text-1); letter-spacing: -0.01em;">화학 구성</h2>
-              <span class="text-[9px] tracking-wider" style="color: var(--bp-text-muted); font-family: var(--font-mono);">COMPOSITION</span>
+              <h2 class="text-sm font-semibold" style="font-family: 'Pretendard Variable', sans-serif; color: #111827; letter-spacing: -0.01em;">화학 구성</h2>
+              <span class="text-[9px] tracking-wider" style="color: #9ca3af; font-family: 'JetBrains Mono', monospace;">COMPOSITION</span>
             </div>
             <div class="flex items-center gap-6">
               <div class="relative flex-shrink-0" style="width: 120px; height: 120px;">
                 <svg viewBox="0 0 100 100" class="w-full h-full -rotate-90">
-                  <circle cx="50" cy="50" r="40" fill="none" stroke="var(--bp-surface-4)" stroke-width="9"/>
+                  <circle cx="50" cy="50" r="40" fill="none" stroke="#e2e8f0" stroke-width="9"/>
                   <circle v-for="(seg, i) in chemistrySegments" :key="i"
                     cx="50" cy="50" r="40" fill="none"
                     :stroke="seg.color" stroke-width="9"
@@ -242,32 +242,32 @@ app.component('dashboard-page', {
                     @mouseleave="$event.target.setAttribute('stroke-width','9')"/>
                 </svg>
                 <div class="absolute inset-0 flex flex-col items-center justify-center">
-                  <span class="text-lg font-bold" style="font-family: var(--font-display); color: var(--bp-text-1); letter-spacing: -0.01em;">{{ chemTotal }}</span>
-                  <span class="text-[8px] uppercase tracking-widest" style="color: var(--bp-text-muted); font-family: var(--font-mono);">TOTAL</span>
+                  <span class="text-lg font-bold" style="font-family: 'Pretendard Variable', sans-serif; color: #111827; letter-spacing: -0.01em;">{{ chemTotal }}</span>
+                  <span class="text-[8px] uppercase tracking-widest" style="color: #9ca3af; font-family: 'JetBrains Mono', monospace;">TOTAL</span>
                 </div>
               </div>
               <div class="flex-1 space-y-1.5">
                 <div v-for="item in chemistryDistribution" :key="item.name" class="flex items-center justify-between">
                   <div class="flex items-center gap-2">
                     <span class="w-2 h-2 rounded-sm" :style="{ backgroundColor: item.color }"></span>
-                    <span class="text-xs" style="color: var(--bp-text-2);">{{ item.name }}</span>
+                    <span class="text-xs" style="color: #374151;">{{ item.name }}</span>
                   </div>
-                  <span class="text-xs font-bold tabular-nums" style="color: var(--bp-text-1); font-family: var(--font-mono);">{{ item.count }}</span>
+                  <span class="text-xs font-bold tabular-nums" style="color: #111827; font-family: 'JetBrains Mono', monospace;">{{ item.count }}</span>
                 </div>
-                <div v-if="chemistryDistribution.length === 0" class="text-xs py-3" style="color: var(--bp-text-muted);">데이터 없음</div>
+                <div v-if="chemistryDistribution.length === 0" class="text-xs py-3" style="color: #9ca3af;">데이터 없음</div>
               </div>
             </div>
           </div>
 
           <!-- Status — stacked bar + legend, spans 2 cols -->
-          <div class="lg:col-span-2 bp-card p-5">
+          <div class="lg:col-span-2 bg-white rounded-xl border border-gray-200 shadow-sm p-5">
             <div class="flex items-center justify-between mb-4">
-              <h2 class="text-sm font-semibold" style="font-family: var(--font-display); color: var(--bp-text-1); letter-spacing: -0.01em;">상태 분포</h2>
-              <span class="text-xs font-bold tabular-nums" style="color: var(--bp-text-2); font-family: var(--font-mono);">{{ statTotal }}</span>
+              <h2 class="text-sm font-semibold" style="font-family: 'Pretendard Variable', sans-serif; color: #111827; letter-spacing: -0.01em;">상태 분포</h2>
+              <span class="text-xs font-bold tabular-nums" style="color: #374151; font-family: 'JetBrains Mono', monospace;">{{ statTotal }}</span>
             </div>
             <!-- Stacked horizontal bar -->
             <div v-if="statusDistribution.length > 0" class="mb-4">
-              <div class="flex h-7 rounded-lg overflow-hidden" style="background: var(--bp-surface-4);">
+              <div class="flex h-7 rounded-lg overflow-hidden" style="background: #e2e8f0;">
                 <div v-for="item in statusDistribution" :key="item.status"
                   class="h-full transition-all duration-700 relative group"
                   :style="{ width: (item.count / statTotal * 100) + '%', backgroundColor: item.color, minWidth: '4px' }">
@@ -285,66 +285,66 @@ app.component('dashboard-page', {
                   <span class="text-[11px]" :style="{ color: item.color }">{{ item.label }}</span>
                 </div>
                 <div class="flex items-center gap-2">
-                  <span class="text-[10px] tabular-nums" style="color: var(--bp-text-3); font-family: var(--font-mono);">{{ statTotal > 0 ? Math.round(item.count / statTotal * 100) : 0 }}%</span>
-                  <span class="text-xs font-bold tabular-nums w-5 text-right" style="color: var(--bp-text-1); font-family: var(--font-mono);">{{ item.count }}</span>
+                  <span class="text-[10px] tabular-nums" style="color: #6b7280; font-family: 'JetBrains Mono', monospace;">{{ statTotal > 0 ? Math.round(item.count / statTotal * 100) : 0 }}%</span>
+                  <span class="text-xs font-bold tabular-nums w-5 text-right" style="color: #111827; font-family: 'JetBrains Mono', monospace;">{{ item.count }}</span>
                 </div>
               </div>
-              <div v-if="statusDistribution.length === 0" class="text-xs py-3 text-center" style="color: var(--bp-text-muted);">데이터 없음</div>
+              <div v-if="statusDistribution.length === 0" class="text-xs py-3 text-center" style="color: #9ca3af;">데이터 없음</div>
             </div>
           </div>
         </div>
 
         <!-- ═══ RECENT TABLE ═══ -->
-        <div class="bp-card overflow-hidden bp-animate-in bp-delay-3">
-          <div class="px-5 py-3 flex items-center justify-between" style="border-bottom: 1px solid var(--bp-border); background: linear-gradient(90deg, var(--bp-surface-3), var(--bp-surface-2));">
+        <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden  ">
+          <div class="px-5 py-3 flex items-center justify-between" style="border-bottom: 1px solid #e5e7eb; background: linear-gradient(90deg, #f1f5f9, #ffffff);">
             <div class="flex items-center gap-2">
-              <div class="w-1 h-4 rounded-full" style="background: var(--bp-signal);"></div>
-              <h2 class="text-xs font-semibold" style="font-family: var(--font-display); color: var(--bp-text-1); letter-spacing: -0.01em;">최근 등록</h2>
-              <span class="text-[9px] tabular-nums px-1.5 py-0.5 rounded" style="background: var(--bp-surface-4); color: var(--bp-text-3); font-family: var(--font-mono);">{{ recentPassports.length }}</span>
+              <div class="w-1 h-4 rounded-full" style="background: #059669;"></div>
+              <h2 class="text-xs font-semibold" style="font-family: 'Pretendard Variable', sans-serif; color: #111827; letter-spacing: -0.01em;">최근 등록</h2>
+              <span class="text-[9px] tabular-nums px-1.5 py-0.5 rounded" style="background: #e2e8f0; color: #6b7280; font-family: 'JetBrains Mono', monospace;">{{ recentPassports.length }}</span>
             </div>
-            <button @click="nav('passports')" class="text-[10px] font-medium flex items-center gap-1 transition-colors" style="color: var(--bp-text-3);"
-              onmouseenter="this.style.color='var(--bp-signal)'" onmouseleave="this.style.color='var(--bp-text-3)'">
+            <button @click="nav('passports')" class="text-[10px] font-medium flex items-center gap-1 transition-colors" style="color: #6b7280;"
+              onmouseenter="this.style.color='#059669'" onmouseleave="this.style.color='#6b7280'">
               전체 보기 <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
             </button>
           </div>
 
           <div v-if="recentPassports.length > 0" class="overflow-x-auto">
-            <table class="bp-table">
+            <table class="w-full text-sm">
               <thead>
                 <tr><th>제조사</th><th>모델</th><th>무게</th><th>화학</th><th>등록일</th><th>상태</th><th class="text-right">작업</th></tr>
               </thead>
               <tbody>
                 <tr v-for="(p, idx) in recentPassports" :key="idx"
                     @click="$emit('navigate', 'passport-detail', { passportId: p.passportId || p.id })"
-                    class="cursor-pointer bp-animate-in" :style="'animation-delay: ' + (idx * 0.03) + 's;'">
-                  <td style="color: var(--bp-text-2);">{{ p.manufacturerName || '-' }}</td>
-                  <td class="font-medium" style="color: var(--bp-text-1);">{{ p.model || '-' }}</td>
-                  <td class="tabular-nums" style="font-family: var(--font-mono);">{{ p.weight ? p.weight + ' kg' : '-' }}</td>
-                  <td><span class="bp-badge bp-badge-muted">{{ p.chemistry || '-' }}</span></td>
-                  <td style="color: var(--bp-text-3); font-family: var(--font-mono); font-size: 0.7rem;">{{ formatDate(p.createdAt || p.manufactureDate) }}</td>
+                    class="cursor-pointer " :style="'animation-delay: ' + (idx * 0.03) + 's;'">
+                  <td style="color: #374151;">{{ p.manufacturerName || '-' }}</td>
+                  <td class="font-medium" style="color: #111827;">{{ p.model || '-' }}</td>
+                  <td class="tabular-nums" style="font-family: 'JetBrains Mono', monospace;">{{ p.weight ? p.weight + ' kg' : '-' }}</td>
+                  <td><span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-gray-100 text-gray-600">{{ p.chemistry || '-' }}</span></td>
+                  <td style="color: #6b7280; font-family: 'JetBrains Mono', monospace; font-size: 0.7rem;">{{ formatDate(p.createdAt || p.manufactureDate) }}</td>
                   <td>
                     <span class="inline-flex items-center gap-1.5">
                       <span class="w-1.5 h-1.5 rounded-full" :style="{
                         backgroundColor: p.status==='MANUFACTURED'?'#60a5fa':p.status==='ACTIVE'?'#34d399':p.status==='MAINTENANCE'?'#fbbf24':p.status==='ANALYSIS'?'#a78bfa':p.status==='RECYCLING'?'#f97316':'#64748b'
                       }"></span>
-                      <span class="text-xs" style="color: var(--bp-text-2);">{{ statusLabels[p.status] || p.status || '-' }}</span>
+                      <span class="text-xs" style="color: #374151;">{{ statusLabels[p.status] || p.status || '-' }}</span>
                     </span>
                   </td>
                   <td class="text-right">
                     <button @click.stop="$emit('navigate', 'passport-detail', { passportId: p.passportId || p.id })"
-                      class="text-[10px] font-medium" style="color: var(--bp-signal);">상세 →</button>
+                      class="text-[10px] font-medium" style="color: #059669;">상세 →</button>
                   </td>
                 </tr>
               </tbody>
             </table>
           </div>
           <div v-else class="py-14 text-center">
-            <div class="w-11 h-11 mx-auto mb-3 rounded-xl flex items-center justify-center" style="background: var(--bp-surface-3);">
-              <svg class="w-5 h-5" style="color: var(--bp-text-muted);" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+            <div class="w-11 h-11 mx-auto mb-3 rounded-xl flex items-center justify-center" style="background: #f1f5f9;">
+              <svg class="w-5 h-5" style="color: #9ca3af;" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
                 <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/>
               </svg>
             </div>
-            <p class="text-xs font-medium" style="color: var(--bp-text-2);">등록된 여권이 없습니다</p>
+            <p class="text-xs font-medium" style="color: #374151;">등록된 여권이 없습니다</p>
           </div>
         </div>
       </div>
