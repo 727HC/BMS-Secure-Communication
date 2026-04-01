@@ -276,7 +276,7 @@ app.component('recycling-page', {
           <p style="font-family:'Pretendard Variable', sans-serif;font-size:0.72rem;color:#6b7280;margin-top:2px;">배터리 분석, 재활용 판정 및 폐기 처리 관리</p>
         </div>
       </div>
-      <button @click="fetchPassports" class="bg-[#1a1814] border border-[rgba(250,250,245,0.06)] text-[rgba(250,250,245,0.7)] px-4 py-2 rounded-lg text-sm font-medium hover:bg-[#1f1d17]" style="display:inline-flex;align-items:center;gap:6px;font-size:0.82rem;">
+      <button @click="fetchPassports" class="bg-[#1a1814] border border-[rgba(250,250,245,0.06)] text-[rgba(250,250,245,0.7)] px-4 py-2 rounded text-sm font-medium hover:bg-[#1f1d17]" style="display:inline-flex;align-items:center;gap:6px;font-size:0.82rem;">
         <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
         </svg>
@@ -327,7 +327,7 @@ app.component('recycling-page', {
     <!-- ====== FILTER TABS ====== -->
     <div class="flex bg-[#2a2720]  p-1  " style="display:flex;align-items:center;gap:4px;padding:4px;width:fit-content;">
       <button v-for="tab in tabs" :key="tab.key" @click="activeTab = tab.key"
-        :class="['flex-1 py-2 text-sm font-medium text-[rgba(250,250,245,0.35)] rounded-lg text-center cursor-pointer hover:text-[rgba(250,250,245,0.7)]', activeTab === tab.key ? 'bg-[#1a1814] text-[#c8ff00] shadow-none' : '']"
+        :class="['flex-1 py-2 text-sm font-medium text-[rgba(250,250,245,0.35)] rounded text-center cursor-pointer hover:text-[rgba(250,250,245,0.7)]', activeTab === tab.key ? 'bg-[#1a1814] text-[#c8ff00] shadow-none' : '']"
         style="display:inline-flex;align-items:center;gap:6px;padding:8px 14px;font-size:0.82rem;border-radius:8px;cursor:pointer;transition:all 0.2s;">
         <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" :d="tab.icon"/>
@@ -446,27 +446,27 @@ app.component('recycling-page', {
               <td style="text-align:right;">
                 <div v-if="hasAnyAction(p)" style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;">
                   <button v-if="canRequestAnalysis && p.status !== 'DISPOSED'" @click="requestAnalysis(p)"
-                    class="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium" style="font-size:0.72rem;padding:4px 10px;display:inline-flex;align-items:center;gap:4px;color:#2563eb;border:1px solid #2563eb;background:transparent;width:100%;justify-content:center;">
+                    class="inline-flex items-center gap-1.5 px-4 py-2 rounded text-sm font-medium" style="font-size:0.72rem;padding:4px 10px;display:inline-flex;align-items:center;gap:4px;color:#2563eb;border:1px solid #2563eb;background:transparent;width:100%;justify-content:center;">
                     <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
                     분석 요청
                   </button>
                   <button v-if="canSubmitAnalysis && p.status !== 'DISPOSED'" @click="openAnalysisResult(p)"
-                    class="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium" style="font-size:0.72rem;padding:4px 10px;display:inline-flex;align-items:center;gap:4px;color:#7c3aed;border:1px solid #7c3aed;background:transparent;width:100%;justify-content:center;">
+                    class="inline-flex items-center gap-1.5 px-4 py-2 rounded text-sm font-medium" style="font-size:0.72rem;padding:4px 10px;display:inline-flex;align-items:center;gap:4px;color:#7c3aed;border:1px solid #7c3aed;background:transparent;width:100%;justify-content:center;">
                     <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
                     분석 결과
                   </button>
                   <button v-if="canToggleRecycle && p.status !== 'DISPOSED'" @click="openRecycleToggle(p)"
-                    class="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium" style="font-size:0.72rem;padding:4px 10px;display:inline-flex;align-items:center;gap:4px;color:#059669;border:1px solid #059669;background:transparent;width:100%;justify-content:center;">
+                    class="inline-flex items-center gap-1.5 px-4 py-2 rounded text-sm font-medium" style="font-size:0.72rem;padding:4px 10px;display:inline-flex;align-items:center;gap:4px;color:#059669;border:1px solid #059669;background:transparent;width:100%;justify-content:center;">
                     <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                     재활용 판정
                   </button>
                   <button v-if="canExtract && p.status !== 'DISPOSED'" @click="openExtract(p)"
-                    class="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium" style="font-size:0.72rem;padding:4px 10px;display:inline-flex;align-items:center;gap:4px;color:#d97706;border:1px solid #d97706;background:transparent;width:100%;justify-content:center;">
+                    class="inline-flex items-center gap-1.5 px-4 py-2 rounded text-sm font-medium" style="font-size:0.72rem;padding:4px 10px;display:inline-flex;align-items:center;gap:4px;color:#d97706;border:1px solid #d97706;background:transparent;width:100%;justify-content:center;">
                     <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
                     원자재 추출
                   </button>
                   <button v-if="canDispose && p.status !== 'DISPOSED'" @click="openDispose(p)"
-                    class="bg-[rgba(239,68,68,0.1)] text-[#ff6b6b] border border-red-200 px-4 py-2 rounded-lg text-sm font-medium hover:bg-red-100" style="font-size:0.72rem;padding:4px 10px;display:inline-flex;align-items:center;gap:4px;width:100%;justify-content:center;">
+                    class="bg-[rgba(239,68,68,0.1)] text-[#ff6b6b] border border-red-200 px-4 py-2 rounded text-sm font-medium hover:bg-red-100" style="font-size:0.72rem;padding:4px 10px;display:inline-flex;align-items:center;gap:4px;width:100%;justify-content:center;">
                     <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
                     폐기 처리
                   </button>
@@ -494,7 +494,7 @@ app.component('recycling-page', {
             </div>
             <h3 style="font-family:'Pretendard Variable', sans-serif;font-size:1.1rem;font-weight:700;color:#111827;margin:0;">분석 결과 제출</h3>
           </div>
-          <button @click="closeModals" class="bg-[#1a1814] border border-[rgba(250,250,245,0.06)] text-[rgba(250,250,245,0.7)] px-4 py-2 rounded-lg text-sm font-medium hover:bg-[#1f1d17]" style="padding:6px;">
+          <button @click="closeModals" class="bg-[#1a1814] border border-[rgba(250,250,245,0.06)] text-[rgba(250,250,245,0.7)] px-4 py-2 rounded text-sm font-medium hover:bg-[#1f1d17]" style="padding:6px;">
             <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
           </button>
         </div>
@@ -531,10 +531,10 @@ app.component('recycling-page', {
           </div>
         </div>
         <div style="padding:14px 24px;border-top:1px solid #f1f5f9;background:#ffffff;display:flex;justify-content:flex-end;gap:10px;">
-          <button @click="closeModals" class="bg-[#1a1814] border border-[rgba(250,250,245,0.06)] text-[rgba(250,250,245,0.7)] px-4 py-2 rounded-lg text-sm font-medium hover:bg-[#1f1d17]">취소</button>
+          <button @click="closeModals" class="bg-[#1a1814] border border-[rgba(250,250,245,0.06)] text-[rgba(250,250,245,0.7)] px-4 py-2 rounded text-sm font-medium hover:bg-[#1f1d17]">취소</button>
           <button @click="submitAnalysisResult"
             :disabled="!analysisForm.soh || !analysisForm.soce || !analysisForm.remainingLifeCycle || submitting"
-            class="bg-[#c8ff00] text-[#1a1814] px-4 py-2 rounded-lg text-sm font-medium hover:bg-[#d4ff33]" style="display:inline-flex;align-items:center;gap:6px;"
+            class="bg-[#c8ff00] text-[#1a1814] px-4 py-2 rounded text-sm font-medium hover:bg-[#d4ff33]" style="display:inline-flex;align-items:center;gap:6px;"
             :style="(!analysisForm.soh || !analysisForm.soce || !analysisForm.remainingLifeCycle || submitting) ? 'opacity:0.4;cursor:not-allowed;' : ''">
             <svg v-if="submitting" style="animation:spin 0.8s linear infinite;" width="16" height="16" fill="none" viewBox="0 0 24 24">
               <circle opacity="0.25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -557,7 +557,7 @@ app.component('recycling-page', {
             </div>
             <h3 style="font-family:'Pretendard Variable', sans-serif;font-size:1.1rem;font-weight:700;color:#111827;margin:0;">재활용 판정</h3>
           </div>
-          <button @click="closeModals" class="bg-[#1a1814] border border-[rgba(250,250,245,0.06)] text-[rgba(250,250,245,0.7)] px-4 py-2 rounded-lg text-sm font-medium hover:bg-[#1f1d17]" style="padding:6px;">
+          <button @click="closeModals" class="bg-[#1a1814] border border-[rgba(250,250,245,0.06)] text-[rgba(250,250,245,0.7)] px-4 py-2 rounded text-sm font-medium hover:bg-[#1f1d17]" style="padding:6px;">
             <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
           </button>
         </div>
@@ -580,9 +580,9 @@ app.component('recycling-page', {
           </div>
         </div>
         <div style="padding:14px 24px;border-top:1px solid #f1f5f9;background:#ffffff;display:flex;justify-content:flex-end;gap:10px;">
-          <button @click="closeModals" class="bg-[#1a1814] border border-[rgba(250,250,245,0.06)] text-[rgba(250,250,245,0.7)] px-4 py-2 rounded-lg text-sm font-medium hover:bg-[#1f1d17]">취소</button>
+          <button @click="closeModals" class="bg-[#1a1814] border border-[rgba(250,250,245,0.06)] text-[rgba(250,250,245,0.7)] px-4 py-2 rounded text-sm font-medium hover:bg-[#1f1d17]">취소</button>
           <button @click="submitRecycleToggle" :disabled="submitting"
-            class="bg-[#c8ff00] text-[#1a1814] px-4 py-2 rounded-lg text-sm font-medium hover:bg-[#d4ff33]" style="display:inline-flex;align-items:center;gap:6px;"
+            class="bg-[#c8ff00] text-[#1a1814] px-4 py-2 rounded text-sm font-medium hover:bg-[#d4ff33]" style="display:inline-flex;align-items:center;gap:6px;"
             :style="submitting ? 'opacity:0.4;cursor:not-allowed;' : ''">
             <svg v-if="submitting" style="animation:spin 0.8s linear infinite;" width="16" height="16" fill="none" viewBox="0 0 24 24">
               <circle opacity="0.25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -607,7 +607,7 @@ app.component('recycling-page', {
             </div>
             <h3 style="font-family:'Pretendard Variable', sans-serif;font-size:1.1rem;font-weight:700;color:#111827;margin:0;">원자재 추출 기록</h3>
           </div>
-          <button @click="closeModals" class="bg-[#1a1814] border border-[rgba(250,250,245,0.06)] text-[rgba(250,250,245,0.7)] px-4 py-2 rounded-lg text-sm font-medium hover:bg-[#1f1d17]" style="padding:6px;">
+          <button @click="closeModals" class="bg-[#1a1814] border border-[rgba(250,250,245,0.06)] text-[rgba(250,250,245,0.7)] px-4 py-2 rounded text-sm font-medium hover:bg-[#1f1d17]" style="padding:6px;">
             <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
           </button>
         </div>
@@ -623,19 +623,19 @@ app.component('recycling-page', {
               <input v-model="entry.value" type="number" min="0" max="100" step="0.1" placeholder="0" class="w-full px-4 py-2.5 bg-[#1f1d17] border border-[rgba(250,250,245,0.06)]  text-[#fafaf5] outline-none focus:border-[#c8ff00]" style="width:100%;padding-right:24px;font-variant-numeric:tabular-nums;" />
               <span style="position:absolute;right:10px;top:50%;transform:translateY(-50%);font-size:0.72rem;color:#6b7280;">%</span>
             </div>
-            <button v-if="extractEntries.length > 1" @click="removeExtractEntry(idx)" class="bg-[#1a1814] border border-[rgba(250,250,245,0.06)] text-[rgba(250,250,245,0.7)] px-4 py-2 rounded-lg text-sm font-medium hover:bg-[#1f1d17]" style="padding:6px;color:#dc2626;">
+            <button v-if="extractEntries.length > 1" @click="removeExtractEntry(idx)" class="bg-[#1a1814] border border-[rgba(250,250,245,0.06)] text-[rgba(250,250,245,0.7)] px-4 py-2 rounded text-sm font-medium hover:bg-[#1f1d17]" style="padding:6px;color:#dc2626;">
               <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
             </button>
           </div>
-          <button @click="addExtractEntry" class="bg-[#1a1814] border border-[rgba(250,250,245,0.06)] text-[rgba(250,250,245,0.7)] px-4 py-2 rounded-lg text-sm font-medium hover:bg-[#1f1d17]" style="display:inline-flex;align-items:center;gap:4px;color:#059669;font-size:0.82rem;align-self:flex-start;">
+          <button @click="addExtractEntry" class="bg-[#1a1814] border border-[rgba(250,250,245,0.06)] text-[rgba(250,250,245,0.7)] px-4 py-2 rounded text-sm font-medium hover:bg-[#1f1d17]" style="display:inline-flex;align-items:center;gap:4px;color:#059669;font-size:0.82rem;align-self:flex-start;">
             <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
             원자재 추가
           </button>
         </div>
         <div style="padding:14px 24px;border-top:1px solid #f1f5f9;background:#ffffff;display:flex;justify-content:flex-end;gap:10px;">
-          <button @click="closeModals" class="bg-[#1a1814] border border-[rgba(250,250,245,0.06)] text-[rgba(250,250,245,0.7)] px-4 py-2 rounded-lg text-sm font-medium hover:bg-[#1f1d17]">취소</button>
+          <button @click="closeModals" class="bg-[#1a1814] border border-[rgba(250,250,245,0.06)] text-[rgba(250,250,245,0.7)] px-4 py-2 rounded text-sm font-medium hover:bg-[#1f1d17]">취소</button>
           <button @click="submitExtract" :disabled="submitting"
-            class="bg-[#c8ff00] text-[#1a1814] px-4 py-2 rounded-lg text-sm font-medium hover:bg-[#d4ff33]" style="display:inline-flex;align-items:center;gap:6px;"
+            class="bg-[#c8ff00] text-[#1a1814] px-4 py-2 rounded text-sm font-medium hover:bg-[#d4ff33]" style="display:inline-flex;align-items:center;gap:6px;"
             :style="submitting ? 'opacity:0.4;cursor:not-allowed;' : ''">
             <svg v-if="submitting" style="animation:spin 0.8s linear infinite;" width="16" height="16" fill="none" viewBox="0 0 24 24">
               <circle opacity="0.25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -660,7 +660,7 @@ app.component('recycling-page', {
             </div>
             <h3 style="font-family:'Pretendard Variable', sans-serif;font-size:1.1rem;font-weight:700;color:#111827;margin:0;">폐기 처리 확인</h3>
           </div>
-          <button @click="closeModals" class="bg-[#1a1814] border border-[rgba(250,250,245,0.06)] text-[rgba(250,250,245,0.7)] px-4 py-2 rounded-lg text-sm font-medium hover:bg-[#1f1d17]" style="padding:6px;">
+          <button @click="closeModals" class="bg-[#1a1814] border border-[rgba(250,250,245,0.06)] text-[rgba(250,250,245,0.7)] px-4 py-2 rounded text-sm font-medium hover:bg-[#1f1d17]" style="padding:6px;">
             <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
           </button>
         </div>
@@ -678,9 +678,9 @@ app.component('recycling-page', {
           </div>
         </div>
         <div style="padding:14px 24px;border-top:1px solid #f1f5f9;background:#ffffff;display:flex;justify-content:flex-end;gap:10px;">
-          <button @click="closeModals" class="bg-[#1a1814] border border-[rgba(250,250,245,0.06)] text-[rgba(250,250,245,0.7)] px-4 py-2 rounded-lg text-sm font-medium hover:bg-[#1f1d17]">취소</button>
+          <button @click="closeModals" class="bg-[#1a1814] border border-[rgba(250,250,245,0.06)] text-[rgba(250,250,245,0.7)] px-4 py-2 rounded text-sm font-medium hover:bg-[#1f1d17]">취소</button>
           <button @click="submitDispose" :disabled="submitting"
-            class="bg-[rgba(239,68,68,0.1)] text-[#ff6b6b] border border-red-200 px-4 py-2 rounded-lg text-sm font-medium hover:bg-red-100" style="display:inline-flex;align-items:center;gap:6px;"
+            class="bg-[rgba(239,68,68,0.1)] text-[#ff6b6b] border border-red-200 px-4 py-2 rounded text-sm font-medium hover:bg-red-100" style="display:inline-flex;align-items:center;gap:6px;"
             :style="submitting ? 'opacity:0.4;cursor:not-allowed;' : ''">
             <svg v-if="submitting" style="animation:spin 0.8s linear infinite;" width="16" height="16" fill="none" viewBox="0 0 24 24">
               <circle opacity="0.25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>

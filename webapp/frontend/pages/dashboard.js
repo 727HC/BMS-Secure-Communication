@@ -148,7 +148,7 @@ app.component('dashboard-page', {
             <h1 style="font-family: 'Pretendard Variable', sans-serif; font-weight: 800; font-size: 2.5rem; color: #fafaf5; letter-spacing: -0.03em;">대시보드</h1>
           </div>
           <button @click="nav('passports')"
-            class="px-6 py-3 text-sm font-bold tracking-[0.05em] uppercase transition-all"
+            class="px-6 py-3 text-sm font-semibold tracking-[0.05em] uppercase transition-all"
             style="background: #c8ff00; color: #1a1814;"
             onmouseenter="this.style.background='#d4ff33'"
             onmouseleave="this.style.background='#c8ff00'">
