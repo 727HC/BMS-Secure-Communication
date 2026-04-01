@@ -209,7 +209,7 @@ app.component('bmu-data-page', {
         </div>
         <button @click="handleSearch"
                 :disabled="!passportId.trim() || loading"
-                :class="['inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium', (!passportId.trim() || loading) ? 'inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium-ghost' : 'inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium-primary']"
+                :class="['inline-flex items-center gap-1.5 px-4 py-2 rounded text-sm font-medium', (!passportId.trim() || loading) ? 'inline-flex items-center gap-1.5 px-4 py-2 rounded text-sm font-medium-ghost' : 'inline-flex items-center gap-1.5 px-4 py-2 rounded text-sm font-medium-primary']"
                 :style="(!passportId.trim() || loading) ? 'cursor:not-allowed;opacity:0.5;' : ''"
                 style="display:inline-flex;align-items:center;gap:8px;padding:0.65rem 1.25rem;font-family:'Pretendard Variable', sans-serif;">
           <svg v-if="!loading" style="width:16px;height:16px;" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">

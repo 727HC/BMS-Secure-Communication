@@ -202,7 +202,7 @@ app.component('login-page', {
 
               <!-- SUBMIT — monumental button -->
               <button type="submit" :disabled="loading"
-                class="w-full py-4 mt-4 text-sm font-bold tracking-[0.1em] uppercase transition-all"
+                class="w-full py-4 mt-4 text-sm font-semibold tracking-[0.1em] uppercase transition-all"
                 :style="loading
                   ? 'background: rgba(200,255,0,0.2); color: rgba(26,24,20,0.5); cursor: not-allowed;'
                   : 'background: #c8ff00; color: #1a1814;'"

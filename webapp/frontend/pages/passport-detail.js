@@ -825,35 +825,35 @@ app.component('passport-detail-page', {
 
             <!-- Key specs grid -->
             <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              <div class="bg-[#1f1d17] rounded-lg px-3 py-2.5 border border-[rgba(250,250,245,0.06)]">
+              <div class="bg-[#1f1d17] rounded px-3 py-2.5 border border-[rgba(250,250,245,0.06)]">
                 <p class="text-[10px] font-medium text-[rgba(250,250,245,0.35)] uppercase tracking-wider mb-0.5">제조사</p>
                 <p class="text-sm font-semibold text-[rgba(250,250,245,0.7)] truncate">{{ passport.manufacturerName || '-' }}</p>
               </div>
-              <div class="bg-[#1f1d17] rounded-lg px-3 py-2.5 border border-[rgba(250,250,245,0.06)]">
+              <div class="bg-[#1f1d17] rounded px-3 py-2.5 border border-[rgba(250,250,245,0.06)]">
                 <p class="text-[10px] font-medium text-[rgba(250,250,245,0.35)] uppercase tracking-wider mb-0.5">화학물질</p>
                 <p class="text-sm font-semibold text-[rgba(250,250,245,0.7)] truncate">{{ passport.chemistry || '-' }}</p>
               </div>
-              <div class="bg-[#1f1d17] rounded-lg px-3 py-2.5 border border-[rgba(250,250,245,0.06)]">
+              <div class="bg-[#1f1d17] rounded px-3 py-2.5 border border-[rgba(250,250,245,0.06)]">
                 <p class="text-[10px] font-medium text-[rgba(250,250,245,0.35)] uppercase tracking-wider mb-0.5">총 에너지</p>
                 <p class="text-sm font-semibold text-[rgba(250,250,245,0.7)]">{{ passport.totalEnergy ? passport.totalEnergy + ' kWh' : '-' }}</p>
               </div>
-              <div class="bg-[#1f1d17] rounded-lg px-3 py-2.5 border border-[rgba(250,250,245,0.06)]">
+              <div class="bg-[#1f1d17] rounded px-3 py-2.5 border border-[rgba(250,250,245,0.06)]">
                 <p class="text-[10px] font-medium text-[rgba(250,250,245,0.35)] uppercase tracking-wider mb-0.5">무게</p>
                 <p class="text-sm font-semibold text-[rgba(250,250,245,0.7)]">{{ passport.weight ? passport.weight + ' kg' : '-' }}</p>
               </div>
-              <div v-if="passport.vin" class="bg-[#1f1d17] rounded-lg px-3 py-2.5 border border-[rgba(250,250,245,0.06)]">
+              <div v-if="passport.vin" class="bg-[#1f1d17] rounded px-3 py-2.5 border border-[rgba(250,250,245,0.06)]">
                 <p class="text-[10px] font-medium text-[rgba(250,250,245,0.35)] uppercase tracking-wider mb-0.5">VIN</p>
                 <p class="text-sm font-semibold text-[rgba(250,250,245,0.7)] font-mono truncate">{{ passport.vin }}</p>
               </div>
-              <div class="bg-[#1f1d17] rounded-lg px-3 py-2.5 border border-[rgba(250,250,245,0.06)]">
+              <div class="bg-[#1f1d17] rounded px-3 py-2.5 border border-[rgba(250,250,245,0.06)]">
                 <p class="text-[10px] font-medium text-[rgba(250,250,245,0.35)] uppercase tracking-wider mb-0.5">셀 수</p>
                 <p class="text-sm font-semibold text-[rgba(250,250,245,0.7)]">{{ passport.cellCount || '-' }}</p>
               </div>
-              <div class="bg-[#1f1d17] rounded-lg px-3 py-2.5 border border-[rgba(250,250,245,0.06)]">
+              <div class="bg-[#1f1d17] rounded px-3 py-2.5 border border-[rgba(250,250,245,0.06)]">
                 <p class="text-[10px] font-medium text-[rgba(250,250,245,0.35)] uppercase tracking-wider mb-0.5">셀 유형</p>
                 <p class="text-sm font-semibold text-[rgba(250,250,245,0.7)] truncate">{{ passport.cellType || '-' }}</p>
               </div>
-              <div class="bg-[#1f1d17] rounded-lg px-3 py-2.5 border border-[rgba(250,250,245,0.06)]">
+              <div class="bg-[#1f1d17] rounded px-3 py-2.5 border border-[rgba(250,250,245,0.06)]">
                 <p class="text-[10px] font-medium text-[rgba(250,250,245,0.35)] uppercase tracking-wider mb-0.5">정격용량</p>
                 <p class="text-sm font-semibold text-[rgba(250,250,245,0.7)]">{{ passport.ratedCapacity ? passport.ratedCapacity + ' Ah' : '-' }}</p>
               </div>
@@ -867,8 +867,8 @@ app.component('passport-detail-page', {
               <div v-if="vehicleImagePath" class="w-full flex items-center gap-3">
                 <!-- Vehicle image (left) -->
                 <div class="flex-1 relative group">
-                  <img :src="vehicleImagePath" alt="차량 이미지" class="w-full h-28 object-contain rounded-lg" />
-                  <label class="absolute inset-0 bg-black/40 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer">
+                  <img :src="vehicleImagePath" alt="차량 이미지" class="w-full h-28 object-contain rounded" />
+                  <label class="absolute inset-0 bg-black/40 rounded opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer">
                     <span class="text-[#1a1814] text-xs font-medium">사진 변경</span>
                     <input type="file" accept="image/*" class="hidden" @change="uploadVehicleImage($event.target.files[0])" />
                   </label>
@@ -899,7 +899,7 @@ app.component('passport-detail-page', {
                 </div>
               </div>
               <!-- Upload button (no image yet, VIN exists) -->
-              <label v-else-if="passport.vin" class="w-full h-28 border-2 border-dashed border-[rgba(250,250,245,0.1)] rounded-lg flex flex-col items-center justify-center gap-2 cursor-pointer hover:border-emerald-400 hover:bg-[rgba(200,255,0,0.08)]/30 transition-colors">
+              <label v-else-if="passport.vin" class="w-full h-28 border-2 border-dashed border-[rgba(250,250,245,0.1)] rounded flex flex-col items-center justify-center gap-2 cursor-pointer hover:border-emerald-400 hover:bg-[rgba(200,255,0,0.08)]/30 transition-colors">
                 <svg class="w-7 h-7 text-[rgba(250,250,245,0.2)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
                 </svg>
@@ -1011,14 +1011,14 @@ app.component('passport-detail-page', {
           <div v-if="isManufacturer || isEV || isRegulator"
             class="flex justify-end gap-2">
             <button v-if="isManufacturer" @click="openLinkMaterialsModal"
-              class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-[#c8ff00] bg-[rgba(200,255,0,0.08)] border border-emerald-500 rounded-lg hover:bg-[rgba(200,255,0,0.08)] transition-colors">
+              class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-[#c8ff00] bg-[rgba(200,255,0,0.08)] border border-emerald-500 rounded hover:bg-[rgba(200,255,0,0.08)] transition-colors">
               <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
               </svg>
               원자재 연결
             </button>
             <button @click="showCorrectModal = true"
-              class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-[#ffb800] bg-[rgba(255,184,0,0.1)] border border-amber-200 rounded-lg hover:bg-[rgba(255,184,0,0.1)] transition-colors">
+              class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-[#ffb800] bg-[rgba(255,184,0,0.1)] border border-amber-200 rounded hover:bg-[rgba(255,184,0,0.1)] transition-colors">
               <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
               </svg>
@@ -1029,7 +1029,7 @@ app.component('passport-detail-page', {
           <!-- Identity Spec Grid — OpenBattery style: large label + big value, 3-column -->
           <div class="bg-[#1a1814]  border border-[rgba(250,250,245,0.06)] shadow-none overflow-hidden" style="background: #1a1814;">
             <div class="px-6 py-4 border-b border-[rgba(250,250,245,0.06)] flex items-center gap-2.5">
-              <div class="w-8 h-8 bg-[rgba(200,255,0,0.08)] rounded-lg flex items-center justify-center">
+              <div class="w-8 h-8 bg-[rgba(200,255,0,0.08)] rounded flex items-center justify-center">
                 <svg class="w-4 h-4 text-[#c8ff00]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0"/>
                 </svg>
@@ -1092,7 +1092,7 @@ app.component('passport-detail-page', {
           <!-- Performance & Durability — OpenBattery hero spec grid -->
           <div class="bg-[#1a1814]  border border-[rgba(250,250,245,0.06)] shadow-none overflow-hidden" style="background: #1a1814;">
             <div class="px-6 py-4 border-b border-[rgba(250,250,245,0.06)] flex items-center gap-2.5">
-              <div class="w-8 h-8 bg-[rgba(200,255,0,0.08)] rounded-lg flex items-center justify-center">
+              <div class="w-8 h-8 bg-[rgba(200,255,0,0.08)] rounded flex items-center justify-center">
                 <svg class="w-4 h-4 text-[#c8ff00]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z"/>
                 </svg>
@@ -1173,7 +1173,7 @@ app.component('passport-detail-page', {
           <div class="bg-[#1a1814]  border border-[rgba(250,250,245,0.06)] shadow-none overflow-hidden" style="background: #1a1814;">
             <div class="px-6 py-4 border-b border-[rgba(250,250,245,0.06)] flex items-center justify-between">
               <div class="flex items-center gap-2.5">
-                <div class="w-8 h-8 bg-[rgba(200,255,0,0.08)] rounded-lg flex items-center justify-center">
+                <div class="w-8 h-8 bg-[rgba(200,255,0,0.08)] rounded flex items-center justify-center">
                   <svg class="w-4 h-4 text-[#c8ff00]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101"/>
                   </svg>
@@ -1181,7 +1181,7 @@ app.component('passport-detail-page', {
                 <h3 class="text-sm font-bold text-[#fafaf5] uppercase tracking-wider">EV 바인딩</h3>
               </div>
               <button v-if="isEV && !passport.vin" @click="showBindModal = true"
-                class="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-[#c8ff00] hover:bg-[#d4ff33] text-[#1a1814] font-medium text-xs rounded-lg transition-colors">
+                class="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-[#c8ff00] hover:bg-[#d4ff33] text-[#1a1814] font-medium text-xs rounded transition-colors">
                 <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
                 </svg>
@@ -1279,7 +1279,7 @@ app.component('passport-detail-page', {
           <div class="bg-[#1a1814]  border border-[rgba(250,250,245,0.06)] shadow-none overflow-hidden" style="background: #1a1814;">
             <div class="px-6 py-5 border-b border-[rgba(250,250,245,0.06)]">
               <div class="flex items-center gap-3">
-                <div class="w-9 h-9 rounded-lg flex items-center justify-center"
+                <div class="w-9 h-9 rounded flex items-center justify-center"
                      :class="gbaCompliance.allFilled ? 'bg-[rgba(200,255,0,0.08)]' : 'bg-[rgba(255,184,0,0.1)]'">
                   <svg class="w-5 h-5" :class="gbaCompliance.allFilled ? 'text-[#c8ff00]' : 'text-amber-600'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
@@ -1368,7 +1368,7 @@ app.component('passport-detail-page', {
               </div>
 
               <!-- Certified badge -->
-              <div v-if="gbaCompliance.allFilled" class="mt-6 px-4 py-3 bg-[rgba(200,255,0,0.08)]/60 rounded-lg border border-emerald-100 flex items-center gap-2.5">
+              <div v-if="gbaCompliance.allFilled" class="mt-6 px-4 py-3 bg-[rgba(200,255,0,0.08)]/60 rounded border border-emerald-100 flex items-center gap-2.5">
                 <svg class="w-5 h-5 text-[#c8ff00] flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
                   <polyline points="9 12 11 14 15 10" stroke-width="2.5"/>
@@ -1381,7 +1381,7 @@ app.component('passport-detail-page', {
           <!-- Carbon Footprint Card (GBA 21 #20) -->
           <div class="bg-[#1a1814]  border border-[rgba(250,250,245,0.06)] shadow-none overflow-hidden" style="background: #1a1814;">
             <div class="px-6 py-4 border-b border-[rgba(250,250,245,0.06)] flex items-center gap-2.5">
-              <div class="w-8 h-8 bg-teal-100 rounded-lg flex items-center justify-center">
+              <div class="w-8 h-8 bg-teal-100 rounded flex items-center justify-center">
                 <svg class="w-4 h-4 text-teal-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
                 </svg>
@@ -1436,7 +1436,7 @@ app.component('passport-detail-page', {
               <p class="text-xs text-amber-600 mt-0.5">EV 제조사로부터 정비 요청이 접수되었습니다. 정비를 수행하고 기록을 추가해주세요.</p>
             </div>
             <button v-if="isService" @click="showMaintenanceLogModal = true"
-              class="flex-shrink-0 px-4 py-2 bg-amber-600 hover:bg-amber-700 text-[#1a1814] text-xs font-semibold rounded-lg transition-colors">
+              class="flex-shrink-0 px-4 py-2 bg-amber-600 hover:bg-amber-700 text-[#1a1814] text-xs font-semibold rounded transition-colors">
               정비 기록 추가
             </button>
           </div>
@@ -1453,7 +1453,7 @@ app.component('passport-detail-page', {
               <p class="text-xs text-purple-600 mt-0.5">EV 제조사로부터 배터리 분석 요청이 접수되었습니다. SOH/SOCE 분석 후 결과를 제출해주세요.</p>
             </div>
             <button v-if="isService" @click="showAnalysisResultModal = true"
-              class="flex-shrink-0 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-[#1a1814] text-xs font-semibold rounded-lg transition-colors">
+              class="flex-shrink-0 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-[#1a1814] text-xs font-semibold rounded transition-colors">
               분석 결과 제출
             </button>
           </div>
@@ -1470,7 +1470,7 @@ app.component('passport-detail-page', {
               <p class="text-xs text-teal-600 mt-0.5">재활용 가능 판정이 완료되었습니다. 원자재 추출 또는 폐기를 진행해주세요.</p>
             </div>
             <button v-if="isRegulator" @click="showExtractModal = true"
-              class="flex-shrink-0 px-4 py-2 bg-teal-600 hover:bg-teal-700 text-[#1a1814] text-xs font-semibold rounded-lg transition-colors">
+              class="flex-shrink-0 px-4 py-2 bg-teal-600 hover:bg-teal-700 text-[#1a1814] text-xs font-semibold rounded transition-colors">
               원자재 추출
             </button>
           </div>
@@ -1478,7 +1478,7 @@ app.component('passport-detail-page', {
           <!-- Lifecycle Timeline -->
           <div class="bg-[#1a1814]  border border-[rgba(250,250,245,0.06)] shadow-none overflow-hidden" style="background: #1a1814;">
             <div class="px-6 py-4 border-b border-[rgba(250,250,245,0.06)] flex items-center gap-2.5">
-              <div class="w-8 h-8 bg-[rgba(200,255,0,0.08)] rounded-lg flex items-center justify-center">
+              <div class="w-8 h-8 bg-[rgba(200,255,0,0.08)] rounded flex items-center justify-center">
                 <svg class="w-4 h-4 text-[#c8ff00]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                   <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
                 </svg>
@@ -1548,7 +1548,7 @@ app.component('passport-detail-page', {
           <div v-if="linkedMaterialDetails.length > 0"
                class="bg-[#1a1814]  border border-[rgba(250,250,245,0.06)] shadow-none overflow-hidden" style="background: #1a1814;">
             <div class="px-6 py-4 border-b border-[rgba(250,250,245,0.06)] flex items-center gap-2.5">
-              <div class="w-8 h-8 bg-[rgba(192,132,252,0.1)] rounded-lg flex items-center justify-center">
+              <div class="w-8 h-8 bg-[rgba(192,132,252,0.1)] rounded flex items-center justify-center">
                 <svg class="w-4 h-4 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                   <path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/>
                 </svg>
@@ -1559,8 +1559,8 @@ app.component('passport-detail-page', {
             <div class="p-4">
               <div class="grid gap-3 sm:grid-cols-2">
                 <div v-for="m in linkedMaterialDetails" :key="m.materialId"
-                  class="flex items-start gap-3 p-3 rounded-lg border border-[rgba(250,250,245,0.06)] bg-[#1f1d17]">
-                  <div class="w-8 h-8 bg-[rgba(192,132,252,0.1)] rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
+                  class="flex items-start gap-3 p-3 rounded border border-[rgba(250,250,245,0.06)] bg-[#1f1d17]">
+                  <div class="w-8 h-8 bg-[rgba(192,132,252,0.1)] rounded flex items-center justify-center flex-shrink-0 mt-0.5">
                     <svg class="w-4 h-4 text-purple-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                       <path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
                     </svg>
@@ -1584,7 +1584,7 @@ app.component('passport-detail-page', {
           <div class="bg-[#1a1814]  border border-[rgba(250,250,245,0.06)] shadow-none overflow-hidden" style="background: #1a1814;">
             <div class="px-6 py-4 border-b border-[rgba(250,250,245,0.06)] flex items-center justify-between">
               <div class="flex items-center gap-2.5">
-                <div class="w-8 h-8 bg-[rgba(255,184,0,0.1)] rounded-lg flex items-center justify-center">
+                <div class="w-8 h-8 bg-[rgba(255,184,0,0.1)] rounded flex items-center justify-center">
                   <svg class="w-4 h-4 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/>
                   </svg>
@@ -1594,11 +1594,11 @@ app.component('passport-detail-page', {
               </div>
               <div class="flex gap-2">
                 <button v-if="isEV && passport.status === 'ACTIVE'" @click="showMaintenanceRequestModal = true"
-                  class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#fbbf24] hover:bg-amber-600 text-[#1a1814] font-medium text-xs rounded-lg transition-colors">
+                  class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#fbbf24] hover:bg-amber-600 text-[#1a1814] font-medium text-xs rounded transition-colors">
                   정비 요청
                 </button>
                 <button v-if="isService" @click="showMaintenanceLogModal = true"
-                  class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#c8ff00] hover:bg-[#d4ff33] text-[#1a1814] font-medium text-xs rounded-lg transition-colors">
+                  class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#c8ff00] hover:bg-[#d4ff33] text-[#1a1814] font-medium text-xs rounded transition-colors">
                   기록 추가
                 </button>
               </div>
@@ -1631,7 +1631,7 @@ app.component('passport-detail-page', {
           <div class="bg-[#1a1814]  border border-[rgba(250,250,245,0.06)] shadow-none overflow-hidden" style="background: #1a1814;">
             <div class="px-6 py-4 border-b border-[rgba(250,250,245,0.06)] flex items-center justify-between">
               <div class="flex items-center gap-2.5">
-                <div class="w-8 h-8 bg-[rgba(239,68,68,0.1)] rounded-lg flex items-center justify-center">
+                <div class="w-8 h-8 bg-[rgba(239,68,68,0.1)] rounded flex items-center justify-center">
                   <svg class="w-4 h-4 text-[#ff6b6b]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
                   </svg>
@@ -1640,7 +1640,7 @@ app.component('passport-detail-page', {
                 <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-[#33302a] text-[rgba(250,250,245,0.7)]">{{ accidentLogs.length }}</span>
               </div>
               <button v-if="isEV || isService" @click="showAccidentLogModal = true"
-                class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[rgba(239,68,68,0.1)]0 hover:bg-red-600 text-[#1a1814] font-medium text-xs rounded-lg transition-colors">
+                class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[rgba(239,68,68,0.1)]0 hover:bg-red-600 text-[#1a1814] font-medium text-xs rounded transition-colors">
                 기록 추가
               </button>
             </div>
@@ -1673,27 +1673,27 @@ app.component('passport-detail-page', {
             <h4 class="text-xs font-bold text-[rgba(250,250,245,0.35)] uppercase tracking-wider mb-4">가용 작업</h4>
             <div class="flex flex-wrap gap-3">
               <button v-if="isEV" @click="showAnalysisRequestModal = true"
-                class="inline-flex items-center gap-2 px-4 py-2.5 bg-purple-600 hover:bg-purple-700 text-[#1a1814] font-medium text-sm rounded-lg transition-colors ">
+                class="inline-flex items-center gap-2 px-4 py-2.5 bg-purple-600 hover:bg-purple-700 text-[#1a1814] font-medium text-sm rounded transition-colors ">
                 <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
                 분석 요청
               </button>
               <button v-if="isService" @click="showAnalysisResultModal = true"
-                class="inline-flex items-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-[#1a1814] font-medium text-sm rounded-lg transition-colors ">
+                class="inline-flex items-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-[#1a1814] font-medium text-sm rounded transition-colors ">
                 <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
                 분석 결과 제출
               </button>
               <button v-if="isService || isRegulator" @click="showRecycleModal = true"
-                class="inline-flex items-center gap-2 px-4 py-2.5 bg-[#f97316] hover:bg-orange-600 text-[#1a1814] font-medium text-sm rounded-lg transition-colors ">
+                class="inline-flex items-center gap-2 px-4 py-2.5 bg-[#f97316] hover:bg-orange-600 text-[#1a1814] font-medium text-sm rounded transition-colors ">
                 <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                 재활용 판정
               </button>
               <button v-if="isRegulator" @click="showExtractModal = true"
-                class="inline-flex items-center gap-2 px-4 py-2.5 bg-teal-600 hover:bg-teal-700 text-[#1a1814] font-medium text-sm rounded-lg transition-colors ">
+                class="inline-flex items-center gap-2 px-4 py-2.5 bg-teal-600 hover:bg-teal-700 text-[#1a1814] font-medium text-sm rounded transition-colors ">
                 <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/></svg>
                 원자재 추출
               </button>
               <button v-if="isRegulator" @click="showDisposeConfirm = true" :disabled="submitting"
-                class="inline-flex items-center gap-2 px-4 py-2.5 bg-red-600 hover:bg-red-700 text-[#1a1814] font-medium text-sm rounded-lg transition-colors  disabled:opacity-50">
+                class="inline-flex items-center gap-2 px-4 py-2.5 bg-red-600 hover:bg-red-700 text-[#1a1814] font-medium text-sm rounded transition-colors  disabled:opacity-50">
                 <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
                 폐기 처리
               </button>
@@ -1788,7 +1788,7 @@ app.component('passport-detail-page', {
           <!-- Blockchain Verification Card -->
           <div class="bg-[#1a1814]  border border-[rgba(250,250,245,0.06)] shadow-none overflow-hidden" style="background: #1a1814;">
             <div class="px-6 py-4 border-b border-[rgba(250,250,245,0.06)] flex items-center gap-2.5">
-              <div class="w-8 h-8 bg-[rgba(200,255,0,0.08)] rounded-lg flex items-center justify-center">
+              <div class="w-8 h-8 bg-[rgba(200,255,0,0.08)] rounded flex items-center justify-center">
                 <svg class="w-4 h-4 text-[#c8ff00]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                   <path d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
                 </svg>
@@ -1800,9 +1800,9 @@ app.component('passport-detail-page', {
               <div>
                 <dt class="text-xs font-medium text-[rgba(250,250,245,0.35)] uppercase tracking-wider mb-1.5">DID (Decentralized Identifier)</dt>
                 <dd class="flex items-center gap-2">
-                  <span class="text-sm text-[#fafaf5] font-mono bg-[#1f1d17] px-3 py-1.5 rounded-lg border border-[rgba(250,250,245,0.06)] break-all flex-1">{{ passport.did || '-' }}</span>
+                  <span class="text-sm text-[#fafaf5] font-mono bg-[#1f1d17] px-3 py-1.5 rounded border border-[rgba(250,250,245,0.06)] break-all flex-1">{{ passport.did || '-' }}</span>
                   <button v-if="passport.did" @click="copyToClipboard(passport.did)"
-                    class="flex-shrink-0 w-8 h-8 rounded-lg hover:bg-[#33302a] flex items-center justify-center transition-colors text-[rgba(250,250,245,0.35)] hover:text-[rgba(250,250,245,0.7)]"
+                    class="flex-shrink-0 w-8 h-8 rounded hover:bg-[#33302a] flex items-center justify-center transition-colors text-[rgba(250,250,245,0.35)] hover:text-[rgba(250,250,245,0.7)]"
                     title="복사">
                     <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                       <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>
@@ -1843,7 +1843,7 @@ app.component('passport-detail-page', {
           <div class="bg-[#1a1814]  border border-[rgba(250,250,245,0.06)] shadow-none overflow-hidden" style="background: #1a1814;">
             <div class="px-6 py-4 border-b border-[rgba(250,250,245,0.06)] flex items-center justify-between">
               <div class="flex items-center gap-2.5">
-                <div class="w-8 h-8 bg-[#33302a] rounded-lg flex items-center justify-center">
+                <div class="w-8 h-8 bg-[#33302a] rounded flex items-center justify-center">
                   <svg class="w-4 h-4 text-[rgba(250,250,245,0.7)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>
                     <line x1="14" y1="14" x2="14" y2="14.01"/><line x1="21" y1="14" x2="21" y2="14.01"/>
@@ -1855,7 +1855,7 @@ app.component('passport-detail-page', {
                 </div>
               </div>
               <button @click="downloadQr"
-                class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-[rgba(250,250,245,0.7)] bg-[#33302a] rounded-lg hover:bg-[#33302a] transition-colors">
+                class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-[rgba(250,250,245,0.7)] bg-[#33302a] rounded hover:bg-[#33302a] transition-colors">
                 <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
                 </svg>
@@ -1864,7 +1864,7 @@ app.component('passport-detail-page', {
             </div>
             <div class="p-6 flex items-center gap-6">
               <div class="flex-shrink-0">
-                <canvas ref="qrCanvas" id="qr-canvas" class="rounded-lg border border-[rgba(250,250,245,0.06)]"></canvas>
+                <canvas ref="qrCanvas" id="qr-canvas" class="rounded border border-[rgba(250,250,245,0.06)]"></canvas>
               </div>
               <div class="flex-1 space-y-2">
                 <div>
@@ -1884,7 +1884,7 @@ app.component('passport-detail-page', {
           <div class="bg-[#1a1814]  border border-[rgba(250,250,245,0.06)] shadow-none overflow-hidden" style="background: #1a1814;">
             <div class="px-6 py-4 border-b border-[rgba(250,250,245,0.06)] flex items-center justify-between">
               <div class="flex items-center gap-2.5">
-                <div class="w-8 h-8 bg-indigo-100 rounded-lg flex items-center justify-center">
+                <div class="w-8 h-8 bg-indigo-100 rounded flex items-center justify-center">
                   <svg class="w-4 h-4 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
                   </svg>
@@ -1895,7 +1895,7 @@ app.component('passport-detail-page', {
                 </div>
               </div>
               <button v-if="canIssueVc" @click="showVcIssueModal = true"
-                class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 text-[#1a1814] text-xs font-semibold rounded-lg hover:bg-indigo-700 transition-colors">
+                class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 text-[#1a1814] text-xs font-semibold rounded hover:bg-indigo-700 transition-colors">
                 <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
                 인증서 발급
               </button>
@@ -1935,18 +1935,18 @@ app.component('passport-detail-page', {
                   </div>
                   <div class="flex items-center gap-1.5 flex-shrink-0">
                     <button @click="verifyVc(vc.credentialId)"
-                      class="px-2.5 py-1.5 text-[11px] font-medium text-indigo-600 bg-indigo-50 rounded-lg hover:bg-indigo-100 border border-indigo-100 transition-colors">
+                      class="px-2.5 py-1.5 text-[11px] font-medium text-indigo-600 bg-indigo-50 rounded hover:bg-indigo-100 border border-indigo-100 transition-colors">
                       검증
                     </button>
                     <button v-if="vc.status === 'ACTIVE' && vc.issuerMsp === auth.orgMsp"
                       @click="revokeVc(vc.credentialId)"
-                      class="px-2.5 py-1.5 text-[11px] font-medium text-[#ff6b6b] bg-[rgba(239,68,68,0.1)] rounded-lg hover:bg-[rgba(239,68,68,0.1)] border border-red-100 transition-colors">
+                      class="px-2.5 py-1.5 text-[11px] font-medium text-[#ff6b6b] bg-[rgba(239,68,68,0.1)] rounded hover:bg-[rgba(239,68,68,0.1)] border border-red-100 transition-colors">
                       폐기
                     </button>
                   </div>
                 </div>
                 <!-- Verification result inline -->
-                <div v-if="vc._verified" class="mt-2 px-3 py-2 rounded-lg text-xs"
+                <div v-if="vc._verified" class="mt-2 px-3 py-2 rounded text-xs"
                   :class="vc._verified.valid ? 'bg-[rgba(200,255,0,0.08)] text-[#c8ff00] border border-emerald-500' : 'bg-[rgba(239,68,68,0.1)] text-[#ff6b6b] border border-[rgba(250,250,245,0.06)]'">
                   {{ vc._verified.valid ? '검증 성공: 유효한 인증서입니다.' : '검증 실패: ' + (vc._verified.reason || '인증서가 유효하지 않습니다.') }}
                 </div>
@@ -1970,7 +1970,7 @@ app.component('passport-detail-page', {
                   <div class="flex flex-wrap gap-2">
                     <button v-for="ct in availableCredTypes" :key="ct.value"
                       @click="vcForm.credType = ct.value" type="button"
-                      :class="['px-3 py-2 rounded-lg text-sm font-medium border transition-all',
+                      :class="['px-3 py-2 rounded text-sm font-medium border transition-all',
                         vcForm.credType === ct.value ? 'bg-indigo-50 text-indigo-700 border-indigo-300' : 'bg-[#1a1814] text-[rgba(250,250,245,0.7)] border-[rgba(250,250,245,0.06)] hover:bg-[#1f1d17]']">
                       {{ ct.label }}
                     </button>
@@ -1979,13 +1979,13 @@ app.component('passport-detail-page', {
                 <div>
                   <label class="block text-xs font-medium text-[rgba(250,250,245,0.35)] mb-1.5">소유자 DID</label>
                   <input v-model="vcForm.holderDid" type="text" :placeholder="passport?.did || 'did:example:...'"
-                    class="w-full px-3.5 py-2.5 border border-[rgba(250,250,245,0.1)] rounded-lg focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none text-sm" />
+                    class="w-full px-3.5 py-2.5 border border-[rgba(250,250,245,0.1)] rounded focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none text-sm" />
                   <p class="text-[10px] text-[rgba(250,250,245,0.35)] mt-1">비워두면 여권의 DID가 사용됩니다.</p>
                 </div>
                 <div>
                   <label class="block text-xs font-medium text-[rgba(250,250,245,0.35)] mb-1.5">만료일</label>
                   <input v-model="vcForm.expiresAt" type="date"
-                    class="w-full px-3.5 py-2.5 border border-[rgba(250,250,245,0.1)] rounded-lg focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none text-sm" />
+                    class="w-full px-3.5 py-2.5 border border-[rgba(250,250,245,0.1)] rounded focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none text-sm" />
                 </div>
                 <div class="flex justify-end gap-3 pt-3 border-t border-[rgba(250,250,245,0.06)]">
                   <button type="button" @click="showVcIssueModal = false"
@@ -2002,7 +2002,7 @@ app.component('passport-detail-page', {
           <!-- Correction History -->
           <div v-if="correctionHistory.length > 0" class="bg-[#1a1814]  border border-[rgba(250,250,245,0.06)] shadow-none overflow-hidden" style="background: #1a1814;">
             <div class="px-6 py-4 border-b border-[rgba(250,250,245,0.06)] flex items-center gap-2.5">
-              <div class="w-8 h-8 bg-[rgba(255,184,0,0.1)] rounded-lg flex items-center justify-center">
+              <div class="w-8 h-8 bg-[rgba(255,184,0,0.1)] rounded flex items-center justify-center">
                 <svg class="w-4 h-4 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
                 </svg>
@@ -2038,7 +2038,7 @@ app.component('passport-detail-page', {
           <!-- Change History -->
           <div class="bg-[#1a1814]  border border-[rgba(250,250,245,0.06)] shadow-none overflow-hidden" style="background: #1a1814;">
             <div class="px-6 py-4 border-b border-[rgba(250,250,245,0.06)] flex items-center gap-2.5">
-              <div class="w-8 h-8 bg-[rgba(192,132,252,0.1)] rounded-lg flex items-center justify-center">
+              <div class="w-8 h-8 bg-[rgba(192,132,252,0.1)] rounded flex items-center justify-center">
                 <svg class="w-4 h-4 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                   <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
                 </svg>
@@ -2067,7 +2067,7 @@ app.component('passport-detail-page', {
                       <div class="w-2 h-2 rounded-full"
                         :class="entry.changeDesc && entry.changeDesc.includes('사고') ? 'bg-[rgba(239,68,68,0.1)]0' : (entry.value && entry.value.status ? getStatusBadge(entry.value.status).dot : 'bg-[#34d399]')"></div>
                     </div>
-                    <div class="bg-[#1f1d17] rounded-lg border border-[rgba(250,250,245,0.06)] p-4 ml-3 hover:bg-[#1a1814] transition-colors">
+                    <div class="bg-[#1f1d17] rounded border border-[rgba(250,250,245,0.06)] p-4 ml-3 hover:bg-[#1a1814] transition-colors">
                       <div class="flex items-start justify-between gap-3">
                         <div class="min-w-0 flex-1">
                           <div class="flex items-center gap-2 flex-wrap">
@@ -2114,14 +2114,14 @@ app.component('passport-detail-page', {
             <div class="relative bg-[#1a1814]  shadow-2xl w-full max-w-lg border border-[rgba(250,250,245,0.06)]/50 overflow-hidden">
               <div class="px-6 py-4 border-b border-[rgba(250,250,245,0.06)] flex items-center justify-between">
                 <div class="flex items-center gap-3">
-                  <div class="w-9 h-9 bg-[rgba(200,255,0,0.08)] rounded-lg flex items-center justify-center">
+                  <div class="w-9 h-9 bg-[rgba(200,255,0,0.08)] rounded flex items-center justify-center">
                     <svg class="w-5 h-5 text-[#c8ff00]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                       <path stroke-linecap="round" stroke-linejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
                     </svg>
                   </div>
                   <h2 class="text-lg font-bold text-[#fafaf5]">VIN 바인딩</h2>
                 </div>
-                <button @click="showBindModal = false" class="w-8 h-8 rounded-lg hover:bg-[#33302a] flex items-center justify-center transition-colors text-[rgba(250,250,245,0.35)] hover:text-[rgba(250,250,245,0.7)]">
+                <button @click="showBindModal = false" class="w-8 h-8 rounded hover:bg-[#33302a] flex items-center justify-center transition-colors text-[rgba(250,250,245,0.35)] hover:text-[rgba(250,250,245,0.7)]">
                   <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
                 </button>
               </div>
@@ -2129,26 +2129,26 @@ app.component('passport-detail-page', {
                 <div>
                   <label class="block text-xs font-medium text-[rgba(250,250,245,0.35)] mb-1.5">VIN</label>
                   <input v-model="bindForm.vin" type="text" placeholder="차량 식별번호"
-                    class="w-full px-3.5 py-2.5 border border-[rgba(250,250,245,0.1)] rounded-lg focus:border-[#c8ff00] outline-none text-sm" />
+                    class="w-full px-3.5 py-2.5 border border-[rgba(250,250,245,0.1)] rounded focus:border-[#c8ff00] outline-none text-sm" />
                 </div>
                 <div>
                   <label class="block text-xs font-medium text-[rgba(250,250,245,0.35)] mb-1.5">장착일자</label>
                   <input v-model="bindForm.installDate" type="date"
-                    class="w-full px-3.5 py-2.5 border border-[rgba(250,250,245,0.1)] rounded-lg focus:border-[#c8ff00] outline-none text-sm" />
+                    class="w-full px-3.5 py-2.5 border border-[rgba(250,250,245,0.1)] rounded focus:border-[#c8ff00] outline-none text-sm" />
                 </div>
                 <div>
                   <label class="block text-xs font-medium text-[rgba(250,250,245,0.35)] mb-1.5">EV 제조사</label>
                   <input v-model="bindForm.evManufacturer" type="text" placeholder="EV 제조사명"
-                    class="w-full px-3.5 py-2.5 border border-[rgba(250,250,245,0.1)] rounded-lg focus:border-[#c8ff00] outline-none text-sm" />
+                    class="w-full px-3.5 py-2.5 border border-[rgba(250,250,245,0.1)] rounded focus:border-[#c8ff00] outline-none text-sm" />
                 </div>
                 <div>
                   <label class="block text-xs font-medium text-[rgba(250,250,245,0.35)] mb-1.5">EV 조립국가</label>
                   <input v-model="bindForm.evAssemblyCountry" type="text" placeholder="KR"
-                    class="w-full px-3.5 py-2.5 border border-[rgba(250,250,245,0.1)] rounded-lg focus:border-[#c8ff00] outline-none text-sm" />
+                    class="w-full px-3.5 py-2.5 border border-[rgba(250,250,245,0.1)] rounded focus:border-[#c8ff00] outline-none text-sm" />
                 </div>
                 <div>
                   <label class="block text-xs font-medium text-[rgba(250,250,245,0.35)] mb-1.5">차량 사진 <span class="text-[rgba(250,250,245,0.35)] text-[10px] font-normal">(선택)</span></label>
-                  <label class="flex items-center justify-center gap-2 w-full px-4 py-3 border-2 border-dashed border-[rgba(250,250,245,0.1)] rounded-lg hover:border-emerald-400 hover:bg-[rgba(200,255,0,0.08)]/30 transition-colors cursor-pointer">
+                  <label class="flex items-center justify-center gap-2 w-full px-4 py-3 border-2 border-dashed border-[rgba(250,250,245,0.1)] rounded hover:border-emerald-400 hover:bg-[rgba(200,255,0,0.08)]/30 transition-colors cursor-pointer">
                     <svg class="w-5 h-5 text-[rgba(250,250,245,0.35)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                       <path stroke-linecap="round" stroke-linejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
                     </svg>
@@ -2188,24 +2188,24 @@ app.component('passport-detail-page', {
             <div>
               <label class="block text-xs font-medium text-[rgba(250,250,245,0.35)] mb-1.5">정정 필드 <span class="text-red-500">*</span></label>
               <select v-model="correctForm.fieldName"
-                class="w-full px-3.5 py-2.5 border border-[rgba(250,250,245,0.1)] rounded-lg focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 outline-none text-sm bg-[#1a1814]">
+                class="w-full px-3.5 py-2.5 border border-[rgba(250,250,245,0.1)] rounded focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 outline-none text-sm bg-[#1a1814]">
                 <option value="">선택하세요</option>
                 <option v-for="f in correctableFields" :key="f.value" :value="f.value">{{ f.label }}</option>
               </select>
             </div>
-            <div v-if="correctForm.fieldName && passport" class="bg-[#1f1d17] rounded-lg border border-[rgba(250,250,245,0.06)] px-4 py-3">
+            <div v-if="correctForm.fieldName && passport" class="bg-[#1f1d17] rounded border border-[rgba(250,250,245,0.06)] px-4 py-3">
               <p class="text-[10px] font-semibold text-[rgba(250,250,245,0.35)] uppercase tracking-wider mb-1">현재 값</p>
               <p class="text-sm font-mono font-bold text-[#fafaf5]">{{ passport[correctForm.fieldName] || '(비어있음)' }}</p>
             </div>
             <div>
               <label class="block text-xs font-medium text-[rgba(250,250,245,0.35)] mb-1.5">새 값 <span class="text-red-500">*</span></label>
               <input v-model="correctForm.newValue" type="text" placeholder="정정할 값을 입력하세요"
-                class="w-full px-3.5 py-2.5 border border-[rgba(250,250,245,0.1)] rounded-lg focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 outline-none text-sm" />
+                class="w-full px-3.5 py-2.5 border border-[rgba(250,250,245,0.1)] rounded focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 outline-none text-sm" />
             </div>
             <div>
               <label class="block text-xs font-medium text-[rgba(250,250,245,0.35)] mb-1.5">정정 사유 <span class="text-red-500">*</span></label>
               <textarea v-model="correctForm.reason" rows="2" placeholder="정정 사유를 입력하세요"
-                class="w-full px-3.5 py-2.5 border border-[rgba(250,250,245,0.1)] rounded-lg focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 outline-none text-sm resize-none"></textarea>
+                class="w-full px-3.5 py-2.5 border border-[rgba(250,250,245,0.1)] rounded focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 outline-none text-sm resize-none"></textarea>
             </div>
             <div class="flex justify-end gap-3 pt-3 border-t border-[rgba(250,250,245,0.06)]">
               <button type="button" @click="showCorrectModal = false"
@@ -2230,14 +2230,14 @@ app.component('passport-detail-page', {
             </button>
           </div>
           <form @submit.prevent="submitInvalidate" class="p-6 space-y-4">
-            <div class="bg-[rgba(239,68,68,0.1)] rounded-lg border border-[rgba(250,250,245,0.06)] p-3">
+            <div class="bg-[rgba(239,68,68,0.1)] rounded border border-[rgba(250,250,245,0.06)] p-3">
               <p class="text-xs text-[#ff6b6b]">레코드 ID: <span class="font-mono font-bold">{{ invalidateForm.recordId }}</span></p>
               <p class="text-[10px] text-red-500 mt-1">무효화된 레코드는 원본이 보존되지만, 유효하지 않은 것으로 표시됩니다.</p>
             </div>
             <div>
               <label class="block text-xs font-medium text-[rgba(250,250,245,0.35)] mb-1.5">무효화 사유 <span class="text-red-500">*</span></label>
               <textarea v-model="invalidateForm.reason" rows="2" placeholder="무효화 사유를 입력하세요"
-                class="w-full px-3.5 py-2.5 border border-[rgba(250,250,245,0.1)] rounded-lg focus:ring-2 focus:ring-red-500/20 focus:border-red-500 outline-none text-sm resize-none"></textarea>
+                class="w-full px-3.5 py-2.5 border border-[rgba(250,250,245,0.1)] rounded focus:ring-2 focus:ring-red-500/20 focus:border-red-500 outline-none text-sm resize-none"></textarea>
             </div>
             <div class="flex justify-end gap-3 pt-3 border-t border-[rgba(250,250,245,0.06)]">
               <button type="button" @click="showInvalidateModal = false"
@@ -2268,7 +2268,7 @@ app.component('passport-detail-page', {
             </div>
             <div v-else class="space-y-2 max-h-64 overflow-y-auto">
               <label v-for="m in availableMaterials" :key="m.materialId"
-                class="flex items-center gap-3 px-3 py-2.5 rounded-lg border cursor-pointer transition-colors"
+                class="flex items-center gap-3 px-3 py-2.5 rounded border cursor-pointer transition-colors"
                 :class="selectedMaterialIds.includes(m.materialId) ? 'bg-[rgba(200,255,0,0.08)] border-emerald-300' : 'bg-[#1a1814] border-[rgba(250,250,245,0.06)] hover:bg-[#1f1d17]'">
                 <input type="checkbox" :checked="selectedMaterialIds.includes(m.materialId)"
                   @change="toggleMaterial(m.materialId)"
@@ -2300,7 +2300,7 @@ app.component('passport-detail-page', {
             <div class="fixed inset-0 bg-[#1a1814]/60 backdrop-blur-sm" @click="showMaintenanceRequestModal = false"></div>
             <div class="relative bg-[#1a1814]  shadow-2xl w-full max-w-md border border-[rgba(250,250,245,0.06)]/50 overflow-hidden">
               <div class="px-6 py-4 border-b border-[rgba(250,250,245,0.06)] flex items-center gap-3">
-                <div class="w-9 h-9 bg-[rgba(255,184,0,0.1)] rounded-lg flex items-center justify-center">
+                <div class="w-9 h-9 bg-[rgba(255,184,0,0.1)] rounded flex items-center justify-center">
                   <svg class="w-5 h-5 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
                   </svg>
@@ -2331,14 +2331,14 @@ app.component('passport-detail-page', {
             <div class="relative bg-[#1a1814]  shadow-2xl w-full max-w-lg border border-[rgba(250,250,245,0.06)]/50 overflow-hidden">
               <div class="px-6 py-4 border-b border-[rgba(250,250,245,0.06)] flex items-center justify-between">
                 <div class="flex items-center gap-3">
-                  <div class="w-9 h-9 bg-[rgba(200,255,0,0.08)] rounded-lg flex items-center justify-center">
+                  <div class="w-9 h-9 bg-[rgba(200,255,0,0.08)] rounded flex items-center justify-center">
                     <svg class="w-5 h-5 text-[#c8ff00]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                       <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
                     </svg>
                   </div>
                   <h2 class="text-lg font-bold text-[#fafaf5]">정비 기록 추가</h2>
                 </div>
-                <button @click="showMaintenanceLogModal = false" class="w-8 h-8 rounded-lg hover:bg-[#33302a] flex items-center justify-center transition-colors text-[rgba(250,250,245,0.35)] hover:text-[rgba(250,250,245,0.7)]">
+                <button @click="showMaintenanceLogModal = false" class="w-8 h-8 rounded hover:bg-[#33302a] flex items-center justify-center transition-colors text-[rgba(250,250,245,0.35)] hover:text-[rgba(250,250,245,0.7)]">
                   <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
                 </button>
               </div>
@@ -2346,22 +2346,22 @@ app.component('passport-detail-page', {
                 <div>
                   <label class="block text-xs font-medium text-[rgba(250,250,245,0.35)] mb-1.5">날짜</label>
                   <input v-model="maintenanceForm.date" type="date"
-                    class="w-full px-3.5 py-2.5 border border-[rgba(250,250,245,0.1)] rounded-lg focus:border-[#c8ff00] outline-none text-sm" />
+                    class="w-full px-3.5 py-2.5 border border-[rgba(250,250,245,0.1)] rounded focus:border-[#c8ff00] outline-none text-sm" />
                 </div>
                 <div>
                   <label class="block text-xs font-medium text-[rgba(250,250,245,0.35)] mb-1.5">유형</label>
                   <input v-model="maintenanceForm.type" type="text" placeholder="정기점검 / 부품교체 / 긴급수리"
-                    class="w-full px-3.5 py-2.5 border border-[rgba(250,250,245,0.1)] rounded-lg focus:border-[#c8ff00] outline-none text-sm" />
+                    class="w-full px-3.5 py-2.5 border border-[rgba(250,250,245,0.1)] rounded focus:border-[#c8ff00] outline-none text-sm" />
                 </div>
                 <div>
                   <label class="block text-xs font-medium text-[rgba(250,250,245,0.35)] mb-1.5">내용</label>
                   <textarea v-model="maintenanceForm.description" rows="3" placeholder="정비 내용을 상세히 기입하세요"
-                    class="w-full px-3.5 py-2.5 border border-[rgba(250,250,245,0.1)] rounded-lg focus:border-[#c8ff00] outline-none text-sm resize-none"></textarea>
+                    class="w-full px-3.5 py-2.5 border border-[rgba(250,250,245,0.1)] rounded focus:border-[#c8ff00] outline-none text-sm resize-none"></textarea>
                 </div>
                 <div>
                   <label class="block text-xs font-medium text-[rgba(250,250,245,0.35)] mb-1.5">기술자</label>
                   <input v-model="maintenanceForm.technician" type="text" placeholder="기술자명"
-                    class="w-full px-3.5 py-2.5 border border-[rgba(250,250,245,0.1)] rounded-lg focus:border-[#c8ff00] outline-none text-sm" />
+                    class="w-full px-3.5 py-2.5 border border-[rgba(250,250,245,0.1)] rounded focus:border-[#c8ff00] outline-none text-sm" />
                 </div>
                 <div class="flex justify-end gap-3 pt-3 border-t border-[rgba(250,250,245,0.06)]">
                   <button type="button" @click="showMaintenanceLogModal = false"
@@ -2385,14 +2385,14 @@ app.component('passport-detail-page', {
             <div class="relative bg-[#1a1814]  shadow-2xl w-full max-w-lg border border-[rgba(250,250,245,0.06)]/50 overflow-hidden">
               <div class="px-6 py-4 border-b border-[rgba(250,250,245,0.06)] flex items-center justify-between">
                 <div class="flex items-center gap-3">
-                  <div class="w-9 h-9 bg-[rgba(239,68,68,0.1)] rounded-lg flex items-center justify-center">
+                  <div class="w-9 h-9 bg-[rgba(239,68,68,0.1)] rounded flex items-center justify-center">
                     <svg class="w-5 h-5 text-[#ff6b6b]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                       <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
                     </svg>
                   </div>
                   <h2 class="text-lg font-bold text-[#fafaf5]">사고 기록 추가</h2>
                 </div>
-                <button @click="showAccidentLogModal = false" class="w-8 h-8 rounded-lg hover:bg-[#33302a] flex items-center justify-center transition-colors text-[rgba(250,250,245,0.35)] hover:text-[rgba(250,250,245,0.7)]">
+                <button @click="showAccidentLogModal = false" class="w-8 h-8 rounded hover:bg-[#33302a] flex items-center justify-center transition-colors text-[rgba(250,250,245,0.35)] hover:text-[rgba(250,250,245,0.7)]">
                   <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
                 </button>
               </div>
@@ -2402,7 +2402,7 @@ app.component('passport-detail-page', {
                   <div class="flex gap-2">
                     <button v-for="s in [{value:'minor',label:'경미'},{value:'moderate',label:'보통'},{value:'severe',label:'심각'},{value:'critical',label:'위험'}]" :key="s.value"
                       @click="accidentForm.severity = s.value" type="button"
-                      :class="['px-3 py-2 rounded-lg text-sm font-medium border transition-all',
+                      :class="['px-3 py-2 rounded text-sm font-medium border transition-all',
                         accidentForm.severity === s.value ? 'bg-[rgba(239,68,68,0.1)] text-[#ff6b6b] border-red-300' : 'bg-[#1a1814] text-[rgba(250,250,245,0.7)] border-[rgba(250,250,245,0.06)] hover:bg-[#1f1d17]']">
                       {{ s.label }}
                     </button>
@@ -2411,12 +2411,12 @@ app.component('passport-detail-page', {
                 <div>
                   <label class="block text-xs font-medium text-[rgba(250,250,245,0.35)] mb-1.5">내용 <span class="text-red-500">*</span></label>
                   <textarea v-model="accidentForm.description" rows="3" placeholder="사고 상세 내용"
-                    class="w-full px-3.5 py-2.5 border border-[rgba(250,250,245,0.1)] rounded-lg focus:border-[#c8ff00] outline-none text-sm resize-none"></textarea>
+                    class="w-full px-3.5 py-2.5 border border-[rgba(250,250,245,0.1)] rounded focus:border-[#c8ff00] outline-none text-sm resize-none"></textarea>
                 </div>
                 <div>
                   <label class="block text-xs font-medium text-[rgba(250,250,245,0.35)] mb-1.5">보고자 <span class="text-red-500">*</span></label>
                   <input v-model="accidentForm.reporter" type="text" placeholder="보고자명"
-                    class="w-full px-3.5 py-2.5 border border-[rgba(250,250,245,0.1)] rounded-lg focus:border-[#c8ff00] outline-none text-sm" />
+                    class="w-full px-3.5 py-2.5 border border-[rgba(250,250,245,0.1)] rounded focus:border-[#c8ff00] outline-none text-sm" />
                 </div>
                 <div class="flex justify-end gap-3 pt-3 border-t border-[rgba(250,250,245,0.06)]">
                   <button type="button" @click="showAccidentLogModal = false"
@@ -2439,7 +2439,7 @@ app.component('passport-detail-page', {
             <div class="fixed inset-0 bg-[#1a1814]/60 backdrop-blur-sm" @click="showAnalysisRequestModal = false"></div>
             <div class="relative bg-[#1a1814]  shadow-2xl w-full max-w-md border border-[rgba(250,250,245,0.06)]/50 overflow-hidden">
               <div class="px-6 py-4 border-b border-[rgba(250,250,245,0.06)] flex items-center gap-3">
-                <div class="w-9 h-9 bg-[rgba(192,132,252,0.1)] rounded-lg flex items-center justify-center">
+                <div class="w-9 h-9 bg-[rgba(192,132,252,0.1)] rounded flex items-center justify-center">
                   <svg class="w-5 h-5 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
                   </svg>
@@ -2470,14 +2470,14 @@ app.component('passport-detail-page', {
             <div class="relative bg-[#1a1814]  shadow-2xl w-full max-w-lg border border-[rgba(250,250,245,0.06)]/50 overflow-hidden">
               <div class="px-6 py-4 border-b border-[rgba(250,250,245,0.06)] flex items-center justify-between">
                 <div class="flex items-center gap-3">
-                  <div class="w-9 h-9 bg-indigo-100 rounded-lg flex items-center justify-center">
+                  <div class="w-9 h-9 bg-indigo-100 rounded flex items-center justify-center">
                     <svg class="w-5 h-5 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                       <path d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                     </svg>
                   </div>
                   <h2 class="text-lg font-bold text-[#fafaf5]">분석 결과 제출</h2>
                 </div>
-                <button @click="showAnalysisResultModal = false" class="w-8 h-8 rounded-lg hover:bg-[#33302a] flex items-center justify-center transition-colors text-[rgba(250,250,245,0.35)] hover:text-[rgba(250,250,245,0.7)]">
+                <button @click="showAnalysisResultModal = false" class="w-8 h-8 rounded hover:bg-[#33302a] flex items-center justify-center transition-colors text-[rgba(250,250,245,0.35)] hover:text-[rgba(250,250,245,0.7)]">
                   <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
                 </button>
               </div>
@@ -2486,20 +2486,20 @@ app.component('passport-detail-page', {
                   <div>
                     <label class="block text-xs font-medium text-[rgba(250,250,245,0.35)] mb-1.5">SOH (%)</label>
                     <input v-model="analysisForm.soh" type="number" step="0.1" placeholder="85"
-                      class="w-full px-3.5 py-2.5 border border-[rgba(250,250,245,0.1)] rounded-lg focus:border-[#c8ff00] outline-none text-sm" />
+                      class="w-full px-3.5 py-2.5 border border-[rgba(250,250,245,0.1)] rounded focus:border-[#c8ff00] outline-none text-sm" />
                   </div>
                   <div>
                     <label class="block text-xs font-medium text-[rgba(250,250,245,0.35)] mb-1.5">SOCE (%)</label>
                     <input v-model="analysisForm.soce" type="number" step="0.1" placeholder="90"
-                      class="w-full px-3.5 py-2.5 border border-[rgba(250,250,245,0.1)] rounded-lg focus:border-[#c8ff00] outline-none text-sm" />
+                      class="w-full px-3.5 py-2.5 border border-[rgba(250,250,245,0.1)] rounded focus:border-[#c8ff00] outline-none text-sm" />
                   </div>
                 </div>
                 <div>
                   <label class="block text-xs font-medium text-[rgba(250,250,245,0.35)] mb-1.5">잔여 수명 주기</label>
                   <input v-model="analysisForm.remainingLifeCycle" type="number" placeholder="1500"
-                    class="w-full px-3.5 py-2.5 border border-[rgba(250,250,245,0.1)] rounded-lg focus:border-[#c8ff00] outline-none text-sm" />
+                    class="w-full px-3.5 py-2.5 border border-[rgba(250,250,245,0.1)] rounded focus:border-[#c8ff00] outline-none text-sm" />
                 </div>
-                <div class="flex items-center gap-3 py-2 px-3.5 bg-[#1f1d17] rounded-lg border border-[rgba(250,250,245,0.06)]">
+                <div class="flex items-center gap-3 py-2 px-3.5 bg-[#1f1d17] rounded border border-[rgba(250,250,245,0.06)]">
                   <input v-model="analysisForm.recycleAvailable" type="checkbox" id="recycleCheckDetail2"
                     class="w-4 h-4 text-[#c8ff00] border-[rgba(250,250,245,0.1)] rounded focus:ring-emerald-500" />
                   <label for="recycleCheckDetail2" class="text-sm text-[rgba(250,250,245,0.7)] font-medium">재활용 가능</label>
@@ -2525,7 +2525,7 @@ app.component('passport-detail-page', {
             <div class="fixed inset-0 bg-[#1a1814]/60 backdrop-blur-sm" @click="showRecycleModal = false"></div>
             <div class="relative bg-[#1a1814]  shadow-2xl w-full max-w-md border border-[rgba(250,250,245,0.06)]/50 overflow-hidden">
               <div class="px-6 py-4 border-b border-[rgba(250,250,245,0.06)] flex items-center gap-3">
-                <div class="w-9 h-9 bg-orange-100 rounded-lg flex items-center justify-center">
+                <div class="w-9 h-9 bg-orange-100 rounded flex items-center justify-center">
                   <svg class="w-5 h-5 text-orange-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
                   </svg>
@@ -2560,14 +2560,14 @@ app.component('passport-detail-page', {
             <div class="relative bg-[#1a1814]  shadow-2xl w-full max-w-lg border border-[rgba(250,250,245,0.06)]/50 overflow-hidden">
               <div class="px-6 py-4 border-b border-[rgba(250,250,245,0.06)] flex items-center justify-between">
                 <div class="flex items-center gap-3">
-                  <div class="w-9 h-9 bg-teal-100 rounded-lg flex items-center justify-center">
+                  <div class="w-9 h-9 bg-teal-100 rounded flex items-center justify-center">
                     <svg class="w-5 h-5 text-teal-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                       <path d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/>
                     </svg>
                   </div>
                   <h2 class="text-lg font-bold text-[#fafaf5]">원자재 추출</h2>
                 </div>
-                <button @click="showExtractModal = false" class="w-8 h-8 rounded-lg hover:bg-[#33302a] flex items-center justify-center transition-colors text-[rgba(250,250,245,0.35)] hover:text-[rgba(250,250,245,0.7)]">
+                <button @click="showExtractModal = false" class="w-8 h-8 rounded hover:bg-[#33302a] flex items-center justify-center transition-colors text-[rgba(250,250,245,0.35)] hover:text-[rgba(250,250,245,0.7)]">
                   <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
                 </button>
               </div>
@@ -2575,7 +2575,7 @@ app.component('passport-detail-page', {
                 <div>
                   <label class="block text-xs font-medium text-[rgba(250,250,245,0.35)] mb-1.5">재활용 비율 (JSON)</label>
                   <textarea v-model="extractForm.recyclingRatesJson" rows="6"
-                    class="w-full px-3.5 py-2.5 border border-[rgba(250,250,245,0.1)] rounded-lg focus:border-[#c8ff00] outline-none text-sm font-mono resize-none bg-[#1f1d17]"></textarea>
+                    class="w-full px-3.5 py-2.5 border border-[rgba(250,250,245,0.1)] rounded focus:border-[#c8ff00] outline-none text-sm font-mono resize-none bg-[#1f1d17]"></textarea>
                   <p class="text-xs text-[rgba(250,250,245,0.35)] mt-1.5">예: { "cobalt": 95, "nickel": 90, "lithium": 80 }</p>
                 </div>
                 <div class="flex justify-end gap-3 pt-3 border-t border-[rgba(250,250,245,0.06)]">

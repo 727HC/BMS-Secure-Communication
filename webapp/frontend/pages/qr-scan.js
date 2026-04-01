@@ -170,13 +170,13 @@ app.component('qr-scan-page', {
         <div class="bg-[#1a1814]  border border-[rgba(250,250,245,0.06)] shadow-none bg-[#1a1814]  border border-[rgba(250,250,245,0.06)] shadow-none  " style="overflow:hidden;">
           <div style="padding:14px 20px;border-bottom:1px solid #f1f5f9;display:flex;align-items:center;justify-content:space-between;">
             <span style="font-family:'Pretendard Variable', sans-serif;font-size:0.85rem;font-weight:600;color:#111827;">카메라 스캔</span>
-            <button v-if="!scanning" @click="startScan" class="bg-[#c8ff00] text-[#1a1814] px-4 py-2 rounded-lg text-sm font-medium hover:bg-[#d4ff33]" style="font-size:0.75rem;padding:6px 12px;display:inline-flex;align-items:center;gap:6px;">
+            <button v-if="!scanning" @click="startScan" class="bg-[#c8ff00] text-[#1a1814] px-4 py-2 rounded text-sm font-medium hover:bg-[#d4ff33]" style="font-size:0.75rem;padding:6px 12px;display:inline-flex;align-items:center;gap:6px;">
               <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/>
               </svg>
               카메라 열기
             </button>
-            <button v-else @click="stopScan" class="bg-[rgba(239,68,68,0.1)] text-[#ff6b6b] border border-red-200 px-4 py-2 rounded-lg text-sm font-medium hover:bg-red-100" style="font-size:0.75rem;padding:6px 12px;">
+            <button v-else @click="stopScan" class="bg-[rgba(239,68,68,0.1)] text-[#ff6b6b] border border-red-200 px-4 py-2 rounded text-sm font-medium hover:bg-red-100" style="font-size:0.75rem;padding:6px 12px;">
               카메라 닫기
             </button>
           </div>
@@ -212,13 +212,13 @@ app.component('qr-scan-page', {
               <span style="font-family:'Pretendard Variable', sans-serif;font-size:0.85rem;font-weight:600;color:#111827;">NFC 스캔</span>
               <span class="bg-[rgba(107,163,255,0.1)] text-[#6ba3ff]" style="font-size:0.6rem;padding:1px 6px;border-radius:4px;">Web NFC</span>
             </div>
-            <button v-if="!nfcScanning" @click="startNfc" class="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium" style="font-size:0.75rem;padding:6px 12px;display:inline-flex;align-items:center;gap:6px;background:#2563eb;color:#fff;border:none;">
+            <button v-if="!nfcScanning" @click="startNfc" class="inline-flex items-center gap-1.5 px-4 py-2 rounded text-sm font-medium" style="font-size:0.75rem;padding:6px 12px;display:inline-flex;align-items:center;gap:6px;background:#2563eb;color:#fff;border:none;">
               <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071c3.904-3.905 10.236-3.905 14.14 0M1.394 9.393c5.857-5.858 15.355-5.858 21.213 0"/>
               </svg>
               NFC 활성화
             </button>
-            <button v-else @click="stopNfc" class="bg-[rgba(239,68,68,0.1)] text-[#ff6b6b] border border-red-200 px-4 py-2 rounded-lg text-sm font-medium hover:bg-red-100" style="font-size:0.75rem;padding:6px 12px;">NFC 중지</button>
+            <button v-else @click="stopNfc" class="bg-[rgba(239,68,68,0.1)] text-[#ff6b6b] border border-red-200 px-4 py-2 rounded text-sm font-medium hover:bg-red-100" style="font-size:0.75rem;padding:6px 12px;">NFC 중지</button>
           </div>
           <div style="padding:24px 16px;display:flex;flex-direction:column;align-items:center;text-align:center;">
             <div v-if="nfcScanning" style="display:flex;flex-direction:column;align-items:center;">
@@ -249,7 +249,7 @@ app.component('qr-scan-page', {
               @keyup.enter="handleManualSearch"
               class="w-full px-4 py-2.5 bg-[#1f1d17] border border-[rgba(250,250,245,0.06)]  text-[#fafaf5] outline-none focus:border-[#c8ff00]" style="flex:1;" />
             <button @click="handleManualSearch" :disabled="!manualId.trim()"
-              class="bg-[#c8ff00] text-[#1a1814] px-4 py-2 rounded-lg text-sm font-medium hover:bg-[#d4ff33]" style="padding:8px 18px;"
+              class="bg-[#c8ff00] text-[#1a1814] px-4 py-2 rounded text-sm font-medium hover:bg-[#d4ff33]" style="padding:8px 18px;"
               :style="!manualId.trim() ? 'opacity:0.4;cursor:not-allowed;' : ''">
               조회
             </button>
@@ -317,7 +317,7 @@ app.component('qr-scan-page', {
             </div>
 
             <!-- Action -->
-            <button @click="goToDetail" class="bg-[#c8ff00] text-[#1a1814] px-4 py-2 rounded-lg text-sm font-medium hover:bg-[#d4ff33]" style="width:100%;padding:12px;font-size:0.85rem;font-weight:600;display:flex;align-items:center;justify-content:center;gap:8px;border-radius:10px;">
+            <button @click="goToDetail" class="bg-[#c8ff00] text-[#1a1814] px-4 py-2 rounded text-sm font-medium hover:bg-[#d4ff33]" style="width:100%;padding:12px;font-size:0.85rem;font-weight:600;display:flex;align-items:center;justify-content:center;gap:8px;border-radius:10px;">
               <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6"/>
               </svg>

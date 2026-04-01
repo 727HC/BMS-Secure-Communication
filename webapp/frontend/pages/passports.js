@@ -225,7 +225,7 @@ app.component('passports-page', {
               <p class="text-xs" style="color: rgba(250,250,245,0.35);">전체 {{ passports.length }}건 등록</p>
             </div>
           </div>
-          <button v-if="isManufacturer" @click="openCreateModal" class="bg-[#c8ff00] text-[#1a1814] px-4 py-2 rounded-lg text-sm font-medium hover:bg-[#d4ff33]">
+          <button v-if="isManufacturer" @click="openCreateModal" class="bg-[#c8ff00] text-[#1a1814] px-4 py-2 rounded text-sm font-medium hover:bg-[#d4ff33]">
             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
             여권 발급
           </button>
@@ -338,7 +338,7 @@ app.component('passports-page', {
       </div>
 
       <!-- CREATE MODAL — 3-step wizard -->
-      <div v-if="showCreateModal" class="fixed inset-0 z-50 flex items-center justify-center p-4" style="background: rgba(6,9,15,0.8); backdrop-filter: blur(8px);" @click.self="closeCreateModal">
+      <div v-if="showCreateModal" class="fixed inset-0 z-50 flex items-center justify-center p-4" style="background: rgba(6,9,15,0.8); backdrop-filter: blur(6px);" @click.self="closeCreateModal">
         <div class="w-full max-w-lg  overflow-hidden " style="background: #1a1814; border: 1px solid rgba(250,250,245,0.06); box-shadow: 0 4px 20px rgba(0,0,0,0.08);">
 
           <!-- Modal header -->
@@ -347,7 +347,7 @@ app.component('passports-page', {
               <h3 class="text-base font-semibold" style="font-family: 'Pretendard Variable', sans-serif; color: #fafaf5; letter-spacing: -0.01em;">배터리 여권 발급</h3>
               <p class="text-xs mt-0.5" style="color: rgba(250,250,245,0.35);">단계 {{ createStep }} / 3</p>
             </div>
-            <button @click="closeCreateModal" class="p-1.5 rounded-lg transition-colors" style="color: rgba(250,250,245,0.35);"
+            <button @click="closeCreateModal" class="p-1.5 rounded transition-colors" style="color: rgba(250,250,245,0.35);"
               onmouseenter="this.style.color='#dc2626';this.style.background='rgba(220,38,38,0.08)'"
               onmouseleave="this.style.color='#6b7280';this.style.background='transparent'">
               <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
@@ -494,7 +494,7 @@ app.component('passports-page', {
 
             <!-- STEP 3 -->
             <template v-if="createStep === 3">
-              <div class="rounded-lg p-4 space-y-2" style="background: #1f1d17; border: 1px solid rgba(250,250,245,0.06);">
+              <div class="rounded p-4 space-y-2" style="background: #1f1d17; border: 1px solid rgba(250,250,245,0.06);">
                 <div class="flex justify-between text-xs"><span style="color: rgba(250,250,245,0.35);">모델</span><span class="font-medium" style="color: #fafaf5;">{{ form.model || '-' }}</span></div>
                 <div class="flex justify-between text-xs"><span style="color: rgba(250,250,245,0.35);">시리얼</span><span class="font-medium" style="color: #fafaf5; font-family: 'JetBrains Mono', monospace;">{{ form.serialNumber || '-' }}</span></div>
                 <div class="flex justify-between text-xs"><span style="color: rgba(250,250,245,0.35);">제조사</span><span class="font-medium" style="color: #fafaf5;">{{ form.manufacturerName || '-' }}</span></div>
@@ -507,12 +507,12 @@ app.component('passports-page', {
 
           <!-- Modal footer -->
           <div class="px-6 py-4 flex items-center justify-between" style="border-top: 1px solid #e5e7eb;">
-            <button v-if="createStep > 1" @click="prevStep" class="bg-[#1a1814] border border-[rgba(250,250,245,0.06)] text-[rgba(250,250,245,0.7)] px-4 py-2 rounded-lg text-sm font-medium hover:bg-[#1f1d17]">이전</button>
+            <button v-if="createStep > 1" @click="prevStep" class="bg-[#1a1814] border border-[rgba(250,250,245,0.06)] text-[rgba(250,250,245,0.7)] px-4 py-2 rounded text-sm font-medium hover:bg-[#1f1d17]">이전</button>
             <div v-else></div>
             <div class="flex items-center gap-2">
-              <button @click="closeCreateModal" class="bg-[#1a1814] border border-[rgba(250,250,245,0.06)] text-[rgba(250,250,245,0.7)] px-4 py-2 rounded-lg text-sm font-medium hover:bg-[#1f1d17]">취소</button>
-              <button v-if="createStep < 3" @click="nextStep" class="bg-[#c8ff00] text-[#1a1814] px-4 py-2 rounded-lg text-sm font-medium hover:bg-[#d4ff33]">다음</button>
-              <button v-else @click="submitCreate" :disabled="creating" class="bg-[#c8ff00] text-[#1a1814] px-4 py-2 rounded-lg text-sm font-medium hover:bg-[#d4ff33]">
+              <button @click="closeCreateModal" class="bg-[#1a1814] border border-[rgba(250,250,245,0.06)] text-[rgba(250,250,245,0.7)] px-4 py-2 rounded text-sm font-medium hover:bg-[#1f1d17]">취소</button>
+              <button v-if="createStep < 3" @click="nextStep" class="bg-[#c8ff00] text-[#1a1814] px-4 py-2 rounded text-sm font-medium hover:bg-[#d4ff33]">다음</button>
+              <button v-else @click="submitCreate" :disabled="creating" class="bg-[#c8ff00] text-[#1a1814] px-4 py-2 rounded text-sm font-medium hover:bg-[#d4ff33]">
                 <span v-if="creating" class="inline-flex items-center">
                   <svg class="animate-spin -ml-1 mr-1.5 h-3.5 w-3.5" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
                   생성 중...

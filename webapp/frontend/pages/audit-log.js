@@ -166,7 +166,7 @@ app.component('audit-log-page', {
           </div>
           <span style="font-size:0.75rem;font-weight:500;color:#374151;">실시간</span>
         </label>
-        <button @click="fetchLogs" class="bg-[#1a1814] border border-[rgba(250,250,245,0.06)] text-[rgba(250,250,245,0.7)] px-4 py-2 rounded-lg text-sm font-medium hover:bg-[#1f1d17]" style="display:inline-flex;align-items:center;gap:6px;font-size:0.78rem;">
+        <button @click="fetchLogs" class="bg-[#1a1814] border border-[rgba(250,250,245,0.06)] text-[rgba(250,250,245,0.7)] px-4 py-2 rounded text-sm font-medium hover:bg-[#1f1d17]" style="display:inline-flex;align-items:center;gap:6px;font-size:0.78rem;">
           <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
           </svg>
@@ -336,13 +336,13 @@ app.component('audit-log-page', {
         <span class="font-mono" style="font-size:0.72rem;color:#6b7280;">{{ total }}건 중 {{ (page - 1) * 50 + 1 }}~{{ Math.min(page * 50, total) }}</span>
         <div style="display:flex;align-items:center;gap:8px;">
           <button @click="prevPage" :disabled="page <= 1"
-            class="bg-[#1a1814] border border-[rgba(250,250,245,0.06)] text-[rgba(250,250,245,0.7)] px-4 py-2 rounded-lg text-sm font-medium hover:bg-[#1f1d17]" style="font-size:0.75rem;padding:6px 12px;"
+            class="bg-[#1a1814] border border-[rgba(250,250,245,0.06)] text-[rgba(250,250,245,0.7)] px-4 py-2 rounded text-sm font-medium hover:bg-[#1f1d17]" style="font-size:0.75rem;padding:6px 12px;"
             :style="page <= 1 ? 'opacity:0.3;cursor:not-allowed;' : ''">
             이전
           </button>
           <span class="font-mono" style="font-size:0.72rem;color:#6b7280;font-variant-numeric:tabular-nums;">{{ page }} / {{ totalPages }}</span>
           <button @click="nextPage" :disabled="page >= totalPages"
-            class="bg-[#1a1814] border border-[rgba(250,250,245,0.06)] text-[rgba(250,250,245,0.7)] px-4 py-2 rounded-lg text-sm font-medium hover:bg-[#1f1d17]" style="font-size:0.75rem;padding:6px 12px;"
+            class="bg-[#1a1814] border border-[rgba(250,250,245,0.06)] text-[rgba(250,250,245,0.7)] px-4 py-2 rounded text-sm font-medium hover:bg-[#1f1d17]" style="font-size:0.75rem;padding:6px 12px;"
             :style="page >= totalPages ? 'opacity:0.3;cursor:not-allowed;' : ''">
             다음
           </button>
