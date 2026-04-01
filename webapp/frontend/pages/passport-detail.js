@@ -1216,7 +1216,7 @@ app.component('passport-detail-page', {
           <!-- SOC / SOH / SOCE Gauges -->
           <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <!-- SOC Gauge -->
-            <div class="bp-card-sm border border-[--bp-border] p-5 flex flex-col items-center">
+            <div class="bp-card-sm border border-[--bp-border] p-5 flex flex-col items-center" style="background: var(--bp-surface-3);">
               <h4 class="text-xs font-semibold text-[--bp-text-3] uppercase tracking-wider mb-3">SOC (충전 상태)</h4>
               <svg viewBox="0 0 100 100" class="w-24 h-24">
                 <circle cx="50" cy="50" r="40" fill="none" stroke="#e2e8f0" stroke-width="6"/>
@@ -1234,7 +1234,7 @@ app.component('passport-detail-page', {
               </svg>
             </div>
             <!-- SOH Gauge -->
-            <div class="bp-card-sm border border-[--bp-border] p-5 flex flex-col items-center">
+            <div class="bp-card-sm border border-[--bp-border] p-5 flex flex-col items-center" style="background: var(--bp-surface-3);">
               <h4 class="text-xs font-semibold text-[--bp-text-3] uppercase tracking-wider mb-3">SOH (건강 상태)</h4>
               <svg viewBox="0 0 100 100" class="w-24 h-24">
                 <circle cx="50" cy="50" r="40" fill="none" stroke="#e2e8f0" stroke-width="6"/>
@@ -1252,7 +1252,7 @@ app.component('passport-detail-page', {
               </svg>
             </div>
             <!-- SOCE -->
-            <div class="bp-card-sm border border-[--bp-border] p-5 flex flex-col items-center">
+            <div class="bp-card-sm border border-[--bp-border] p-5 flex flex-col items-center" style="background: var(--bp-surface-3);">
               <h4 class="text-xs font-semibold text-[--bp-text-3] uppercase tracking-wider mb-3">SOCE (에너지 충전)</h4>
               <svg viewBox="0 0 100 100" class="w-24 h-24">
                 <circle cx="50" cy="50" r="40" fill="none" stroke="#e2e8f0" stroke-width="6"/>
@@ -1276,7 +1276,7 @@ app.component('passport-detail-page', {
         <div v-if="activeTab === 'compliance'" class="space-y-5">
 
           <!-- Large Circular Gauge — OpenBattery style -->
-          <div class="bp-card-sm border border-[--bp-border] overflow-hidden">
+          <div class="bp-card-sm border border-[--bp-border] overflow-hidden" style="background: var(--bp-surface-3);">
             <div class="px-6 py-5 border-b border-[--bp-border]">
               <div class="flex items-center gap-3">
                 <div class="w-9 h-9 rounded-lg flex items-center justify-center"
@@ -1379,7 +1379,7 @@ app.component('passport-detail-page', {
           </div>
 
           <!-- Carbon Footprint Card (GBA 21 #20) -->
-          <div class="bp-card-sm border border-[--bp-border] overflow-hidden">
+          <div class="bp-card-sm border border-[--bp-border] overflow-hidden" style="background: var(--bp-surface-3);">
             <div class="px-6 py-4 border-b border-[--bp-border] flex items-center gap-2.5">
               <div class="w-8 h-8 bg-teal-100 rounded-lg flex items-center justify-center">
                 <svg class="w-4 h-4 text-teal-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -1476,7 +1476,7 @@ app.component('passport-detail-page', {
           </div>
 
           <!-- Lifecycle Timeline -->
-          <div class="bp-card-sm border border-[--bp-border] overflow-hidden">
+          <div class="bp-card-sm border border-[--bp-border] overflow-hidden" style="background: var(--bp-surface-3);">
             <div class="px-6 py-4 border-b border-[--bp-border] flex items-center gap-2.5">
               <div class="w-8 h-8 bg-[--bp-signal-dim] rounded-lg flex items-center justify-center">
                 <svg class="w-4 h-4 text-[--bp-signal]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -1546,7 +1546,7 @@ app.component('passport-detail-page', {
 
           <!-- Raw Materials -->
           <div v-if="linkedMaterialDetails.length > 0"
-               class="bp-card-sm border border-[--bp-border] overflow-hidden">
+               class="bp-card-sm border border-[--bp-border] overflow-hidden" style="background: var(--bp-surface-3);">
             <div class="px-6 py-4 border-b border-[--bp-border] flex items-center gap-2.5">
               <div class="w-8 h-8 bg-[--bp-purple-dim] rounded-lg flex items-center justify-center">
                 <svg class="w-4 h-4 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -1581,7 +1581,7 @@ app.component('passport-detail-page', {
           </div>
 
           <!-- Maintenance Logs -->
-          <div class="bp-card-sm border border-[--bp-border] overflow-hidden">
+          <div class="bp-card-sm border border-[--bp-border] overflow-hidden" style="background: var(--bp-surface-3);">
             <div class="px-6 py-4 border-b border-[--bp-border] flex items-center justify-between">
               <div class="flex items-center gap-2.5">
                 <div class="w-8 h-8 bg-[--bp-warn-dim] rounded-lg flex items-center justify-center">
@@ -1628,7 +1628,7 @@ app.component('passport-detail-page', {
           </div>
 
           <!-- Accident Logs -->
-          <div class="bp-card-sm border border-[--bp-border] overflow-hidden">
+          <div class="bp-card-sm border border-[--bp-border] overflow-hidden" style="background: var(--bp-surface-3);">
             <div class="px-6 py-4 border-b border-[--bp-border] flex items-center justify-between">
               <div class="flex items-center gap-2.5">
                 <div class="w-8 h-8 bg-[--bp-danger-dim] rounded-lg flex items-center justify-center">
@@ -1669,7 +1669,7 @@ app.component('passport-detail-page', {
           </div>
 
           <!-- Action buttons for recycling/analysis -->
-          <div class="bp-card-sm border border-[--bp-border] p-6">
+          <div class="bp-card-sm border border-[--bp-border] p-6" style="background: var(--bp-surface-3);">
             <h4 class="text-xs font-bold text-[--bp-text-3] uppercase tracking-wider mb-4">가용 작업</h4>
             <div class="flex flex-wrap gap-3">
               <button v-if="isEV" @click="showAnalysisRequestModal = true"
@@ -1721,7 +1721,7 @@ app.component('passport-detail-page', {
             <p class="text-xs text-[--bp-text-3] mt-1">아직 수집된 BMU 데이터가 없습니다.</p>
           </div>
           <div v-else class="space-y-4">
-            <div class="bp-card-sm border border-[--bp-border] overflow-hidden">
+            <div class="bp-card-sm border border-[--bp-border] overflow-hidden" style="background: var(--bp-surface-3);">
               <div class="overflow-x-auto">
                 <table class="w-full text-sm">
                   <thead>
@@ -1786,7 +1786,7 @@ app.component('passport-detail-page', {
         <div v-if="activeTab === 'trust'" class="space-y-5">
 
           <!-- Blockchain Verification Card -->
-          <div class="bp-card-sm border border-[--bp-border] overflow-hidden">
+          <div class="bp-card-sm border border-[--bp-border] overflow-hidden" style="background: var(--bp-surface-3);">
             <div class="px-6 py-4 border-b border-[--bp-border] flex items-center gap-2.5">
               <div class="w-8 h-8 bg-[--bp-signal-dim] rounded-lg flex items-center justify-center">
                 <svg class="w-4 h-4 text-[--bp-signal]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -1840,7 +1840,7 @@ app.component('passport-detail-page', {
           </div>
 
           <!-- ===== QR Code ===== -->
-          <div class="bp-card-sm border border-[--bp-border] overflow-hidden">
+          <div class="bp-card-sm border border-[--bp-border] overflow-hidden" style="background: var(--bp-surface-3);">
             <div class="px-6 py-4 border-b border-[--bp-border] flex items-center justify-between">
               <div class="flex items-center gap-2.5">
                 <div class="w-8 h-8 bg-[--bp-surface-4] rounded-lg flex items-center justify-center">
@@ -1881,7 +1881,7 @@ app.component('passport-detail-page', {
           </div>
 
           <!-- ===== VC (Verifiable Credentials) ===== -->
-          <div class="bp-card-sm border border-[--bp-border] overflow-hidden">
+          <div class="bp-card-sm border border-[--bp-border] overflow-hidden" style="background: var(--bp-surface-3);">
             <div class="px-6 py-4 border-b border-[--bp-border] flex items-center justify-between">
               <div class="flex items-center gap-2.5">
                 <div class="w-8 h-8 bg-indigo-100 rounded-lg flex items-center justify-center">
@@ -2000,7 +2000,7 @@ app.component('passport-detail-page', {
           </div>
 
           <!-- Correction History -->
-          <div v-if="correctionHistory.length > 0" class="bp-card-sm border border-[--bp-border] overflow-hidden">
+          <div v-if="correctionHistory.length > 0" class="bp-card-sm border border-[--bp-border] overflow-hidden" style="background: var(--bp-surface-3);">
             <div class="px-6 py-4 border-b border-[--bp-border] flex items-center gap-2.5">
               <div class="w-8 h-8 bg-[--bp-warn-dim] rounded-lg flex items-center justify-center">
                 <svg class="w-4 h-4 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -2036,7 +2036,7 @@ app.component('passport-detail-page', {
           </div>
 
           <!-- Change History -->
-          <div class="bp-card-sm border border-[--bp-border] overflow-hidden">
+          <div class="bp-card-sm border border-[--bp-border] overflow-hidden" style="background: var(--bp-surface-3);">
             <div class="px-6 py-4 border-b border-[--bp-border] flex items-center gap-2.5">
               <div class="w-8 h-8 bg-[--bp-purple-dim] rounded-lg flex items-center justify-center">
                 <svg class="w-4 h-4 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
