@@ -344,7 +344,7 @@ app.component('passports-page', {
           <!-- Modal header -->
           <div class="px-6 py-4 flex items-center justify-between" style="border-bottom: 1px solid var(--bp-border);">
             <div>
-              <h3 class="text-base font-semibold" style="font-family: var(--font-display); color: var(--bp-text-1);">배터리 여권 발급</h3>
+              <h3 class="text-base font-semibold" style="font-family: var(--font-display); color: var(--bp-text-1); letter-spacing: -0.01em;">배터리 여권 발급</h3>
               <p class="text-xs mt-0.5" style="color: var(--bp-text-3);">단계 {{ createStep }} / 3</p>
             </div>
             <button @click="closeCreateModal" class="p-1.5 rounded-lg transition-colors" style="color: var(--bp-text-3);"
