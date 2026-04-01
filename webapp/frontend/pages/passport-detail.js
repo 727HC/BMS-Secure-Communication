@@ -1090,7 +1090,7 @@ app.component('passport-detail-page', {
           </div>
 
           <!-- Performance & Durability — OpenBattery hero spec grid -->
-          <div class="bp-card-sm border border-[--bp-border] overflow-hidden">
+          <div class="bp-card-sm border border-[--bp-border] overflow-hidden" style="background: var(--bp-surface-3);">
             <div class="px-6 py-4 border-b border-[--bp-border] flex items-center gap-2.5">
               <div class="w-8 h-8 bg-[--bp-signal-dim] rounded-lg flex items-center justify-center">
                 <svg class="w-4 h-4 text-[--bp-signal]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -1170,7 +1170,7 @@ app.component('passport-detail-page', {
           </div>
 
           <!-- EV Binding -->
-          <div class="bp-card-sm border border-[--bp-border] overflow-hidden">
+          <div class="bp-card-sm border border-[--bp-border] overflow-hidden" style="background: var(--bp-surface-3);">
             <div class="px-6 py-4 border-b border-[--bp-border] flex items-center justify-between">
               <div class="flex items-center gap-2.5">
                 <div class="w-8 h-8 bg-[--bp-signal-dim] rounded-lg flex items-center justify-center">

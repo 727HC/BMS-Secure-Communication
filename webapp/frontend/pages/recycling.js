@@ -284,6 +284,46 @@ app.component('recycling-page', {
       </button>
     </div>
 
+    <!-- ====== STATUS SUMMARY CARDS ====== -->
+    <div class="bp-animate-in bp-delay-1" style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;">
+      <div class="bp-card" style="padding:14px 16px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+          <span style="font-size:0.68rem;font-weight:600;color:var(--bp-text-3);text-transform:uppercase;letter-spacing:0.04em;">전체</span>
+          <div style="width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;background:var(--bp-surface-3);">
+            <svg width="14" height="14" fill="none" stroke="var(--bp-text-3)" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 10h16M4 14h16M4 18h16"/></svg>
+          </div>
+        </div>
+        <span style="font-family:var(--font-mono);font-size:1.5rem;font-weight:800;color:var(--bp-text-1);">{{ tabCounts.all }}</span>
+      </div>
+      <div class="bp-card" style="padding:14px 16px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+          <span style="font-size:0.68rem;font-weight:600;color:var(--bp-signal);text-transform:uppercase;letter-spacing:0.04em;">재활용가능</span>
+          <div style="width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;background:var(--bp-signal-dim);">
+            <svg width="14" height="14" fill="none" stroke="var(--bp-signal)" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          </div>
+        </div>
+        <span style="font-family:var(--font-mono);font-size:1.5rem;font-weight:800;color:var(--bp-signal);">{{ tabCounts.recyclable }}</span>
+      </div>
+      <div class="bp-card" style="padding:14px 16px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+          <span style="font-size:0.68rem;font-weight:600;color:#60a5fa;text-transform:uppercase;letter-spacing:0.04em;">재활용중</span>
+          <div style="width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;background:var(--bp-info-dim);">
+            <svg width="14" height="14" fill="none" stroke="#60a5fa" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+          </div>
+        </div>
+        <span style="font-family:var(--font-mono);font-size:1.5rem;font-weight:800;color:#60a5fa;">{{ tabCounts.recycling }}</span>
+      </div>
+      <div class="bp-card" style="padding:14px 16px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+          <span style="font-size:0.68rem;font-weight:600;color:var(--bp-text-3);text-transform:uppercase;letter-spacing:0.04em;">폐기완료</span>
+          <div style="width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;background:var(--bp-surface-3);">
+            <svg width="14" height="14" fill="none" stroke="var(--bp-text-3)" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+          </div>
+        </div>
+        <span style="font-family:var(--font-mono);font-size:1.5rem;font-weight:800;color:var(--bp-text-3);">{{ tabCounts.disposed }}</span>
+      </div>
+    </div>
+
     <!-- ====== FILTER TABS ====== -->
     <div class="bp-tabs bp-animate-in bp-delay-1" style="display:flex;align-items:center;gap:4px;padding:4px;width:fit-content;">
       <button v-for="tab in tabs" :key="tab.key" @click="activeTab = tab.key"
@@ -357,9 +397,12 @@ app.component('recycling-page', {
               <!-- SOH with progress bar -->
               <td>
                 <div v-if="p.currentSoh != null" style="display:flex;align-items:center;gap:10px;min-width:110px;">
-                  <div style="flex:1;">
-                    <div class="bp-progress" :class="getSohTrackBg(p.currentSoh)" style="height:6px;">
-                      <div :class="getSohBg(p.currentSoh)" style="height:6px;border-radius:999px;transition:width 0.4s;" :style="{ width: Math.min(p.currentSoh, 100) + '%' }"></div>
+                  <div style="flex:1;position:relative;">
+                    <div class="bp-progress" :class="getSohTrackBg(p.currentSoh)" style="height:6px;overflow:hidden;">
+                      <div :class="getSohBg(p.currentSoh)" style="height:6px;border-radius:999px;transition:width 0.4s;position:relative;" :style="{ width: Math.min(p.currentSoh, 100) + '%' }">
+                        <!-- Shimmer effect -->
+                        <div style="position:absolute;inset:0;border-radius:999px;background:linear-gradient(90deg,transparent 0%,rgba(255,255,255,0.3) 50%,transparent 100%);animation:shimmer 2s infinite;"></div>
+                      </div>
                     </div>
                   </div>
                   <span :class="getSohColor(p.currentSoh)" style="font-family:var(--font-mono);font-size:0.82rem;font-weight:700;white-space:nowrap;">
@@ -382,14 +425,17 @@ app.component('recycling-page', {
                   미판정
                 </span>
               </td>
-              <!-- Recycling rates -->
+              <!-- Recycling rates with shimmer -->
               <td>
                 <div v-if="getRecyclingRateEntries(p.recyclingRates).length > 0" style="display:flex;flex-direction:column;gap:6px;min-width:140px;">
                   <div v-for="entry in getRecyclingRateEntries(p.recyclingRates)" :key="entry.key"
                     style="display:flex;align-items:center;gap:8px;">
                     <span style="font-size:0.7rem;font-weight:500;color:var(--bp-text-2);width:60px;text-align:right;flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" :title="entry.key">{{ entry.key }}</span>
-                    <div class="bp-progress" style="flex:1;height:6px;min-width:50px;background:var(--bp-surface-3);">
-                      <div :class="getRateBarColor(entry.value)" style="height:6px;border-radius:999px;transition:width 0.4s;" :style="{ width: Math.min(entry.value, 100) + '%' }"></div>
+                    <div class="bp-progress" style="flex:1;height:6px;min-width:50px;background:var(--bp-surface-3);overflow:hidden;">
+                      <div :class="getRateBarColor(entry.value)" style="height:6px;border-radius:999px;transition:width 0.4s;position:relative;" :style="{ width: Math.min(entry.value, 100) + '%' }">
+                        <!-- Shimmer effect on rate bars -->
+                        <div style="position:absolute;inset:0;border-radius:999px;background:linear-gradient(90deg,transparent 0%,rgba(255,255,255,0.3) 50%,transparent 100%);animation:shimmer 2s infinite;"></div>
+                      </div>
                     </div>
                     <span style="font-family:var(--font-mono);font-size:0.7rem;font-weight:700;color:var(--bp-text-2);width:36px;flex-shrink:0;font-variant-numeric:tabular-nums;">{{ entry.value }}%</span>
                   </div>

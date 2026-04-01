@@ -1,0 +1,17 @@
+{
+  "name": "bms-mcp-monitor",
+  "version": "1.0.0",
+  "description": "MCP monitoring server for BMS blockchain platform",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.12.1",
+    "axios": "^1.9.0",
+    "dockerode": "^4.0.7",
+    "dotenv": "^17.3.1",
+    "fabric-network": "^2.2.20",
+    "fabric-ca-client": "^2.2.20"
+  }
+}

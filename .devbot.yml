@@ -1,0 +1,14 @@
+name: bms-blockchain
+default_branch: main
+build: ""
+test: ""
+lint: ""
+browse_url: http://localhost:3001
+safe_write_paths:
+  - webapp/
+  - chaincode/
+  - mcp-monitor/
+forbidden_commands:
+  - rm -rf /
+  - git push --force
+  - git reset --hard
