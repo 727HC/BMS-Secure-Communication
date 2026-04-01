@@ -174,6 +174,11 @@ app.component('maintenance-page', {
       return found ? found.label : val;
     }
 
+    // Modal confirmation checkboxes
+    const requestConfirmed = ref(false);
+    const logConfirmed = ref(false);
+    const accidentConfirmed = ref(false);
+
     onMounted(fetchPassports);
 
     return {
@@ -186,259 +191,248 @@ app.component('maintenance-page', {
       openMaintenanceRequest, openMaintenanceLog, openAccident, closeModals,
       submitMaintenanceRequest, submitMaintenanceLog, submitAccident,
       navigateToDetail, getMaintenanceTypeLabel,
+      requestConfirmed, logConfirmed, accidentConfirmed,
     };
   },
   template: `
-  <div>
+  <div style="display:flex;flex-direction:column;gap:24px;">
 
-    <!-- ═══ LOADING ═══ -->
-    <div v-if="loading" class="flex flex-col justify-center items-center py-32">
-      <div class="relative w-14 h-14 mb-4">
-        <div class="absolute inset-0 rounded-full border-2 border-transparent" style="border-top-color: var(--bp-warn); animation: spin 0.8s linear infinite;"></div>
-        <div class="absolute inset-2 rounded-full border-2 border-transparent" style="border-bottom-color: var(--bp-warn); opacity: 0.3; animation: spin 1.2s linear infinite reverse;"></div>
+    <!-- LOADING -->
+    <div v-if="loading" style="display:flex;flex-direction:column;justify-content:center;align-items:center;padding:128px 0;">
+      <div style="position:relative;width:56px;height:56px;margin-bottom:16px;">
+        <div style="position:absolute;inset:0;border-radius:50%;border:2px solid transparent;border-top-color:var(--bp-warn);animation:spin 0.8s linear infinite;"></div>
+        <div style="position:absolute;inset:8px;border-radius:50%;border:2px solid transparent;border-bottom-color:var(--bp-warn);opacity:0.3;animation:spin 1.2s linear infinite reverse;"></div>
       </div>
-      <p class="text-sm" style="color: var(--bp-text-3); font-family: var(--font-mono);">LOADING SERVICE DATA...</p>
+      <p style="font-size:0.82rem;color:var(--bp-text-3);font-family:var(--font-mono);">LOADING SERVICE DATA...</p>
     </div>
 
-    <div v-else class="space-y-5">
+    <template v-else>
 
-      <!-- ═══ HEADER ═══ -->
-      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bp-animate-in">
-        <div class="flex items-center gap-3">
-          <div class="w-10 h-10 rounded-xl flex items-center justify-center" style="background: var(--bp-warn-dim);">
-            <svg class="w-5 h-5" style="color: var(--bp-warn);" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <!-- HEADER -->
+      <div class="bp-animate-in" style="display:flex;align-items:center;justify-content:space-between;">
+        <div style="display:flex;align-items:center;gap:14px;">
+          <div style="width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;background:var(--bp-warn-dim);">
+            <svg width="22" height="22" style="color:var(--bp-warn);" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
               <circle cx="12" cy="12" r="3"/>
             </svg>
           </div>
           <div>
-            <div class="flex items-center gap-2">
-              <h1 class="text-xl bp-heading" style="font-family: var(--font-display);" style="font-family: var(--font-display);">정비 / 서비스</h1>
-              <span class="bp-badge bp-badge-warn" style="font-family: var(--font-mono);">{{ filteredPassports.length }}</span>
+            <div style="display:flex;align-items:center;gap:8px;">
+              <h1 class="bp-heading" style="font-family:var(--font-display);font-size:1.35rem;color:var(--bp-text-1);margin:0;">정비 / 서비스</h1>
+              <span class="bp-badge bp-badge-warn" style="font-family:var(--font-mono);">{{ filteredPassports.length }}</span>
             </div>
-            <p class="text-xs" style="color: var(--bp-text-3);">배터리 정비 요청, 완료 기록 및 사고 이력 관리</p>
+            <p style="font-size:0.72rem;color:var(--bp-text-3);margin-top:2px;">배터리 정비 요청, 완료 기록 및 사고 이력 관리</p>
           </div>
         </div>
-        <button @click="fetchPassports" class="bp-btn bp-btn-ghost">
-          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <button @click="fetchPassports" class="bp-btn bp-btn-ghost" style="display:inline-flex;align-items:center;gap:6px;">
+          <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
             <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
           </svg>
           새로고침
         </button>
       </div>
 
-      <!-- ═══ FILTER TABS ═══ -->
+      <!-- FILTER TABS -->
       <div class="bp-tabs bp-animate-in bp-delay-1">
         <button v-for="tab in tabs" :key="tab.key" @click="activeTab = tab.key"
           :class="['bp-tab', activeTab === tab.key ? 'bp-tab-active' : '']">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" :d="tab.icon"/>
           </svg>
           {{ tab.label }}
-          <span :class="['ml-1 text-xs font-semibold px-1.5 py-0.5 rounded-full',
-            activeTab === tab.key
-              ? 'bp-badge-warn'
-              : 'bp-badge']"
-            style="font-family: var(--font-mono);">
+          <span :class="['bp-badge', activeTab === tab.key ? 'bp-badge-warn' : '']"
+            style="margin-left:4px;font-size:0.68rem;font-family:var(--font-mono);padding:1px 7px;">
             {{ tabCounts[tab.key] }}
           </span>
         </button>
       </div>
 
-      <!-- ═══ EMPTY STATE ═══ -->
+      <!-- EMPTY STATE -->
       <div v-if="filteredPassports.length === 0" class="bp-card bp-animate-in bp-delay-2">
-        <div class="flex flex-col items-center justify-center py-20 px-6">
-          <div class="w-16 h-16 rounded-2xl flex items-center justify-center mb-5" style="background: var(--bp-surface-2);">
-            <svg class="w-8 h-8" style="color: var(--bp-text-3);" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+        <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:80px 24px;">
+          <div style="width:64px;height:64px;border-radius:16px;display:flex;align-items:center;justify-content:center;margin-bottom:20px;background:var(--bp-surface-2);">
+            <svg width="32" height="32" style="color:var(--bp-text-3);" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
             </svg>
           </div>
-          <h3 class="text-base bp-heading mb-1" style="font-family: var(--font-display);">현재 정비 이력이 없습니다</h3>
-          <p class="text-sm text-center max-w-sm" style="color: var(--bp-text-3);">배터리 여권이 등록되면 정비 이력을 관리할 수 있습니다.</p>
+          <h3 class="bp-heading" style="font-family:var(--font-display);font-size:1rem;color:var(--bp-text-1);margin:0 0 6px;">현재 정비 이력이 없습니다</h3>
+          <p style="font-size:0.82rem;color:var(--bp-text-3);text-align:center;max-width:24rem;">배터리 여권이 등록되면 정비 이력을 관리할 수 있습니다.</p>
         </div>
       </div>
 
-      <!-- ═══ PASSPORT TABLE ═══ -->
-      <div v-else class="bp-card overflow-hidden bp-animate-in bp-delay-2">
-        <div class="overflow-x-auto">
-          <table class="bp-table w-full">
-            <thead>
-              <tr>
-                <th class="text-left" style="font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.08em;">여권 ID</th>
-                <th class="text-left" style="font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.08em;">시리얼</th>
-                <th class="text-center" style="font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.08em;">상태</th>
-                <th class="text-center" style="font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.08em;">정비이력</th>
-                <th class="text-center" style="font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.08em;">사고기록</th>
-                <th class="text-right" style="font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.08em;">작업</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="(p, idx) in filteredPassports" :key="p.passportId"
-                class="bp-animate-in cursor-pointer group"
-                :style="'animation-delay:' + (idx * 40) + 'ms'"
-                @click="navigateToDetail(p)">
+      <!-- PASSPORT CARDS (card layout with timeline dots) -->
+      <div v-else style="display:flex;flex-direction:column;gap:16px;" class="bp-animate-in bp-delay-2">
+        <div v-for="(p, idx) in filteredPassports" :key="p.passportId"
+             class="bp-card bp-animate-in" :style="'animation-delay:' + (idx * 50) + 'ms'"
+             style="overflow:hidden;cursor:pointer;transition:border-color 0.2s;"
+             @click="navigateToDetail(p)"
+             @mouseenter="$event.currentTarget.style.borderColor='var(--bp-warn)'"
+             @mouseleave="$event.currentTarget.style.borderColor=''">
+          <div style="display:flex;gap:16px;padding:16px 20px;">
 
-                <!-- 여권 ID -->
-                <td>
-                  <div class="flex items-center gap-2.5">
-                    <div class="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style="background: var(--bp-surface-2);">
-                      <svg class="w-4 h-4" style="color: var(--bp-warn);" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-                      </svg>
-                    </div>
-                    <span class="text-sm font-semibold truncate max-w-[180px] transition-colors" style="color: var(--bp-text-1); font-family: var(--font-mono);"
-                      :title="p.passportId">
-                      {{ p.passportId }}
-                    </span>
-                  </div>
-                </td>
+            <!-- Timeline dot column -->
+            <div style="display:flex;flex-direction:column;align-items:center;flex-shrink:0;padding-top:4px;">
+              <div :style="{
+                width: '12px', height: '12px', borderRadius: '50%', flexShrink: 0,
+                background: p.status === 'MAINTENANCE' ? 'var(--bp-warn)' : (p.accidentLogs && p.accidentLogs.length > 0) ? 'var(--bp-danger)' : 'var(--bp-signal)',
+                boxShadow: p.status === 'MAINTENANCE' ? '0 0 0 4px var(--bp-warn-dim)' : (p.accidentLogs && p.accidentLogs.length > 0) ? '0 0 0 4px var(--bp-danger-dim)' : '0 0 0 4px var(--bp-signal-dim)'
+              }"></div>
+              <div style="width:2px;flex:1;margin-top:6px;border-radius:1px;background:var(--bp-surface-3);min-height:20px;"></div>
+            </div>
 
-                <!-- 시리얼 -->
-                <td>
-                  <span class="text-xs" style="color: var(--bp-text-3); font-family: var(--font-mono);">{{ p.serialNumber || '-' }}</span>
-                </td>
-
-                <!-- 상태 -->
-                <td class="text-center">
+            <!-- Content -->
+            <div style="flex:1;min-width:0;">
+              <!-- Top row: ID + status + counts -->
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+                <div style="display:flex;align-items:center;gap:10px;min-width:0;">
+                  <span style="font-family:var(--font-mono);font-size:0.82rem;font-weight:600;color:var(--bp-text-1);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:220px;" :title="p.passportId">
+                    {{ p.passportId }}
+                  </span>
                   <span :class="['inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold', getStatusBadge(p.status).bg]">
                     <span :class="['w-1.5 h-1.5 rounded-full', getStatusBadge(p.status).dot]"></span>
                     {{ getStatusBadge(p.status).label }}
                   </span>
-                </td>
-
-                <!-- 정비이력 수 -->
-                <td class="text-center">
-                  <span class="inline-flex items-center gap-1 text-sm font-bold tabular-nums" style="font-family: var(--font-mono);"
-                    :style="(p.maintenanceLogs && p.maintenanceLogs.length > 0) ? 'color: var(--bp-signal)' : 'color: var(--bp-text-3)'">
-                    {{ p.maintenanceLogs ? p.maintenanceLogs.length : 0 }}
+                </div>
+                <div style="display:flex;align-items:center;gap:12px;flex-shrink:0;">
+                  <span style="display:inline-flex;align-items:center;gap:4px;font-family:var(--font-mono);font-size:0.75rem;font-weight:600;"
+                    :style="(p.maintenanceLogs && p.maintenanceLogs.length > 0) ? 'color:var(--bp-signal)' : 'color:var(--bp-text-3)'">
+                    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                    </svg>
+                    {{ p.maintenanceLogs ? p.maintenanceLogs.length : 0 }}건
                   </span>
-                </td>
-
-                <!-- 사고기록 수 -->
-                <td class="text-center">
                   <span v-if="p.accidentLogs && p.accidentLogs.length > 0"
-                    class="bp-badge-danger inline-flex items-center gap-1 text-xs font-bold tabular-nums"
-                    style="font-family: var(--font-mono);">
-                    <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    class="bp-badge-danger" style="display:inline-flex;align-items:center;gap:4px;font-size:0.7rem;font-family:var(--font-mono);font-weight:700;">
+                    <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
                     </svg>
-                    {{ p.accidentLogs.length }}
+                    사고 {{ p.accidentLogs.length }}
                   </span>
-                  <span v-else class="text-sm tabular-nums" style="color: var(--bp-text-3); font-family: var(--font-mono);">0</span>
-                </td>
+                </div>
+              </div>
 
-                <!-- 작업 버튼 -->
-                <td class="text-right">
-                  <div class="flex items-center justify-end gap-1.5" @click.stop>
-                    <button v-if="canRequestMaintenance && p.status === 'ACTIVE'"
-                      @click="openMaintenanceRequest(p)"
-                      class="bp-btn bp-btn-ghost text-xs px-2 py-1" style="color: var(--bp-warn);">
-                      <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
-                      </svg>
-                      정비요청
-                    </button>
-                    <button v-if="canLogMaintenance && p.status === 'MAINTENANCE'"
-                      @click="openMaintenanceLog(p)"
-                      class="bp-btn bp-btn-primary text-xs px-2 py-1">
-                      <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                      </svg>
-                      정비완료
-                    </button>
-                    <button v-if="canLogAccident"
-                      @click="openAccident(p)"
-                      class="bp-btn bp-btn-danger text-xs px-2 py-1">
-                      <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
-                      </svg>
-                      사고기록
-                    </button>
-                    <span v-if="!canRequestMaintenance && !canLogMaintenance && !canLogAccident"
-                      class="text-xs" style="color: var(--bp-text-3);">-</span>
-                  </div>
-                </td>
-              </tr>
-            </tbody>
-          </table>
+              <!-- Serial number -->
+              <div style="font-family:var(--font-mono);font-size:0.72rem;color:var(--bp-text-3);margin-bottom:12px;">
+                S/N: {{ p.serialNumber || '-' }}
+              </div>
+
+              <!-- Actions row -->
+              <div style="display:flex;align-items:center;gap:8px;" @click.stop>
+                <button v-if="canRequestMaintenance && p.status === 'ACTIVE'"
+                  @click="openMaintenanceRequest(p)"
+                  class="bp-btn bp-btn-ghost" style="font-size:0.75rem;padding:4px 10px;color:var(--bp-warn);display:inline-flex;align-items:center;gap:4px;">
+                  <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
+                  </svg>
+                  정비요청
+                </button>
+                <button v-if="canLogMaintenance && p.status === 'MAINTENANCE'"
+                  @click="openMaintenanceLog(p)"
+                  class="bp-btn bp-btn-primary" style="font-size:0.75rem;padding:4px 10px;display:inline-flex;align-items:center;gap:4px;">
+                  <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                  </svg>
+                  정비완료
+                </button>
+                <button v-if="canLogAccident"
+                  @click="openAccident(p)"
+                  class="bp-btn bp-btn-danger" style="font-size:0.75rem;padding:4px 10px;display:inline-flex;align-items:center;gap:4px;">
+                  <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                  </svg>
+                  사고기록
+                </button>
+                <span v-if="!canRequestMaintenance && !canLogMaintenance && !canLogAccident"
+                  style="font-size:0.72rem;color:var(--bp-text-3);">-</span>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
-    </div><!-- /v-else (not loading) -->
+    </template>
 
-    <!-- ═══════════════════════════════════════════ -->
-    <!-- MODAL: 정비 요청                             -->
-    <!-- ═══════════════════════════════════════════ -->
-    <div v-if="showMaintenanceRequestModal" class="fixed inset-0 z-50 overflow-y-auto">
-      <div class="flex items-center justify-center min-h-screen px-4 py-8">
-        <div class="fixed inset-0 backdrop-blur-sm" style="background: rgba(0,0,0,0.6);" @click="closeModals"></div>
-        <div class="relative bp-card max-w-md w-full z-10 overflow-hidden bp-animate-in" style="border-color: var(--bp-warn);">
+    <!-- =============================================
+         MODAL: Maintenance Request
+         ============================================= -->
+    <div v-if="showMaintenanceRequestModal" style="position:fixed;inset:0;z-index:50;overflow-y:auto;">
+      <div style="display:flex;align-items:center;justify-content:center;min-height:100vh;padding:16px 16px 32px;">
+        <div style="position:fixed;inset:0;background:rgba(0,0,0,0.6);backdrop-filter:blur(6px);" @click="closeModals"></div>
+        <div class="bp-card bp-animate-in" style="position:relative;z-index:1;max-width:28rem;width:100%;overflow:hidden;border-color:var(--bp-warn);">
 
           <!-- Modal Header -->
-          <div class="px-6 py-4 flex items-center justify-between" style="border-bottom: 1px solid var(--bp-surface-3);">
-            <div class="flex items-center gap-3">
-              <div class="w-9 h-9 rounded-lg flex items-center justify-center" style="background: var(--bp-warn-dim);">
-                <svg class="w-4.5 h-4.5" style="color: var(--bp-warn);" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <div style="padding:16px 24px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--bp-surface-3);">
+            <div style="display:flex;align-items:center;gap:12px;">
+              <div style="width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:var(--bp-warn-dim);">
+                <svg width="18" height="18" style="color:var(--bp-warn);" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
                 </svg>
               </div>
-              <h3 class="text-lg bp-heading" style="font-family: var(--font-display);">정비 요청</h3>
+              <h3 style="font-family:var(--font-display);font-size:1.1rem;font-weight:700;color:var(--bp-text-1);margin:0;">정비 요청</h3>
             </div>
-            <button @click="closeModals" class="bp-btn bp-btn-ghost p-2" style="color: var(--bp-text-3);">
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <button @click="closeModals" class="bp-btn bp-btn-ghost" style="padding:6px;color:var(--bp-text-3);">
+              <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
               </svg>
             </button>
           </div>
 
           <!-- Modal Body -->
-          <div class="px-6 py-5 space-y-5">
-            <!-- 대상 여권 -->
-            <div class="p-3 rounded-lg" style="background: var(--bp-surface-2); border: 1px solid var(--bp-surface-3);">
-              <p class="text-[10px] font-semibold uppercase tracking-wider mb-0.5" style="color: var(--bp-text-3); font-family: var(--font-mono);">TARGET PASSPORT</p>
-              <p class="text-sm font-semibold" style="color: var(--bp-text-1); font-family: var(--font-mono);">{{ selectedPassport?.passportId }}</p>
+          <div style="padding:20px 24px;display:flex;flex-direction:column;gap:20px;">
+            <!-- Target passport -->
+            <div style="padding:12px;border-radius:8px;background:var(--bp-surface-2);border:1px solid var(--bp-surface-3);">
+              <p style="font-size:0.6rem;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;color:var(--bp-text-3);font-family:var(--font-mono);margin:0 0 2px;">TARGET PASSPORT</p>
+              <p style="font-size:0.85rem;font-weight:600;color:var(--bp-text-1);font-family:var(--font-mono);margin:0;">{{ selectedPassport?.passportId }}</p>
             </div>
 
-            <!-- 정비 유형 선택 -->
+            <!-- Maintenance type -->
             <div>
-              <label class="block text-sm font-semibold mb-2" style="color: var(--bp-text-2);">정비 유형 <span style="color: #ef4444;">*</span></label>
-              <div class="grid grid-cols-3 gap-2">
+              <label style="display:block;font-size:0.85rem;font-weight:600;color:var(--bp-text-2);margin-bottom:8px;">정비 유형 <span style="color:#ef4444;">*</span></label>
+              <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;">
                 <button v-for="t in maintenanceTypes.slice(0,3)" :key="t.value"
                   @click="requestForm.maintenanceType = t.value" type="button"
-                  class="flex flex-col items-center p-3 rounded-lg border-2 transition-all cursor-pointer"
+                  style="display:flex;flex-direction:column;align-items:center;padding:12px;border-radius:8px;border:2px solid;cursor:pointer;transition:all 0.2s;"
                   :style="requestForm.maintenanceType === t.value
-                    ? 'border-color: var(--bp-warn); background: var(--bp-warn-dim);'
-                    : 'border-color: var(--bp-surface-3); background: transparent;'">
-                  <svg class="w-5 h-5 mb-1.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"
-                    :style="requestForm.maintenanceType === t.value ? 'color: var(--bp-warn);' : 'color: var(--bp-text-3);'">
+                    ? 'border-color:var(--bp-warn);background:var(--bp-warn-dim);'
+                    : 'border-color:var(--bp-surface-3);background:transparent;'">
+                  <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="margin-bottom:6px;"
+                    :style="requestForm.maintenanceType === t.value ? 'color:var(--bp-warn);' : 'color:var(--bp-text-3);'">
                     <path stroke-linecap="round" stroke-linejoin="round" :d="t.icon"/>
                   </svg>
-                  <span class="text-xs font-semibold"
-                    :style="requestForm.maintenanceType === t.value ? 'color: var(--bp-warn);' : 'color: var(--bp-text-2);'">{{ t.label }}</span>
+                  <span style="font-size:0.75rem;font-weight:600;"
+                    :style="requestForm.maintenanceType === t.value ? 'color:var(--bp-warn);' : 'color:var(--bp-text-2);'">{{ t.label }}</span>
                 </button>
               </div>
             </div>
 
-            <!-- 설명 -->
+            <!-- Description -->
             <div>
-              <label class="block text-sm font-semibold mb-1" style="color: var(--bp-text-2);">설명 <span style="color: #ef4444;">*</span></label>
+              <label style="display:block;font-size:0.85rem;font-weight:600;color:var(--bp-text-2);margin-bottom:4px;">설명 <span style="color:#ef4444;">*</span></label>
               <textarea v-model="requestForm.description" rows="3" placeholder="정비 요청 사유를 입력하세요"
-                class="bp-input w-full resize-none" style="font-family: var(--font-body);"></textarea>
+                class="bp-input" style="width:100%;resize:none;font-family:var(--font-body);"></textarea>
             </div>
+
+            <!-- Confirmation checkbox -->
+            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none;padding:10px 12px;border-radius:8px;background:var(--bp-surface-2);border:1px solid var(--bp-surface-3);">
+              <input type="checkbox" v-model="requestConfirmed" style="width:16px;height:16px;accent-color:var(--bp-warn);border-radius:4px;flex-shrink:0;" />
+              <span style="font-size:0.78rem;color:var(--bp-text-2);">입력한 정비 요청 내용이 정확함을 확인합니다</span>
+            </label>
           </div>
 
           <!-- Modal Footer -->
-          <div class="px-6 py-3 flex justify-end gap-3" style="border-top: 1px solid var(--bp-surface-3); background: var(--bp-surface-1);">
+          <div style="padding:12px 24px;display:flex;justify-content:flex-end;gap:10px;border-top:1px solid var(--bp-surface-3);background:var(--bp-surface-1);">
             <button @click="closeModals" class="bp-btn bp-btn-ghost">취소</button>
             <button @click="submitMaintenanceRequest"
-              :disabled="!requestForm.description || submitting"
-              :class="['bp-btn', (!requestForm.description || submitting) ? '' : 'bp-btn-primary']"
-              :style="(!requestForm.description || submitting)
-                ? 'background: var(--bp-surface-3); color: var(--bp-text-3); cursor: not-allowed;'
-                : 'background: var(--bp-warn); color: var(--bp-void);'">
-              <svg v-if="submitting" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+              :disabled="!requestForm.description || !requestConfirmed || submitting"
+              class="bp-btn"
+              :style="(!requestForm.description || !requestConfirmed || submitting)
+                ? 'background:var(--bp-surface-3);color:var(--bp-text-3);cursor:not-allowed;'
+                : 'background:var(--bp-warn);color:var(--bp-void);'"
+              style="display:inline-flex;align-items:center;gap:6px;">
+              <svg v-if="submitting" style="width:16px;height:16px;animation:spin 0.8s linear infinite;" fill="none" viewBox="0 0 24 24">
+                <circle opacity="0.25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path opacity="0.75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
               </svg>
               {{ submitting ? '등록 중...' : '요청 등록' }}
             </button>
@@ -447,86 +441,93 @@ app.component('maintenance-page', {
       </div>
     </div>
 
-    <!-- ═══════════════════════════════════════════ -->
-    <!-- MODAL: 정비 완료 기록                        -->
-    <!-- ═══════════════════════════════════════════ -->
-    <div v-if="showMaintenanceLogModal" class="fixed inset-0 z-50 overflow-y-auto">
-      <div class="flex items-center justify-center min-h-screen px-4 py-8">
-        <div class="fixed inset-0 backdrop-blur-sm" style="background: rgba(0,0,0,0.6);" @click="closeModals"></div>
-        <div class="relative bp-card max-w-md w-full z-10 overflow-hidden bp-animate-in" style="border-color: var(--bp-signal);">
+    <!-- =============================================
+         MODAL: Maintenance Log
+         ============================================= -->
+    <div v-if="showMaintenanceLogModal" style="position:fixed;inset:0;z-index:50;overflow-y:auto;">
+      <div style="display:flex;align-items:center;justify-content:center;min-height:100vh;padding:16px 16px 32px;">
+        <div style="position:fixed;inset:0;background:rgba(0,0,0,0.6);backdrop-filter:blur(6px);" @click="closeModals"></div>
+        <div class="bp-card bp-animate-in" style="position:relative;z-index:1;max-width:28rem;width:100%;overflow:hidden;border-color:var(--bp-signal);">
 
           <!-- Modal Header -->
-          <div class="px-6 py-4 flex items-center justify-between" style="border-bottom: 1px solid var(--bp-surface-3);">
-            <div class="flex items-center gap-3">
-              <div class="w-9 h-9 rounded-lg flex items-center justify-center" style="background: var(--bp-signal-dim);">
-                <svg class="w-4.5 h-4.5" style="color: var(--bp-signal);" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <div style="padding:16px 24px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--bp-surface-3);">
+            <div style="display:flex;align-items:center;gap:12px;">
+              <div style="width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:var(--bp-signal-dim);">
+                <svg width="18" height="18" style="color:var(--bp-signal);" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
                 </svg>
               </div>
-              <h3 class="text-lg bp-heading" style="font-family: var(--font-display);">정비 완료 기록</h3>
+              <h3 style="font-family:var(--font-display);font-size:1.1rem;font-weight:700;color:var(--bp-text-1);margin:0;">정비 완료 기록</h3>
             </div>
-            <button @click="closeModals" class="bp-btn bp-btn-ghost p-2" style="color: var(--bp-text-3);">
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <button @click="closeModals" class="bp-btn bp-btn-ghost" style="padding:6px;color:var(--bp-text-3);">
+              <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
               </svg>
             </button>
           </div>
 
           <!-- Modal Body -->
-          <div class="px-6 py-5 space-y-5">
-            <!-- 대상 여권 -->
-            <div class="p-3 rounded-lg" style="background: var(--bp-surface-2); border: 1px solid var(--bp-surface-3);">
-              <p class="text-[10px] font-semibold uppercase tracking-wider mb-0.5" style="color: var(--bp-text-3); font-family: var(--font-mono);">TARGET PASSPORT</p>
-              <p class="text-sm font-semibold" style="color: var(--bp-text-1); font-family: var(--font-mono);">{{ selectedPassport?.passportId }}</p>
+          <div style="padding:20px 24px;display:flex;flex-direction:column;gap:20px;">
+            <!-- Target passport -->
+            <div style="padding:12px;border-radius:8px;background:var(--bp-surface-2);border:1px solid var(--bp-surface-3);">
+              <p style="font-size:0.6rem;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;color:var(--bp-text-3);font-family:var(--font-mono);margin:0 0 2px;">TARGET PASSPORT</p>
+              <p style="font-size:0.85rem;font-weight:600;color:var(--bp-text-1);font-family:var(--font-mono);margin:0;">{{ selectedPassport?.passportId }}</p>
             </div>
 
-            <!-- 정비 유형 -->
+            <!-- Maintenance type -->
             <div>
-              <label class="block text-sm font-semibold mb-2" style="color: var(--bp-text-2);">정비 유형 <span style="color: #ef4444;">*</span></label>
-              <div class="grid grid-cols-3 gap-2">
+              <label style="display:block;font-size:0.85rem;font-weight:600;color:var(--bp-text-2);margin-bottom:8px;">정비 유형 <span style="color:#ef4444;">*</span></label>
+              <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;">
                 <button v-for="t in maintenanceTypes.slice(0,3)" :key="t.value"
                   @click="logForm.maintenanceType = t.value" type="button"
-                  class="flex flex-col items-center p-3 rounded-lg border-2 transition-all cursor-pointer"
+                  style="display:flex;flex-direction:column;align-items:center;padding:12px;border-radius:8px;border:2px solid;cursor:pointer;transition:all 0.2s;"
                   :style="logForm.maintenanceType === t.value
-                    ? 'border-color: var(--bp-signal); background: var(--bp-signal-dim);'
-                    : 'border-color: var(--bp-surface-3); background: transparent;'">
-                  <svg class="w-5 h-5 mb-1.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"
-                    :style="logForm.maintenanceType === t.value ? 'color: var(--bp-signal);' : 'color: var(--bp-text-3);'">
+                    ? 'border-color:var(--bp-signal);background:var(--bp-signal-dim);'
+                    : 'border-color:var(--bp-surface-3);background:transparent;'">
+                  <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="margin-bottom:6px;"
+                    :style="logForm.maintenanceType === t.value ? 'color:var(--bp-signal);' : 'color:var(--bp-text-3);'">
                     <path stroke-linecap="round" stroke-linejoin="round" :d="t.icon"/>
                   </svg>
-                  <span class="text-xs font-semibold"
-                    :style="logForm.maintenanceType === t.value ? 'color: var(--bp-signal);' : 'color: var(--bp-text-2);'">{{ t.label }}</span>
+                  <span style="font-size:0.75rem;font-weight:600;"
+                    :style="logForm.maintenanceType === t.value ? 'color:var(--bp-signal);' : 'color:var(--bp-text-2);'">{{ t.label }}</span>
                 </button>
               </div>
             </div>
 
-            <!-- 설명 -->
+            <!-- Description -->
             <div>
-              <label class="block text-sm font-semibold mb-1" style="color: var(--bp-text-2);">설명 <span style="color: #ef4444;">*</span></label>
+              <label style="display:block;font-size:0.85rem;font-weight:600;color:var(--bp-text-2);margin-bottom:4px;">설명 <span style="color:#ef4444;">*</span></label>
               <textarea v-model="logForm.description" rows="3" placeholder="수행한 정비 내용을 입력하세요"
-                class="bp-input w-full resize-none" style="font-family: var(--font-body);"></textarea>
+                class="bp-input" style="width:100%;resize:none;font-family:var(--font-body);"></textarea>
             </div>
 
-            <!-- 담당 기술자 -->
+            <!-- Technician -->
             <div>
-              <label class="block text-sm font-semibold mb-1" style="color: var(--bp-text-2);">담당 기술자 <span style="color: #ef4444;">*</span></label>
+              <label style="display:block;font-size:0.85rem;font-weight:600;color:var(--bp-text-2);margin-bottom:4px;">담당 기술자 <span style="color:#ef4444;">*</span></label>
               <input v-model="logForm.technician" type="text" placeholder="기술자 이름"
-                class="bp-input w-full" style="font-family: var(--font-body);"/>
+                class="bp-input" style="width:100%;font-family:var(--font-body);"/>
             </div>
+
+            <!-- Confirmation checkbox -->
+            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none;padding:10px 12px;border-radius:8px;background:var(--bp-surface-2);border:1px solid var(--bp-surface-3);">
+              <input type="checkbox" v-model="logConfirmed" style="width:16px;height:16px;accent-color:var(--bp-signal);border-radius:4px;flex-shrink:0;" />
+              <span style="font-size:0.78rem;color:var(--bp-text-2);">정비 완료 내용이 정확함을 확인합니다</span>
+            </label>
           </div>
 
           <!-- Modal Footer -->
-          <div class="px-6 py-3 flex justify-end gap-3" style="border-top: 1px solid var(--bp-surface-3); background: var(--bp-surface-1);">
+          <div style="padding:12px 24px;display:flex;justify-content:flex-end;gap:10px;border-top:1px solid var(--bp-surface-3);background:var(--bp-surface-1);">
             <button @click="closeModals" class="bp-btn bp-btn-ghost">취소</button>
             <button @click="submitMaintenanceLog"
-              :disabled="!logForm.description || !logForm.technician || submitting"
-              :class="['bp-btn', (!logForm.description || !logForm.technician || submitting) ? '' : 'bp-btn-primary']"
-              :style="(!logForm.description || !logForm.technician || submitting)
-                ? 'background: var(--bp-surface-3); color: var(--bp-text-3); cursor: not-allowed;'
-                : ''">
-              <svg v-if="submitting" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+              :disabled="!logForm.description || !logForm.technician || !logConfirmed || submitting"
+              class="bp-btn bp-btn-primary"
+              :style="(!logForm.description || !logForm.technician || !logConfirmed || submitting)
+                ? 'opacity:0.4;cursor:not-allowed;'
+                : ''"
+              style="display:inline-flex;align-items:center;gap:6px;">
+              <svg v-if="submitting" style="width:16px;height:16px;animation:spin 0.8s linear infinite;" fill="none" viewBox="0 0 24 24">
+                <circle opacity="0.25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path opacity="0.75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
               </svg>
               {{ submitting ? '기록 중...' : '완료 기록' }}
             </button>
@@ -535,80 +536,87 @@ app.component('maintenance-page', {
       </div>
     </div>
 
-    <!-- ═══════════════════════════════════════════ -->
-    <!-- MODAL: 사고 기록                             -->
-    <!-- ═══════════════════════════════════════════ -->
-    <div v-if="showAccidentModal" class="fixed inset-0 z-50 overflow-y-auto">
-      <div class="flex items-center justify-center min-h-screen px-4 py-8">
-        <div class="fixed inset-0 backdrop-blur-sm" style="background: rgba(0,0,0,0.6);" @click="closeModals"></div>
-        <div class="relative bp-card max-w-md w-full z-10 overflow-hidden bp-animate-in" style="border-color: #ef4444;">
+    <!-- =============================================
+         MODAL: Accident Log
+         ============================================= -->
+    <div v-if="showAccidentModal" style="position:fixed;inset:0;z-index:50;overflow-y:auto;">
+      <div style="display:flex;align-items:center;justify-content:center;min-height:100vh;padding:16px 16px 32px;">
+        <div style="position:fixed;inset:0;background:rgba(0,0,0,0.6);backdrop-filter:blur(6px);" @click="closeModals"></div>
+        <div class="bp-card bp-animate-in" style="position:relative;z-index:1;max-width:28rem;width:100%;overflow:hidden;border-color:#ef4444;">
 
           <!-- Modal Header -->
-          <div class="px-6 py-4 flex items-center justify-between" style="border-bottom: 1px solid var(--bp-surface-3);">
-            <div class="flex items-center gap-3">
-              <div class="w-9 h-9 rounded-lg flex items-center justify-center" style="background: var(--bp-danger-dim);">
-                <svg class="w-4.5 h-4.5 text-red-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <div style="padding:16px 24px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--bp-surface-3);">
+            <div style="display:flex;align-items:center;gap:12px;">
+              <div style="width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:var(--bp-danger-dim);">
+                <svg width="18" height="18" style="color:#ef4444;" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
                 </svg>
               </div>
-              <h3 class="text-lg bp-heading" style="font-family: var(--font-display);">사고 기록</h3>
+              <h3 style="font-family:var(--font-display);font-size:1.1rem;font-weight:700;color:var(--bp-text-1);margin:0;">사고 기록</h3>
             </div>
-            <button @click="closeModals" class="bp-btn bp-btn-ghost p-2" style="color: var(--bp-text-3);">
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <button @click="closeModals" class="bp-btn bp-btn-ghost" style="padding:6px;color:var(--bp-text-3);">
+              <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
               </svg>
             </button>
           </div>
 
           <!-- Modal Body -->
-          <div class="px-6 py-5 space-y-5">
-            <!-- 대상 여권 -->
-            <div class="p-3 rounded-lg" style="background: var(--bp-surface-2); border: 1px solid var(--bp-surface-3);">
-              <p class="text-[10px] font-semibold uppercase tracking-wider mb-0.5" style="color: var(--bp-text-3); font-family: var(--font-mono);">TARGET PASSPORT</p>
-              <p class="text-sm font-semibold" style="color: var(--bp-text-1); font-family: var(--font-mono);">{{ selectedPassport?.passportId }}</p>
+          <div style="padding:20px 24px;display:flex;flex-direction:column;gap:20px;">
+            <!-- Target passport -->
+            <div style="padding:12px;border-radius:8px;background:var(--bp-surface-2);border:1px solid var(--bp-surface-3);">
+              <p style="font-size:0.6rem;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;color:var(--bp-text-3);font-family:var(--font-mono);margin:0 0 2px;">TARGET PASSPORT</p>
+              <p style="font-size:0.85rem;font-weight:600;color:var(--bp-text-1);font-family:var(--font-mono);margin:0;">{{ selectedPassport?.passportId }}</p>
             </div>
 
-            <!-- 심각도 -->
+            <!-- Severity -->
             <div>
-              <label class="block text-sm font-semibold mb-2" style="color: var(--bp-text-2);">심각도 <span style="color: #ef4444;">*</span></label>
-              <div class="grid grid-cols-3 gap-2">
+              <label style="display:block;font-size:0.85rem;font-weight:600;color:var(--bp-text-2);margin-bottom:8px;">심각도 <span style="color:#ef4444;">*</span></label>
+              <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;">
                 <button v-for="s in severityOptions" :key="s.value"
                   @click="accidentForm.severity = s.value" type="button"
                   :class="['flex flex-col items-center p-3 rounded-lg border-2 transition-all cursor-pointer',
                     accidentForm.severity === s.value ? s.bgClass + ' border-current' : 'border-[--bp-surface-3]']">
                   <span :class="['w-3.5 h-3.5 rounded-full mb-1.5', s.dotClass]"></span>
-                  <span class="text-xs font-semibold">{{ s.label }}</span>
+                  <span style="font-size:0.75rem;font-weight:600;">{{ s.label }}</span>
                 </button>
               </div>
             </div>
 
-            <!-- 사고 설명 -->
+            <!-- Description -->
             <div>
-              <label class="block text-sm font-semibold mb-1" style="color: var(--bp-text-2);">사고 설명 <span style="color: #ef4444;">*</span></label>
+              <label style="display:block;font-size:0.85rem;font-weight:600;color:var(--bp-text-2);margin-bottom:4px;">사고 설명 <span style="color:#ef4444;">*</span></label>
               <textarea v-model="accidentForm.description" rows="3" placeholder="사고 상황을 상세히 기술하세요"
-                class="bp-input w-full resize-none" style="font-family: var(--font-body);"></textarea>
+                class="bp-input" style="width:100%;resize:none;font-family:var(--font-body);"></textarea>
             </div>
 
-            <!-- 보고자 -->
+            <!-- Reporter -->
             <div>
-              <label class="block text-sm font-semibold mb-1" style="color: var(--bp-text-2);">보고자 <span style="color: #ef4444;">*</span></label>
+              <label style="display:block;font-size:0.85rem;font-weight:600;color:var(--bp-text-2);margin-bottom:4px;">보고자 <span style="color:#ef4444;">*</span></label>
               <input v-model="accidentForm.reporter" type="text" placeholder="보고자 이름"
-                class="bp-input w-full" style="font-family: var(--font-body);"/>
+                class="bp-input" style="width:100%;font-family:var(--font-body);"/>
             </div>
+
+            <!-- Confirmation checkbox -->
+            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none;padding:10px 12px;border-radius:8px;background:var(--bp-danger-dim);border:1px solid var(--bp-surface-3);">
+              <input type="checkbox" v-model="accidentConfirmed" style="width:16px;height:16px;accent-color:#ef4444;border-radius:4px;flex-shrink:0;" />
+              <span style="font-size:0.78rem;color:var(--bp-text-2);">사고 기록 내용이 정확함을 확인합니다</span>
+            </label>
           </div>
 
           <!-- Modal Footer -->
-          <div class="px-6 py-3 flex justify-end gap-3" style="border-top: 1px solid var(--bp-surface-3); background: var(--bp-surface-1);">
+          <div style="padding:12px 24px;display:flex;justify-content:flex-end;gap:10px;border-top:1px solid var(--bp-surface-3);background:var(--bp-surface-1);">
             <button @click="closeModals" class="bp-btn bp-btn-ghost">취소</button>
             <button @click="submitAccident"
-              :disabled="!accidentForm.description || !accidentForm.reporter || submitting"
-              :class="['bp-btn', (!accidentForm.description || !accidentForm.reporter || submitting) ? '' : 'bp-btn-danger']"
-              :style="(!accidentForm.description || !accidentForm.reporter || submitting)
-                ? 'background: var(--bp-surface-3); color: var(--bp-text-3); cursor: not-allowed;'
-                : ''">
-              <svg v-if="submitting" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+              :disabled="!accidentForm.description || !accidentForm.reporter || !accidentConfirmed || submitting"
+              class="bp-btn bp-btn-danger"
+              :style="(!accidentForm.description || !accidentForm.reporter || !accidentConfirmed || submitting)
+                ? 'opacity:0.4;cursor:not-allowed;'
+                : ''"
+              style="display:inline-flex;align-items:center;gap:6px;">
+              <svg v-if="submitting" style="width:16px;height:16px;animation:spin 0.8s linear infinite;" fill="none" viewBox="0 0 24 24">
+                <circle opacity="0.25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path opacity="0.75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
               </svg>
               {{ submitting ? '기록 중...' : '사고 기록' }}
             </button>

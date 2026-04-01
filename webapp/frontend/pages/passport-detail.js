@@ -979,20 +979,28 @@ app.component('passport-detail-page', {
 
         <!-- Tab Navigation -->
         <div class="bp-card-sm border border-[--bp-border] mb-6 overflow-hidden">
-          <div class="flex overflow-x-auto">
-            <button v-for="tab in tabs" :key="tab.key"
-              @click="switchTab(tab.key)"
-              :class="[
-                'relative flex items-center gap-2 px-5 py-3.5 text-sm font-medium transition-all whitespace-nowrap border-b-2 min-w-0',
-                activeTab === tab.key
-                  ? 'border-emerald-600 text-[--bp-signal] bg-[--bp-signal-dim]/50'
-                  : 'border-transparent text-[--bp-text-3] hover:text-[--bp-text-2] hover:bg-[--bp-surface-3]'
-              ]">
-              <svg class="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                <path stroke-linecap="round" stroke-linejoin="round" :d="tab.icon"/>
-              </svg>
-              {{ tab.label }}
-            </button>
+          <div class="relative">
+            <!-- Bottom border line (full width) -->
+            <div class="absolute bottom-0 left-0 right-0 h-[2px]" style="background: var(--bp-border);"></div>
+            <div class="flex overflow-x-auto">
+              <button v-for="tab in tabs" :key="tab.key"
+                @click="switchTab(tab.key)"
+                :class="[
+                  'relative flex items-center gap-2 px-5 py-3.5 text-sm font-medium transition-all whitespace-nowrap min-w-0',
+                  activeTab === tab.key
+                    ? 'text-[--bp-signal]'
+                    : 'text-[--bp-text-3] hover:text-[--bp-text-2] hover:bg-[--bp-surface-3]'
+                ]">
+                <svg class="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" :d="tab.icon"/>
+                </svg>
+                {{ tab.label }}
+                <!-- Active indicator bar -->
+                <span v-if="activeTab === tab.key"
+                  class="absolute bottom-0 left-2 right-2 h-[2px] rounded-full"
+                  style="background: var(--bp-signal); z-index: 1;"></span>
+              </button>
+            </div>
           </div>
         </div>
 
@@ -1019,7 +1027,7 @@ app.component('passport-detail-page', {
           </div>
 
           <!-- Identity Spec Grid — OpenBattery style: large label + big value, 3-column -->
-          <div class="bp-card-sm border border-[--bp-border] overflow-hidden">
+          <div class="bp-card-sm border border-[--bp-border] overflow-hidden" style="background: var(--bp-surface-3);">
             <div class="px-6 py-4 border-b border-[--bp-border] flex items-center gap-2.5">
               <div class="w-8 h-8 bg-[--bp-signal-dim] rounded-lg flex items-center justify-center">
                 <svg class="w-4 h-4 text-[--bp-signal]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
