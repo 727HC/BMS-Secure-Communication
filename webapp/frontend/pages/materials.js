@@ -134,7 +134,7 @@ app.component('materials-page', {
         <span class="bg-[rgba(200,255,0,0.08)] text-[#c8ff00]" style="font-family:'JetBrains Mono', monospace;font-size:0.7rem;padding:3px 10px;border-radius:20px;">
           {{ filteredMaterials.length }}건
         </span>
-        <button v-if="isManufacturer" @click="openModal" class="bg-[#c8ff00] text-[#1a1814] px-4 py-2 rounded-lg text-sm font-medium hover:bg-[#d4ff33]" style="display:inline-flex;align-items:center;gap:6px;font-size:0.82rem;">
+        <button v-if="isManufacturer" @click="openModal" class="bg-[#c8ff00] text-[#1a1814] px-4 py-2 rounded text-sm font-medium hover:bg-[#d4ff33]" style="display:inline-flex;align-items:center;gap:6px;font-size:0.82rem;">
           <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
           원자재 등록
         </button>
@@ -170,7 +170,7 @@ app.component('materials-page', {
       </div>
       <h3 style="font-family:'Pretendard Variable', sans-serif;font-size:1rem;color:#111827;margin:0 0 4px;">등록된 원자재가 없습니다</h3>
       <p style="font-size:0.82rem;color:#6b7280;text-align:center;max-width:320px;font-family:'Pretendard Variable', sans-serif;">원자재를 등록하여 공급망을 투명하게 추적하세요.</p>
-      <button v-if="isManufacturer" @click="openModal" class="bg-[#c8ff00] text-[#1a1814] px-4 py-2 rounded-lg text-sm font-medium hover:bg-[#d4ff33]" style="margin-top:16px;display:inline-flex;align-items:center;gap:6px;font-size:0.82rem;">
+      <button v-if="isManufacturer" @click="openModal" class="bg-[#c8ff00] text-[#1a1814] px-4 py-2 rounded text-sm font-medium hover:bg-[#d4ff33]" style="margin-top:16px;display:inline-flex;align-items:center;gap:6px;font-size:0.82rem;">
         <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
         첫 원자재 등록하기
       </button>
@@ -247,7 +247,7 @@ app.component('materials-page', {
             </div>
             <h3 style="font-family:'Pretendard Variable', sans-serif;font-size:1.1rem;font-weight:700;color:#111827;margin:0;">원자재 등록</h3>
           </div>
-          <button @click="closeModal" class="bg-[#1a1814] border border-[rgba(250,250,245,0.06)] text-[rgba(250,250,245,0.7)] px-4 py-2 rounded-lg text-sm font-medium hover:bg-[#1f1d17]" style="padding:6px;">
+          <button @click="closeModal" class="bg-[#1a1814] border border-[rgba(250,250,245,0.06)] text-[rgba(250,250,245,0.7)] px-4 py-2 rounded text-sm font-medium hover:bg-[#1f1d17]" style="padding:6px;">
             <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
           </button>
         </div>
@@ -293,9 +293,9 @@ app.component('materials-page', {
         </div>
         <!-- Modal Footer -->
         <div style="padding:14px 24px;border-top:1px solid #f1f5f9;background:#ffffff;display:flex;justify-content:flex-end;gap:10px;">
-          <button @click="closeModal" class="bg-[#1a1814] border border-[rgba(250,250,245,0.06)] text-[rgba(250,250,245,0.7)] px-4 py-2 rounded-lg text-sm font-medium hover:bg-[#1f1d17]">취소</button>
+          <button @click="closeModal" class="bg-[#1a1814] border border-[rgba(250,250,245,0.06)] text-[rgba(250,250,245,0.7)] px-4 py-2 rounded text-sm font-medium hover:bg-[#1f1d17]">취소</button>
           <button @click="submitMaterial" :disabled="!isFormValid || submitting"
-            :class="['inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium', (!isFormValid || submitting) ? '' : 'inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium-primary']"
+            :class="['inline-flex items-center gap-1.5 px-4 py-2 rounded text-sm font-medium', (!isFormValid || submitting) ? '' : 'inline-flex items-center gap-1.5 px-4 py-2 rounded text-sm font-medium-primary']"
             :style="(!isFormValid || submitting) ? 'opacity:0.4;cursor:not-allowed;' : ''"
             style="display:inline-flex;align-items:center;gap:6px;">
             <svg v-if="submitting" style="animation:spin 0.8s linear infinite;" width="16" height="16" fill="none" viewBox="0 0 24 24">
@@ -325,7 +325,7 @@ app.component('materials-page', {
               <p class="font-mono" style="font-size:0.72rem;color:#6b7280;margin:2px 0 0;">{{ selectedMaterial.materialId }}</p>
             </div>
           </div>
-          <button @click="showDetail = false" class="bg-[#1a1814] border border-[rgba(250,250,245,0.06)] text-[rgba(250,250,245,0.7)] px-4 py-2 rounded-lg text-sm font-medium hover:bg-[#1f1d17]" style="padding:6px;">
+          <button @click="showDetail = false" class="bg-[#1a1814] border border-[rgba(250,250,245,0.06)] text-[rgba(250,250,245,0.7)] px-4 py-2 rounded text-sm font-medium hover:bg-[#1f1d17]" style="padding:6px;">
             <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
           </button>
         </div>
@@ -380,7 +380,7 @@ app.component('materials-page', {
         </div>
         <!-- Footer -->
         <div style="padding:14px 24px;border-top:1px solid #f1f5f9;background:#ffffff;display:flex;justify-content:flex-end;">
-          <button @click="showDetail = false" class="bg-[#1a1814] border border-[rgba(250,250,245,0.06)] text-[rgba(250,250,245,0.7)] px-4 py-2 rounded-lg text-sm font-medium hover:bg-[#1f1d17]">닫기</button>
+          <button @click="showDetail = false" class="bg-[#1a1814] border border-[rgba(250,250,245,0.06)] text-[rgba(250,250,245,0.7)] px-4 py-2 rounded text-sm font-medium hover:bg-[#1f1d17]">닫기</button>
         </div>
       </div>
     </div>
