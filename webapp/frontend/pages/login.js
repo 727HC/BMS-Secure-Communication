@@ -2,7 +2,7 @@ app.component('login-page', {
   props: ['auth', 'api'],
   emits: ['login', 'navigate'],
   setup(props, { emit }) {
-    const { ref } = Vue;
+    const { ref, computed } = Vue;
 
     const activeTab = ref('login');
     const userId = ref('');
@@ -12,11 +12,13 @@ app.component('login-page', {
     const errorMsg = ref('');
 
     const orgOptions = [
-      { value: 1, label: '제조사 (Manufacturer)' },
-      { value: 2, label: 'EV제조사 (EV Manufacturer)' },
-      { value: 3, label: '정비/분석 (Service)' },
-      { value: 4, label: '검증기관 (Regulator)' },
+      { value: 1, label: '제조사 (Manufacturer)', short: '제조사', desc: '배터리 제조 및 여권 발급', icon: 'factory', color: '#34d399' },
+      { value: 2, label: 'EV제조사 (EV Manufacturer)', short: 'EV제조사', desc: '차량 바인딩 및 운행 관리', icon: 'car', color: '#a78bfa' },
+      { value: 3, label: '정비/분석 (Service)', short: '정비/분석', desc: '배터리 정비 및 상태 분석', icon: 'wrench', color: '#fbbf24' },
+      { value: 4, label: '검증기관 (Regulator)', short: '검증기관', desc: '규제 준수 및 인증 관리', icon: 'shield', color: '#60a5fa' },
     ];
+
+    const selectedOrg = computed(() => orgOptions.find(o => o.value === orgNum.value));
 
     function resetForm() {
       userId.value = '';
@@ -56,245 +58,273 @@ app.component('login-page', {
       }
     }
 
-    return { activeTab, userId, password, orgNum, loading, errorMsg, orgOptions, switchTab, handleSubmit };
+    return { activeTab, userId, password, orgNum, loading, errorMsg, orgOptions, selectedOrg, switchTab, handleSubmit };
   },
   template: `
-    <div class="min-h-screen flex items-center justify-center"
-         style="background: linear-gradient(160deg, #020617 0%, #0f172a 40%, #0c1e2e 70%, #091a1a 100%);">
-      <!-- Grid overlay -->
-      <div class="fixed inset-0 opacity-[0.03] pointer-events-none"
-           style="background-image: url('data:image/svg+xml,%3Csvg width=&quot;60&quot; height=&quot;60&quot; xmlns=&quot;http://www.w3.org/2000/svg&quot;%3E%3Cpath d=&quot;M0 0h60v60H0z&quot; fill=&quot;none&quot;/%3E%3Cpath d=&quot;M0 0h1v60H0zM60 0h1v60h-1zM0 0v1h60V0zM0 60v1h60v-1z&quot; fill=&quot;%2394a3b8&quot;/%3E%3C/svg%3E');"></div>
+    <div class="min-h-screen flex" style="background: var(--bp-void);">
 
-      <!-- Floating ambient shapes — subtle -->
-      <div class="fixed top-1/4 left-1/4 w-96 h-96 bg-emerald-500/[0.06] rounded-full blur-3xl pointer-events-none"></div>
-      <div class="fixed bottom-1/3 right-1/3 w-80 h-80 bg-blue-500/[0.05] rounded-full blur-3xl pointer-events-none"></div>
-      <div class="fixed top-2/3 left-1/2 w-64 h-64 bg-slate-400/[0.04] rounded-full blur-3xl pointer-events-none"></div>
+      <!-- ═══ Ambient effects ═══ -->
+      <div class="fixed inset-0 pointer-events-none overflow-hidden">
+        <div class="absolute top-0 left-0 w-full h-full opacity-[0.02]"
+             style="background-image: url('data:image/svg+xml,%3Csvg width=&quot;40&quot; height=&quot;40&quot; xmlns=&quot;http://www.w3.org/2000/svg&quot;%3E%3Cpath d=&quot;M0 0h1v40H0zM40 0h1v40h-1zM0 0v1h40V0zM0 40v1h40v-1z&quot; fill=&quot;%2334d399&quot;/%3E%3C/svg%3E');"></div>
+        <div class="absolute -top-40 -left-40 w-[600px] h-[600px] rounded-full blur-[120px]" style="background: radial-gradient(circle, rgba(52,211,153,0.08), transparent 70%);"></div>
+        <div class="absolute -bottom-20 right-0 w-[500px] h-[500px] rounded-full blur-[100px]" style="background: radial-gradient(circle, rgba(96,165,250,0.05), transparent 70%);"></div>
+      </div>
 
-      <!-- Centered container -->
-      <div class="relative z-10 flex flex-col lg:flex-row items-center gap-12 px-6 py-12 max-w-5xl mx-auto" style="transform:scale(1.3);transform-origin:center center;">
+      <!-- ═══════════════════════════════════════════════════════
+           LEFT PANEL — Battery Lifecycle Schematic
+           ═══════════════════════════════════════════════════════ -->
+      <div class="hidden lg:flex flex-1 flex-col justify-center items-center relative px-12">
 
-      <!-- ===== LEFT: Platform Info (hidden on mobile) ===== -->
-      <div class="hidden lg:flex flex-1 flex-col justify-center min-w-[420px]">
-        <!-- Logo -->
-        <div class="mb-6">
-          <div class="inline-flex items-center justify-center w-14 h-14 bg-white/10 backdrop-blur-sm rounded-2xl border border-white/20 mb-5 shadow-lg shadow-emerald-900/30">
-            <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <!-- Floating badge -->
+        <div class="absolute top-8 left-8 flex items-center gap-2 bp-animate-in">
+          <div class="w-8 h-8 rounded-lg flex items-center justify-center" style="background: linear-gradient(135deg, var(--bp-signal), #059669);">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
               <rect x="6" y="2" width="12" height="20" rx="2" ry="2"/>
-              <line x1="6" y1="6" x2="18" y2="6"/>
-              <line x1="6" y1="18" x2="18" y2="18"/>
+              <line x1="6" y1="6" x2="18" y2="6"/><line x1="6" y1="18" x2="18" y2="18"/>
               <path d="M12 9v6"/><path d="M9 12h6"/>
             </svg>
           </div>
-          <h1 class="text-4xl font-bold text-white tracking-tight leading-tight mb-3">Battery Passport<br/>Platform</h1>
-          <p class="text-slate-400 text-base leading-relaxed max-w-md">GBA 21 기반 배터리 전주기 여권 관리 플랫폼.<br/>블록체인과 DID로 신뢰할 수 있는 배터리 이력을 제공합니다.</p>
+          <span class="text-xs font-semibold tracking-wide" style="color: var(--bp-text-2); font-family: var(--font-mono);">BP.PLATFORM</span>
         </div>
 
-        <!-- Feature cards 2x2 grid -->
-        <div class="grid grid-cols-2 gap-3 max-w-md">
-          <div class="bg-white/[0.04] backdrop-blur-sm rounded-xl border border-white/[0.06] p-3.5">
-            <div class="w-8 h-8 rounded-lg bg-emerald-500/20 flex items-center justify-center mb-2.5">
-              <svg class="w-4 h-4 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+        <!-- Main visual: Battery lifecycle -->
+        <div class="relative max-w-md w-full bp-animate-in bp-delay-1">
+
+          <!-- Large battery SVG -->
+          <div class="flex justify-center mb-12">
+            <div class="relative">
+              <svg width="120" height="200" viewBox="0 0 120 200" fill="none" class="drop-shadow-2xl">
+                <!-- Battery body -->
+                <rect x="10" y="20" width="100" height="170" rx="12" stroke="var(--bp-signal)" stroke-width="2" fill="var(--bp-surface-2)" opacity="0.8"/>
+                <!-- Battery cap -->
+                <rect x="35" y="8" width="50" height="16" rx="6" stroke="var(--bp-signal)" stroke-width="2" fill="var(--bp-surface-3)"/>
+                <!-- Charge level (animated) -->
+                <rect x="18" y="50" width="84" height="132" rx="6" fill="var(--bp-surface-3)"/>
+                <rect x="18" y="50" width="84" rx="6" fill="url(#battGrad)" class="login-charge-bar" style="height: 132px;">
+                  <animate attributeName="height" values="20;132;100;132" dur="4s" repeatCount="indefinite" keyTimes="0;0.4;0.7;1" calcMode="spline" keySplines="0.4 0 0.2 1;0.4 0 0.2 1;0.4 0 0.2 1"/>
+                  <animate attributeName="y" values="162;50;82;50" dur="4s" repeatCount="indefinite" keyTimes="0;0.4;0.7;1" calcMode="spline" keySplines="0.4 0 0.2 1;0.4 0 0.2 1;0.4 0 0.2 1"/>
+                </rect>
+                <defs>
+                  <linearGradient id="battGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stop-color="#34d399" stop-opacity="0.9"/>
+                    <stop offset="100%" stop-color="#059669" stop-opacity="0.6"/>
+                  </linearGradient>
+                </defs>
+                <!-- Bolt icon -->
+                <path d="M52 85 L62 85 L58 105 L70 105 L55 130 L59 110 L48 110 Z" fill="var(--bp-void)" opacity="0.6"/>
               </svg>
+
+              <!-- Pulsing glow behind battery -->
+              <div class="absolute inset-0 -z-10 blur-3xl opacity-30" style="background: radial-gradient(circle, var(--bp-signal), transparent 60%); animation: bp-pulse 3s ease-in-out infinite;"></div>
             </div>
-            <h3 class="text-xs font-semibold text-white mb-0.5">GBA 21 규제 준수</h3>
-            <p class="text-[10px] text-slate-500 leading-relaxed">21개 필수 항목 자동 추적</p>
           </div>
-          <div class="bg-white/[0.04] backdrop-blur-sm rounded-xl border border-white/[0.06] p-3.5">
-            <div class="w-8 h-8 rounded-lg bg-indigo-500/20 flex items-center justify-center mb-2.5">
-              <svg class="w-4 h-4 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
-              </svg>
+
+          <!-- Title -->
+          <h1 class="text-center mb-3" style="font-family: var(--font-display); font-size: 2.25rem; font-weight: 800; color: var(--bp-text-1); letter-spacing: -0.03em; line-height: 1.1;">
+            Battery Passport<br/>Platform
+          </h1>
+          <p class="text-center text-sm mb-10" style="color: var(--bp-text-3); max-width: 360px; margin: 0 auto; line-height: 1.6;">
+            GBA 21 기반 배터리 전주기 관리 플랫폼.<br/>블록체인과 DID로 신뢰할 수 있는 이력을 제공합니다.
+          </p>
+
+          <!-- Lifecycle timeline -->
+          <div class="flex items-center justify-center gap-0 px-4 bp-animate-in bp-delay-3">
+            <div v-for="(step, i) in [
+              { icon: '⚙', label: '제조', color: '#34d399' },
+              { icon: '⚡', label: '운행', color: '#60a5fa' },
+              { icon: '🔧', label: '정비', color: '#fbbf24' },
+              { icon: '♻', label: '재활용', color: '#a78bfa' }
+            ]" :key="i" class="flex items-center">
+              <!-- Node -->
+              <div class="flex flex-col items-center">
+                <div class="w-11 h-11 rounded-xl flex items-center justify-center text-lg border transition-all duration-300"
+                     :style="'background: ' + step.color + '15; border-color: ' + step.color + '30;'">
+                  {{ step.icon }}
+                </div>
+                <span class="mt-1.5 text-[10px] font-medium" style="color: var(--bp-text-3);">{{ step.label }}</span>
+              </div>
+              <!-- Connector line (animated) -->
+              <div v-if="i < 3" class="w-8 h-px mx-1 mb-5 relative overflow-hidden" style="background: var(--bp-border);">
+                <div class="absolute inset-0 h-full" :style="'background: ' + step.color + '; animation: login-flow 2s ease-in-out infinite; animation-delay: ' + (i * 0.4) + 's; transform: translateX(-100%);'"></div>
+              </div>
             </div>
-            <h3 class="text-xs font-semibold text-white mb-0.5">DID/VC 신뢰성</h3>
-            <p class="text-[10px] text-slate-500 leading-relaxed">Ed25519 서명 + VC 무결성</p>
-          </div>
-          <div class="bg-white/[0.04] backdrop-blur-sm rounded-xl border border-white/[0.06] p-3.5">
-            <div class="w-8 h-8 rounded-lg bg-teal-500/20 flex items-center justify-center mb-2.5">
-              <svg class="w-4 h-4 text-teal-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
-              </svg>
-            </div>
-            <h3 class="text-xs font-semibold text-white mb-0.5">BMU 실시간 모니터링</h3>
-            <p class="text-[10px] text-slate-500 leading-relaxed">센서 데이터 블록체인 기록</p>
-          </div>
-          <div class="bg-white/[0.04] backdrop-blur-sm rounded-xl border border-white/[0.06] p-3.5">
-            <div class="w-8 h-8 rounded-lg bg-amber-500/20 flex items-center justify-center mb-2.5">
-              <svg class="w-4 h-4 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
-              </svg>
-            </div>
-            <h3 class="text-xs font-semibold text-white mb-0.5">배터리 전주기 관리</h3>
-            <p class="text-[10px] text-slate-500 leading-relaxed">제조부터 폐기까지 추적</p>
           </div>
         </div>
 
-        <!-- Org badges inline -->
-        <div class="mt-4 flex items-center gap-1.5 flex-wrap">
-          <span class="px-2 py-0.5 rounded-full text-[10px] font-medium bg-emerald-500/15 text-emerald-300/50 border border-emerald-500/15">제조사</span>
-          <span class="px-2 py-0.5 rounded-full text-[10px] font-medium bg-purple-500/15 text-purple-300/50 border border-purple-500/15">EV제조사</span>
-          <span class="px-2 py-0.5 rounded-full text-[10px] font-medium bg-amber-500/15 text-amber-300/50 border border-amber-500/15">정비/분석</span>
-          <span class="px-2 py-0.5 rounded-full text-[10px] font-medium bg-teal-500/15 text-teal-300/50 border border-teal-500/15">검증기관</span>
+        <!-- Bottom left: tech stack -->
+        <div class="absolute bottom-8 left-8 flex items-center gap-3 bp-animate-in bp-delay-4">
+          <span class="px-2 py-1 rounded text-[10px] font-medium" style="background: var(--bp-surface-3); color: var(--bp-text-3); font-family: var(--font-mono);">Hyperledger Fabric</span>
+          <span class="px-2 py-1 rounded text-[10px] font-medium" style="background: var(--bp-surface-3); color: var(--bp-text-3); font-family: var(--font-mono);">Aries + DID</span>
+          <span class="px-2 py-1 rounded text-[10px] font-medium" style="background: var(--bp-surface-3); color: var(--bp-text-3); font-family: var(--font-mono);">Ed25519</span>
         </div>
       </div>
 
-      <!-- ===== RIGHT: Login Form ===== -->
-      <div class="w-full lg:w-[400px] flex-shrink-0">
-        <div class="w-full">
-          <!-- Mobile logo (hidden on desktop) -->
-          <div class="text-center mb-8 lg:hidden">
-            <div class="inline-flex items-center justify-center w-14 h-14 bg-white/10 backdrop-blur-sm rounded-2xl border border-white/20 mb-4 shadow-lg shadow-emerald-900/30">
-              <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                <rect x="6" y="2" width="12" height="20" rx="2" ry="2"/>
-                <line x1="6" y1="6" x2="18" y2="6"/>
-                <line x1="6" y1="18" x2="18" y2="18"/>
-                <path d="M12 9v6"/><path d="M9 12h6"/>
-              </svg>
-            </div>
-            <h1 class="text-2xl font-bold text-white tracking-tight">Battery Passport</h1>
-            <p class="text-slate-500 text-sm mt-1">GBA 21 Platform</p>
+      <!-- ═══════════════════════════════════════════════════════
+           RIGHT PANEL — Auth Form (Terminal Style)
+           ═══════════════════════════════════════════════════════ -->
+      <div class="w-full lg:w-[520px] flex-shrink-0 flex items-center justify-center p-6 lg:p-10 relative"
+           style="background: var(--bp-surface-1); border-left: 1px solid var(--bp-border);">
+
+        <!-- Mobile header -->
+        <div class="absolute top-6 left-6 lg:hidden flex items-center gap-2">
+          <div class="w-7 h-7 rounded-lg flex items-center justify-center" style="background: linear-gradient(135deg, var(--bp-signal), #059669);">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="6" y="2" width="12" height="20" rx="2" ry="2"/>
+              <line x1="6" y1="6" x2="18" y2="6"/><line x1="6" y1="18" x2="18" y2="18"/>
+            </svg>
           </div>
+          <span class="text-sm font-bold" style="color: var(--bp-text-1); font-family: var(--font-display);">Battery Passport</span>
+        </div>
 
-          <!-- Login Card -->
-          <div class="bg-white/[0.06] backdrop-blur-xl rounded-2xl border border-white/[0.08] shadow-2xl shadow-black/40 overflow-hidden">
-            <!-- Tab Toggle -->
-            <div class="flex m-5 mb-0 bg-white/5 rounded-xl p-1 border border-white/10">
-              <button
-                @click="switchTab('login')"
-                :class="['flex-1 py-2.5 text-sm font-semibold rounded-lg transition-all duration-200',
-                  activeTab === 'login'
-                    ? 'bg-white/15 text-white shadow-sm border border-white/10'
-                    : 'text-emerald-200/60 hover:text-white/80']">
-                <span class="inline-flex items-center justify-center gap-1.5">
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4"/>
-                    <polyline points="10 17 15 12 10 7"/>
-                    <line x1="15" y1="12" x2="3" y2="12"/>
-                  </svg>
-                  <span>로그인</span>
-                </span>
-              </button>
-              <button
-                @click="switchTab('register')"
-                :class="['flex-1 py-2.5 text-sm font-semibold rounded-lg transition-all duration-200',
-                  activeTab === 'register'
-                    ? 'bg-white/15 text-white shadow-sm border border-white/10'
-                    : 'text-emerald-200/60 hover:text-white/80']">
-                <span class="inline-flex items-center justify-center gap-1.5">
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4-4v2"/>
-                    <circle cx="8.5" cy="7" r="4"/>
-                    <line x1="20" y1="8" x2="20" y2="14"/>
-                    <line x1="23" y1="11" x2="17" y2="11"/>
-                  </svg>
-                  <span>회원가입</span>
-                </span>
-              </button>
-            </div>
+        <div class="w-full max-w-sm bp-animate-in">
 
-            <!-- Form -->
-            <div class="p-5 pt-5">
-              <!-- Header -->
-              <div class="mb-5">
-                <h2 class="text-lg font-bold text-white">
-                  {{ activeTab === 'login' ? '계정에 로그인' : '새 계정 등록' }}
-                </h2>
-                <p class="mt-0.5 text-sm text-emerald-200/50">
-                  {{ activeTab === 'login' ? '배터리 여권 플랫폼에 접속합니다.' : '조직 정보와 함께 계정을 생성합니다.' }}
-                </p>
-              </div>
-
-              <!-- Error -->
-              <div v-if="errorMsg" class="mb-4 flex items-start gap-2 bg-red-500/15 border border-red-400/30 text-red-300 px-4 py-3 rounded-xl text-sm">
-                <svg class="flex-shrink-0 w-5 h-5 text-red-400 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <circle cx="12" cy="12" r="10"/>
-                  <line x1="15" y1="9" x2="9" y2="15"/>
-                  <line x1="9" y1="9" x2="15" y2="15"/>
+          <!-- Tab switcher -->
+          <div class="bp-tabs mb-6">
+            <button @click="switchTab('login')"
+              :class="['bp-tab', activeTab === 'login' ? 'bp-tab-active' : '']">
+              <span class="inline-flex items-center gap-1.5">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/>
                 </svg>
-                <span>{{ errorMsg }}</span>
-              </div>
-
-              <form @submit.prevent="handleSubmit" class="space-y-4">
-                <!-- User ID -->
-                <div>
-                  <label class="block text-sm font-medium text-emerald-100/70 mb-1.5">사용자 ID</label>
-                  <div class="relative">
-                    <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/>
-                        <circle cx="12" cy="7" r="4"/>
-                      </svg>
-                    </div>
-                    <input v-model="userId" type="text" placeholder="아이디를 입력하세요"
-                      class="w-full pl-10 pr-4 py-2.5 bg-white/[0.06] border border-white/10 rounded-xl text-white placeholder-slate-500 focus:ring-2 focus:ring-emerald-400/40 focus:border-emerald-400/50 outline-none transition text-sm" />
-                  </div>
-                </div>
-
-                <!-- Password -->
-                <div>
-                  <label class="block text-sm font-medium text-emerald-100/70 mb-1.5">비밀번호</label>
-                  <div class="relative">
-                    <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
-                        <path d="M7 11V7a5 5 0 0110 0v4"/>
-                      </svg>
-                    </div>
-                    <input v-model="password" type="password" placeholder="비밀번호를 입력하세요"
-                      class="w-full pl-10 pr-4 py-2.5 bg-white/[0.06] border border-white/10 rounded-xl text-white placeholder-slate-500 focus:ring-2 focus:ring-emerald-400/40 focus:border-emerald-400/50 outline-none transition text-sm" />
-                  </div>
-                </div>
-
-                <!-- Org Select -->
-                <div>
-                  <label class="block text-sm font-medium text-emerald-100/70 mb-1.5">소속 기관</label>
-                  <div class="relative">
-                    <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
-                        <polyline points="9 22 9 12 15 12 15 22"/>
-                      </svg>
-                    </div>
-                    <select v-model="orgNum"
-                      class="w-full pl-10 pr-8 py-2.5 bg-white/[0.06] border border-white/10 rounded-xl text-white focus:ring-2 focus:ring-emerald-400/40 focus:border-emerald-400/50 outline-none transition text-sm appearance-none cursor-pointer">
-                      <option v-for="opt in orgOptions" :key="opt.value" :value="opt.value" class="bg-slate-800 text-white">{{ opt.label }}</option>
-                    </select>
-                    <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <polyline points="6 9 12 15 18 9"/>
-                      </svg>
-                    </div>
-                  </div>
-                </div>
-
-                <!-- Submit -->
-                <button type="submit" :disabled="loading"
-                  :class="['w-full py-3 rounded-xl font-semibold text-white transition-all duration-200 flex items-center justify-center gap-2 mt-2',
-                    loading
-                      ? 'bg-emerald-500/40 cursor-not-allowed'
-                      : 'bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 hover:shadow-lg hover:shadow-emerald-500/25 active:scale-[0.98]']">
-                  <span v-if="loading" class="inline-flex items-center">
-                    <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
-                      <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                      <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
-                    </svg>
-                    처리중...
-                  </span>
-                  <span v-else>{{ activeTab === 'login' ? '로그인' : '계정 등록' }}</span>
-                </button>
-              </form>
-            </div>
+                로그인
+              </span>
+            </button>
+            <button @click="switchTab('register')"
+              :class="['bp-tab', activeTab === 'register' ? 'bp-tab-active' : '']">
+              <span class="inline-flex items-center gap-1.5">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="8.5" cy="7" r="4"/>
+                  <line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/>
+                </svg>
+                회원가입
+              </span>
+            </button>
           </div>
+
+          <!-- Header -->
+          <div class="mb-6">
+            <h2 class="text-xl font-bold mb-1" style="font-family: var(--font-display); color: var(--bp-text-1);">
+              {{ activeTab === 'login' ? '시스템 접속' : '계정 등록' }}
+            </h2>
+            <p class="text-sm" style="color: var(--bp-text-3);">
+              {{ activeTab === 'login' ? '인증된 사용자만 접근할 수 있습니다.' : '조직과 역할을 선택하여 등록합니다.' }}
+            </p>
+          </div>
+
+          <!-- Error -->
+          <div v-if="errorMsg" class="mb-4 flex items-start gap-2 px-4 py-3 rounded-lg text-sm bp-animate-in"
+               style="background: var(--bp-danger-dim); border: 1px solid rgba(248,113,113,0.25); color: var(--bp-danger);">
+            <svg class="flex-shrink-0 w-4 h-4 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>
+            </svg>
+            <span>{{ errorMsg }}</span>
+          </div>
+
+          <form @submit.prevent="handleSubmit" class="space-y-4">
+
+            <!-- ── Org Selection Cards ── -->
+            <div>
+              <label class="block text-xs font-semibold uppercase tracking-wider mb-2" style="color: var(--bp-text-3);">소속 기관</label>
+              <div class="grid grid-cols-2 gap-2">
+                <button v-for="org in orgOptions" :key="org.value"
+                  type="button"
+                  @click="orgNum = org.value"
+                  class="relative text-left p-3 rounded-lg border transition-all duration-150"
+                  :style="orgNum === org.value
+                    ? 'background: ' + org.color + '12; border-color: ' + org.color + '50; box-shadow: 0 0 20px ' + org.color + '15, inset 0 0 30px ' + org.color + '05; transform: scale(1.02);'
+                    : 'background: var(--bp-surface-2); border-color: var(--bp-border); transform: scale(1);'"
+                  @mouseenter="$event.currentTarget.style.borderColor = orgNum !== org.value ? 'var(--bp-border-hover)' : org.color + '40'"
+                  @mouseleave="$event.currentTarget.style.borderColor = orgNum !== org.value ? 'var(--bp-border)' : org.color + '40'">
+                  <!-- Active indicator -->
+                  <div v-if="orgNum === org.value" class="absolute top-2 right-2 w-2 h-2 rounded-full" :style="'background: ' + org.color + ';'"></div>
+                  <!-- Icon -->
+                  <div class="w-7 h-7 rounded-md flex items-center justify-center mb-1.5" :style="'background: ' + org.color + '20;'">
+                    <svg v-if="org.icon === 'factory'" class="w-3.5 h-3.5" :style="'color: ' + org.color" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M2 20h20"/><path d="M5 20V8l5 4V8l5 4V4h3v16"/>
+                    </svg>
+                    <svg v-else-if="org.icon === 'car'" class="w-3.5 h-3.5" :style="'color: ' + org.color" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M5 17h2m10 0h2M3 11l1.5-5h15L21 11"/><rect x="2" y="11" width="20" height="8" rx="2"/><circle cx="7" cy="17" r="1"/><circle cx="17" cy="17" r="1"/>
+                    </svg>
+                    <svg v-else-if="org.icon === 'wrench'" class="w-3.5 h-3.5" :style="'color: ' + org.color" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/>
+                    </svg>
+                    <svg v-else class="w-3.5 h-3.5" :style="'color: ' + org.color" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                    </svg>
+                  </div>
+                  <div class="text-xs font-semibold" :style="orgNum === org.value ? 'color: ' + org.color : 'color: var(--bp-text-1)'">{{ org.short }}</div>
+                  <div class="text-[10px] mt-0.5" style="color: var(--bp-text-3); line-height: 1.3;">{{ org.desc }}</div>
+                </button>
+              </div>
+              <!-- Hidden select for Playwright compatibility -->
+              <select v-model="orgNum" class="sr-only" aria-hidden="true" tabindex="-1">
+                <option v-for="opt in orgOptions" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
+              </select>
+            </div>
+
+            <!-- ── User ID ── -->
+            <div>
+              <label class="block text-xs font-semibold uppercase tracking-wider mb-1.5" style="color: var(--bp-text-3);">사용자 ID</label>
+              <div class="relative">
+                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--bp-text-3)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/>
+                  </svg>
+                </div>
+                <input v-model="userId" type="text" placeholder="아이디를 입력하세요"
+                  class="bp-input bp-input-icon" style="padding-left: 2.25rem;" />
+              </div>
+            </div>
+
+            <!-- ── Password ── -->
+            <div>
+              <label class="block text-xs font-semibold uppercase tracking-wider mb-1.5" style="color: var(--bp-text-3);">비밀번호</label>
+              <div class="relative">
+                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--bp-text-3)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/>
+                  </svg>
+                </div>
+                <input v-model="password" type="password" placeholder="비밀번호를 입력하세요"
+                  class="bp-input bp-input-icon" style="padding-left: 2.25rem;" />
+              </div>
+            </div>
+
+            <!-- ── Submit ── -->
+            <button type="submit" :disabled="loading"
+              class="bp-btn w-full py-3 mt-2 text-sm font-semibold rounded-lg transition-all duration-200"
+              :style="loading
+                ? 'background: var(--bp-surface-4); color: var(--bp-text-3); cursor: not-allowed;'
+                : 'background: linear-gradient(135deg, #10b981, #059669); color: white; box-shadow: 0 2px 12px rgba(16,185,129,0.2), inset 0 1px 0 rgba(255,255,255,0.1);'"
+              @mouseenter="!loading && ($event.target.style.boxShadow = '0 4px 20px rgba(16,185,129,0.3), inset 0 1px 0 rgba(255,255,255,0.15)')"
+              @mouseleave="!loading && ($event.target.style.boxShadow = '0 2px 12px rgba(16,185,129,0.2), inset 0 1px 0 rgba(255,255,255,0.1)')">
+              <span v-if="loading" class="inline-flex items-center justify-center">
+                <svg class="animate-spin -ml-1 mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                </svg>
+                처리중...
+              </span>
+              <span v-else>{{ activeTab === 'login' ? '로그인' : '계정 등록' }}</span>
+            </button>
+          </form>
 
           <!-- Footer -->
-          <div class="mt-6 flex items-center justify-between text-[10px] text-slate-600">
-            <span>Hyperledger Fabric + Aries</span>
-            <span>v2.0</span>
+          <div class="mt-8 pt-4 flex items-center justify-between" style="border-top: 1px solid var(--bp-border);">
+            <span class="text-[10px]" style="color: var(--bp-text-muted); font-family: var(--font-mono);">Hyperledger Fabric + Aries</span>
+            <span class="text-[10px]" style="color: var(--bp-text-muted); font-family: var(--font-mono);">v2.0</span>
           </div>
         </div>
       </div>
 
-      </div><!-- /Centered container -->
+      <style>
+        @keyframes login-flow {
+          0% { transform: translateX(-100%); }
+          50% { transform: translateX(0%); }
+          100% { transform: translateX(100%); }
+        }
+      </style>
     </div>
   `
 });

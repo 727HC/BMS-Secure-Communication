@@ -80,24 +80,24 @@ app.component('recycling-page', {
     }
 
     function getSohColor(soh) {
-      if (soh === null || soh === undefined) return 'text-gray-400';
-      if (soh > 80) return 'text-emerald-600';
+      if (soh === null || soh === undefined) return 'text-[--bp-text-3]';
+      if (soh > 80) return 'text-[--bp-signal]';
       if (soh >= 50) return 'text-amber-600';
       return 'text-red-600';
     }
 
     function getSohBg(soh) {
-      if (soh === null || soh === undefined) return 'bg-gray-200';
+      if (soh === null || soh === undefined) return 'bg-[--bp-surface-4]';
       if (soh > 80) return 'bg-emerald-500';
       if (soh >= 50) return 'bg-amber-500';
       return 'bg-red-500';
     }
 
     function getSohTrackBg(soh) {
-      if (soh === null || soh === undefined) return 'bg-gray-100';
-      if (soh > 80) return 'bg-emerald-100';
-      if (soh >= 50) return 'bg-amber-100';
-      return 'bg-red-100';
+      if (soh === null || soh === undefined) return 'bg-[--bp-surface-3]';
+      if (soh > 80) return 'bg-[--bp-signal-dim]';
+      if (soh >= 50) return 'bg-[--bp-warn-dim]';
+      return 'bg-[--bp-danger-dim]';
     }
 
     // Use global STATUS_CONFIG, getStatusBadge from app.js
@@ -261,197 +261,171 @@ app.component('recycling-page', {
     };
   },
   template: `
-  <div class="space-y-6">
-    <!-- Page Header -->
-    <div class="flex items-center justify-between">
-      <div class="flex items-center gap-3">
-        <div class="w-10 h-10 bg-teal-600 rounded-lg flex items-center justify-center">
-          <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+  <div style="display:flex;flex-direction:column;gap:24px;">
+
+    <!-- ====== PAGE HEADER ====== -->
+    <div class="bp-animate-in" style="display:flex;align-items:center;justify-content:space-between;">
+      <div style="display:flex;align-items:center;gap:14px;">
+        <div style="width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,#14b8a6,#0d9488);display:flex;align-items:center;justify-content:center;">
+          <svg width="22" height="22" fill="none" stroke="#fff" stroke-width="2" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
           </svg>
         </div>
         <div>
-          <h1 class="text-xl font-bold text-gray-900">재활용 관리</h1>
-          <p class="text-gray-500 text-xs mt-0.5">배터리 분석, 재활용 판정 및 폐기 처리 관리</p>
+          <h1 class="bp-heading" style="font-family:var(--font-display);font-size:1.35rem;color:var(--bp-text-1);margin:0;">재활용 관리</h1>
+          <p style="font-family:var(--font-body);font-size:0.72rem;color:var(--bp-text-3);margin-top:2px;">배터리 분석, 재활용 판정 및 폐기 처리 관리</p>
         </div>
       </div>
-      <button @click="fetchPassports"
-        class="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
-        <svg class="w-4 h-4 mr-1.5 text-gray-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+      <button @click="fetchPassports" class="bp-btn bp-btn-ghost" style="display:inline-flex;align-items:center;gap:6px;font-size:0.82rem;">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
         </svg>
         새로고침
       </button>
     </div>
 
-    <!-- Filter Tabs -->
-    <div class="flex items-center gap-1 bg-gray-100 rounded-lg p-1 w-fit">
+    <!-- ====== FILTER TABS ====== -->
+    <div class="bp-tabs bp-animate-in bp-delay-1" style="display:flex;align-items:center;gap:4px;padding:4px;width:fit-content;">
       <button v-for="tab in tabs" :key="tab.key" @click="activeTab = tab.key"
-        :class="['flex items-center px-3 py-2 text-sm font-medium rounded-md transition-all',
-          activeTab === tab.key
-            ? 'bg-white text-gray-900 shadow-sm'
-            : 'text-gray-500 hover:text-gray-700']">
-        <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        :class="['bp-tab', activeTab === tab.key ? 'bp-tab-active' : '']"
+        style="display:inline-flex;align-items:center;gap:6px;padding:8px 14px;font-size:0.82rem;border-radius:8px;cursor:pointer;transition:all 0.2s;">
+        <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" :d="tab.icon"/>
         </svg>
         {{ tab.label }}
-        <span :class="['ml-1.5 text-xs font-semibold px-1.5 py-0.5 rounded-full',
-          activeTab === tab.key ? 'bg-teal-100 text-teal-700' : 'bg-gray-200 text-gray-500']">
+        <span style="font-family:var(--font-mono);font-size:0.68rem;padding:1px 7px;border-radius:12px;background:var(--bp-surface-3);margin-left:2px;">
           {{ tabCounts[tab.key] }}
         </span>
       </button>
     </div>
 
-    <!-- Loading State -->
-    <div v-if="loading" class="flex flex-col items-center justify-center py-20">
-      <div class="relative">
-        <div class="w-10 h-10 rounded-full border-[3px] border-gray-200"></div>
-        <div class="absolute inset-0 w-10 h-10 rounded-full border-[3px] border-teal-500 border-t-transparent animate-spin"></div>
+    <!-- ====== LOADING STATE ====== -->
+    <div v-if="loading" class="bp-card bp-animate-in bp-delay-2" style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:72px 0;">
+      <div style="position:relative;width:40px;height:40px;">
+        <div style="position:absolute;inset:0;border-radius:50%;border:3px solid var(--bp-surface-3);"></div>
+        <div style="position:absolute;inset:0;border-radius:50%;border:3px solid #14b8a6;border-top-color:transparent;animation:spin 0.8s linear infinite;"></div>
       </div>
-      <p class="mt-3 text-sm text-gray-500">여권 목록을 불러오고 있습니다...</p>
+      <p style="margin-top:14px;font-size:0.85rem;color:var(--bp-text-3);font-family:var(--font-body);">여권 목록을 불러오고 있습니다...</p>
     </div>
 
-    <!-- Empty State -->
-    <div v-else-if="filteredPassports.length === 0" class="bg-white rounded-lg border border-gray-200 overflow-hidden">
-      <div class="flex flex-col items-center justify-center py-16 px-6">
-        <div class="w-16 h-16 rounded-xl bg-teal-50 flex items-center justify-center mb-4">
-          <svg class="w-8 h-8 text-teal-400" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
-          </svg>
-        </div>
-        <h3 class="text-base font-semibold text-gray-800 mb-1">재활용 관리 대상 배터리가 없습니다</h3>
-        <p class="text-sm text-gray-500 text-center max-w-md">배터리 여권이 등록되면 재활용 관리를 시작할 수 있습니다.</p>
+    <!-- ====== EMPTY STATE ====== -->
+    <div v-else-if="filteredPassports.length === 0" class="bp-card bp-animate-in bp-delay-2" style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:64px 24px;">
+      <div style="width:64px;height:64px;border-radius:16px;background:var(--bp-surface-3);display:flex;align-items:center;justify-content:center;margin-bottom:16px;">
+        <svg width="32" height="32" fill="none" stroke="var(--bp-text-3)" stroke-width="1.5" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+        </svg>
       </div>
+      <h3 style="font-family:var(--font-display);font-size:1rem;color:var(--bp-text-1);margin:0 0 4px;">재활용 관리 대상 배터리가 없습니다</h3>
+      <p style="font-size:0.82rem;color:var(--bp-text-3);text-align:center;max-width:360px;font-family:var(--font-body);">배터리 여권이 등록되면 재활용 관리를 시작할 수 있습니다.</p>
     </div>
 
-    <!-- Main Table -->
-    <div v-else class="bg-white rounded-lg border border-gray-200 overflow-hidden">
-      <div class="px-4 py-3 border-b border-gray-100 bg-gray-50/80 flex items-center justify-between">
-        <div class="flex items-center gap-2">
-          <svg class="w-4 h-4 text-teal-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
-          </svg>
-          <span class="text-sm font-semibold text-gray-700">재활용 현황</span>
-          <span class="text-xs font-medium text-teal-600 bg-teal-50 px-2 py-0.5 rounded-full">{{ filteredPassports.length }}건</span>
+    <!-- ====== MAIN TABLE ====== -->
+    <div v-else class="bp-card bp-card-glow bp-animate-in bp-delay-2" style="overflow:hidden;">
+      <!-- Table header strip -->
+      <div style="padding:12px 20px;border-bottom:1px solid var(--bp-surface-3);background:var(--bp-surface-1);display:flex;align-items:center;justify-content:space-between;">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span class="bp-dot-signal" style="width:8px;height:8px;"></span>
+          <span style="font-family:var(--font-display);font-size:0.82rem;font-weight:600;color:var(--bp-text-2);">재활용 현황</span>
         </div>
+        <span class="bp-badge-signal" style="font-family:var(--font-mono);font-size:0.68rem;padding:2px 10px;border-radius:20px;">
+          {{ filteredPassports.length }}건
+        </span>
       </div>
-      <div class="overflow-x-auto">
-        <table class="min-w-full text-sm">
+      <div style="overflow-x:auto;">
+        <table class="bp-table" style="width:100%;">
           <thead>
-            <tr class="bg-gray-50 border-b border-gray-100">
-              <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">여권ID</th>
-              <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">시리얼</th>
-              <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">상태</th>
-              <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">SOH</th>
-              <th class="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">재활용가능</th>
-              <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">재활용률</th>
-              <th class="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">액션</th>
+            <tr>
+              <th>여권ID</th>
+              <th>시리얼</th>
+              <th>상태</th>
+              <th>SOH</th>
+              <th style="text-align:center;">재활용가능</th>
+              <th>재활용률</th>
+              <th style="text-align:right;">액션</th>
             </tr>
           </thead>
-          <tbody class="divide-y divide-gray-100">
-            <tr v-for="(p, idx) in filteredPassports" :key="p.passportId"
-              :class="['transition-colors hover:bg-gray-50', idx % 2 === 0 ? 'bg-white' : 'bg-gray-50/40']">
-              <td class="px-4 py-3 whitespace-nowrap">
-                <span class="text-sm font-mono text-gray-700">{{ p.passportId }}</span>
-              </td>
-              <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500 font-mono">{{ p.serialNumber || '-' }}</td>
-              <td class="px-4 py-3 whitespace-nowrap">
+          <tbody>
+            <tr v-for="(p, idx) in filteredPassports" :key="p.passportId">
+              <td><span class="bp-mono" style="font-size:0.78rem;color:var(--bp-text-2);">{{ p.passportId }}</span></td>
+              <td class="bp-mono" style="font-size:0.78rem;color:var(--bp-text-3);">{{ p.serialNumber || '-' }}</td>
+              <td>
                 <span :class="['inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold', getStatusBadge(p.status).bg]">
                   <span :class="['w-1.5 h-1.5 rounded-full mr-1.5', getStatusBadge(p.status).dot]"></span>
                   {{ getStatusBadge(p.status).label }}
                 </span>
               </td>
-              <td class="px-4 py-3 whitespace-nowrap">
-                <div v-if="p.currentSoh != null" class="flex items-center gap-2.5 min-w-[110px]">
-                  <div class="flex-1">
-                    <div :class="['w-full rounded-full h-1.5', getSohTrackBg(p.currentSoh)]">
-                      <div :class="['h-1.5 rounded-full transition-all', getSohBg(p.currentSoh)]"
-                        :style="{ width: Math.min(p.currentSoh, 100) + '%' }"></div>
+              <!-- SOH with progress bar -->
+              <td>
+                <div v-if="p.currentSoh != null" style="display:flex;align-items:center;gap:10px;min-width:110px;">
+                  <div style="flex:1;">
+                    <div class="bp-progress" :class="getSohTrackBg(p.currentSoh)" style="height:6px;">
+                      <div :class="getSohBg(p.currentSoh)" style="height:6px;border-radius:999px;transition:width 0.4s;" :style="{ width: Math.min(p.currentSoh, 100) + '%' }"></div>
                     </div>
                   </div>
-                  <span :class="['text-sm font-bold tabular-nums whitespace-nowrap', getSohColor(p.currentSoh)]">
+                  <span :class="getSohColor(p.currentSoh)" style="font-family:var(--font-mono);font-size:0.82rem;font-weight:700;white-space:nowrap;">
                     {{ p.currentSoh }}%
                   </span>
                 </div>
-                <span v-else class="text-xs text-gray-400">미측정</span>
+                <span v-else style="font-size:0.75rem;color:var(--bp-text-3);">미측정</span>
               </td>
-              <td class="px-4 py-3 whitespace-nowrap text-center">
-                <span v-if="p.recycleAvailable === true"
-                  class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                  <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
-                  </svg>
+              <!-- Recycle availability badge -->
+              <td style="text-align:center;">
+                <span v-if="p.recycleAvailable === true" class="bp-badge-signal" style="display:inline-flex;align-items:center;gap:4px;font-size:0.7rem;padding:2px 8px;border-radius:20px;">
+                  <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
                   가능
                 </span>
-                <span v-else-if="p.recycleAvailable === false"
-                  class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-gray-100 text-gray-500 border border-gray-200">
-                  <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
-                  </svg>
+                <span v-else-if="p.recycleAvailable === false" style="display:inline-flex;align-items:center;gap:4px;font-size:0.7rem;padding:2px 8px;border-radius:20px;background:var(--bp-surface-3);color:var(--bp-text-3);border:1px solid var(--bp-surface-4);">
+                  <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
                   불가
                 </span>
-                <span v-else class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-50 text-gray-400 border border-gray-200">
+                <span v-else style="font-size:0.7rem;padding:2px 8px;border-radius:20px;background:var(--bp-surface-1);color:var(--bp-text-3);border:1px solid var(--bp-surface-3);">
                   미판정
                 </span>
               </td>
-              <td class="px-4 py-3">
-                <div v-if="getRecyclingRateEntries(p.recyclingRates).length > 0" class="space-y-1.5 min-w-[140px]">
+              <!-- Recycling rates -->
+              <td>
+                <div v-if="getRecyclingRateEntries(p.recyclingRates).length > 0" style="display:flex;flex-direction:column;gap:6px;min-width:140px;">
                   <div v-for="entry in getRecyclingRateEntries(p.recyclingRates)" :key="entry.key"
-                    class="flex items-center gap-2">
-                    <span class="text-[11px] font-medium text-gray-600 w-16 text-right shrink-0 truncate" :title="entry.key">{{ entry.key }}</span>
-                    <div class="flex-1 bg-gray-100 rounded-full h-1.5 min-w-[50px]">
-                      <div :class="['h-1.5 rounded-full transition-all', getRateBarColor(entry.value)]"
-                        :style="{ width: Math.min(entry.value, 100) + '%' }"></div>
+                    style="display:flex;align-items:center;gap:8px;">
+                    <span style="font-size:0.7rem;font-weight:500;color:var(--bp-text-2);width:60px;text-align:right;flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" :title="entry.key">{{ entry.key }}</span>
+                    <div class="bp-progress" style="flex:1;height:6px;min-width:50px;background:var(--bp-surface-3);">
+                      <div :class="getRateBarColor(entry.value)" style="height:6px;border-radius:999px;transition:width 0.4s;" :style="{ width: Math.min(entry.value, 100) + '%' }"></div>
                     </div>
-                    <span class="text-[11px] font-bold text-gray-700 w-9 shrink-0 tabular-nums">{{ entry.value }}%</span>
+                    <span style="font-family:var(--font-mono);font-size:0.7rem;font-weight:700;color:var(--bp-text-2);width:36px;flex-shrink:0;font-variant-numeric:tabular-nums;">{{ entry.value }}%</span>
                   </div>
                 </div>
-                <span v-else class="text-xs text-gray-400">-</span>
+                <span v-else style="font-size:0.75rem;color:var(--bp-text-3);">-</span>
               </td>
-              <td class="px-4 py-3 whitespace-nowrap text-right">
-                <div v-if="hasAnyAction(p)" class="flex flex-col items-end gap-1">
-                  <button v-if="canRequestAnalysis && p.status !== 'DISPOSED'"
-                    @click="requestAnalysis(p)"
-                    class="inline-flex items-center px-2.5 py-1 text-xs font-semibold text-blue-700 bg-blue-50 border border-blue-200 rounded-md hover:bg-blue-100 transition-colors w-full justify-center">
-                    <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
-                    </svg>
+              <!-- Actions -->
+              <td style="text-align:right;">
+                <div v-if="hasAnyAction(p)" style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;">
+                  <button v-if="canRequestAnalysis && p.status !== 'DISPOSED'" @click="requestAnalysis(p)"
+                    class="bp-btn" style="font-size:0.72rem;padding:4px 10px;display:inline-flex;align-items:center;gap:4px;color:var(--bp-info);border:1px solid var(--bp-info);background:transparent;width:100%;justify-content:center;">
+                    <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
                     분석 요청
                   </button>
-                  <button v-if="canSubmitAnalysis && p.status !== 'DISPOSED'"
-                    @click="openAnalysisResult(p)"
-                    class="inline-flex items-center px-2.5 py-1 text-xs font-semibold text-indigo-700 bg-indigo-50 border border-indigo-200 rounded-md hover:bg-indigo-100 transition-colors w-full justify-center">
-                    <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                    </svg>
+                  <button v-if="canSubmitAnalysis && p.status !== 'DISPOSED'" @click="openAnalysisResult(p)"
+                    class="bp-btn" style="font-size:0.72rem;padding:4px 10px;display:inline-flex;align-items:center;gap:4px;color:var(--bp-purple);border:1px solid var(--bp-purple);background:transparent;width:100%;justify-content:center;">
+                    <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
                     분석 결과
                   </button>
-                  <button v-if="canToggleRecycle && p.status !== 'DISPOSED'"
-                    @click="openRecycleToggle(p)"
-                    class="inline-flex items-center px-2.5 py-1 text-xs font-semibold text-teal-700 bg-teal-50 border border-teal-200 rounded-md hover:bg-teal-100 transition-colors w-full justify-center">
-                    <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                    </svg>
+                  <button v-if="canToggleRecycle && p.status !== 'DISPOSED'" @click="openRecycleToggle(p)"
+                    class="bp-btn" style="font-size:0.72rem;padding:4px 10px;display:inline-flex;align-items:center;gap:4px;color:var(--bp-signal);border:1px solid var(--bp-signal);background:transparent;width:100%;justify-content:center;">
+                    <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                     재활용 판정
                   </button>
-                  <button v-if="canExtract && p.status !== 'DISPOSED'"
-                    @click="openExtract(p)"
-                    class="inline-flex items-center px-2.5 py-1 text-xs font-semibold text-amber-700 bg-amber-50 border border-amber-200 rounded-md hover:bg-amber-100 transition-colors w-full justify-center">
-                    <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
-                    </svg>
+                  <button v-if="canExtract && p.status !== 'DISPOSED'" @click="openExtract(p)"
+                    class="bp-btn" style="font-size:0.72rem;padding:4px 10px;display:inline-flex;align-items:center;gap:4px;color:var(--bp-warn);border:1px solid var(--bp-warn);background:transparent;width:100%;justify-content:center;">
+                    <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
                     원자재 추출
                   </button>
-                  <button v-if="canDispose && p.status !== 'DISPOSED'"
-                    @click="openDispose(p)"
-                    class="inline-flex items-center px-2.5 py-1 text-xs font-semibold text-red-700 bg-red-50 border border-red-200 rounded-md hover:bg-red-100 transition-colors w-full justify-center">
-                    <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
-                    </svg>
+                  <button v-if="canDispose && p.status !== 'DISPOSED'" @click="openDispose(p)"
+                    class="bp-btn bp-btn-danger" style="font-size:0.72rem;padding:4px 10px;display:inline-flex;align-items:center;gap:4px;width:100%;justify-content:center;">
+                    <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
                     폐기 처리
                   </button>
                 </div>
-                <span v-else-if="p.status === 'DISPOSED'" class="text-xs text-gray-400">폐기 완료</span>
+                <span v-else-if="p.status === 'DISPOSED'" style="font-size:0.75rem;color:var(--bp-text-3);">폐기 완료</span>
               </td>
             </tr>
           </tbody>
@@ -461,263 +435,213 @@ app.component('recycling-page', {
 
     <!-- ==================== MODALS ==================== -->
 
-    <!-- Analysis Result Modal -->
-    <div v-if="showAnalysisResultModal" class="fixed inset-0 z-50 overflow-y-auto">
-      <div class="flex items-center justify-center min-h-screen px-4 py-8">
-        <div class="fixed inset-0 bg-gray-900/60 backdrop-blur-sm" @click="closeModals"></div>
-        <div class="relative bg-white rounded-xl shadow-2xl max-w-md w-full z-10 overflow-hidden">
-          <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
-            <div class="flex items-center gap-3">
-              <div class="w-8 h-8 rounded-lg bg-indigo-100 flex items-center justify-center">
-                <svg class="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                </svg>
-              </div>
-              <h3 class="text-lg font-bold text-gray-900">분석 결과 제출</h3>
-            </div>
-            <button @click="closeModals" class="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
-              <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+    <!-- ====== ANALYSIS RESULT MODAL ====== -->
+    <div v-if="showAnalysisResultModal" style="position:fixed;inset:0;z-index:50;display:flex;align-items:center;justify-content:center;padding:16px;">
+      <div style="position:fixed;inset:0;background:rgba(0,0,0,0.65);backdrop-filter:blur(6px);" @click="closeModals"></div>
+      <div class="bp-card bp-card-glow bp-animate-in" style="position:relative;z-index:1;max-width:460px;width:100%;overflow:hidden;">
+        <div style="padding:18px 24px;border-bottom:1px solid var(--bp-surface-3);display:flex;align-items:center;justify-content:space-between;">
+          <div style="display:flex;align-items:center;gap:12px;">
+            <div style="width:34px;height:34px;border-radius:10px;background:var(--bp-surface-3);display:flex;align-items:center;justify-content:center;">
+              <svg width="16" height="16" fill="none" stroke="var(--bp-purple)" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
               </svg>
-            </button>
-          </div>
-          <div class="px-6 py-5">
-            <div class="mb-4 p-3 bg-gray-50 rounded-lg border border-gray-100">
-              <p class="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-0.5">대상 여권</p>
-              <p class="text-sm font-mono font-semibold text-gray-900">{{ selectedPassport?.passportId }}</p>
             </div>
-            <div class="space-y-4">
-              <div class="grid grid-cols-2 gap-4">
-                <div>
-                  <label class="block text-sm font-semibold text-gray-700 mb-1">SOH (%) <span class="text-red-500">*</span></label>
-                  <input v-model="analysisForm.soh" type="number" min="0" max="100" step="0.1" placeholder="0.0"
-                    class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none tabular-nums"/>
-                </div>
-                <div>
-                  <label class="block text-sm font-semibold text-gray-700 mb-1">SOCE (%) <span class="text-red-500">*</span></label>
-                  <input v-model="analysisForm.soce" type="number" min="0" max="100" step="0.1" placeholder="0.0"
-                    class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none tabular-nums"/>
-                </div>
-              </div>
-              <div>
-                <label class="block text-sm font-semibold text-gray-700 mb-1">잔여 수명 사이클 <span class="text-red-500">*</span></label>
-                <input v-model="analysisForm.remainingLifeCycle" type="number" min="0" step="1" placeholder="0"
-                  class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none tabular-nums"/>
-              </div>
-              <div class="flex items-center p-3 bg-gray-50 rounded-lg border border-gray-100">
-                <label class="flex items-center cursor-pointer select-none flex-1">
-                  <div class="relative">
-                    <input type="checkbox" v-model="analysisForm.recycleAvailable" class="sr-only peer"/>
-                    <div class="w-9 h-5 bg-gray-200 rounded-full peer-checked:bg-emerald-600 transition-colors"></div>
-                    <div class="absolute top-[2px] left-[2px] w-4 h-4 bg-white rounded-full shadow-sm transition-transform peer-checked:translate-x-4"></div>
-                  </div>
-                  <span class="ml-3 text-sm font-semibold" :class="analysisForm.recycleAvailable ? 'text-emerald-700' : 'text-gray-500'">
-                    {{ analysisForm.recycleAvailable ? '재활용 가능' : '재활용 불가' }}
-                  </span>
-                </label>
-              </div>
+            <h3 style="font-family:var(--font-display);font-size:1.1rem;font-weight:700;color:var(--bp-text-1);margin:0;">분석 결과 제출</h3>
+          </div>
+          <button @click="closeModals" class="bp-btn bp-btn-ghost" style="padding:6px;">
+            <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+          </button>
+        </div>
+        <div style="padding:20px 24px;display:flex;flex-direction:column;gap:16px;">
+          <div style="padding:12px;background:var(--bp-surface-1);border:1px solid var(--bp-surface-3);border-radius:8px;">
+            <p style="font-size:0.65rem;font-weight:600;color:var(--bp-text-3);text-transform:uppercase;letter-spacing:0.05em;margin:0 0 2px;">대상 여권</p>
+            <p class="bp-mono" style="font-size:0.85rem;font-weight:600;color:var(--bp-text-1);margin:0;">{{ selectedPassport?.passportId }}</p>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+            <div>
+              <label style="display:block;font-size:0.82rem;font-weight:600;color:var(--bp-text-2);margin-bottom:6px;">SOH (%) <span style="color:var(--bp-danger);">*</span></label>
+              <input v-model="analysisForm.soh" type="number" min="0" max="100" step="0.1" placeholder="0.0" class="bp-input" style="width:100%;font-variant-numeric:tabular-nums;" />
+            </div>
+            <div>
+              <label style="display:block;font-size:0.82rem;font-weight:600;color:var(--bp-text-2);margin-bottom:6px;">SOCE (%) <span style="color:var(--bp-danger);">*</span></label>
+              <input v-model="analysisForm.soce" type="number" min="0" max="100" step="0.1" placeholder="0.0" class="bp-input" style="width:100%;font-variant-numeric:tabular-nums;" />
             </div>
           </div>
-          <div class="px-6 py-3 border-t border-gray-200 bg-gray-50 flex justify-end gap-3">
-            <button @click="closeModals"
-              class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
-              취소
-            </button>
-            <button @click="submitAnalysisResult"
-              :disabled="!analysisForm.soh || !analysisForm.soce || !analysisForm.remainingLifeCycle || submitting"
-              :class="['px-4 py-2 text-sm font-semibold rounded-lg transition-all flex items-center',
-                (!analysisForm.soh || !analysisForm.soce || !analysisForm.remainingLifeCycle || submitting) ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-indigo-600 text-white hover:bg-indigo-700']">
-              <svg v-if="submitting" class="w-4 h-4 mr-1.5 animate-spin" fill="none" viewBox="0 0 24 24">
-                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
-              </svg>
-              {{ submitting ? '제출 중...' : '제출' }}
-            </button>
+          <div>
+            <label style="display:block;font-size:0.82rem;font-weight:600;color:var(--bp-text-2);margin-bottom:6px;">잔여 수명 사이클 <span style="color:var(--bp-danger);">*</span></label>
+            <input v-model="analysisForm.remainingLifeCycle" type="number" min="0" step="1" placeholder="0" class="bp-input" style="width:100%;font-variant-numeric:tabular-nums;" />
           </div>
+          <div style="display:flex;align-items:center;padding:12px;background:var(--bp-surface-1);border:1px solid var(--bp-surface-3);border-radius:8px;">
+            <label style="display:flex;align-items:center;cursor:pointer;flex:1;">
+              <div style="position:relative;">
+                <input type="checkbox" v-model="analysisForm.recycleAvailable" style="position:absolute;opacity:0;width:0;height:0;" />
+                <div :style="{ width:'36px',height:'20px',borderRadius:'10px',background: analysisForm.recycleAvailable ? 'var(--bp-signal)' : 'var(--bp-surface-4)',transition:'background 0.2s' }"></div>
+                <div :style="{ position:'absolute',top:'2px',left: analysisForm.recycleAvailable ? '18px' : '2px',width:'16px',height:'16px',borderRadius:'50%',background:'var(--bp-surface-2)',boxShadow:'0 1px 3px rgba(0,0,0,0.2)',transition:'left 0.2s' }"></div>
+              </div>
+              <span style="margin-left:12px;font-size:0.85rem;font-weight:600;" :style="{ color: analysisForm.recycleAvailable ? 'var(--bp-signal)' : 'var(--bp-text-3)' }">
+                {{ analysisForm.recycleAvailable ? '재활용 가능' : '재활용 불가' }}
+              </span>
+            </label>
+          </div>
+        </div>
+        <div style="padding:14px 24px;border-top:1px solid var(--bp-surface-3);background:var(--bp-surface-1);display:flex;justify-content:flex-end;gap:10px;">
+          <button @click="closeModals" class="bp-btn bp-btn-ghost">취소</button>
+          <button @click="submitAnalysisResult"
+            :disabled="!analysisForm.soh || !analysisForm.soce || !analysisForm.remainingLifeCycle || submitting"
+            class="bp-btn bp-btn-primary" style="display:inline-flex;align-items:center;gap:6px;"
+            :style="(!analysisForm.soh || !analysisForm.soce || !analysisForm.remainingLifeCycle || submitting) ? 'opacity:0.4;cursor:not-allowed;' : ''">
+            <svg v-if="submitting" style="animation:spin 0.8s linear infinite;" width="16" height="16" fill="none" viewBox="0 0 24 24">
+              <circle opacity="0.25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path opacity="0.75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+            </svg>
+            {{ submitting ? '제출 중...' : '제출' }}
+          </button>
         </div>
       </div>
     </div>
 
-    <!-- Recycle Toggle Modal -->
-    <div v-if="showRecycleToggleModal" class="fixed inset-0 z-50 overflow-y-auto">
-      <div class="flex items-center justify-center min-h-screen px-4 py-8">
-        <div class="fixed inset-0 bg-gray-900/60 backdrop-blur-sm" @click="closeModals"></div>
-        <div class="relative bg-white rounded-xl shadow-2xl max-w-sm w-full z-10 overflow-hidden">
-          <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
-            <div class="flex items-center gap-3">
-              <div class="w-8 h-8 rounded-lg bg-teal-100 flex items-center justify-center">
-                <svg class="w-4 h-4 text-teal-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                </svg>
+    <!-- ====== RECYCLE TOGGLE MODAL ====== -->
+    <div v-if="showRecycleToggleModal" style="position:fixed;inset:0;z-index:50;display:flex;align-items:center;justify-content:center;padding:16px;">
+      <div style="position:fixed;inset:0;background:rgba(0,0,0,0.65);backdrop-filter:blur(6px);" @click="closeModals"></div>
+      <div class="bp-card bp-card-glow bp-animate-in" style="position:relative;z-index:1;max-width:400px;width:100%;overflow:hidden;">
+        <div style="padding:18px 24px;border-bottom:1px solid var(--bp-surface-3);display:flex;align-items:center;justify-content:space-between;">
+          <div style="display:flex;align-items:center;gap:12px;">
+            <div style="width:34px;height:34px;border-radius:10px;background:var(--bp-surface-3);display:flex;align-items:center;justify-content:center;">
+              <svg width="16" height="16" fill="none" stroke="var(--bp-signal)" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            </div>
+            <h3 style="font-family:var(--font-display);font-size:1.1rem;font-weight:700;color:var(--bp-text-1);margin:0;">재활용 판정</h3>
+          </div>
+          <button @click="closeModals" class="bp-btn bp-btn-ghost" style="padding:6px;">
+            <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+          </button>
+        </div>
+        <div style="padding:20px 24px;">
+          <div style="padding:12px;background:var(--bp-surface-1);border:1px solid var(--bp-surface-3);border-radius:8px;margin-bottom:20px;">
+            <p style="font-size:0.65rem;font-weight:600;color:var(--bp-text-3);text-transform:uppercase;letter-spacing:0.05em;margin:0 0 2px;">대상 여권</p>
+            <p class="bp-mono" style="font-size:0.85rem;font-weight:600;color:var(--bp-text-1);margin:0;">{{ selectedPassport?.passportId }}</p>
+          </div>
+          <div style="display:flex;align-items:center;justify-content:center;padding:24px 0;">
+            <label style="display:flex;align-items:center;cursor:pointer;">
+              <div style="position:relative;">
+                <input type="checkbox" v-model="recycleToggleValue" style="position:absolute;opacity:0;width:0;height:0;" />
+                <div :style="{ width:'56px',height:'28px',borderRadius:'14px',background: recycleToggleValue ? 'var(--bp-signal)' : 'var(--bp-surface-4)',transition:'background 0.2s' }"></div>
+                <div :style="{ position:'absolute',top:'2px',left: recycleToggleValue ? '30px' : '2px',width:'24px',height:'24px',borderRadius:'50%',background:'var(--bp-surface-2)',boxShadow:'0 1px 3px rgba(0,0,0,0.2)',transition:'left 0.2s' }"></div>
               </div>
-              <h3 class="text-lg font-bold text-gray-900">재활용 판정</h3>
-            </div>
-            <button @click="closeModals" class="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
-              <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
-              </svg>
-            </button>
+              <span style="margin-left:16px;font-size:1rem;font-weight:600;" :style="{ color: recycleToggleValue ? 'var(--bp-signal)' : 'var(--bp-text-3)' }">
+                {{ recycleToggleValue ? '재활용 가능' : '재활용 불가' }}
+              </span>
+            </label>
           </div>
-          <div class="px-6 py-5">
-            <div class="mb-4 p-3 bg-gray-50 rounded-lg border border-gray-100">
-              <p class="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-0.5">대상 여권</p>
-              <p class="text-sm font-mono font-semibold text-gray-900">{{ selectedPassport?.passportId }}</p>
-            </div>
-            <div class="flex items-center justify-center py-6">
-              <label class="flex items-center cursor-pointer select-none">
-                <div class="relative">
-                  <input type="checkbox" v-model="recycleToggleValue" class="sr-only peer"/>
-                  <div class="w-14 h-7 bg-gray-200 rounded-full peer-checked:bg-emerald-600 transition-colors"></div>
-                  <div class="absolute top-0.5 left-[4px] w-6 h-6 bg-white rounded-full shadow-sm transition-transform peer-checked:translate-x-7"></div>
-                </div>
-                <span class="ml-4 text-base font-semibold" :class="recycleToggleValue ? 'text-emerald-700' : 'text-gray-500'">
-                  {{ recycleToggleValue ? '재활용 가능' : '재활용 불가' }}
-                </span>
-              </label>
-            </div>
-          </div>
-          <div class="px-6 py-3 border-t border-gray-200 bg-gray-50 flex justify-end gap-3">
-            <button @click="closeModals"
-              class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
-              취소
-            </button>
-            <button @click="submitRecycleToggle"
-              :disabled="submitting"
-              :class="['px-4 py-2 text-sm font-semibold rounded-lg transition-all flex items-center',
-                submitting ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-teal-600 text-white hover:bg-teal-700']">
-              <svg v-if="submitting" class="w-4 h-4 mr-1.5 animate-spin" fill="none" viewBox="0 0 24 24">
-                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
-              </svg>
-              {{ submitting ? '저장 중...' : '판정 저장' }}
-            </button>
-          </div>
+        </div>
+        <div style="padding:14px 24px;border-top:1px solid var(--bp-surface-3);background:var(--bp-surface-1);display:flex;justify-content:flex-end;gap:10px;">
+          <button @click="closeModals" class="bp-btn bp-btn-ghost">취소</button>
+          <button @click="submitRecycleToggle" :disabled="submitting"
+            class="bp-btn bp-btn-primary" style="display:inline-flex;align-items:center;gap:6px;"
+            :style="submitting ? 'opacity:0.4;cursor:not-allowed;' : ''">
+            <svg v-if="submitting" style="animation:spin 0.8s linear infinite;" width="16" height="16" fill="none" viewBox="0 0 24 24">
+              <circle opacity="0.25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path opacity="0.75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+            </svg>
+            {{ submitting ? '저장 중...' : '판정 저장' }}
+          </button>
         </div>
       </div>
     </div>
 
-    <!-- Extract Modal -->
-    <div v-if="showExtractModal" class="fixed inset-0 z-50 overflow-y-auto">
-      <div class="flex items-center justify-center min-h-screen px-4 py-8">
-        <div class="fixed inset-0 bg-gray-900/60 backdrop-blur-sm" @click="closeModals"></div>
-        <div class="relative bg-white rounded-xl shadow-2xl max-w-md w-full z-10 overflow-hidden">
-          <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
-            <div class="flex items-center gap-3">
-              <div class="w-8 h-8 rounded-lg bg-amber-100 flex items-center justify-center">
-                <svg class="w-4 h-4 text-amber-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
-                </svg>
-              </div>
-              <h3 class="text-lg font-bold text-gray-900">원자재 추출 기록</h3>
-            </div>
-            <button @click="closeModals" class="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
-              <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+    <!-- ====== EXTRACT MODAL ====== -->
+    <div v-if="showExtractModal" style="position:fixed;inset:0;z-index:50;display:flex;align-items:center;justify-content:center;padding:16px;">
+      <div style="position:fixed;inset:0;background:rgba(0,0,0,0.65);backdrop-filter:blur(6px);" @click="closeModals"></div>
+      <div class="bp-card bp-card-glow bp-animate-in" style="position:relative;z-index:1;max-width:460px;width:100%;overflow:hidden;">
+        <div style="padding:18px 24px;border-bottom:1px solid var(--bp-surface-3);display:flex;align-items:center;justify-content:space-between;">
+          <div style="display:flex;align-items:center;gap:12px;">
+            <div style="width:34px;height:34px;border-radius:10px;background:var(--bp-surface-3);display:flex;align-items:center;justify-content:center;">
+              <svg width="16" height="16" fill="none" stroke="var(--bp-warn)" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
               </svg>
-            </button>
-          </div>
-          <div class="px-6 py-5">
-            <div class="mb-4 p-3 bg-gray-50 rounded-lg border border-gray-100">
-              <p class="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-0.5">대상 여권</p>
-              <p class="text-sm font-mono font-semibold text-gray-900">{{ selectedPassport?.passportId }}</p>
             </div>
-            <div class="space-y-3">
-              <label class="block text-sm font-semibold text-gray-700">회수율 (원자재별 %)</label>
-              <div v-for="(entry, idx) in extractEntries" :key="idx" class="flex items-center gap-2">
-                <input v-model="entry.key" type="text" placeholder="원자재명"
-                  class="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 outline-none placeholder-gray-400"/>
-                <div class="relative w-20">
-                  <input v-model="entry.value" type="number" min="0" max="100" step="0.1" placeholder="0"
-                    class="w-full px-3 py-2 pr-7 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 outline-none tabular-nums"/>
-                  <span class="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-gray-400">%</span>
-                </div>
-                <button @click="removeExtractEntry(idx)" v-if="extractEntries.length > 1"
-                  class="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-md transition-colors">
-                  <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
-                  </svg>
-                </button>
-              </div>
-              <button @click="addExtractEntry"
-                class="inline-flex items-center text-sm font-semibold text-emerald-600 hover:text-emerald-700 transition-colors">
-                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
-                </svg>
-                원자재 추가
-              </button>
+            <h3 style="font-family:var(--font-display);font-size:1.1rem;font-weight:700;color:var(--bp-text-1);margin:0;">원자재 추출 기록</h3>
+          </div>
+          <button @click="closeModals" class="bp-btn bp-btn-ghost" style="padding:6px;">
+            <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+          </button>
+        </div>
+        <div style="padding:20px 24px;display:flex;flex-direction:column;gap:14px;">
+          <div style="padding:12px;background:var(--bp-surface-1);border:1px solid var(--bp-surface-3);border-radius:8px;">
+            <p style="font-size:0.65rem;font-weight:600;color:var(--bp-text-3);text-transform:uppercase;letter-spacing:0.05em;margin:0 0 2px;">대상 여권</p>
+            <p class="bp-mono" style="font-size:0.85rem;font-weight:600;color:var(--bp-text-1);margin:0;">{{ selectedPassport?.passportId }}</p>
+          </div>
+          <label style="font-size:0.82rem;font-weight:600;color:var(--bp-text-2);">회수율 (원자재별 %)</label>
+          <div v-for="(entry, idx) in extractEntries" :key="idx" style="display:flex;align-items:center;gap:8px;">
+            <input v-model="entry.key" type="text" placeholder="원자재명" class="bp-input" style="flex:1;" />
+            <div style="position:relative;width:80px;">
+              <input v-model="entry.value" type="number" min="0" max="100" step="0.1" placeholder="0" class="bp-input" style="width:100%;padding-right:24px;font-variant-numeric:tabular-nums;" />
+              <span style="position:absolute;right:10px;top:50%;transform:translateY(-50%);font-size:0.72rem;color:var(--bp-text-3);">%</span>
             </div>
-          </div>
-          <div class="px-6 py-3 border-t border-gray-200 bg-gray-50 flex justify-end gap-3">
-            <button @click="closeModals"
-              class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
-              취소
-            </button>
-            <button @click="submitExtract"
-              :disabled="submitting"
-              :class="['px-4 py-2 text-sm font-semibold rounded-lg transition-all flex items-center',
-                submitting ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-amber-600 text-white hover:bg-amber-700']">
-              <svg v-if="submitting" class="w-4 h-4 mr-1.5 animate-spin" fill="none" viewBox="0 0 24 24">
-                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
-              </svg>
-              {{ submitting ? '기록 중...' : '추출 기록' }}
+            <button v-if="extractEntries.length > 1" @click="removeExtractEntry(idx)" class="bp-btn bp-btn-ghost" style="padding:6px;color:var(--bp-danger);">
+              <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
             </button>
           </div>
+          <button @click="addExtractEntry" class="bp-btn bp-btn-ghost" style="display:inline-flex;align-items:center;gap:4px;color:var(--bp-signal);font-size:0.82rem;align-self:flex-start;">
+            <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
+            원자재 추가
+          </button>
+        </div>
+        <div style="padding:14px 24px;border-top:1px solid var(--bp-surface-3);background:var(--bp-surface-1);display:flex;justify-content:flex-end;gap:10px;">
+          <button @click="closeModals" class="bp-btn bp-btn-ghost">취소</button>
+          <button @click="submitExtract" :disabled="submitting"
+            class="bp-btn bp-btn-primary" style="display:inline-flex;align-items:center;gap:6px;"
+            :style="submitting ? 'opacity:0.4;cursor:not-allowed;' : ''">
+            <svg v-if="submitting" style="animation:spin 0.8s linear infinite;" width="16" height="16" fill="none" viewBox="0 0 24 24">
+              <circle opacity="0.25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path opacity="0.75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+            </svg>
+            {{ submitting ? '기록 중...' : '추출 기록' }}
+          </button>
         </div>
       </div>
     </div>
 
-    <!-- Dispose Confirmation Modal -->
-    <div v-if="showDisposeConfirm" class="fixed inset-0 z-50 overflow-y-auto">
-      <div class="flex items-center justify-center min-h-screen px-4 py-8">
-        <div class="fixed inset-0 bg-gray-900/60 backdrop-blur-sm" @click="closeModals"></div>
-        <div class="relative bg-white rounded-xl shadow-2xl max-w-sm w-full z-10 overflow-hidden">
-          <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
-            <div class="flex items-center gap-3">
-              <div class="w-8 h-8 rounded-lg bg-red-100 flex items-center justify-center">
-                <svg class="w-4 h-4 text-red-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
-                </svg>
-              </div>
-              <h3 class="text-lg font-bold text-gray-900">폐기 처리 확인</h3>
-            </div>
-            <button @click="closeModals" class="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
-              <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+    <!-- ====== DISPOSE CONFIRMATION MODAL ====== -->
+    <div v-if="showDisposeConfirm" style="position:fixed;inset:0;z-index:50;display:flex;align-items:center;justify-content:center;padding:16px;">
+      <div style="position:fixed;inset:0;background:rgba(0,0,0,0.65);backdrop-filter:blur(6px);" @click="closeModals"></div>
+      <div class="bp-card bp-card-glow bp-animate-in" style="position:relative;z-index:1;max-width:400px;width:100%;overflow:hidden;">
+        <div style="padding:18px 24px;border-bottom:1px solid var(--bp-surface-3);display:flex;align-items:center;justify-content:space-between;">
+          <div style="display:flex;align-items:center;gap:12px;">
+            <div style="width:34px;height:34px;border-radius:10px;background:var(--bp-surface-3);display:flex;align-items:center;justify-content:center;">
+              <svg width="16" height="16" fill="none" stroke="var(--bp-danger)" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
               </svg>
-            </button>
+            </div>
+            <h3 style="font-family:var(--font-display);font-size:1.1rem;font-weight:700;color:var(--bp-text-1);margin:0;">폐기 처리 확인</h3>
           </div>
-          <div class="px-6 py-5">
-            <div class="p-4 bg-red-50 border border-red-200 rounded-lg">
-              <div class="flex items-start gap-3">
-                <svg class="w-5 h-5 text-red-500 mt-0.5 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
-                </svg>
-                <div>
-                  <p class="text-sm font-semibold text-red-800">이 작업은 되돌릴 수 없습니다</p>
-                  <p class="text-xs text-red-600 mt-1">
-                    여권 <span class="font-mono font-bold">{{ selectedPassport?.passportId }}</span>을(를) 영구적으로 폐기 처리합니다.
-                  </p>
-                </div>
-              </div>
+          <button @click="closeModals" class="bp-btn bp-btn-ghost" style="padding:6px;">
+            <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+          </button>
+        </div>
+        <div style="padding:20px 24px;">
+          <div style="padding:16px;background:var(--bp-surface-2);border:1px solid var(--bp-danger);border-radius:10px;display:flex;align-items:flex-start;gap:12px;">
+            <svg width="20" height="20" fill="none" stroke="var(--bp-danger)" stroke-width="2" viewBox="0 0 24 24" style="flex-shrink:0;margin-top:2px;">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+            </svg>
+            <div>
+              <p style="font-size:0.85rem;font-weight:600;color:var(--bp-danger);margin:0 0 4px;">이 작업은 되돌릴 수 없습니다</p>
+              <p style="font-size:0.78rem;color:var(--bp-text-2);margin:0;">
+                여권 <span class="bp-mono" style="font-weight:700;">{{ selectedPassport?.passportId }}</span>을(를) 영구적으로 폐기 처리합니다.
+              </p>
             </div>
           </div>
-          <div class="px-6 py-3 border-t border-gray-200 bg-gray-50 flex justify-end gap-3">
-            <button @click="closeModals"
-              class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
-              취소
-            </button>
-            <button @click="submitDispose"
-              :disabled="submitting"
-              :class="['px-4 py-2 text-sm font-semibold rounded-lg transition-all flex items-center',
-                submitting ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-red-600 text-white hover:bg-red-700']">
-              <svg v-if="submitting" class="w-4 h-4 mr-1.5 animate-spin" fill="none" viewBox="0 0 24 24">
-                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
-              </svg>
-              {{ submitting ? '처리 중...' : '폐기 확인' }}
-            </button>
-          </div>
+        </div>
+        <div style="padding:14px 24px;border-top:1px solid var(--bp-surface-3);background:var(--bp-surface-1);display:flex;justify-content:flex-end;gap:10px;">
+          <button @click="closeModals" class="bp-btn bp-btn-ghost">취소</button>
+          <button @click="submitDispose" :disabled="submitting"
+            class="bp-btn bp-btn-danger" style="display:inline-flex;align-items:center;gap:6px;"
+            :style="submitting ? 'opacity:0.4;cursor:not-allowed;' : ''">
+            <svg v-if="submitting" style="animation:spin 0.8s linear infinite;" width="16" height="16" fill="none" viewBox="0 0 24 24">
+              <circle opacity="0.25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path opacity="0.75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+            </svg>
+            {{ submitting ? '처리 중...' : '폐기 확인' }}
+          </button>
         </div>
       </div>
     </div>
