@@ -8,10 +8,11 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
   <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
-  <!-- Typography: DM Sans for body precision, Plus Jakarta Sans for display weight -->
+  <!-- Typography: Pretendard (한글 최적화) + JetBrains Mono -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Plus+Jakarta+Sans:wght@600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   <style>
     /* ═══════════════════════════════════════════════════════
        BATTERY PASSPORT DESIGN SYSTEM
@@ -19,38 +20,38 @@
        ═══════════════════════════════════════════════════════ */
 
     :root {
-      /* ── Surface Palette ── */
-      --bp-void:        #06090f;
-      --bp-surface-1:   #0c1117;
-      --bp-surface-2:   #111820;
-      --bp-surface-3:   #171f29;
-      --bp-surface-4:   #1e2733;
-      --bp-border:      rgba(148, 163, 184, 0.08);
-      --bp-border-hover:rgba(148, 163, 184, 0.15);
-      --bp-border-active:rgba(52, 211, 153, 0.25);
+      /* ── Surface Palette (Light) ── */
+      --bp-void:        #f8fafc;
+      --bp-surface-1:   #ffffff;
+      --bp-surface-2:   #ffffff;
+      --bp-surface-3:   #f1f5f9;
+      --bp-surface-4:   #e2e8f0;
+      --bp-border:      #e5e7eb;
+      --bp-border-hover:#d1d5db;
+      --bp-border-active:#10b981;
 
       /* ── Signal Colors ── */
-      --bp-signal:      #34d399;
-      --bp-signal-dim:  rgba(52, 211, 153, 0.15);
-      --bp-signal-glow: rgba(52, 211, 153, 0.06);
-      --bp-warn:        #fbbf24;
-      --bp-warn-dim:    rgba(251, 191, 36, 0.15);
-      --bp-danger:      #f87171;
-      --bp-danger-dim:  rgba(248, 113, 113, 0.15);
-      --bp-info:        #60a5fa;
-      --bp-info-dim:    rgba(96, 165, 250, 0.15);
-      --bp-purple:      #a78bfa;
-      --bp-purple-dim:  rgba(167, 139, 250, 0.15);
+      --bp-signal:      #059669;
+      --bp-signal-dim:  rgba(16, 185, 129, 0.1);
+      --bp-signal-glow: rgba(16, 185, 129, 0.05);
+      --bp-warn:        #d97706;
+      --bp-warn-dim:    rgba(245, 158, 11, 0.1);
+      --bp-danger:      #dc2626;
+      --bp-danger-dim:  rgba(239, 68, 68, 0.08);
+      --bp-info:        #2563eb;
+      --bp-info-dim:    rgba(59, 130, 246, 0.08);
+      --bp-purple:      #7c3aed;
+      --bp-purple-dim:  rgba(139, 92, 246, 0.08);
 
       /* ── Text ── */
-      --bp-text-1:      #f1f5f9;
-      --bp-text-2:      #94a3b8;
-      --bp-text-3:      #475569;
-      --bp-text-muted:  #334155;
+      --bp-text-1:      #111827;
+      --bp-text-2:      #374151;
+      --bp-text-3:      #6b7280;
+      --bp-text-muted:  #9ca3af;
 
       /* ── Typography ── */
-      --font-display:   'Plus Jakarta Sans', sans-serif;
-      --font-body:      'DM Sans', sans-serif;
+      --font-display:   'Pretendard Variable', 'Pretendard', -apple-system, sans-serif;
+      --font-body:      'Pretendard Variable', 'Pretendard', -apple-system, sans-serif;
       --font-mono:      'JetBrains Mono', monospace;
 
       /* ── Spacing Scale ── */
@@ -69,9 +70,9 @@
       --radius-full:9999px;
 
       /* ── Shadows ── */
-      --shadow-card:    0 1px 3px rgba(0,0,0,0.4), 0 0 0 1px var(--bp-border);
-      --shadow-elevated:0 4px 24px rgba(0,0,0,0.5), 0 0 0 1px var(--bp-border);
-      --shadow-glow:    0 0 20px var(--bp-signal-glow), 0 0 60px rgba(52,211,153,0.03);
+      --shadow-card:    0 1px 3px rgba(0,0,0,0.06), 0 0 0 1px var(--bp-border);
+      --shadow-elevated:0 4px 20px rgba(0,0,0,0.08), 0 0 0 1px var(--bp-border);
+      --shadow-glow:    0 0 0 3px var(--bp-signal-dim);
     }
 
     /* ── Base Reset ── */
@@ -97,13 +98,13 @@
     .sidebar-scroll::-webkit-scrollbar-thumb:hover { background: rgba(52,211,153,0.3); }
 
     ::-webkit-scrollbar { width: 6px; height: 6px; }
-    ::-webkit-scrollbar-track { background: var(--bp-surface-1); }
-    ::-webkit-scrollbar-thumb { background: rgba(52,211,153,0.08); border-radius: 3px; }
-    ::-webkit-scrollbar-thumb:hover { background: rgba(52,211,153,0.15); }
+    ::-webkit-scrollbar-track { background: #f8fafc; }
+    ::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: #9ca3af; }
 
     /* ── Mobile Overlay ── */
     .sidebar-overlay {
-      background: rgba(6,9,15,0.75);
+      background: rgba(0,0,0,0.3);
       backdrop-filter: blur(8px);
     }
 
@@ -405,7 +406,6 @@
     .bp-delay-4 { animation-delay: 0.2s; }
 
     /* ── Noise Texture Overlay ── */
-    .bp-noise::before {
       content: '';
       position: fixed;
       inset: 0;
@@ -466,8 +466,8 @@
     .bp-tooltip::after { content: attr(data-tip); position: absolute; bottom: calc(100% + 6px); left: 50%; transform: translateX(-50%); padding: 0.25rem 0.5rem; background: var(--bp-surface-4); color: var(--bp-text-1); font-size: 0.6875rem; border-radius: 0.375rem; white-space: nowrap; pointer-events: none; opacity: 0; transition: opacity 0.15s; z-index: 50; border: 1px solid var(--bp-border); }
     .bp-tooltip:hover::after { opacity: 1; }
     /* ── Selection States ── */
-    ::selection { background: rgba(52,211,153,0.3); color: var(--bp-text-1); }
-    ::-moz-selection { background: rgba(52,211,153,0.3); color: var(--bp-text-1); }
+    ::selection { background: rgba(16,185,129,0.15); color: #111827; }
+    ::-moz-selection { background: rgba(16,185,129,0.15); color: #111827; }
     /* ── Print ── */
     @media print {
       body { background: white !important; color: black !important; }
@@ -485,7 +485,7 @@
       .bp-dot::before { animation: none !important; }
     }
     /* ── Firefox Scrollbar ── */
-    * { scrollbar-width: thin; scrollbar-color: rgba(52,211,153,0.08) var(--bp-surface-1); }
+    * { scrollbar-width: thin; scrollbar-color: #d1d5db #f8fafc; }
     /* ── Performance Hints ── */
     .bp-animate-in, .bp-dot, .bp-progress-bar { will-change: transform, opacity; }
     .bp-card-glow::before { will-change: opacity; }
@@ -494,8 +494,8 @@
     tailwind.config = {
       theme: {
         fontFamily: {
-          sans: ['DM Sans', 'sans-serif'],
-          display: ['Plus Jakarta Sans', 'sans-serif'],
+          sans: ['Pretendard Variable', 'Pretendard', '-apple-system', 'sans-serif'],
+          display: ['Pretendard Variable', 'Pretendard', 'sans-serif'],
           mono: ['JetBrains Mono', 'monospace'],
         },
         extend: {
@@ -514,7 +514,7 @@
     }
   </script>
 </head>
-<body class="min-h-screen bp-noise" style="background: var(--bp-void);">
+<body class="min-h-screen" style="background: var(--bp-void);">
   <div id="app" v-cloak>
 
     <!-- ===== LOGIN: Full-screen, no sidebar ===== -->
@@ -542,7 +542,7 @@
         <aside :class="[
           'fixed inset-y-0 left-0 z-50 w-60 flex flex-col transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:z-auto',
           mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
-        ]" style="background: var(--bp-surface-1); border-right: 1px solid var(--bp-border);">
+        ]" style="background: #ffffff; border-right: 1px solid #e5e7eb;">
 
           <!-- Logo Area -->
           <div class="flex items-center px-5 h-16 flex-shrink-0" style="border-bottom: 1px solid var(--bp-border);">
@@ -581,10 +581,10 @@
                     : 'pl-[10px]'
                 ]"
                 :style="currentPage === item.route
-                  ? 'background: var(--bp-signal-dim); color: var(--bp-signal); border-left: 2px solid var(--bp-signal); box-shadow: inset 3px 0 8px rgba(52,211,153,0.1);'
-                  : 'color: var(--bp-text-2); border-left: 2px solid transparent;'"
-                @mouseenter="$event.target.style.background = currentPage !== item.route ? 'var(--bp-surface-3)' : 'var(--bp-signal-dim)'"
-                @mouseleave="$event.target.style.background = currentPage !== item.route ? 'transparent' : 'var(--bp-signal-dim)'"
+                  ? 'background: #ecfdf5; color: #059669; border-left: 2px solid #059669;'
+                  : 'color: #374151; border-left: 2px solid transparent;'"
+                @mouseenter="$event.target.style.background = currentPage !== item.route ? '#f3f4f6' : '#ecfdf5'"
+                @mouseleave="$event.target.style.background = currentPage !== item.route ? 'transparent' : '#ecfdf5'"
                 >
                 <!-- Dashboard icon -->
                 <svg v-if="item.icon === 'dashboard'" class="w-[18px] h-[18px] flex-shrink-0" :style="currentPage === item.route ? 'color: var(--bp-signal);' : 'color: var(--bp-text-3);'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
@@ -642,21 +642,19 @@
           </nav>
 
           <!-- User section at bottom -->
-          <div class="flex-shrink-0 p-4" style="border-top: 1px solid var(--bp-border);">
+          <div class="flex-shrink-0 p-4" style="border-top: 1px solid #e5e7eb;">
             <div class="flex items-center space-x-3">
               <div :class="['w-9 h-9 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0', orgAvatarColor]">
                 {{ userInitials }}
               </div>
               <div class="min-w-0 flex-1">
-                <div class="text-sm font-medium truncate" style="color: var(--bp-text-1);">{{ auth.userId }}</div>
-                <span class="inline-block mt-0.5 px-1.5 py-0.5 rounded text-[10px] font-semibold bp-badge-signal">
+                <div class="text-sm font-medium text-gray-900 truncate">{{ auth.userId }}</div>
+                <span class="inline-block mt-0.5 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-emerald-50 text-emerald-700">
                   {{ orgLabel }}
                 </span>
               </div>
               <button @click="logout" title="로그아웃"
-                class="p-1.5 rounded-lg transition-colors flex-shrink-0" style="color: var(--bp-text-3);"
-                onmouseenter="this.style.color='var(--bp-danger)';this.style.background='var(--bp-danger-dim)'"
-                onmouseleave="this.style.color='var(--bp-text-3)';this.style.background='transparent'">
+                class="p-1.5 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors flex-shrink-0">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/>
                   <polyline points="16 17 21 12 16 7"/>
@@ -671,7 +669,7 @@
         <div class="flex-1 flex flex-col min-w-0 overflow-hidden">
 
           <!-- Top Bar -->
-          <header class="h-14 flex items-center justify-between px-4 lg:px-6 flex-shrink-0" style="background: var(--bp-surface-1); border-bottom: 1px solid var(--bp-border);">
+          <header class="h-14 flex items-center justify-between px-4 lg:px-6 flex-shrink-0" style="background: #ffffff; border-bottom: 1px solid #e5e7eb;">
             <div class="flex items-center space-x-3">
               <button @click="mobileMenuOpen = !mobileMenuOpen"
                 class="lg:hidden p-1.5 -ml-1.5 rounded-lg transition-colors" style="color: var(--bp-text-2);">
@@ -683,22 +681,22 @@
                 </svg>
               </button>
               <nav class="flex items-center space-x-1.5 text-sm">
-                <span class="hidden sm:inline" style="color: var(--bp-text-3);">Battery Passport</span>
-                <svg class="w-3.5 h-3.5 hidden sm:block" style="color: var(--bp-text-muted);" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <span class="hidden sm:inline text-gray-400">Battery Passport</span>
+                <svg class="w-3.5 h-3.5 hidden sm:block text-gray-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <polyline points="9 18 15 12 9 6"/>
                 </svg>
-                <span class="font-semibold" style="color: var(--bp-text-1); font-family: var(--font-display);">{{ currentPageTitle }}</span>
+                <span class="font-semibold text-gray-900">{{ currentPageTitle }}</span>
               </nav>
             </div>
             <div class="flex items-center space-x-2">
               <div class="flex items-center space-x-1.5 px-2.5 py-1 rounded-full"
-                :style="fabricStatus === 'connected' ? 'background: var(--bp-signal-dim); border: 1px solid rgba(52,211,153,0.2);' :
-                  fabricStatus === 'checking' ? 'background: var(--bp-warn-dim); border: 1px solid rgba(251,191,36,0.2);' :
-                  'background: var(--bp-danger-dim); border: 1px solid rgba(248,113,113,0.2);'">
+                :class="fabricStatus === 'connected' ? 'bg-emerald-50 border border-emerald-200' :
+                  fabricStatus === 'checking' ? 'bg-amber-50 border border-amber-200' :
+                  'bg-red-50 border border-red-200'">
                 <span class="bp-dot" :class="fabricStatus === 'connected' ? 'bp-dot-signal' : fabricStatus === 'checking' ? 'bp-dot-warn' : 'bp-dot-danger'"></span>
                 <span class="text-xs font-medium hidden sm:inline"
-                  :style="fabricStatus === 'connected' ? 'color: var(--bp-signal);' :
-                    fabricStatus === 'checking' ? 'color: var(--bp-warn);' : 'color: var(--bp-danger);'">
+                  :class="fabricStatus === 'connected' ? 'text-emerald-700' :
+                    fabricStatus === 'checking' ? 'text-amber-700' : 'text-red-700'">
                   {{ fabricStatus === 'connected' ? 'Fabric 연결됨' : fabricStatus === 'checking' ? '확인 중...' : 'Fabric 연결 끊김' }}
                 </span>
               </div>
@@ -706,7 +704,7 @@
           </header>
 
           <!-- Content Area (smooth transition) -->
-          <main class="flex-1 overflow-y-auto" style="background: var(--bp-void);">
+          <main class="flex-1 overflow-y-auto" style="background: #f8fafc;">
             <div class="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
               <component :is="currentPageComponent"
                 :auth="auth"
@@ -723,10 +721,8 @@
     <!-- Toast Notifications -->
     <div class="fixed top-4 right-4 z-[100] space-y-2">
       <div v-for="(toast, i) in toasts" :key="i"
-        class="px-4 py-3 rounded-lg text-sm flex items-center space-x-2 backdrop-blur-xl bp-animate-in"
-        :style="toast.type === 'error'
-          ? 'background: var(--bp-danger-dim); color: var(--bp-danger); border: 1px solid rgba(248,113,113,0.3); box-shadow: var(--shadow-elevated);'
-          : 'background: var(--bp-signal-dim); color: var(--bp-signal); border: 1px solid rgba(52,211,153,0.3); box-shadow: var(--shadow-elevated);'">
+        :class="['px-4 py-3 rounded-xl text-sm flex items-center space-x-2 shadow-lg border',
+          toast.type === 'error' ? 'bg-red-50 text-red-700 border-red-200' : 'bg-emerald-50 text-emerald-700 border-emerald-200']">
         <svg v-if="toast.type === 'success'" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
           <polyline points="20 6 9 17 4 12"/>
         </svg>
