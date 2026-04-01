@@ -61,175 +61,191 @@ app.component('login-page', {
     return { activeTab, userId, password, orgNum, loading, errorMsg, orgOptions, selectedOrg, switchTab, handleSubmit };
   },
   template: `
-    <div class="min-h-screen flex">
+    <div class="min-h-screen relative overflow-hidden" style="background: #1a1814;">
 
-      <!-- ═══ LEFT — Brand Hero ═══ -->
-      <div class="hidden lg:flex flex-1 flex-col justify-between p-12 relative overflow-hidden"
-           style="background: linear-gradient(135deg, #059669 0%, #10b981 50%, #34d399 100%);">
-
-        <!-- Top: Logo -->
-        <div class="relative z-10">
-          <div class="flex items-center gap-3">
-            <div class="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center">
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <rect x="6" y="2" width="12" height="20" rx="2"/><line x1="6" y1="6" x2="18" y2="6"/><line x1="6" y1="18" x2="18" y2="18"/>
-                <path d="M12 9v6"/><path d="M9 12h6"/>
-              </svg>
-            </div>
-            <span class="text-white/80 text-sm font-semibold tracking-wide">BATTERY PASSPORT</span>
-          </div>
-        </div>
-
-        <!-- Center: Main message -->
-        <div class="relative z-10 max-w-lg">
-          <h1 class="text-white text-5xl font-extrabold leading-tight tracking-tight" style="font-family: var(--font-display);">
-            배터리 여권<br/>관리 플랫폼
-          </h1>
-          <p class="text-white/70 text-lg mt-4 leading-relaxed" style="font-family: var(--font-body);">
-            GBA 21 규격 기반 배터리 전주기 관리.<br/>
-            블록체인과 DID 기술로 신뢰할 수 있는 이력을 제공합니다.
-          </p>
-
-          <!-- Lifecycle steps -->
-          <div class="flex items-center gap-3 mt-10">
-            <div v-for="(step, i) in [{label:'제조', emoji:'⚙️'}, {label:'운행', emoji:'🚗'}, {label:'정비', emoji:'🔧'}, {label:'재활용', emoji:'♻️'}]" :key="i"
-                 class="flex items-center gap-3">
-              <div class="flex flex-col items-center">
-                <div class="w-12 h-12 bg-white/15 backdrop-blur-sm rounded-xl flex items-center justify-center text-xl">
-                  {{ step.emoji }}
-                </div>
-                <span class="text-white/60 text-xs mt-1.5 font-medium">{{ step.label }}</span>
-              </div>
-              <svg v-if="i < 3" class="w-4 h-4 text-white/30 mb-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
-            </div>
-          </div>
-        </div>
-
-        <!-- Bottom: Tech stack -->
-        <div class="relative z-10 flex items-center gap-3">
-          <span v-for="t in ['Hyperledger Fabric', 'Aries DID', 'Ed25519']" :key="t"
-                class="px-3 py-1.5 bg-white/10 backdrop-blur-sm rounded-lg text-white/60 text-xs font-medium">{{ t }}</span>
-        </div>
-
-        <!-- Background pattern (subtle circles) -->
-        <div class="absolute inset-0 pointer-events-none opacity-[0.07]">
-          <div class="absolute top-20 right-20 w-80 h-80 border border-white rounded-full"></div>
-          <div class="absolute top-40 right-40 w-60 h-60 border border-white rounded-full"></div>
-          <div class="absolute -bottom-20 -left-20 w-96 h-96 border border-white rounded-full"></div>
-        </div>
+      <!-- ═══ ARCHITECTURAL GRID — subtle structure ═══ -->
+      <div class="absolute inset-0 pointer-events-none" style="opacity: 0.04;">
+        <div class="absolute top-0 left-1/4 w-px h-full" style="background: #c8ff00;"></div>
+        <div class="absolute top-0 left-2/4 w-px h-full" style="background: #c8ff00;"></div>
+        <div class="absolute top-0 left-3/4 w-px h-full" style="background: #c8ff00;"></div>
+        <div class="absolute top-1/3 left-0 w-full h-px" style="background: #c8ff00;"></div>
+        <div class="absolute top-2/3 left-0 w-full h-px" style="background: #c8ff00;"></div>
       </div>
 
-      <!-- ═══ RIGHT — Auth Form ═══ -->
-      <div class="w-full lg:w-[520px] flex-shrink-0 flex items-center justify-center p-8 lg:p-12 bg-white">
-        <div class="w-full max-w-sm">
+      <!-- ═══ MONUMENTAL BATTERY FORM — background architecture ═══ -->
+      <div class="absolute right-0 top-0 bottom-0 w-1/2 pointer-events-none hidden lg:block">
+        <svg viewBox="0 0 600 900" class="h-full w-full" preserveAspectRatio="xMaxYMid slice" style="opacity: 0.12;">
+          <rect x="120" y="60" width="360" height="780" rx="40" fill="none" stroke="#c8ff00" stroke-width="2"/>
+          <rect x="220" y="20" width="160" height="50" rx="20" fill="none" stroke="#c8ff00" stroke-width="2"/>
+          <rect x="140" y="120" width="320" height="700" rx="20" fill="#c8ff00" opacity="0.3"/>
+          <line x1="140" y1="295" x2="460" y2="295" stroke="#1a1814" stroke-width="3"/>
+          <line x1="140" y1="470" x2="460" y2="470" stroke="#1a1814" stroke-width="3"/>
+          <line x1="140" y1="645" x2="460" y2="645" stroke="#1a1814" stroke-width="3"/>
+        </svg>
+      </div>
 
-          <!-- Mobile logo -->
-          <div class="lg:hidden text-center mb-8">
-            <div class="w-12 h-12 bg-emerald-600 rounded-xl flex items-center justify-center mx-auto mb-3">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><rect x="6" y="2" width="12" height="20" rx="2"/><line x1="6" y1="6" x2="18" y2="6"/></svg>
+      <!-- ═══ MAIN CONTENT — asymmetric editorial layout ═══ -->
+      <div class="relative z-10 min-h-screen flex flex-col justify-between px-6 sm:px-12 lg:px-20 py-8 lg:py-12">
+
+        <!-- TOP ROW: Navigation marker -->
+        <header class="flex items-center justify-between login-reveal" style="animation-delay: 0s;">
+          <div class="flex items-center gap-4">
+            <div class="w-3 h-3 rounded-full" style="background: #c8ff00;"></div>
+            <span class="text-xs tracking-[0.3em] uppercase" style="color: #c8ff00; font-family: 'JetBrains Mono', monospace;">Battery Passport Platform</span>
+          </div>
+          <span class="text-xs" style="color: rgba(255,255,255,0.2); font-family: 'JetBrains Mono', monospace;">GBA—21</span>
+        </header>
+
+        <!-- CENTER: Split layout -->
+        <div class="flex flex-col lg:flex-row items-start lg:items-center gap-12 lg:gap-24 flex-1 py-12 lg:py-0">
+
+          <!-- LEFT: Monumental typography -->
+          <div class="lg:w-1/2 login-reveal" style="animation-delay: 0.15s;">
+            <div class="mb-6">
+              <span class="inline-block text-xs tracking-[0.2em] uppercase mb-4" style="color: #c8ff00; font-family: 'JetBrains Mono', monospace;">Blockchain Verified</span>
             </div>
-            <h2 class="text-xl font-bold text-gray-900">배터리 여권 플랫폼</h2>
-          </div>
-
-          <!-- Tab toggle -->
-          <div class="flex bg-gray-100 rounded-xl p-1 mb-8">
-            <button @click="switchTab('login')"
-              :class="['flex-1 py-2.5 text-sm font-semibold rounded-lg transition-all',
-                activeTab === 'login' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700']">
-              로그인
-            </button>
-            <button @click="switchTab('register')"
-              :class="['flex-1 py-2.5 text-sm font-semibold rounded-lg transition-all',
-                activeTab === 'register' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700']">
-              회원가입
-            </button>
-          </div>
-
-          <!-- Header -->
-          <div class="mb-6">
-            <h2 class="text-2xl font-bold text-gray-900" style="font-family: var(--font-display);">
-              {{ activeTab === 'login' ? '로그인' : '계정 등록' }}
-            </h2>
-            <p class="text-gray-500 text-sm mt-1">
-              {{ activeTab === 'login' ? '소속 기관을 선택하고 로그인하세요.' : '조직 정보와 함께 계정을 생성합니다.' }}
+            <h1 class="leading-none tracking-tight" style="font-family: 'Pretendard Variable', sans-serif; font-weight: 800; color: #fafaf5;">
+              <span class="block" style="font-size: clamp(3rem, 7vw, 5.5rem);">배터리</span>
+              <span class="block" style="font-size: clamp(3rem, 7vw, 5.5rem); color: #c8ff00;">여권</span>
+            </h1>
+            <p class="mt-6 max-w-md leading-relaxed" style="font-size: 1.05rem; color: rgba(250,250,245,0.4); font-weight: 300; font-family: 'Pretendard Variable', sans-serif;">
+              EU 신배터리법 GBA 21 규격 기반<br/>
+              배터리 전주기 추적·인증 플랫폼
             </p>
-          </div>
 
-          <!-- Error -->
-          <div v-if="errorMsg" class="mb-5 flex items-start gap-2.5 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm">
-            <svg class="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
-            <span>{{ errorMsg }}</span>
-          </div>
-
-          <form @submit.prevent="handleSubmit" class="space-y-5">
-
-            <!-- Org selection (2x2 grid) -->
-            <div>
-              <label class="block text-sm font-semibold text-gray-900 mb-2">소속 기관</label>
-              <div class="grid grid-cols-2 gap-2">
-                <button v-for="org in orgOptions" :key="org.value" type="button"
-                  @click="orgNum = org.value"
-                  class="relative text-left p-3.5 rounded-xl border-2 transition-all"
-                  :style="orgNum === org.value
-                    ? 'border-color: ' + org.color + '; background: ' + org.color + '08;'
-                    : 'border-color: #e5e7eb; background: white;'"
-                  @mouseenter="orgNum !== org.value && ($event.currentTarget.style.borderColor = '#d1d5db')"
-                  @mouseleave="orgNum !== org.value && ($event.currentTarget.style.borderColor = '#e5e7eb')">
-                  <!-- Check -->
-                  <div v-if="orgNum === org.value" class="absolute top-2.5 right-2.5 w-5 h-5 rounded-full flex items-center justify-center" :style="'background:' + org.color">
-                    <svg class="w-3 h-3 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
-                  </div>
-                  <!-- Icon -->
-                  <div class="w-9 h-9 rounded-lg flex items-center justify-center mb-2" :style="'background: ' + org.color + '12;'">
-                    <svg v-if="org.icon==='factory'" class="w-4.5 h-4.5" :style="'color:'+org.color" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 20h20"/><path d="M5 20V8l5 4V8l5 4V4h3v16"/></svg>
-                    <svg v-else-if="org.icon==='car'" class="w-4.5 h-4.5" :style="'color:'+org.color" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 17h2m10 0h2M3 11l1.5-5h15L21 11"/><rect x="2" y="11" width="20" height="8" rx="2"/></svg>
-                    <svg v-else-if="org.icon==='wrench'" class="w-4.5 h-4.5" :style="'color:'+org.color" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg>
-                    <svg v-else class="w-4.5 h-4.5" :style="'color:'+org.color" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-                  </div>
-                  <div class="text-sm font-semibold" :style="orgNum === org.value ? 'color:' + org.color : 'color: #111827'">{{ org.short }}</div>
-                  <div class="text-xs text-gray-400 mt-0.5 leading-snug">{{ org.desc }}</div>
-                </button>
+            <!-- Lifecycle — horizontal typographic list -->
+            <div class="flex items-center gap-6 mt-10 login-reveal" style="animation-delay: 0.3s;">
+              <div v-for="(s, i) in ['제조','운행','정비','재활용']" :key="i" class="flex items-center gap-6">
+                <div class="text-center">
+                  <span class="block text-2xl font-light" style="color: rgba(250,250,245,0.15); font-family: 'JetBrains Mono', monospace;">0{{ i + 1 }}</span>
+                  <span class="block text-xs mt-1 tracking-widest uppercase" style="color: rgba(250,250,245,0.5);">{{ s }}</span>
+                </div>
+                <div v-if="i < 3" class="w-8 h-px" style="background: rgba(200,255,0,0.15);"></div>
               </div>
-              <select v-model="orgNum" class="sr-only" aria-hidden="true" tabindex="-1">
-                <option v-for="opt in orgOptions" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
-              </select>
+            </div>
+          </div>
+
+          <!-- RIGHT: Form — stark, functional -->
+          <div class="w-full lg:w-[420px] flex-shrink-0 login-reveal" style="animation-delay: 0.25s;">
+
+            <!-- Tab line -->
+            <div class="flex gap-0 mb-10" style="border-bottom: 1px solid rgba(250,250,245,0.08);">
+              <button @click="switchTab('login')"
+                class="pb-3 px-1 mr-8 text-sm font-medium transition-all relative"
+                :style="activeTab === 'login' ? 'color: #c8ff00;' : 'color: rgba(250,250,245,0.3);'">
+                로그인
+                <span v-if="activeTab === 'login'" class="absolute bottom-0 left-0 right-0 h-0.5" style="background: #c8ff00;"></span>
+              </button>
+              <button @click="switchTab('register')"
+                class="pb-3 px-1 text-sm font-medium transition-all relative"
+                :style="activeTab === 'register' ? 'color: #c8ff00;' : 'color: rgba(250,250,245,0.3);'">
+                회원가입
+                <span v-if="activeTab === 'register'" class="absolute bottom-0 left-0 right-0 h-0.5" style="background: #c8ff00;"></span>
+              </button>
             </div>
 
-            <!-- User ID -->
-            <div>
-              <label class="block text-sm font-semibold text-gray-900 mb-1.5">사용자 ID</label>
-              <input v-model="userId" type="text" placeholder="아이디를 입력하세요"
-                class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 text-[15px] placeholder-gray-400 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition" />
+            <!-- Error -->
+            <div v-if="errorMsg" class="mb-6 px-4 py-3 text-sm" style="background: rgba(239,68,68,0.1); border-left: 3px solid #ef4444; color: #fca5a5;">
+              {{ errorMsg }}
             </div>
 
-            <!-- Password -->
-            <div>
-              <label class="block text-sm font-semibold text-gray-900 mb-1.5">비밀번호</label>
-              <input v-model="password" type="password" placeholder="비밀번호를 입력하세요"
-                class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 text-[15px] placeholder-gray-400 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition" />
-            </div>
+            <form @submit.prevent="handleSubmit" class="space-y-6">
 
-            <!-- Submit -->
-            <button type="submit" :disabled="loading"
-              :class="['w-full py-3.5 rounded-xl text-[15px] font-semibold text-white transition-all',
-                loading ? 'bg-emerald-400 cursor-not-allowed' : 'bg-emerald-600 hover:bg-emerald-700 active:scale-[0.98] shadow-lg shadow-emerald-600/20']">
-              <span v-if="loading" class="inline-flex items-center">
-                <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
-                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
-                </svg>
-                처리중...
-              </span>
-              <span v-else>{{ activeTab === 'login' ? '로그인' : '계정 등록' }}</span>
-            </button>
-          </form>
+              <!-- ORG SELECTION — bold typographic list -->
+              <div>
+                <label class="block text-xs tracking-[0.15em] uppercase mb-3" style="color: rgba(250,250,245,0.3); font-family: 'JetBrains Mono', monospace;">조직 선택</label>
+                <div class="space-y-0" style="border: 1px solid rgba(250,250,245,0.06);">
+                  <button v-for="(org, i) in orgOptions" :key="org.value" type="button"
+                    @click="orgNum = org.value"
+                    class="w-full flex items-center justify-between px-5 py-4 transition-all"
+                    :style="[
+                      orgNum === org.value
+                        ? 'background: rgba(200,255,0,0.06); border-left: 3px solid ' + org.color + ';'
+                        : 'background: transparent; border-left: 3px solid transparent;',
+                      i < orgOptions.length - 1 ? 'border-bottom: 1px solid rgba(250,250,245,0.04);' : ''
+                    ].join('')"
+                    @mouseenter="orgNum !== org.value && ($event.currentTarget.style.background = 'rgba(250,250,245,0.02)')"
+                    @mouseleave="orgNum !== org.value && ($event.currentTarget.style.background = 'transparent')">
+                    <div class="flex items-center gap-4">
+                      <span class="text-xs tabular-nums" style="color: rgba(250,250,245,0.15); font-family: 'JetBrains Mono', monospace;">0{{ org.value }}</span>
+                      <div>
+                        <span class="block text-sm font-semibold" :style="orgNum === org.value ? 'color: #fafaf5;' : 'color: rgba(250,250,245,0.5);'">{{ org.short }}</span>
+                        <span class="block text-xs mt-0.5" style="color: rgba(250,250,245,0.2);">{{ org.desc }}</span>
+                      </div>
+                    </div>
+                    <div v-if="orgNum === org.value" class="w-2 h-2 rounded-full" :style="'background: ' + org.color"></div>
+                  </button>
+                </div>
+                <select v-model="orgNum" class="sr-only" aria-hidden="true" tabindex="-1">
+                  <option v-for="opt in orgOptions" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
+                </select>
+              </div>
 
-          <!-- Footer -->
-          <div class="mt-8 pt-6 border-t border-gray-100 text-center">
-            <p class="text-xs text-gray-400">Hyperledger Fabric · Aries DID · Ed25519</p>
+              <!-- CREDENTIALS — minimal, stark -->
+              <div>
+                <label class="block text-xs tracking-[0.15em] uppercase mb-2" style="color: rgba(250,250,245,0.3); font-family: 'JetBrains Mono', monospace;">사용자 ID</label>
+                <input v-model="userId" type="text" placeholder="아이디를 입력하세요"
+                  class="w-full px-0 py-3 bg-transparent outline-none text-base transition-colors"
+                  style="border: none; border-bottom: 1px solid rgba(250,250,245,0.1); color: #fafaf5; font-family: 'Pretendard Variable', sans-serif;"
+                  onfocus="this.style.borderBottomColor='#c8ff00'"
+                  onblur="this.style.borderBottomColor='rgba(250,250,245,0.1)'" />
+              </div>
+
+              <div>
+                <label class="block text-xs tracking-[0.15em] uppercase mb-2" style="color: rgba(250,250,245,0.3); font-family: 'JetBrains Mono', monospace;">비밀번호</label>
+                <input v-model="password" type="password" placeholder="비밀번호를 입력하세요"
+                  class="w-full px-0 py-3 bg-transparent outline-none text-base transition-colors"
+                  style="border: none; border-bottom: 1px solid rgba(250,250,245,0.1); color: #fafaf5; font-family: 'Pretendard Variable', sans-serif;"
+                  onfocus="this.style.borderBottomColor='#c8ff00'"
+                  onblur="this.style.borderBottomColor='rgba(250,250,245,0.1)'" />
+              </div>
+
+              <!-- SUBMIT — monumental button -->
+              <button type="submit" :disabled="loading"
+                class="w-full py-4 mt-4 text-sm font-bold tracking-[0.1em] uppercase transition-all"
+                :style="loading
+                  ? 'background: rgba(200,255,0,0.2); color: rgba(26,24,20,0.5); cursor: not-allowed;'
+                  : 'background: #c8ff00; color: #1a1814;'"
+                @mouseenter="!loading && ($event.target.style.background = '#d4ff33')"
+                @mouseleave="!loading && ($event.target.style.background = '#c8ff00')">
+                <span v-if="loading" class="inline-flex items-center justify-center gap-2">
+                  <svg class="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                  </svg>
+                  처리중
+                </span>
+                <span v-else>{{ activeTab === 'login' ? '로그인' : '계정 등록' }}</span>
+              </button>
+            </form>
           </div>
         </div>
+
+        <!-- BOTTOM ROW: Credits -->
+        <footer class="flex items-center justify-between login-reveal" style="animation-delay: 0.4s;">
+          <div class="flex items-center gap-6">
+            <span v-for="t in ['Hyperledger Fabric', 'Aries DID', 'Ed25519', 'CouchDB']" :key="t"
+              class="text-xs" style="color: rgba(250,250,245,0.12); font-family: 'JetBrains Mono', monospace;">{{ t }}</span>
+          </div>
+          <span class="text-xs" style="color: rgba(250,250,245,0.12); font-family: 'JetBrains Mono', monospace;">v2.0</span>
+        </footer>
       </div>
+
+      <style>
+        @keyframes loginReveal {
+          from { opacity: 0; transform: translateY(20px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        .login-reveal {
+          opacity: 0;
+          animation: loginReveal 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+        /* Placeholder styling for dark background */
+        input::placeholder {
+          color: rgba(250, 250, 245, 0.15) !important;
+          font-weight: 300;
+        }
+      </style>
     </div>
   `
 });
