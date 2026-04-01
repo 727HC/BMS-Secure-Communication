@@ -33,18 +33,18 @@ app.component('bmu-data-page', {
 
     function getBadgeClasses(color) {
       const map = {
-        blue: 'bg-blue-50 text-[#60a5fa] border border-gray-200',
-        green: 'bg-emerald-50 text-emerald-700 border border-emerald-500',
-        red: 'bg-red-50 text-red-700 border border-gray-200',
+        blue: 'bg-[rgba(107,163,255,0.1)] text-[#60a5fa] border border-[rgba(250,250,245,0.06)]',
+        green: 'bg-[rgba(200,255,0,0.08)] text-[#c8ff00] border border-emerald-500',
+        red: 'bg-[rgba(239,68,68,0.1)] text-[#ff6b6b] border border-[rgba(250,250,245,0.06)]',
       };
-      return map[color] || 'bg-white text-gray-700 border border-gray-200';
+      return map[color] || 'bg-[#1a1814] text-[rgba(250,250,245,0.7)] border border-[rgba(250,250,245,0.06)]';
     }
 
     function getDotClasses(color) {
       const map = {
         blue: 'bg-[#60a5fa]',
         green: 'bg-[#34d399]',
-        red: 'bg-red-500',
+        red: 'bg-[rgba(239,68,68,0.1)]0',
       };
       return map[color] || 'bg-gray-400';
     }
@@ -158,7 +158,7 @@ app.component('bmu-data-page', {
           </svg>
         </div>
         <div>
-          <h1 class="text-gray-900 font-bold" style="font-family:'Pretendard Variable', sans-serif;font-size:1.35rem;color:#111827;margin:0;">
+          <h1 class="text-[#fafaf5] font-bold" style="font-family:'Pretendard Variable', sans-serif;font-size:1.35rem;color:#111827;margin:0;">
             배터리 데이터
           </h1>
           <p style="font-family:'Pretendard Variable', sans-serif;color:#6b7280;font-size:0.72rem;margin-top:2px;">
@@ -204,7 +204,7 @@ app.component('bmu-data-page', {
           <input v-model="passportId" type="text"
                  placeholder="조회할 배터리 여권 ID를 입력하세요"
                  @keyup.enter="handleSearch"
-                 class="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+                 class="w-full px-4 py-2.5 bg-[#1f1d17] border border-[rgba(250,250,245,0.06)]  text-[#fafaf5] outline-none focus:border-[#c8ff00]"
                  style="width:100%;font-family:'JetBrains Mono', monospace;font-size:0.875rem;padding:0.65rem 0.85rem;"/>
         </div>
         <button @click="handleSearch"
@@ -249,7 +249,7 @@ app.component('bmu-data-page', {
                   d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
           </svg>
         </div>
-        <h3 class="text-gray-900 font-bold" style="font-family:'Pretendard Variable', sans-serif;font-size:1rem;color:#111827;margin:0 0 6px;">
+        <h3 class="text-[#fafaf5] font-bold" style="font-family:'Pretendard Variable', sans-serif;font-size:1rem;color:#111827;margin:0 0 6px;">
           여권 ID를 입력하여 데이터를 조회하세요
         </h3>
         <p style="font-family:'Pretendard Variable', sans-serif;font-size:0.85rem;color:#6b7280;text-align:center;max-width:28rem;">
@@ -268,7 +268,7 @@ app.component('bmu-data-page', {
                   d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"/>
           </svg>
         </div>
-        <h3 class="text-gray-900 font-bold" style="font-family:'Pretendard Variable', sans-serif;font-size:1rem;color:#111827;margin:0 0 6px;">
+        <h3 class="text-[#fafaf5] font-bold" style="font-family:'Pretendard Variable', sans-serif;font-size:1rem;color:#111827;margin:0 0 6px;">
           데이터가 없습니다
         </h3>
         <p style="font-family:'Pretendard Variable', sans-serif;font-size:0.85rem;color:#6b7280;">

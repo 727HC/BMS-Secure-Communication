@@ -98,13 +98,13 @@
     .sidebar-scroll::-webkit-scrollbar-thumb:hover { background: rgba(52,211,153,0.3); }
 
     ::-webkit-scrollbar { width: 6px; height: 6px; }
-    ::-webkit-scrollbar-track { background: #f8fafc; }
+    ::-webkit-scrollbar-track { background: #1a1814; }
     ::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 3px; }
     ::-webkit-scrollbar-thumb:hover { background: #9ca3af; }
 
     /* ── Mobile Overlay ── */
     .sidebar-overlay {
-      background: rgba(0,0,0,0.3);
+      background: rgba(0,0,0,0.7); backdrop-filter: blur(4px);
       backdrop-filter: blur(8px);
     }
 
@@ -521,7 +521,7 @@
     }
   </script>
 </head>
-<body class="min-h-screen" style="background: var(--bp-void);">
+<body class="min-h-screen" style="background: #1a1814;">
   <div id="app" v-cloak>
 
     <!-- ===== LOGIN: Full-screen, no sidebar ===== -->
@@ -549,7 +549,7 @@
         <aside :class="[
           'fixed inset-y-0 left-0 z-50 w-60 flex flex-col transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:z-auto',
           mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
-        ]" style="background: #ffffff; border-right: 1px solid #e5e7eb;">
+        ]" style="background: #1a1814; border-right: 1px solid rgba(250,250,245,0.06);">
 
           <!-- Logo Area -->
           <div class="flex items-center px-5 h-16 flex-shrink-0" style="border-bottom: 1px solid var(--bp-border);">
@@ -565,7 +565,7 @@
               </div>
               <div class="min-w-0">
                 <div class="font-semibold text-sm leading-tight truncate" style="color: var(--bp-text-1); font-family: var(--font-display);">Battery Passport</div>
-                <div class="text-xs leading-tight" style="color: var(--bp-text-3);">GBA 21 Platform</div>
+                <div class="text-xs leading-tight" style="color: rgba(250,250,245,0.3);">GBA 21 Platform</div>
               </div>
             </div>
           </div>
@@ -575,7 +575,7 @@
             <template v-for="(group, gi) in groupedNavItems" :key="gi">
               <!-- Section label -->
               <div v-if="group.section" class="px-3 pt-4 pb-1.5 first:pt-0">
-                <span class="text-[10px] font-semibold uppercase tracking-wider" style="color: var(--bp-text-3); letter-spacing: 0.08em;">{{ group.section }}</span>
+                <span class="text-[10px] font-semibold uppercase tracking-wider" style="color: #c8ff00; letter-spacing: 0.15em; font-family: 'JetBrains Mono', monospace;">{{ group.section }}</span>
               </div>
 
               <!-- Nav items -->
@@ -588,20 +588,20 @@
                     : 'pl-[10px]'
                 ]"
                 :style="currentPage === item.route
-                  ? 'background: #ecfdf5; color: #059669; border-left: 2px solid #059669;'
-                  : 'color: #374151; border-left: 2px solid transparent;'"
-                @mouseenter="$event.target.style.background = currentPage !== item.route ? '#f3f4f6' : '#ecfdf5'"
-                @mouseleave="$event.target.style.background = currentPage !== item.route ? 'transparent' : '#ecfdf5'"
+                  ? 'background: rgba(200,255,0,0.06); color: #c8ff00; border-left: 2px solid #c8ff00;'
+                  : 'color: rgba(250,250,245,0.4); border-left: 2px solid transparent;'"
+                @mouseenter="$event.target.style.background = currentPage !== item.route ? 'rgba(250,250,245,0.03)' : 'rgba(200,255,0,0.06)'"
+                @mouseleave="$event.target.style.background = currentPage !== item.route ? 'transparent' : 'rgba(200,255,0,0.06)'"
                 >
                 <!-- Dashboard icon -->
-                <svg v-if="item.icon === 'dashboard'" class="w-[18px] h-[18px] flex-shrink-0" :style="currentPage === item.route ? 'color: var(--bp-signal);' : 'color: var(--bp-text-3);'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                <svg v-if="item.icon === 'dashboard'" class="w-[18px] h-[18px] flex-shrink-0" :style="currentPage === item.route ? 'color: #c8ff00;' : 'color: rgba(250,250,245,0.25);'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
                   <rect x="3" y="3" width="7" height="7" rx="1"/>
                   <rect x="14" y="3" width="7" height="7" rx="1"/>
                   <rect x="3" y="14" width="7" height="7" rx="1"/>
                   <rect x="14" y="14" width="7" height="7" rx="1"/>
                 </svg>
                 <!-- Passport icon -->
-                <svg v-else-if="item.icon === 'passport'" class="w-[18px] h-[18px] flex-shrink-0" :style="currentPage === item.route ? 'color: var(--bp-signal);' : 'color: var(--bp-text-3);'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                <svg v-else-if="item.icon === 'passport'" class="w-[18px] h-[18px] flex-shrink-0" :style="currentPage === item.route ? 'color: #c8ff00;' : 'color: rgba(250,250,245,0.25);'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
                   <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
                   <polyline points="14 2 14 8 20 8"/>
                   <line x1="16" y1="13" x2="8" y2="13"/>
@@ -609,20 +609,20 @@
                   <polyline points="10 9 9 9 8 9"/>
                 </svg>
                 <!-- Chain / traceability icon -->
-                <svg v-else-if="item.icon === 'chain'" class="w-[18px] h-[18px] flex-shrink-0" :style="currentPage === item.route ? 'color: var(--bp-signal);' : 'color: var(--bp-text-3);'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                <svg v-else-if="item.icon === 'chain'" class="w-[18px] h-[18px] flex-shrink-0" :style="currentPage === item.route ? 'color: #c8ff00;' : 'color: rgba(250,250,245,0.25);'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
                   <path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/>
                   <path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/>
                 </svg>
                 <!-- Pulse / data icon -->
-                <svg v-else-if="item.icon === 'pulse'" class="w-[18px] h-[18px] flex-shrink-0" :style="currentPage === item.route ? 'color: var(--bp-signal);' : 'color: var(--bp-text-3);'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                <svg v-else-if="item.icon === 'pulse'" class="w-[18px] h-[18px] flex-shrink-0" :style="currentPage === item.route ? 'color: #c8ff00;' : 'color: rgba(250,250,245,0.25);'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
                   <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
                 </svg>
                 <!-- Wrench / service icon -->
-                <svg v-else-if="item.icon === 'wrench'" class="w-[18px] h-[18px] flex-shrink-0" :style="currentPage === item.route ? 'color: var(--bp-signal);' : 'color: var(--bp-text-3);'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                <svg v-else-if="item.icon === 'wrench'" class="w-[18px] h-[18px] flex-shrink-0" :style="currentPage === item.route ? 'color: #c8ff00;' : 'color: rgba(250,250,245,0.25);'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
                   <path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/>
                 </svg>
                 <!-- Recycle icon -->
-                <svg v-else-if="item.icon === 'recycle'" class="w-[18px] h-[18px] flex-shrink-0" :style="currentPage === item.route ? 'color: var(--bp-signal);' : 'color: var(--bp-text-3);'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                <svg v-else-if="item.icon === 'recycle'" class="w-[18px] h-[18px] flex-shrink-0" :style="currentPage === item.route ? 'color: #c8ff00;' : 'color: rgba(250,250,245,0.25);'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
                   <polyline points="7 2 12 7 7 12"/>
                   <path d="M12 7H3a1 1 0 00-1 1v4"/>
                   <polyline points="17 22 12 17 17 12"/>
@@ -631,11 +631,11 @@
                   <polyline points="22 7 17 12"/>
                 </svg>
                 <!-- Audit icon -->
-                <svg v-else-if="item.icon === 'audit'" class="w-[18px] h-[18px] flex-shrink-0" :style="currentPage === item.route ? 'color: var(--bp-signal);' : 'color: var(--bp-text-3);'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                <svg v-else-if="item.icon === 'audit'" class="w-[18px] h-[18px] flex-shrink-0" :style="currentPage === item.route ? 'color: #c8ff00;' : 'color: rgba(250,250,245,0.25);'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
                   <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/>
                 </svg>
                 <!-- QR icon -->
-                <svg v-else-if="item.icon === 'qr'" class="w-[18px] h-[18px] flex-shrink-0" :style="currentPage === item.route ? 'color: var(--bp-signal);' : 'color: var(--bp-text-3);'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                <svg v-else-if="item.icon === 'qr'" class="w-[18px] h-[18px] flex-shrink-0" :style="currentPage === item.route ? 'color: #c8ff00;' : 'color: rgba(250,250,245,0.25);'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
                   <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>
                   <line x1="14" y1="14" x2="14" y2="14.01"/><line x1="21" y1="14" x2="21" y2="14.01"/><line x1="14" y1="21" x2="14" y2="21.01"/><line x1="21" y1="21" x2="21" y2="21.01"/><line x1="17.5" y1="17.5" x2="17.5" y2="17.51"/>
                 </svg>
@@ -649,19 +649,19 @@
           </nav>
 
           <!-- User section at bottom -->
-          <div class="flex-shrink-0 p-4" style="border-top: 1px solid #e5e7eb;">
+          <div class="flex-shrink-0 p-4" style="border-top: 1px solid rgba(250,250,245,0.06);">
             <div class="flex items-center space-x-3">
               <div :class="['w-9 h-9 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0', orgAvatarColor]">
                 {{ userInitials }}
               </div>
               <div class="min-w-0 flex-1">
-                <div class="text-sm font-medium text-gray-900 truncate">{{ auth.userId }}</div>
-                <span class="inline-block mt-0.5 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-emerald-50 text-emerald-700">
+                <div class="text-sm font-medium truncate" style="color: #fafaf5;">{{ auth.userId }}</div>
+                <span class="inline-block mt-0.5 px-1.5 py-0.5 rounded text-[10px] font-semibold" style="background: rgba(200,255,0,0.1); color: #c8ff00;">
                   {{ orgLabel }}
                 </span>
               </div>
               <button @click="logout" title="로그아웃"
-                class="p-1.5 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors flex-shrink-0">
+                class="p-1.5 rounded-lg transition-colors flex-shrink-0" style="color: rgba(250,250,245,0.2);">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/>
                   <polyline points="16 17 21 12 16 7"/>
@@ -676,7 +676,7 @@
         <div class="flex-1 flex flex-col min-w-0 overflow-hidden">
 
           <!-- Top Bar -->
-          <header class="h-14 flex items-center justify-between px-4 lg:px-6 flex-shrink-0" style="background: #ffffff; border-bottom: 1px solid #e5e7eb;">
+          <header class="h-14 flex items-center justify-between px-4 lg:px-6 flex-shrink-0" style="background: #1a1814; border-bottom: 1px solid rgba(250,250,245,0.06);">
             <div class="flex items-center space-x-3">
               <button @click="mobileMenuOpen = !mobileMenuOpen"
                 class="lg:hidden p-1.5 -ml-1.5 rounded-lg transition-colors" style="color: var(--bp-text-2);">
@@ -688,21 +688,21 @@
                 </svg>
               </button>
               <nav class="flex items-center space-x-1.5 text-sm">
-                <span class="hidden sm:inline text-gray-400">Battery Passport</span>
-                <svg class="w-3.5 h-3.5 hidden sm:block text-gray-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <span class="hidden sm:inline" style="color: rgba(250,250,245,0.25);">Battery Passport</span>
+                <svg class="w-3.5 h-3.5 hidden sm:block" style="color: rgba(250,250,245,0.15);" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <polyline points="9 18 15 12 9 6"/>
                 </svg>
-                <span class="font-semibold text-gray-900">{{ currentPageTitle }}</span>
+                <span class="font-semibold" style="color: #fafaf5;">{{ currentPageTitle }}</span>
               </nav>
             </div>
             <div class="flex items-center space-x-2">
               <div class="flex items-center space-x-1.5 px-2.5 py-1 rounded-full"
-                :class="fabricStatus === 'connected' ? 'bg-emerald-50 border border-emerald-200' :
+                :class="fabricStatus === 'connected' ? 'border' + ' ' + 'border-emerald-800/30 bg-emerald-900/20' :
                   fabricStatus === 'checking' ? 'bg-amber-50 border border-amber-200' :
                   'bg-red-50 border border-red-200'">
                 <span class="bp-dot" :class="fabricStatus === 'connected' ? 'bp-dot-signal' : fabricStatus === 'checking' ? 'bp-dot-warn' : 'bp-dot-danger'"></span>
                 <span class="text-xs font-medium hidden sm:inline"
-                  :class="fabricStatus === 'connected' ? 'text-emerald-700' :
+                  :class="fabricStatus === 'connected' ? 'text-emerald-400' :
                     fabricStatus === 'checking' ? 'text-amber-700' : 'text-red-700'">
                   {{ fabricStatus === 'connected' ? 'Fabric 연결됨' : fabricStatus === 'checking' ? '확인 중...' : 'Fabric 연결 끊김' }}
                 </span>
@@ -711,7 +711,7 @@
           </header>
 
           <!-- Content Area (smooth transition) -->
-          <main class="flex-1 overflow-y-auto" style="background: #f8fafc;">
+          <main class="flex-1 overflow-y-auto" style="background: #1a1814;">
             <div class="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
               <component :is="currentPageComponent"
                 :auth="auth"
@@ -729,7 +729,7 @@
     <div class="fixed top-4 right-4 z-[100] space-y-2">
       <div v-for="(toast, i) in toasts" :key="i"
         :class="['px-4 py-3 rounded-xl text-sm flex items-center space-x-2 shadow-lg border',
-          toast.type === 'error' ? 'bg-red-50 text-red-700 border-red-200' : 'bg-emerald-50 text-emerald-700 border-emerald-200']">
+          toast.type === 'error' ? 'bg-red-900/30 text-red-400 border-red-800/30' : 'bg-emerald-900/20 text-[#c8ff00] border-emerald-800/30']">
         <svg v-if="toast.type === 'success'" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
           <polyline points="20 6 9 17 4 12"/>
         </svg>

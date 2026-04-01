@@ -29,9 +29,9 @@ app.component('maintenance-page', {
     ];
 
     const severityOptions = [
-      { value: 'minor', label: '경미', bgClass: 'bg-emerald-50 text-emerald-700 border-emerald-500', dotClass: 'bg-[#34d399]' },
-      { value: 'moderate', label: '보통', bgClass: 'bg-amber-50 text-amber-700 border-amber-200', dotClass: 'bg-[#fbbf24]' },
-      { value: 'severe', label: '심각', bgClass: 'bg-red-50 text-red-700 border-gray-200', dotClass: 'bg-red-500' },
+      { value: 'minor', label: '경미', bgClass: 'bg-[rgba(200,255,0,0.08)] text-[#c8ff00] border-emerald-500', dotClass: 'bg-[#34d399]' },
+      { value: 'moderate', label: '보통', bgClass: 'bg-[rgba(255,184,0,0.1)] text-[#ffb800] border-amber-200', dotClass: 'bg-[#fbbf24]' },
+      { value: 'severe', label: '심각', bgClass: 'bg-[rgba(239,68,68,0.1)] text-[#ff6b6b] border-[rgba(250,250,245,0.06)]', dotClass: 'bg-[rgba(239,68,68,0.1)]0' },
     ];
 
     // Forms
@@ -219,13 +219,13 @@ app.component('maintenance-page', {
           </div>
           <div>
             <div style="display:flex;align-items:center;gap:8px;">
-              <h1 class="text-gray-900 font-bold" style="font-family:'Pretendard Variable', sans-serif;font-size:1.35rem;color:#111827;margin:0;">정비 / 서비스</h1>
-              <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-50 text-amber-700" style="font-family:'JetBrains Mono', monospace;">{{ filteredPassports.length }}</span>
+              <h1 class="text-[#fafaf5] font-bold" style="font-family:'Pretendard Variable', sans-serif;font-size:1.35rem;color:#111827;margin:0;">정비 / 서비스</h1>
+              <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-[rgba(255,184,0,0.1)] text-[#ffb800]" style="font-family:'JetBrains Mono', monospace;">{{ filteredPassports.length }}</span>
             </div>
             <p style="font-size:0.72rem;color:#6b7280;margin-top:2px;">배터리 정비 요청, 완료 기록 및 사고 이력 관리</p>
           </div>
         </div>
-        <button @click="fetchPassports" class="bg-white border border-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-50" style="display:inline-flex;align-items:center;gap:6px;">
+        <button @click="fetchPassports" class="bg-[#1a1814] border border-[rgba(250,250,245,0.06)] text-[rgba(250,250,245,0.7)] px-4 py-2 rounded-lg text-sm font-medium hover:bg-[#1f1d17]" style="display:inline-flex;align-items:center;gap:6px;">
           <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
             <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
           </svg>
@@ -234,14 +234,14 @@ app.component('maintenance-page', {
       </div>
 
       <!-- FILTER TABS -->
-      <div class="flex bg-gray-100 rounded-xl p-1  ">
+      <div class="flex bg-[#2a2720]  p-1  ">
         <button v-for="tab in tabs" :key="tab.key" @click="activeTab = tab.key"
-          :class="['flex-1 py-2 text-sm font-medium text-gray-500 rounded-lg text-center cursor-pointer hover:text-gray-700', activeTab === tab.key ? 'bg-white text-emerald-700 shadow-sm' : '']">
+          :class="['flex-1 py-2 text-sm font-medium text-[rgba(250,250,245,0.35)] rounded-lg text-center cursor-pointer hover:text-[rgba(250,250,245,0.7)]', activeTab === tab.key ? 'bg-[#1a1814] text-[#c8ff00] shadow-none' : '']">
           <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" :d="tab.icon"/>
           </svg>
           {{ tab.label }}
-          <span :class="['inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold', activeTab === tab.key ? 'bg-amber-50 text-amber-700' : '']"
+          <span :class="['inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold', activeTab === tab.key ? 'bg-[rgba(255,184,0,0.1)] text-[#ffb800]' : '']"
             style="margin-left:4px;font-size:0.68rem;font-family:'JetBrains Mono', monospace;padding:1px 7px;">
             {{ tabCounts[tab.key] }}
           </span>
@@ -249,14 +249,14 @@ app.component('maintenance-page', {
       </div>
 
       <!-- EMPTY STATE -->
-      <div v-if="filteredPassports.length === 0" class="bg-white rounded-xl border border-gray-200 shadow-sm  ">
+      <div v-if="filteredPassports.length === 0" class="bg-[#1a1814]  border border-[rgba(250,250,245,0.06)] shadow-none  ">
         <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:80px 24px;">
           <div style="width:64px;height:64px;border-radius:16px;display:flex;align-items:center;justify-content:center;margin-bottom:20px;background:#ffffff;">
             <svg width="32" height="32" style="color:#6b7280;" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
             </svg>
           </div>
-          <h3 class="text-gray-900 font-bold" style="font-family:'Pretendard Variable', sans-serif;font-size:1rem;color:#111827;margin:0 0 6px;">현재 정비 이력이 없습니다</h3>
+          <h3 class="text-[#fafaf5] font-bold" style="font-family:'Pretendard Variable', sans-serif;font-size:1rem;color:#111827;margin:0 0 6px;">현재 정비 이력이 없습니다</h3>
           <p style="font-size:0.82rem;color:#6b7280;text-align:center;max-width:24rem;">배터리 여권이 등록되면 정비 이력을 관리할 수 있습니다.</p>
         </div>
       </div>
@@ -264,7 +264,7 @@ app.component('maintenance-page', {
       <!-- PASSPORT CARDS (card layout with timeline dots) -->
       <div v-else style="display:flex;flex-direction:column;gap:16px;" class=" ">
         <div v-for="(p, idx) in filteredPassports" :key="p.passportId"
-             class="bg-white rounded-xl border border-gray-200 shadow-sm " :style="'animation-delay:' + (idx * 50) + 'ms'"
+             class="bg-[#1a1814]  border border-[rgba(250,250,245,0.06)] shadow-none " :style="'animation-delay:' + (idx * 50) + 'ms'"
              style="overflow:hidden;cursor:pointer;transition:border-color 0.2s;"
              @click="navigateToDetail(p)"
              @mouseenter="$event.currentTarget.style.borderColor='#d97706'"
@@ -303,7 +303,7 @@ app.component('maintenance-page', {
                     {{ p.maintenanceLogs ? p.maintenanceLogs.length : 0 }}건
                   </span>
                   <span v-if="p.accidentLogs && p.accidentLogs.length > 0"
-                    class="bg-red-50 text-red-700" style="display:inline-flex;align-items:center;gap:4px;font-size:0.7rem;font-family:'JetBrains Mono', monospace;font-weight:700;">
+                    class="bg-[rgba(239,68,68,0.1)] text-[#ff6b6b]" style="display:inline-flex;align-items:center;gap:4px;font-size:0.7rem;font-family:'JetBrains Mono', monospace;font-weight:700;">
                     <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
                     </svg>
@@ -321,7 +321,7 @@ app.component('maintenance-page', {
               <div style="display:flex;align-items:center;gap:8px;" @click.stop>
                 <button v-if="canRequestMaintenance && p.status === 'ACTIVE'"
                   @click="openMaintenanceRequest(p)"
-                  class="bg-white border border-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-50" style="font-size:0.75rem;padding:4px 10px;color:#d97706;display:inline-flex;align-items:center;gap:4px;">
+                  class="bg-[#1a1814] border border-[rgba(250,250,245,0.06)] text-[rgba(250,250,245,0.7)] px-4 py-2 rounded-lg text-sm font-medium hover:bg-[#1f1d17]" style="font-size:0.75rem;padding:4px 10px;color:#d97706;display:inline-flex;align-items:center;gap:4px;">
                   <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
                   </svg>
@@ -329,7 +329,7 @@ app.component('maintenance-page', {
                 </button>
                 <button v-if="canLogMaintenance && p.status === 'MAINTENANCE'"
                   @click="openMaintenanceLog(p)"
-                  class="bg-emerald-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-emerald-700" style="font-size:0.75rem;padding:4px 10px;display:inline-flex;align-items:center;gap:4px;">
+                  class="bg-[#c8ff00] text-[#1a1814] px-4 py-2 rounded-lg text-sm font-medium hover:bg-[#d4ff33]" style="font-size:0.75rem;padding:4px 10px;display:inline-flex;align-items:center;gap:4px;">
                   <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
                   </svg>
@@ -337,7 +337,7 @@ app.component('maintenance-page', {
                 </button>
                 <button v-if="canLogAccident"
                   @click="openAccident(p)"
-                  class="bg-red-50 text-red-700 border border-red-200 px-4 py-2 rounded-lg text-sm font-medium hover:bg-red-100" style="font-size:0.75rem;padding:4px 10px;display:inline-flex;align-items:center;gap:4px;">
+                  class="bg-[rgba(239,68,68,0.1)] text-[#ff6b6b] border border-red-200 px-4 py-2 rounded-lg text-sm font-medium hover:bg-red-100" style="font-size:0.75rem;padding:4px 10px;display:inline-flex;align-items:center;gap:4px;">
                   <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
                   </svg>
@@ -359,7 +359,7 @@ app.component('maintenance-page', {
     <div v-if="showMaintenanceRequestModal" style="position:fixed;inset:0;z-index:50;overflow-y:auto;">
       <div style="display:flex;align-items:center;justify-content:center;min-height:100vh;padding:16px 16px 32px;">
         <div style="position:fixed;inset:0;background:rgba(0,0,0,0.6);backdrop-filter:blur(6px);" @click="closeModals"></div>
-        <div class="bg-white rounded-xl border border-gray-200 shadow-sm " style="position:relative;z-index:1;max-width:28rem;width:100%;overflow:hidden;border-color:#d97706;">
+        <div class="bg-[#1a1814]  border border-[rgba(250,250,245,0.06)] shadow-none " style="position:relative;z-index:1;max-width:28rem;width:100%;overflow:hidden;border-color:#d97706;">
 
           <!-- Modal Header -->
           <div style="padding:16px 24px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #f1f5f9;">
@@ -371,7 +371,7 @@ app.component('maintenance-page', {
               </div>
               <h3 style="font-family:'Pretendard Variable', sans-serif;font-size:1.1rem;font-weight:700;color:#111827;margin:0;">정비 요청</h3>
             </div>
-            <button @click="closeModals" class="bg-white border border-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-50" style="padding:6px;color:#6b7280;">
+            <button @click="closeModals" class="bg-[#1a1814] border border-[rgba(250,250,245,0.06)] text-[rgba(250,250,245,0.7)] px-4 py-2 rounded-lg text-sm font-medium hover:bg-[#1f1d17]" style="padding:6px;color:#6b7280;">
               <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
               </svg>
@@ -410,7 +410,7 @@ app.component('maintenance-page', {
             <div>
               <label style="display:block;font-size:0.85rem;font-weight:600;color:#374151;margin-bottom:4px;">설명 <span style="color:#ef4444;">*</span></label>
               <textarea v-model="requestForm.description" rows="3" placeholder="정비 요청 사유를 입력하세요"
-                class="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500" style="width:100%;resize:none;font-family:'Pretendard Variable', sans-serif;"></textarea>
+                class="w-full px-4 py-2.5 bg-[#1f1d17] border border-[rgba(250,250,245,0.06)]  text-[#fafaf5] outline-none focus:border-[#c8ff00]" style="width:100%;resize:none;font-family:'Pretendard Variable', sans-serif;"></textarea>
             </div>
 
             <!-- Confirmation checkbox -->
@@ -422,7 +422,7 @@ app.component('maintenance-page', {
 
           <!-- Modal Footer -->
           <div style="padding:12px 24px;display:flex;justify-content:flex-end;gap:10px;border-top:1px solid #f1f5f9;background:#ffffff;">
-            <button @click="closeModals" class="bg-white border border-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-50">취소</button>
+            <button @click="closeModals" class="bg-[#1a1814] border border-[rgba(250,250,245,0.06)] text-[rgba(250,250,245,0.7)] px-4 py-2 rounded-lg text-sm font-medium hover:bg-[#1f1d17]">취소</button>
             <button @click="submitMaintenanceRequest"
               :disabled="!requestForm.description || !requestConfirmed || submitting"
               class="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium"
@@ -447,7 +447,7 @@ app.component('maintenance-page', {
     <div v-if="showMaintenanceLogModal" style="position:fixed;inset:0;z-index:50;overflow-y:auto;">
       <div style="display:flex;align-items:center;justify-content:center;min-height:100vh;padding:16px 16px 32px;">
         <div style="position:fixed;inset:0;background:rgba(0,0,0,0.6);backdrop-filter:blur(6px);" @click="closeModals"></div>
-        <div class="bg-white rounded-xl border border-gray-200 shadow-sm " style="position:relative;z-index:1;max-width:28rem;width:100%;overflow:hidden;border-color:#059669;">
+        <div class="bg-[#1a1814]  border border-[rgba(250,250,245,0.06)] shadow-none " style="position:relative;z-index:1;max-width:28rem;width:100%;overflow:hidden;border-color:#059669;">
 
           <!-- Modal Header -->
           <div style="padding:16px 24px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #f1f5f9;">
@@ -459,7 +459,7 @@ app.component('maintenance-page', {
               </div>
               <h3 style="font-family:'Pretendard Variable', sans-serif;font-size:1.1rem;font-weight:700;color:#111827;margin:0;">정비 완료 기록</h3>
             </div>
-            <button @click="closeModals" class="bg-white border border-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-50" style="padding:6px;color:#6b7280;">
+            <button @click="closeModals" class="bg-[#1a1814] border border-[rgba(250,250,245,0.06)] text-[rgba(250,250,245,0.7)] px-4 py-2 rounded-lg text-sm font-medium hover:bg-[#1f1d17]" style="padding:6px;color:#6b7280;">
               <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
               </svg>
@@ -498,14 +498,14 @@ app.component('maintenance-page', {
             <div>
               <label style="display:block;font-size:0.85rem;font-weight:600;color:#374151;margin-bottom:4px;">설명 <span style="color:#ef4444;">*</span></label>
               <textarea v-model="logForm.description" rows="3" placeholder="수행한 정비 내용을 입력하세요"
-                class="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500" style="width:100%;resize:none;font-family:'Pretendard Variable', sans-serif;"></textarea>
+                class="w-full px-4 py-2.5 bg-[#1f1d17] border border-[rgba(250,250,245,0.06)]  text-[#fafaf5] outline-none focus:border-[#c8ff00]" style="width:100%;resize:none;font-family:'Pretendard Variable', sans-serif;"></textarea>
             </div>
 
             <!-- Technician -->
             <div>
               <label style="display:block;font-size:0.85rem;font-weight:600;color:#374151;margin-bottom:4px;">담당 기술자 <span style="color:#ef4444;">*</span></label>
               <input v-model="logForm.technician" type="text" placeholder="기술자 이름"
-                class="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500" style="width:100%;font-family:'Pretendard Variable', sans-serif;"/>
+                class="w-full px-4 py-2.5 bg-[#1f1d17] border border-[rgba(250,250,245,0.06)]  text-[#fafaf5] outline-none focus:border-[#c8ff00]" style="width:100%;font-family:'Pretendard Variable', sans-serif;"/>
             </div>
 
             <!-- Confirmation checkbox -->
@@ -517,10 +517,10 @@ app.component('maintenance-page', {
 
           <!-- Modal Footer -->
           <div style="padding:12px 24px;display:flex;justify-content:flex-end;gap:10px;border-top:1px solid #f1f5f9;background:#ffffff;">
-            <button @click="closeModals" class="bg-white border border-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-50">취소</button>
+            <button @click="closeModals" class="bg-[#1a1814] border border-[rgba(250,250,245,0.06)] text-[rgba(250,250,245,0.7)] px-4 py-2 rounded-lg text-sm font-medium hover:bg-[#1f1d17]">취소</button>
             <button @click="submitMaintenanceLog"
               :disabled="!logForm.description || !logForm.technician || !logConfirmed || submitting"
-              class="bg-emerald-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-emerald-700"
+              class="bg-[#c8ff00] text-[#1a1814] px-4 py-2 rounded-lg text-sm font-medium hover:bg-[#d4ff33]"
               :style="(!logForm.description || !logForm.technician || !logConfirmed || submitting)
                 ? 'opacity:0.4;cursor:not-allowed;'
                 : ''"
@@ -542,7 +542,7 @@ app.component('maintenance-page', {
     <div v-if="showAccidentModal" style="position:fixed;inset:0;z-index:50;overflow-y:auto;">
       <div style="display:flex;align-items:center;justify-content:center;min-height:100vh;padding:16px 16px 32px;">
         <div style="position:fixed;inset:0;background:rgba(0,0,0,0.6);backdrop-filter:blur(6px);" @click="closeModals"></div>
-        <div class="bg-white rounded-xl border border-gray-200 shadow-sm " style="position:relative;z-index:1;max-width:28rem;width:100%;overflow:hidden;border-color:#ef4444;">
+        <div class="bg-[#1a1814]  border border-[rgba(250,250,245,0.06)] shadow-none " style="position:relative;z-index:1;max-width:28rem;width:100%;overflow:hidden;border-color:#ef4444;">
 
           <!-- Modal Header -->
           <div style="padding:16px 24px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #f1f5f9;">
@@ -554,7 +554,7 @@ app.component('maintenance-page', {
               </div>
               <h3 style="font-family:'Pretendard Variable', sans-serif;font-size:1.1rem;font-weight:700;color:#111827;margin:0;">사고 기록</h3>
             </div>
-            <button @click="closeModals" class="bg-white border border-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-50" style="padding:6px;color:#6b7280;">
+            <button @click="closeModals" class="bg-[#1a1814] border border-[rgba(250,250,245,0.06)] text-[rgba(250,250,245,0.7)] px-4 py-2 rounded-lg text-sm font-medium hover:bg-[#1f1d17]" style="padding:6px;color:#6b7280;">
               <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
               </svg>
@@ -587,14 +587,14 @@ app.component('maintenance-page', {
             <div>
               <label style="display:block;font-size:0.85rem;font-weight:600;color:#374151;margin-bottom:4px;">사고 설명 <span style="color:#ef4444;">*</span></label>
               <textarea v-model="accidentForm.description" rows="3" placeholder="사고 상황을 상세히 기술하세요"
-                class="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500" style="width:100%;resize:none;font-family:'Pretendard Variable', sans-serif;"></textarea>
+                class="w-full px-4 py-2.5 bg-[#1f1d17] border border-[rgba(250,250,245,0.06)]  text-[#fafaf5] outline-none focus:border-[#c8ff00]" style="width:100%;resize:none;font-family:'Pretendard Variable', sans-serif;"></textarea>
             </div>
 
             <!-- Reporter -->
             <div>
               <label style="display:block;font-size:0.85rem;font-weight:600;color:#374151;margin-bottom:4px;">보고자 <span style="color:#ef4444;">*</span></label>
               <input v-model="accidentForm.reporter" type="text" placeholder="보고자 이름"
-                class="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500" style="width:100%;font-family:'Pretendard Variable', sans-serif;"/>
+                class="w-full px-4 py-2.5 bg-[#1f1d17] border border-[rgba(250,250,245,0.06)]  text-[#fafaf5] outline-none focus:border-[#c8ff00]" style="width:100%;font-family:'Pretendard Variable', sans-serif;"/>
             </div>
 
             <!-- Confirmation checkbox -->
@@ -606,10 +606,10 @@ app.component('maintenance-page', {
 
           <!-- Modal Footer -->
           <div style="padding:12px 24px;display:flex;justify-content:flex-end;gap:10px;border-top:1px solid #f1f5f9;background:#ffffff;">
-            <button @click="closeModals" class="bg-white border border-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-50">취소</button>
+            <button @click="closeModals" class="bg-[#1a1814] border border-[rgba(250,250,245,0.06)] text-[rgba(250,250,245,0.7)] px-4 py-2 rounded-lg text-sm font-medium hover:bg-[#1f1d17]">취소</button>
             <button @click="submitAccident"
               :disabled="!accidentForm.description || !accidentForm.reporter || !accidentConfirmed || submitting"
-              class="bg-red-50 text-red-700 border border-red-200 px-4 py-2 rounded-lg text-sm font-medium hover:bg-red-100"
+              class="bg-[rgba(239,68,68,0.1)] text-[#ff6b6b] border border-red-200 px-4 py-2 rounded-lg text-sm font-medium hover:bg-red-100"
               :style="(!accidentForm.description || !accidentForm.reporter || !accidentConfirmed || submitting)
                 ? 'opacity:0.4;cursor:not-allowed;'
                 : ''"
