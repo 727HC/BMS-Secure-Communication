@@ -75,7 +75,6 @@ app.component('audit-log-page', {
         const data = await props.api.get('/audit?' + params.toString());
         logs.value = data.records || [];
         total.value = data.total || 0;
-        // Auto return to page 1 if current page has no results
         if (logs.value.length === 0 && page.value > 1) {
           page.value = 1;
           await fetchLogs();
@@ -90,6 +89,30 @@ app.component('audit-log-page', {
     function formatTime(ts) {
       if (!ts) return '-';
       return new Date(ts).toLocaleString('ko-KR');
+    }
+
+    function relativeTime(ts) {
+      if (!ts) return '';
+      const now = Date.now();
+      const diff = now - new Date(ts).getTime();
+      if (diff < 0) return '방금';
+      const seconds = Math.floor(diff / 1000);
+      if (seconds < 60) return seconds + '초 전';
+      const minutes = Math.floor(seconds / 60);
+      if (minutes < 60) return minutes + '분 전';
+      const hours = Math.floor(minutes / 60);
+      if (hours < 24) return hours + '시간 전';
+      const days = Math.floor(hours / 24);
+      if (days < 30) return days + '일 전';
+      return '';
+    }
+
+    function getStatusStyle(code) {
+      if (!code) return { color: 'var(--bp-text-3)', bg: 'transparent' };
+      if (code < 300) return { color: '#34d399', bg: 'rgba(52,211,153,0.1)' };
+      if (code < 400) return { color: '#60a5fa', bg: 'rgba(96,165,250,0.1)' };
+      if (code < 500) return { color: '#fbbf24', bg: 'rgba(251,191,36,0.1)' };
+      return { color: '#ef4444', bg: 'rgba(239,68,68,0.1)' };
     }
 
     function prevPage() { if (page.value > 1) { page.value--; fetchLogs(); } }
@@ -114,7 +137,7 @@ app.component('audit-log-page', {
     return {
       logs, total, loading, page, filterAction, filterWriteOnly, autoRefresh,
       actionLabels, actionColors, actionOptions, totalPages, expandedId,
-      fetchLogs, formatTime, prevPage, nextPage, toggleDetail,
+      fetchLogs, formatTime, relativeTime, getStatusStyle, prevPage, nextPage, toggleDetail,
     };
   },
   template: `
@@ -198,13 +221,16 @@ app.component('audit-log-page', {
             <template v-for="(log, idx) in logs" :key="log.id">
               <tr @click="toggleDetail(log.id)" style="cursor:pointer;"
                 :style="expandedId === log.id ? 'background:var(--bp-surface-2);' : ''">
-                <!-- Timestamp -->
+                <!-- Timestamp with relative time -->
                 <td>
-                  <span style="display:flex;align-items:center;gap:6px;">
-                    <svg :style="{ width:'12px',height:'12px',color:'var(--bp-text-3)',transition:'transform 0.2s',transform: expandedId === log.id ? 'rotate(90deg)' : 'rotate(0deg)' }" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                      <polyline points="9 18 15 12 9 6"/>
-                    </svg>
-                    <span class="bp-mono" style="font-size:0.75rem;color:var(--bp-text-3);white-space:nowrap;">{{ formatTime(log.timestamp) }}</span>
+                  <span style="display:flex;flex-direction:column;gap:2px;">
+                    <span style="display:flex;align-items:center;gap:6px;">
+                      <svg :style="{ width:'12px',height:'12px',color:'var(--bp-text-3)',transition:'transform 0.2s',transform: expandedId === log.id ? 'rotate(90deg)' : 'rotate(0deg)' }" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                        <polyline points="9 18 15 12 9 6"/>
+                      </svg>
+                      <span class="bp-mono" style="font-size:0.75rem;color:var(--bp-text-3);white-space:nowrap;">{{ formatTime(log.timestamp) }}</span>
+                    </span>
+                    <span v-if="relativeTime(log.timestamp)" class="bp-mono" style="font-size:0.65rem;color:var(--bp-text-3);opacity:0.7;padding-left:18px;white-space:nowrap;">{{ relativeTime(log.timestamp) }}</span>
                   </span>
                 </td>
                 <!-- Action badge -->
@@ -224,13 +250,28 @@ app.component('audit-log-page', {
                   <span v-if="log.path" class="bp-mono" style="font-size:0.72rem;color:var(--bp-text-3);background:var(--bp-surface-3);padding:2px 8px;border-radius:4px;white-space:nowrap;display:inline-block;max-width:200px;overflow:hidden;text-overflow:ellipsis;">{{ log.method }} {{ log.path }}</span>
                   <span v-else style="font-size:0.75rem;color:var(--bp-text-3);">-</span>
                 </td>
-                <!-- Status Code with color -->
+                <!-- Status Code with enhanced color pill -->
                 <td style="text-align:center;">
-                  <span class="bp-mono" style="font-size:0.78rem;font-weight:600;white-space:nowrap;"
+                  <span class="bp-mono"
                     :style="{
-                      color: log.statusCode < 300 ? 'var(--bp-signal)' :
-                             log.statusCode < 500 ? 'var(--bp-warn)' : 'var(--bp-danger)'
+                      fontSize: '0.75rem',
+                      fontWeight: 700,
+                      whiteSpace: 'nowrap',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '4px',
+                      padding: '2px 10px',
+                      borderRadius: '20px',
+                      color: getStatusStyle(log.statusCode).color,
+                      background: getStatusStyle(log.statusCode).bg,
                     }">
+                    <span :style="{
+                      width: '5px',
+                      height: '5px',
+                      borderRadius: '50%',
+                      background: getStatusStyle(log.statusCode).color,
+                      flexShrink: 0,
+                    }"></span>
                     {{ log.statusCode }}
                   </span>
                 </td>
@@ -259,10 +300,7 @@ app.component('audit-log-page', {
                       <div>
                         <p style="font-size:0.6rem;font-weight:600;color:var(--bp-text-3);text-transform:uppercase;margin:0 0 2px;">상태 코드</p>
                         <p class="bp-mono" style="font-size:0.72rem;margin:0;"
-                          :style="{
-                            color: log.statusCode < 300 ? 'var(--bp-signal)' :
-                                   log.statusCode < 500 ? 'var(--bp-warn)' : 'var(--bp-danger)'
-                          }">{{ log.statusCode }}</p>
+                          :style="{ color: getStatusStyle(log.statusCode).color }">{{ log.statusCode }}</p>
                       </div>
                       <div>
                         <p style="font-size:0.6rem;font-weight:600;color:var(--bp-text-3);text-transform:uppercase;margin:0 0 2px;">IP</p>
