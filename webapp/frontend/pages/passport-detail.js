@@ -84,8 +84,8 @@ app.component('passport-detail-page', {
     const statusLabels = STATUS_LABELS;
     function getSocColor(soc) {
       if (soc == null) return 'bg-[--bp-surface-4]';
-      if (soc >= 60) return 'bg-emerald-500';
-      if (soc >= 30) return 'bg-amber-500';
+      if (soc >= 60) return 'bg-[#34d399]';
+      if (soc >= 30) return 'bg-[#fbbf24]';
       return 'bg-red-500';
     }
     function getSocHex(soc) {
@@ -104,9 +104,9 @@ app.component('passport-detail-page', {
       const num = typeof flags === 'number' ? flags : parseInt(flags, 10);
       if (isNaN(num)) return [];
       const badges = [];
-      if (num & 0x01) badges.push({ label: '충전중', color: 'bg-[--bp-signal-dim] text-[--bp-signal] border-emerald-200' });
-      if (num & 0x02) badges.push({ label: '밸런싱', color: 'bg-[--bp-signal-dim] text-[--bp-signal] border-emerald-200' });
-      if (num & 0x04) badges.push({ label: '결함', color: 'bg-[--bp-danger-dim] text-red-700 border-red-200' });
+      if (num & 0x01) badges.push({ label: '충전중', color: 'bg-[--bp-signal-dim] text-[--bp-signal] border-[--bp-border-active]' });
+      if (num & 0x02) badges.push({ label: '밸런싱', color: 'bg-[--bp-signal-dim] text-[--bp-signal] border-[--bp-border-active]' });
+      if (num & 0x04) badges.push({ label: '결함', color: 'bg-[--bp-danger-dim] text-[--bp-danger] border-[--bp-border]' });
       return badges;
     }
 
@@ -932,7 +932,7 @@ app.component('passport-detail-page', {
                 <div class="w-full h-2.5 bg-[--bp-surface-4] rounded-full overflow-hidden">
                   <div class="h-full rounded-full transition-all duration-1000"
                     :style="{ width: Math.min(Math.max(scaleSOC(passport.currentSoc) || 0, 0), 100) + '%' }"
-                    :class="scaleSOC(passport.currentSoc) > 60 ? 'bg-emerald-500' : scaleSOC(passport.currentSoc) > 25 ? 'bg-amber-500' : 'bg-red-500'"></div>
+                    :class="scaleSOC(passport.currentSoc) > 60 ? 'bg-[#34d399]' : scaleSOC(passport.currentSoc) > 25 ? 'bg-[#fbbf24]' : 'bg-red-500'"></div>
                 </div>
               </div>
               <!-- SOH if available -->
@@ -942,7 +942,7 @@ app.component('passport-detail-page', {
                   <span class="text-xs font-bold text-[--bp-text-2]">{{ passport.currentSoh }}%</span>
                 </div>
                 <div class="w-full h-2.5 bg-[--bp-surface-4] rounded-full overflow-hidden">
-                  <div class="h-full rounded-full transition-all duration-1000 bg-blue-500"
+                  <div class="h-full rounded-full transition-all duration-1000 bg-[#60a5fa]"
                     :style="{ width: Math.min(passport.currentSoh, 100) + '%' }"></div>
                 </div>
               </div>
@@ -1003,7 +1003,7 @@ app.component('passport-detail-page', {
           <div v-if="isManufacturer || isEV || isRegulator"
             class="flex justify-end gap-2">
             <button v-if="isManufacturer" @click="openLinkMaterialsModal"
-              class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-[--bp-signal] bg-[--bp-signal-dim] border border-emerald-200 rounded-lg hover:bg-[--bp-signal-dim] transition-colors">
+              class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-[--bp-signal] bg-[--bp-signal-dim] border border-[--bp-border-active] rounded-lg hover:bg-[--bp-signal-dim] transition-colors">
               <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
               </svg>
@@ -1336,7 +1336,7 @@ app.component('passport-detail-page', {
                 </div>
                 <div class="w-full h-3 bg-[--bp-surface-4] rounded-full overflow-hidden">
                   <div class="h-full rounded-full transition-all duration-700"
-                       :class="gbaCompliance.pct >= 80 ? 'bg-emerald-500' : gbaCompliance.pct >= 50 ? 'bg-amber-500' : 'bg-red-500'"
+                       :class="gbaCompliance.pct >= 80 ? 'bg-[#34d399]' : gbaCompliance.pct >= 50 ? 'bg-[#fbbf24]' : 'bg-red-500'"
                        :style="{ width: gbaCompliance.pct + '%' }"></div>
                 </div>
               </div>
@@ -1491,14 +1491,14 @@ app.component('passport-detail-page', {
                     <!-- Step circle -->
                     <div class="relative z-10 flex items-center justify-center w-10 h-10 rounded-full border-2 transition-all duration-500"
                          :class="[
-                           getLifecycleState(step.key, passport.status) === 'completed' ? 'bg-emerald-500 border-emerald-500 text-white' : '',
+                           getLifecycleState(step.key, passport.status) === 'completed' ? 'bg-[#34d399] border-emerald-500 text-white' : '',
                            getLifecycleState(step.key, passport.status) === 'current' ? 'bg-[--bp-surface-1] border-emerald-500 pd-pulse' : '',
                            getLifecycleState(step.key, passport.status) === 'future' ? 'bg-[--bp-surface-1] border-[--bp-border-hover] text-[--bp-text-3]' : '',
                          ]">
                       <svg v-if="getLifecycleState(step.key, passport.status) === 'completed'" class="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
                         <polyline points="20 6 9 17 4 12"/>
                       </svg>
-                      <div v-else-if="getLifecycleState(step.key, passport.status) === 'current'" class="w-3 h-3 rounded-full bg-emerald-500"></div>
+                      <div v-else-if="getLifecycleState(step.key, passport.status) === 'current'" class="w-3 h-3 rounded-full bg-[#34d399]"></div>
                       <span v-else class="text-xs font-bold text-[--bp-text-3]">{{ i + 1 }}</span>
                     </div>
                     <p class="mt-2 text-xs font-medium text-center leading-tight"
@@ -1514,14 +1514,14 @@ app.component('passport-detail-page', {
                   <div class="flex flex-col items-center">
                     <div class="flex items-center justify-center w-8 h-8 rounded-full border-2 transition-all"
                          :class="[
-                           getLifecycleState(step.key, passport.status) === 'completed' ? 'bg-emerald-500 border-emerald-500' : '',
+                           getLifecycleState(step.key, passport.status) === 'completed' ? 'bg-[#34d399] border-emerald-500' : '',
                            getLifecycleState(step.key, passport.status) === 'current' ? 'bg-[--bp-surface-1] border-emerald-500 pd-pulse' : '',
                            getLifecycleState(step.key, passport.status) === 'future' ? 'bg-[--bp-surface-1] border-[--bp-border-hover]' : '',
                          ]">
                       <svg v-if="getLifecycleState(step.key, passport.status) === 'completed'" class="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
                         <polyline points="20 6 9 17 4 12"/>
                       </svg>
-                      <div v-else-if="getLifecycleState(step.key, passport.status) === 'current'" class="w-2.5 h-2.5 rounded-full bg-emerald-500"></div>
+                      <div v-else-if="getLifecycleState(step.key, passport.status) === 'current'" class="w-2.5 h-2.5 rounded-full bg-[#34d399]"></div>
                       <span v-else class="text-xs font-bold text-[--bp-text-3]">{{ i + 1 }}</span>
                     </div>
                     <div v-if="i < lifecycleSteps.length - 1" class="w-0.5 h-6"
@@ -1586,7 +1586,7 @@ app.component('passport-detail-page', {
               </div>
               <div class="flex gap-2">
                 <button v-if="isEV && passport.status === 'ACTIVE'" @click="showMaintenanceRequestModal = true"
-                  class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white font-medium text-xs rounded-lg transition-colors">
+                  class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#fbbf24] hover:bg-amber-600 text-white font-medium text-xs rounded-lg transition-colors">
                   정비 요청
                 </button>
                 <button v-if="isService" @click="showMaintenanceLogModal = true"
@@ -1651,7 +1651,7 @@ app.component('passport-detail-page', {
                   <tr v-for="(log, i) in accidentLogs" :key="i"
                     :class="['transition-colors', i % 2 === 0 ? 'bg-[--bp-surface-2]' : 'bg-[--bp-surface-3]/40', 'hover:bg-[--bp-danger-dim]/30']">
                     <td class="px-5 py-3 text-[--bp-text-2] whitespace-nowrap">{{ formatDate(log.date) }}</td>
-                    <td class="px-5 py-3"><span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-[--bp-danger-dim] text-red-700 border border-red-100">{{ {minor:'경미',moderate:'보통',severe:'심각',critical:'위험'}[log.severity] || log.severity || '-' }}</span></td>
+                    <td class="px-5 py-3"><span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-[--bp-danger-dim] text-[--bp-danger] border border-red-100">{{ {minor:'경미',moderate:'보통',severe:'심각',critical:'위험'}[log.severity] || log.severity || '-' }}</span></td>
                     <td class="px-5 py-3 text-[--bp-text-2] max-w-xs truncate">{{ log.description || '-' }}</td>
                     <td class="px-5 py-3 text-[--bp-text-2]">{{ log.reporter || '-' }}</td>
                   </tr>
@@ -1675,7 +1675,7 @@ app.component('passport-detail-page', {
                 분석 결과 제출
               </button>
               <button v-if="isService || isRegulator" @click="showRecycleModal = true"
-                class="inline-flex items-center gap-2 px-4 py-2.5 bg-orange-500 hover:bg-orange-600 text-white font-medium text-sm rounded-lg transition-colors ">
+                class="inline-flex items-center gap-2 px-4 py-2.5 bg-[#f97316] hover:bg-orange-600 text-white font-medium text-sm rounded-lg transition-colors ">
                 <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                 재활용 판정
               </button>
@@ -1748,12 +1748,12 @@ app.component('passport-detail-page', {
                             {{ badge.label }}
                           </span>
                           <span v-if="decodeStatusFlags(r.statusFlags).length === 0" class="text-xs text-[--bp-text-muted]">--</span>
-                          <span v-if="r.status === 'INVALIDATED'" class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-[--bp-danger-dim] text-red-600 border border-red-200">무효</span>
+                          <span v-if="r.status === 'INVALIDATED'" class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-[--bp-danger-dim] text-red-600 border border-[--bp-border]">무효</span>
                         </div>
                       </td>
                       <td v-if="isManufacturer || isRegulator" class="px-5 py-3 text-center">
                         <button v-if="r.status !== 'INVALIDATED'" @click="openInvalidateModal(r.recordId)"
-                          class="text-[10px] font-medium text-red-500 hover:text-red-700 hover:bg-[--bp-danger-dim] px-2 py-1 rounded transition-colors">
+                          class="text-[10px] font-medium text-red-500 hover:text-[--bp-danger] hover:bg-[--bp-danger-dim] px-2 py-1 rounded transition-colors">
                           무효화
                         </button>
                         <span v-else class="text-[10px] text-[--bp-text-3]">처리됨</span>
@@ -1805,7 +1805,7 @@ app.component('passport-detail-page', {
 
               <!-- Verification badge -->
               <div class="flex items-center gap-3">
-                <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[--bp-signal-dim] border border-emerald-200">
+                <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[--bp-signal-dim] border border-[--bp-border-active]">
                   <svg class="w-4 h-4 text-[--bp-signal]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
                   </svg>
@@ -1911,11 +1911,11 @@ app.component('passport-detail-page', {
                         {{ {BATTERY_PASSPORT:'배터리 여권',BATTERY_HEALTH:'배터리 건강',MAINTENANCE:'정비 인증',COMPLIANCE:'규제 적합',RECYCLING:'재활용 인증'}[vc.credType] || vc.credType }}
                       </span>
                       <span :class="['inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold border',
-                        vc.status === 'ACTIVE' ? 'bg-[--bp-signal-dim] text-[--bp-signal] border-emerald-200' :
-                        vc.status === 'REVOKED' ? 'bg-[--bp-danger-dim] text-red-700 border-red-200' :
+                        vc.status === 'ACTIVE' ? 'bg-[--bp-signal-dim] text-[--bp-signal] border-[--bp-border-active]' :
+                        vc.status === 'REVOKED' ? 'bg-[--bp-danger-dim] text-[--bp-danger] border-[--bp-border]' :
                         'bg-[--bp-surface-3] text-[--bp-text-3] border-[--bp-border]']">
                         <span :class="['w-1.5 h-1.5 rounded-full',
-                          vc.status === 'ACTIVE' ? 'bg-emerald-500' : vc.status === 'REVOKED' ? 'bg-red-500' : 'bg-[--bp-text-3]']"></span>
+                          vc.status === 'ACTIVE' ? 'bg-[#34d399]' : vc.status === 'REVOKED' ? 'bg-red-500' : 'bg-[--bp-text-3]']"></span>
                         {{ vc.status === 'ACTIVE' ? '유효' : vc.status === 'REVOKED' ? '폐기' : vc.status }}
                       </span>
                     </div>
@@ -1939,7 +1939,7 @@ app.component('passport-detail-page', {
                 </div>
                 <!-- Verification result inline -->
                 <div v-if="vc._verified" class="mt-2 px-3 py-2 rounded-lg text-xs"
-                  :class="vc._verified.valid ? 'bg-[--bp-signal-dim] text-[--bp-signal] border border-emerald-200' : 'bg-[--bp-danger-dim] text-red-700 border border-red-200'">
+                  :class="vc._verified.valid ? 'bg-[--bp-signal-dim] text-[--bp-signal] border border-[--bp-border-active]' : 'bg-[--bp-danger-dim] text-[--bp-danger] border border-[--bp-border]'">
                   {{ vc._verified.valid ? '검증 성공: 유효한 인증서입니다.' : '검증 실패: ' + (vc._verified.reason || '인증서가 유효하지 않습니다.') }}
                 </div>
               </div>
@@ -2057,7 +2057,7 @@ app.component('passport-detail-page', {
                     <div class="absolute -left-7 top-4 w-[22px] h-[22px] rounded-full border-[3px] border-white  flex items-center justify-center"
                       :class="entry.changeDesc && entry.changeDesc.includes('사고') ? 'bg-[--bp-danger-dim]' : (entry.value && entry.value.status ? getStatusBadge(entry.value.status).bg : 'bg-[--bp-signal-dim]')">
                       <div class="w-2 h-2 rounded-full"
-                        :class="entry.changeDesc && entry.changeDesc.includes('사고') ? 'bg-red-500' : (entry.value && entry.value.status ? getStatusBadge(entry.value.status).dot : 'bg-emerald-500')"></div>
+                        :class="entry.changeDesc && entry.changeDesc.includes('사고') ? 'bg-red-500' : (entry.value && entry.value.status ? getStatusBadge(entry.value.status).dot : 'bg-[#34d399]')"></div>
                     </div>
                     <div class="bg-[--bp-surface-3] rounded-lg border border-[--bp-border] p-4 ml-3 hover:bg-[--bp-surface-2] transition-colors">
                       <div class="flex items-start justify-between gap-3">
@@ -2149,7 +2149,7 @@ app.component('passport-detail-page', {
                   </label>
                   <div v-if="vehicleImageFile" class="mt-2 flex items-center gap-2">
                     <span class="text-xs text-[--bp-signal]">{{ vehicleImageFile.name }}</span>
-                    <button type="button" @click="vehicleImageFile = null" class="text-xs text-red-500 hover:text-red-700">삭제</button>
+                    <button type="button" @click="vehicleImageFile = null" class="text-xs text-red-500 hover:text-[--bp-danger]">삭제</button>
                   </div>
                 </div>
                 <div class="flex justify-end gap-3 pt-3 border-t border-[--bp-border]">
@@ -2216,13 +2216,13 @@ app.component('passport-detail-page', {
         <div class="fixed inset-0 bg-black/40 backdrop-blur-sm" @click="showInvalidateModal = false"></div>
         <div class="relative bg-[--bp-surface-2] rounded-2xl shadow-xl border border-[--bp-border] w-full max-w-sm">
           <div class="flex items-center justify-between px-6 py-4 border-b border-[--bp-border]">
-            <h3 class="text-base font-bold text-red-700">BMU 레코드 무효화</h3>
+            <h3 class="text-base font-bold text-[--bp-danger]">BMU 레코드 무효화</h3>
             <button @click="showInvalidateModal = false" class="text-[--bp-text-3] hover:text-[--bp-text-2]">
               <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
             </button>
           </div>
           <form @submit.prevent="submitInvalidate" class="p-6 space-y-4">
-            <div class="bg-[--bp-danger-dim] rounded-lg border border-red-200 p-3">
+            <div class="bg-[--bp-danger-dim] rounded-lg border border-[--bp-border] p-3">
               <p class="text-xs text-red-600">레코드 ID: <span class="font-mono font-bold">{{ invalidateForm.recordId }}</span></p>
               <p class="text-[10px] text-red-500 mt-1">무효화된 레코드는 원본이 보존되지만, 유효하지 않은 것으로 표시됩니다.</p>
             </div>
@@ -2305,7 +2305,7 @@ app.component('passport-detail-page', {
                   <button @click="showMaintenanceRequestModal = false"
                     class="px-4 py-2.5 text-sm font-medium text-[--bp-text-2] bg-[--bp-surface-1] border border-[--bp-border-hover] hover:bg-[--bp-surface-3] rounded-xl transition-colors">취소</button>
                   <button @click="submitMaintenanceRequest" :disabled="submitting"
-                    class="px-5 py-2.5 text-sm font-semibold text-white bg-amber-500 hover:bg-amber-600 rounded-xl transition-colors disabled:opacity-50">
+                    class="px-5 py-2.5 text-sm font-semibold text-white bg-[#fbbf24] hover:bg-amber-600 rounded-xl transition-colors disabled:opacity-50">
                     {{ submitting ? '처리중...' : '정비 요청' }}
                   </button>
                 </div>
@@ -2395,7 +2395,7 @@ app.component('passport-detail-page', {
                     <button v-for="s in [{value:'minor',label:'경미'},{value:'moderate',label:'보통'},{value:'severe',label:'심각'},{value:'critical',label:'위험'}]" :key="s.value"
                       @click="accidentForm.severity = s.value" type="button"
                       :class="['px-3 py-2 rounded-lg text-sm font-medium border transition-all',
-                        accidentForm.severity === s.value ? 'bg-[--bp-danger-dim] text-red-700 border-red-300' : 'bg-[--bp-surface-2] text-[--bp-text-2] border-[--bp-border] hover:bg-[--bp-surface-3]']">
+                        accidentForm.severity === s.value ? 'bg-[--bp-danger-dim] text-[--bp-danger] border-red-300' : 'bg-[--bp-surface-2] text-[--bp-text-2] border-[--bp-border] hover:bg-[--bp-surface-3]']">
                       {{ s.label }}
                     </button>
                   </div>

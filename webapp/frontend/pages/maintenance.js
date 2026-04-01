@@ -29,9 +29,9 @@ app.component('maintenance-page', {
     ];
 
     const severityOptions = [
-      { value: 'minor', label: '경미', bgClass: 'bg-[--bp-signal-dim] text-[--bp-signal] border-emerald-200', dotClass: 'bg-emerald-500' },
-      { value: 'moderate', label: '보통', bgClass: 'bg-[--bp-warn-dim] text-amber-700 border-amber-200', dotClass: 'bg-amber-500' },
-      { value: 'severe', label: '심각', bgClass: 'bg-[--bp-danger-dim] text-red-700 border-red-200', dotClass: 'bg-red-500' },
+      { value: 'minor', label: '경미', bgClass: 'bg-[--bp-signal-dim] text-[--bp-signal] border-[--bp-border-active]', dotClass: 'bg-[#34d399]' },
+      { value: 'moderate', label: '보통', bgClass: 'bg-[--bp-warn-dim] text-amber-700 border-amber-200', dotClass: 'bg-[#fbbf24]' },
+      { value: 'severe', label: '심각', bgClass: 'bg-[--bp-danger-dim] text-[--bp-danger] border-[--bp-border]', dotClass: 'bg-red-500' },
     ];
 
     // Forms
@@ -213,7 +213,7 @@ app.component('maintenance-page', {
           </div>
           <div>
             <div class="flex items-center gap-2">
-              <h1 class="text-xl bp-heading" style="font-family: var(--font-display);">정비 / 서비스</h1>
+              <h1 class="text-xl bp-heading" style="font-family: var(--font-display);" style="font-family: var(--font-display);">정비 / 서비스</h1>
               <span class="bp-badge bp-badge-warn" style="font-family: var(--font-mono);">{{ filteredPassports.length }}</span>
             </div>
             <p class="text-xs" style="color: var(--bp-text-3);">배터리 정비 요청, 완료 기록 및 사고 이력 관리</p>
