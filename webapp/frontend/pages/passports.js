@@ -43,8 +43,6 @@ app.component('passports-page', {
       };
     }
 
-    // Use global scaleSOC from app.js
-
     const statusOptions = [
       { value: '', label: '전체 상태' },
       { value: 'MANUFACTURED', label: '제조완료' },
@@ -96,7 +94,6 @@ app.component('passports-page', {
       return list;
     });
 
-    /* Wizard step fields count for completion gauge */
     const step1Fields = ['passportId','batteryId','did','model','serialNumber','manufacturerName','manufactureCountry','cellManufacturer','cellManufactureCountry','manufactureDate','cellType','chemistry'];
     const step2Fields = ['cellCount','weight','totalEnergy','energyDensity','ratedCapacity','expectedLifespan','voltageRange','temperatureRange','carbonFootprint'];
     const allFields = [...step1Fields, ...step2Fields];
@@ -161,7 +158,7 @@ app.component('passports-page', {
           if (body[k] !== '' && body[k] != null) {
             const n = Number(body[k]);
             if (isNaN(n) || n < 0) {
-              window.$toast('error', `${k} 값이 올바르지 않습니다. 0 이상의 숫자를 입력하세요.`);
+              window.$toast('error', k + ' 값이 올바르지 않습니다.');
               creating.value = false;
               return;
             }
@@ -185,10 +182,8 @@ app.component('passports-page', {
       emit('navigate', 'passport-detail', { passportId });
     }
 
-    // Use global getStatusBadge from app.js
-
     function getSocColor(soc) {
-      if (soc == null) return 'bg-gray-300';
+      if (soc == null) return 'bg-[--bp-surface-4]';
       if (soc >= 60) return 'bg-emerald-500';
       if (soc >= 30) return 'bg-amber-500';
       return 'bg-red-500';
@@ -202,550 +197,294 @@ app.component('passports-page', {
     };
   },
   template: `
-    <div class="space-y-6">
-      <!-- Page Header -->
-      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div class="flex items-center gap-3">
-          <div class="w-10 h-10 bg-emerald-600 rounded-lg flex items-center justify-center">
-            <svg class="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-            </svg>
-          </div>
-          <div>
-            <div class="flex items-center gap-2">
-              <h1 class="text-xl font-bold text-gray-900">배터리 여권</h1>
-              <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-700">
-                {{ filteredPassports.length }}
-              </span>
-            </div>
-            <p class="text-gray-500 text-xs mt-0.5">등록된 배터리 여권을 조회하고 관리합니다</p>
-          </div>
+    <div>
+      <!-- ═══ LOADING ═══ -->
+      <div v-if="loading" class="flex flex-col justify-center items-center py-32">
+        <div class="relative w-14 h-14 mb-4">
+          <div class="absolute inset-0 rounded-full border-2 border-transparent" style="border-top-color: var(--bp-signal); animation: spin 0.8s linear infinite;"></div>
+          <div class="absolute inset-2 rounded-full border-2 border-transparent" style="border-bottom-color: var(--bp-signal); opacity: 0.3; animation: spin 1.2s linear infinite reverse;"></div>
         </div>
-        <button v-if="isManufacturer" @click="openCreateModal"
-          class="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm rounded-lg transition-colors shadow-sm">
-          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
-          </svg>
-          여권 발급
-        </button>
+        <p class="text-sm" style="color: var(--bp-text-3); font-family: var(--font-mono);">LOADING REGISTRY...</p>
       </div>
 
-      <!-- Search / Filter Bar -->
-      <div class="bg-white rounded-lg border border-gray-200 p-3">
-        <div class="flex flex-col sm:flex-row gap-3">
+      <div v-else class="space-y-5">
+
+        <!-- ═══ HEADER ═══ -->
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bp-animate-in">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl flex items-center justify-center" style="background: var(--bp-signal-dim);">
+              <svg class="w-5 h-5" style="color: var(--bp-signal);" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/>
+              </svg>
+            </div>
+            <div>
+              <div class="flex items-center gap-2">
+                <h1 class="text-xl bp-heading" style="font-family: var(--font-display);">배터리 여권</h1>
+                <span class="bp-badge bp-badge-signal" style="font-family: var(--font-mono);">{{ filteredPassports.length }}</span>
+              </div>
+              <p class="text-xs" style="color: var(--bp-text-3);">전체 {{ passports.length }}건 등록</p>
+            </div>
+          </div>
+          <button v-if="isManufacturer" @click="openCreateModal" class="bp-btn bp-btn-primary">
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            여권 발급
+          </button>
+        </div>
+
+        <!-- ═══ FILTER BAR ═══ -->
+        <div class="bp-card p-3 flex flex-col sm:flex-row gap-3 bp-animate-in bp-delay-1">
           <div class="relative flex-1">
             <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <svg class="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+              <svg class="w-4 h-4" style="color: var(--bp-text-3);" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            </div>
+            <input v-model="searchQuery" type="text" placeholder="ID, 시리얼, 모델, 제조사, VIN 검색..." class="bp-input" style="padding-left: 2.25rem; font-size: 0.8125rem;" />
+          </div>
+          <select v-model="filterStatus" class="bp-input" style="width: auto; min-width: 140px; font-size: 0.8125rem;">
+            <option v-for="opt in statusOptions" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
+          </select>
+        </div>
+
+        <!-- ═══ TABLE ═══ -->
+        <div class="bp-card overflow-hidden bp-animate-in bp-delay-2">
+          <div v-if="filteredPassports.length > 0" class="overflow-x-auto">
+            <table class="bp-table">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>시리얼</th>
+                  <th>모델</th>
+                  <th>제조사</th>
+                  <th>상태</th>
+                  <th>SOC</th>
+                  <th>SOH</th>
+                  <th>VIN</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="p in filteredPassports" :key="p.passportId"
+                    @click="viewDetail(p.passportId)" class="cursor-pointer bp-animate-in" :style="'animation-delay: ' + (typeof idx !== 'undefined' ? idx * 0.03 : 0) + 's;'">
+                  <td>
+                    <span class="text-xs font-medium" style="color: var(--bp-signal); font-family: var(--font-mono);">{{ p.passportId ? p.passportId.substring(0, 20) : '-' }}</span>
+                  </td>
+                  <td style="font-family: var(--font-mono); font-size: 0.75rem;">{{ p.serialNumber || '-' }}</td>
+                  <td class="font-medium" style="color: var(--bp-text-1);">{{ p.model || '-' }}</td>
+                  <td>{{ p.manufacturerName || '-' }}</td>
+                  <td>
+                    <span class="inline-flex items-center gap-1.5">
+                      <span class="w-1.5 h-1.5 rounded-full" :style="{
+                        backgroundColor: p.status === 'MANUFACTURED' ? '#60a5fa' :
+                          p.status === 'ACTIVE' ? '#34d399' :
+                          p.status === 'MAINTENANCE' ? '#fbbf24' :
+                          p.status === 'ANALYSIS' ? '#a78bfa' :
+                          p.status === 'RECYCLING' ? '#f97316' : '#64748b'
+                      }"></span>
+                      <span :class="[
+                        'bp-badge',
+                        p.status === 'ACTIVE' ? 'bp-badge-signal' :
+                        p.status === 'MAINTENANCE' ? 'bp-badge-warn' :
+                        p.status === 'ANALYSIS' ? 'bp-badge-purple' :
+                        p.status === 'MANUFACTURED' ? 'bp-badge-info' :
+                        p.status === 'RECYCLING' ? 'bp-badge-warn' : 'bp-badge-muted'
+                      ]">{{ STATUS_LABELS[p.status] || p.status || '-' }}</span>
+                    </span>
+                  </td>
+                  <td>
+                    <div v-if="p.currentSoc != null" class="flex items-center gap-2 min-w-[90px]">
+                      <div class="flex-1 h-1.5 rounded-full overflow-hidden" style="background: var(--bp-surface-4);">
+                        <div :class="['h-full rounded-full transition-all', getSocColor(scaleSOC(p.currentSoc))]"
+                          :style="{ width: Math.min(scaleSOC(p.currentSoc), 100) + '%' }"></div>
+                      </div>
+                      <span class="text-xs tabular-nums font-medium w-8 text-right" style="font-family: var(--font-mono); color: var(--bp-text-2);">{{ scaleSOC(p.currentSoc) }}%</span>
+                    </div>
+                    <span v-else class="text-xs" style="color: var(--bp-text-muted);">—</span>
+                  </td>
+                  <td>
+                    <span v-if="p.currentSoh != null" class="text-xs tabular-nums" style="font-family: var(--font-mono); color: var(--bp-text-2);">{{ p.currentSoh }}%</span>
+                    <span v-else class="text-xs" style="color: var(--bp-text-muted);">—</span>
+                  </td>
+                  <td>
+                    <span v-if="p.vin" class="text-xs" style="font-family: var(--font-mono); color: var(--bp-text-2);">{{ p.vin }}</span>
+                    <span v-else class="text-xs" style="color: var(--bp-text-muted);">—</span>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Empty state -->
+          <div v-else class="py-20 text-center">
+            <div class="w-14 h-14 mx-auto mb-4 rounded-xl flex items-center justify-center" style="background: var(--bp-surface-3);">
+              <svg class="w-7 h-7" style="color: var(--bp-text-muted);" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/>
               </svg>
             </div>
-            <input v-model="searchQuery" type="text" placeholder="여권ID, 시리얼번호, 모델, 제조사, VIN 검색..."
-              class="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none text-sm" />
+            <p class="text-sm font-medium" style="color: var(--bp-text-2);">등록된 여권이 없습니다</p>
+            <p class="text-xs mt-1" style="color: var(--bp-text-muted);">검색 조건을 변경하거나 새 여권을 발급하세요.</p>
           </div>
-          <div class="relative">
-            <select v-model="filterStatus"
-              class="pl-3 pr-8 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none text-sm appearance-none cursor-pointer min-w-[130px]">
-              <option v-for="opt in statusOptions" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
-            </select>
-            <div class="absolute inset-y-0 right-0 pr-2.5 flex items-center pointer-events-none">
-              <svg class="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/>
-              </svg>
+        </div>
+      </div>
+
+      <!-- ═══════════════════════════════════════════════
+           CREATE MODAL — 3-step wizard
+           ═══════════════════════════════════════════════ -->
+      <div v-if="showCreateModal" class="fixed inset-0 z-50 flex items-center justify-center p-4" style="background: rgba(6,9,15,0.8); backdrop-filter: blur(8px);" @click.self="closeCreateModal">
+        <div class="w-full max-w-lg rounded-xl overflow-hidden bp-animate-in" style="background: var(--bp-surface-2); border: 1px solid var(--bp-border); box-shadow: var(--shadow-elevated);">
+
+          <!-- Modal header -->
+          <div class="px-6 py-4 flex items-center justify-between" style="border-bottom: 1px solid var(--bp-border);">
+            <div>
+              <h3 class="text-base font-semibold" style="font-family: var(--font-display); color: var(--bp-text-1);">배터리 여권 발급</h3>
+              <p class="text-xs mt-0.5" style="color: var(--bp-text-3);">단계 {{ createStep }} / 3</p>
+            </div>
+            <button @click="closeCreateModal" class="p-1.5 rounded-lg transition-colors" style="color: var(--bp-text-3);"
+              onmouseenter="this.style.color='var(--bp-danger)';this.style.background='var(--bp-danger-dim)'"
+              onmouseleave="this.style.color='var(--bp-text-3)';this.style.background='transparent'">
+              <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+          </div>
+
+          <!-- Progress bar -->
+          <div class="px-6 pt-4">
+            <div class="flex items-center gap-2 mb-1">
+              <span class="text-[10px] font-medium" style="color: var(--bp-text-3); font-family: var(--font-mono);">COMPLETION</span>
+              <span class="text-[10px] font-bold" style="color: var(--bp-signal); font-family: var(--font-mono);">{{ completionPct }}%</span>
+            </div>
+            <div class="bp-progress">
+              <div class="bp-progress-bar" :style="{ width: completionPct + '%' }"></div>
+            </div>
+            <!-- Step indicators -->
+            <div class="flex items-center mt-3 gap-1">
+              <div v-for="s in 3" :key="s" class="flex-1 h-1 rounded-full transition-all" :style="s <= createStep ? 'background: var(--bp-signal);' : 'background: var(--bp-surface-4);'"></div>
+            </div>
+          </div>
+
+          <!-- Step content -->
+          <div class="px-6 py-5 space-y-3" style="max-height: 400px; overflow-y: auto;">
+
+            <!-- STEP 1: 기본 정보 -->
+            <template v-if="createStep === 1">
+              <div class="grid grid-cols-2 gap-3">
+                <div class="col-span-2">
+                  <label class="block text-[10px] font-semibold uppercase tracking-wider mb-1" style="color: var(--bp-text-3);">DID *</label>
+                  <input v-model="form.did" class="bp-input" placeholder="DID 식별자" />
+                </div>
+                <div>
+                  <label class="block text-[10px] font-semibold uppercase tracking-wider mb-1" style="color: var(--bp-text-3);">모델 *</label>
+                  <input v-model="form.model" class="bp-input" placeholder="모델명" />
+                </div>
+                <div>
+                  <label class="block text-[10px] font-semibold uppercase tracking-wider mb-1" style="color: var(--bp-text-3);">시리얼번호 *</label>
+                  <input v-model="form.serialNumber" class="bp-input" placeholder="SN-001" />
+                </div>
+                <div>
+                  <label class="block text-[10px] font-semibold uppercase tracking-wider mb-1" style="color: var(--bp-text-3);">제조사 *</label>
+                  <input v-model="form.manufacturerName" class="bp-input" placeholder="제조사명" />
+                </div>
+                <div>
+                  <label class="block text-[10px] font-semibold uppercase tracking-wider mb-1" style="color: var(--bp-text-3);">제조국</label>
+                  <input v-model="form.manufactureCountry" class="bp-input" placeholder="KR" />
+                </div>
+                <div>
+                  <label class="block text-[10px] font-semibold uppercase tracking-wider mb-1" style="color: var(--bp-text-3);">셀 제조사</label>
+                  <input v-model="form.cellManufacturer" class="bp-input" placeholder="셀 제조사" />
+                </div>
+                <div>
+                  <label class="block text-[10px] font-semibold uppercase tracking-wider mb-1" style="color: var(--bp-text-3);">셀 제조국</label>
+                  <input v-model="form.cellManufactureCountry" class="bp-input" placeholder="KR" />
+                </div>
+                <div>
+                  <label class="block text-[10px] font-semibold uppercase tracking-wider mb-1" style="color: var(--bp-text-3);">제조일</label>
+                  <input v-model="form.manufactureDate" type="date" class="bp-input" />
+                </div>
+                <div>
+                  <label class="block text-[10px] font-semibold uppercase tracking-wider mb-1" style="color: var(--bp-text-3);">셀 타입</label>
+                  <select v-model="form.cellType" class="bp-input">
+                    <option value="">선택</option>
+                    <option>Prismatic</option><option>Cylindrical</option><option>Pouch</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="block text-[10px] font-semibold uppercase tracking-wider mb-1" style="color: var(--bp-text-3);">화학구성</label>
+                  <input v-model="form.chemistry" class="bp-input" placeholder="NMC811" />
+                </div>
+              </div>
+            </template>
+
+            <!-- STEP 2: 스펙 -->
+            <template v-if="createStep === 2">
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <label class="block text-[10px] font-semibold uppercase tracking-wider mb-1" style="color: var(--bp-text-3);">셀 수</label>
+                  <input v-model="form.cellCount" type="number" class="bp-input" placeholder="96" />
+                </div>
+                <div>
+                  <label class="block text-[10px] font-semibold uppercase tracking-wider mb-1" style="color: var(--bp-text-3);">무게 (kg)</label>
+                  <input v-model="form.weight" type="number" class="bp-input" placeholder="450" />
+                </div>
+                <div>
+                  <label class="block text-[10px] font-semibold uppercase tracking-wider mb-1" style="color: var(--bp-text-3);">총 에너지 (kWh)</label>
+                  <input v-model="form.totalEnergy" type="number" class="bp-input" placeholder="72.6" />
+                </div>
+                <div>
+                  <label class="block text-[10px] font-semibold uppercase tracking-wider mb-1" style="color: var(--bp-text-3);">에너지 밀도</label>
+                  <input v-model="form.energyDensity" type="number" class="bp-input" placeholder="161" />
+                </div>
+                <div>
+                  <label class="block text-[10px] font-semibold uppercase tracking-wider mb-1" style="color: var(--bp-text-3);">정격 용량 (Ah)</label>
+                  <input v-model="form.ratedCapacity" type="number" class="bp-input" placeholder="180" />
+                </div>
+                <div>
+                  <label class="block text-[10px] font-semibold uppercase tracking-wider mb-1" style="color: var(--bp-text-3);">예상 수명 (사이클)</label>
+                  <input v-model="form.expectedLifespan" type="number" class="bp-input" placeholder="3000" />
+                </div>
+                <div>
+                  <label class="block text-[10px] font-semibold uppercase tracking-wider mb-1" style="color: var(--bp-text-3);">전압 범위</label>
+                  <input v-model="form.voltageRange" class="bp-input" placeholder="280-403V" />
+                </div>
+                <div>
+                  <label class="block text-[10px] font-semibold uppercase tracking-wider mb-1" style="color: var(--bp-text-3);">온도 범위</label>
+                  <input v-model="form.temperatureRange" class="bp-input" placeholder="-20~60°C" />
+                </div>
+                <div class="col-span-2">
+                  <label class="block text-[10px] font-semibold uppercase tracking-wider mb-1" style="color: var(--bp-text-3);">탄소 발자국 (kg CO₂)</label>
+                  <input v-model="form.carbonFootprint" type="number" class="bp-input" placeholder="0" />
+                </div>
+              </div>
+            </template>
+
+            <!-- STEP 3: 확인 -->
+            <template v-if="createStep === 3">
+              <div class="rounded-lg p-4 space-y-2" style="background: var(--bp-surface-3); border: 1px solid var(--bp-border);">
+                <div class="flex justify-between text-xs"><span style="color: var(--bp-text-3);">모델</span><span class="font-medium" style="color: var(--bp-text-1);">{{ form.model || '-' }}</span></div>
+                <div class="flex justify-between text-xs"><span style="color: var(--bp-text-3);">시리얼</span><span class="font-medium" style="color: var(--bp-text-1); font-family: var(--font-mono);">{{ form.serialNumber || '-' }}</span></div>
+                <div class="flex justify-between text-xs"><span style="color: var(--bp-text-3);">제조사</span><span class="font-medium" style="color: var(--bp-text-1);">{{ form.manufacturerName || '-' }}</span></div>
+                <div class="flex justify-between text-xs"><span style="color: var(--bp-text-3);">DID</span><span class="font-medium" style="color: var(--bp-signal); font-family: var(--font-mono);">{{ form.did || '-' }}</span></div>
+                <div class="flex justify-between text-xs"><span style="color: var(--bp-text-3);">셀</span><span class="font-medium" style="color: var(--bp-text-1);">{{ form.cellType || '-' }} / {{ form.chemistry || '-' }}</span></div>
+                <div class="flex justify-between text-xs"><span style="color: var(--bp-text-3);">무게 / 에너지</span><span class="font-medium" style="color: var(--bp-text-1);">{{ form.weight || '-' }}kg / {{ form.totalEnergy || '-' }}kWh</span></div>
+              </div>
+            </template>
+          </div>
+
+          <!-- Modal footer -->
+          <div class="px-6 py-4 flex items-center justify-between" style="border-top: 1px solid var(--bp-border);">
+            <button v-if="createStep > 1" @click="prevStep" class="bp-btn bp-btn-ghost">이전</button>
+            <div v-else></div>
+            <div class="flex items-center gap-2">
+              <button @click="closeCreateModal" class="bp-btn bp-btn-ghost">취소</button>
+              <button v-if="createStep < 3" @click="nextStep" class="bp-btn bp-btn-primary">다음</button>
+              <button v-else @click="submitCreate" :disabled="creating" class="bp-btn bp-btn-primary">
+                <span v-if="creating" class="inline-flex items-center">
+                  <svg class="animate-spin -ml-1 mr-1.5 h-3.5 w-3.5" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+                  생성 중...
+                </span>
+                <span v-else>여권 생성</span>
+              </button>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- Loading -->
-      <div v-if="loading" class="flex flex-col items-center justify-center py-20">
-        <div class="relative">
-          <div class="w-10 h-10 border-4 border-emerald-100 rounded-full"></div>
-          <div class="absolute top-0 left-0 w-10 h-10 border-4 border-emerald-600 rounded-full animate-spin border-t-transparent"></div>
-        </div>
-        <p class="mt-3 text-sm text-gray-500">데이터를 불러오는 중...</p>
-      </div>
-
-      <!-- Table -->
-      <div v-else-if="filteredPassports.length > 0" class="bg-white rounded-lg border border-gray-200 overflow-hidden">
-        <div class="overflow-x-auto">
-          <table class="w-full text-sm">
-            <thead>
-              <tr class="bg-gray-50 border-b border-gray-200">
-                <th class="text-left px-4 py-3 font-semibold text-gray-500 text-xs uppercase tracking-wider">여권 ID</th>
-                <th class="text-left px-4 py-3 font-semibold text-gray-500 text-xs uppercase tracking-wider">시리얼번호</th>
-                <th class="text-left px-4 py-3 font-semibold text-gray-500 text-xs uppercase tracking-wider">모델</th>
-                <th class="text-left px-4 py-3 font-semibold text-gray-500 text-xs uppercase tracking-wider">제조사</th>
-                <th class="text-left px-4 py-3 font-semibold text-gray-500 text-xs uppercase tracking-wider">상태</th>
-                <th class="text-left px-4 py-3 font-semibold text-gray-500 text-xs uppercase tracking-wider">SOC</th>
-                <th class="text-left px-4 py-3 font-semibold text-gray-500 text-xs uppercase tracking-wider">SOH</th>
-                <th class="text-left px-4 py-3 font-semibold text-gray-500 text-xs uppercase tracking-wider">VIN</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="(p, idx) in filteredPassports" :key="p.passportId"
-                @click="viewDetail(p.passportId)"
-                :class="[
-                  'cursor-pointer transition-colors duration-100 group',
-                  idx % 2 === 0 ? 'bg-white' : 'bg-gray-50/50',
-                  'hover:bg-emerald-50/60'
-                ]">
-                <td class="px-4 py-3">
-                  <span class="font-mono text-xs text-emerald-600 group-hover:text-emerald-700 font-medium">{{ p.passportId }}</span>
-                </td>
-                <td class="px-4 py-3">
-                  <span class="font-medium text-gray-900">{{ p.serialNumber || '-' }}</span>
-                </td>
-                <td class="px-4 py-3 text-gray-600">{{ p.model || '-' }}</td>
-                <td class="px-4 py-3 text-gray-600">{{ p.manufacturerName || '-' }}</td>
-                <td class="px-4 py-3">
-                  <span :class="[
-                    'inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-semibold border',
-                    getStatusBadge(p.status).bg,
-                    getStatusBadge(p.status).text,
-                    getStatusBadge(p.status).border
-                  ]">
-                    <span :class="['w-1.5 h-1.5 rounded-full', getStatusBadge(p.status).dot]"></span>
-                    {{ getStatusBadge(p.status).label }}
-                  </span>
-                </td>
-                <td class="px-4 py-3">
-                  <div v-if="p.currentSoc != null" class="flex items-center gap-2 min-w-[100px]">
-                    <div class="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                      <div :class="['h-full rounded-full transition-all', getSocColor(scaleSOC(p.currentSoc))]"
-                        :style="{ width: Math.min(scaleSOC(p.currentSoc), 100) + '%' }"></div>
-                    </div>
-                    <span class="text-xs font-semibold text-gray-700 w-10 text-right tabular-nums">{{ scaleSOC(p.currentSoc) }}%</span>
-                  </div>
-                  <span v-else class="text-gray-300">--</span>
-                </td>
-                <td class="px-4 py-3">
-                  <span v-if="p.currentSoh != null" class="text-sm font-medium text-gray-700 tabular-nums">{{ p.currentSoh }}%</span>
-                  <span v-else class="text-gray-300">--</span>
-                </td>
-                <td class="px-4 py-3">
-                  <span v-if="p.vin" class="font-mono text-xs text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded">{{ p.vin }}</span>
-                  <span v-else class="text-xs text-gray-400 italic">미바인딩</span>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-        <div class="border-t border-gray-100 bg-gray-50/50 px-4 py-2.5 flex items-center justify-between">
-          <span class="text-xs text-gray-500">
-            총 <strong class="text-gray-700">{{ filteredPassports.length }}</strong>건
-          </span>
-          <span class="text-xs text-gray-400">행 클릭 시 상세 보기</span>
-        </div>
-      </div>
-
-      <!-- Empty State -->
-      <div v-else class="bg-white rounded-lg border border-gray-200 py-16 px-8 text-center">
-        <div class="mx-auto w-16 h-16 bg-gray-100 rounded-xl flex items-center justify-center mb-4">
-          <svg class="w-8 h-8 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-          </svg>
-        </div>
-        <h3 class="text-base font-semibold text-gray-700 mb-1">등록된 배터리 여권이 없습니다</h3>
-        <p class="text-sm text-gray-400 mb-5">검색 조건을 변경하거나 새 배터리 여권을 발급하세요.</p>
-        <button v-if="isManufacturer" @click="openCreateModal"
-          class="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-sm rounded-lg transition-colors">
-          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
-          </svg>
-          첫 여권 발급하기
-        </button>
-      </div>
-
-      <!-- ========== Create Modal — 3-Step Wizard ========== -->
-      <teleport to="body">
-        <transition name="fade">
-          <div v-if="showCreateModal" class="fixed inset-0 z-50 flex items-start justify-center pt-8 sm:pt-12 overflow-y-auto">
-            <div class="fixed inset-0 bg-gray-900/60 backdrop-blur-sm" @click="closeCreateModal"></div>
-            <div class="relative bg-white rounded-xl shadow-2xl w-full max-w-3xl mx-4 mb-8 border border-gray-200 overflow-hidden">
-              <!-- Modal Header -->
-              <div class="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between z-10">
-                <div class="flex items-center gap-3">
-                  <div class="w-8 h-8 bg-emerald-100 rounded-lg flex items-center justify-center">
-                    <svg class="w-4 h-4 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                      <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
-                    </svg>
-                  </div>
-                  <h2 class="text-lg font-bold text-gray-900">배터리 여권 발급</h2>
-                </div>
-                <button @click="closeCreateModal" class="w-8 h-8 rounded-lg hover:bg-gray-100 flex items-center justify-center transition-colors text-gray-400 hover:text-gray-600">
-                  <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
-                  </svg>
-                </button>
-              </div>
-
-              <!-- Step Indicator -->
-              <div class="px-6 py-5 bg-gray-50 border-b border-gray-100">
-                <div class="flex items-center justify-center">
-                  <!-- Step 1 -->
-                  <div class="flex items-center">
-                    <div class="flex flex-col items-center">
-                      <div :class="[
-                        'w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold border-2 transition-all',
-                        createStep > 1 ? 'bg-emerald-600 border-emerald-600 text-white' :
-                        createStep === 1 ? 'bg-white border-emerald-600 text-emerald-600' :
-                        'bg-white border-gray-300 text-gray-400'
-                      ]">
-                        <svg v-if="createStep > 1" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
-                          <polyline points="20 6 9 17 4 12"/>
-                        </svg>
-                        <span v-else>1</span>
-                      </div>
-                      <span class="text-xs font-medium mt-1.5" :class="createStep >= 1 ? 'text-emerald-700' : 'text-gray-400'">기본 정보</span>
-                    </div>
-                  </div>
-                  <!-- Line 1-2 -->
-                  <div class="w-20 sm:w-28 h-0.5 mx-2 mt-[-18px]" :class="createStep > 1 ? 'bg-emerald-500' : 'bg-gray-300'"></div>
-                  <!-- Step 2 -->
-                  <div class="flex items-center">
-                    <div class="flex flex-col items-center">
-                      <div :class="[
-                        'w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold border-2 transition-all',
-                        createStep > 2 ? 'bg-emerald-600 border-emerald-600 text-white' :
-                        createStep === 2 ? 'bg-white border-emerald-600 text-emerald-600' :
-                        'bg-white border-gray-300 text-gray-400'
-                      ]">
-                        <svg v-if="createStep > 2" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
-                          <polyline points="20 6 9 17 4 12"/>
-                        </svg>
-                        <span v-else>2</span>
-                      </div>
-                      <span class="text-xs font-medium mt-1.5" :class="createStep >= 2 ? 'text-emerald-700' : 'text-gray-400'">기술 사양</span>
-                    </div>
-                  </div>
-                  <!-- Line 2-3 -->
-                  <div class="w-20 sm:w-28 h-0.5 mx-2 mt-[-18px]" :class="createStep > 2 ? 'bg-emerald-500' : 'bg-gray-300'"></div>
-                  <!-- Step 3 -->
-                  <div class="flex items-center">
-                    <div class="flex flex-col items-center">
-                      <div :class="[
-                        'w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold border-2 transition-all',
-                        createStep === 3 ? 'bg-white border-emerald-600 text-emerald-600' :
-                        'bg-white border-gray-300 text-gray-400'
-                      ]">
-                        <span>3</span>
-                      </div>
-                      <span class="text-xs font-medium mt-1.5" :class="createStep >= 3 ? 'text-emerald-700' : 'text-gray-400'">확인 및 생성</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Step 1: 기본 정보 -->
-              <div v-if="createStep === 1" class="p-6 space-y-5">
-                <div class="flex items-center gap-2 mb-1">
-                  <svg class="w-4 h-4 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                  </svg>
-                  <h3 class="text-sm font-bold text-gray-800 tracking-wider">기본 정보</h3>
-                </div>
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label class="block text-xs font-medium text-gray-500 mb-1">여권 ID (자동생성)</label>
-                    <input v-model="form.passportId" type="text" readonly
-                      class="w-full px-3 py-2 border border-gray-200 rounded-lg bg-gray-50 text-sm text-gray-400 font-mono" />
-                  </div>
-                  <div>
-                    <label class="block text-xs font-medium text-gray-500 mb-1">배터리 ID (자동생성)</label>
-                    <input v-model="form.batteryId" type="text" readonly
-                      class="w-full px-3 py-2 border border-gray-200 rounded-lg bg-gray-50 text-sm text-gray-400 font-mono" />
-                  </div>
-                  <div>
-                    <label class="block text-xs font-medium text-gray-500 mb-1">DID <span class="text-red-500">*</span></label>
-                    <input v-model="form.did" type="text" placeholder="did:example:..."
-                      class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none text-sm" />
-                  </div>
-                  <div>
-                    <label class="block text-xs font-medium text-gray-500 mb-1">모델 <span class="text-red-500">*</span></label>
-                    <input v-model="form.model" type="text" placeholder="배터리 모델명"
-                      class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none text-sm" />
-                  </div>
-                  <div class="sm:col-span-2">
-                    <label class="block text-xs font-medium text-gray-500 mb-1">시리얼번호 <span class="text-red-500">*</span></label>
-                    <input v-model="form.serialNumber" type="text" placeholder="SN-XXXXX"
-                      class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none text-sm" />
-                  </div>
-                  <div>
-                    <label class="block text-xs font-medium text-gray-500 mb-1">제조사명 <span class="text-red-500">*</span></label>
-                    <input v-model="form.manufacturerName" type="text" placeholder="제조사명"
-                      class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none text-sm" />
-                  </div>
-                  <div>
-                    <label class="block text-xs font-medium text-gray-500 mb-1">제조국가</label>
-                    <input v-model="form.manufactureCountry" type="text" placeholder="KR"
-                      class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none text-sm" />
-                  </div>
-                  <div>
-                    <label class="block text-xs font-medium text-gray-500 mb-1">셀 제조사</label>
-                    <input v-model="form.cellManufacturer" type="text" placeholder="Samsung SDI"
-                      class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none text-sm" />
-                  </div>
-                  <div>
-                    <label class="block text-xs font-medium text-gray-500 mb-1">셀 제조국가</label>
-                    <input v-model="form.cellManufactureCountry" type="text" placeholder="KR"
-                      class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none text-sm" />
-                  </div>
-                  <div>
-                    <label class="block text-xs font-medium text-gray-500 mb-1">제조일자</label>
-                    <input v-model="form.manufactureDate" type="date"
-                      class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none text-sm" />
-                  </div>
-                  <div>
-                    <label class="block text-xs font-medium text-gray-500 mb-1">셀 유형</label>
-                    <select v-model="form.cellType"
-                      class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none text-sm bg-white appearance-none cursor-pointer">
-                      <option value="">선택하세요</option>
-                      <option value="Prismatic">Prismatic (각형)</option>
-                      <option value="Pouch">Pouch (파우치)</option>
-                      <option value="Cylindrical">Cylindrical (원통형)</option>
-                    </select>
-                  </div>
-                  <div class="sm:col-span-2">
-                    <label class="block text-xs font-medium text-gray-500 mb-1">화학물질</label>
-                    <input v-model="form.chemistry" type="text" placeholder="NMC811 / LFP / NCA"
-                      class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none text-sm" />
-                  </div>
-                </div>
-                <!-- Actions -->
-                <div class="flex justify-end gap-3 pt-4 border-t border-gray-200">
-                  <button type="button" @click="closeCreateModal"
-                    class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 rounded-lg transition-colors">
-                    취소
-                  </button>
-                  <button type="button" @click="nextStep"
-                    class="px-5 py-2 text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg transition-colors shadow-sm">
-                    다음
-                    <svg class="w-4 h-4 inline ml-1 -mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                      <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
-                    </svg>
-                  </button>
-                </div>
-              </div>
-
-              <!-- Step 2: 기술 사양 -->
-              <div v-if="createStep === 2" class="p-6 space-y-5">
-                <div class="flex items-center gap-2 mb-1">
-                  <svg class="w-4 h-4 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z"/>
-                  </svg>
-                  <h3 class="text-sm font-bold text-gray-800 tracking-wider">기술 사양</h3>
-                </div>
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                  <div>
-                    <label class="block text-xs font-medium text-gray-500 mb-1">셀 수</label>
-                    <input v-model="form.cellCount" type="number" min="1" step="1" placeholder="96"
-                      class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none text-sm" />
-                  </div>
-                  <div>
-                    <label class="block text-xs font-medium text-gray-500 mb-1">무게 (kg)</label>
-                    <input v-model="form.weight" type="number" min="0" step="0.1" placeholder="450"
-                      class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none text-sm" />
-                  </div>
-                  <div>
-                    <label class="block text-xs font-medium text-gray-500 mb-1">총 에너지 (kWh)</label>
-                    <input v-model="form.totalEnergy" type="number" min="0" step="0.1" placeholder="77.4"
-                      class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none text-sm" />
-                  </div>
-                  <div>
-                    <label class="block text-xs font-medium text-gray-500 mb-1">에너지 밀도 (Wh/kg)</label>
-                    <input v-model="form.energyDensity" type="number" min="0" step="0.1" placeholder="172"
-                      class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none text-sm" />
-                  </div>
-                  <div>
-                    <label class="block text-xs font-medium text-gray-500 mb-1">정격 용량 (Ah)</label>
-                    <input v-model="form.ratedCapacity" type="number" min="0" step="0.1" placeholder="200"
-                      class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none text-sm" />
-                  </div>
-                  <div>
-                    <label class="block text-xs font-medium text-gray-500 mb-1">예상 수명 (cycles)</label>
-                    <input v-model="form.expectedLifespan" type="number" min="0" placeholder="3000"
-                      class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none text-sm" />
-                  </div>
-                  <div>
-                    <label class="block text-xs font-medium text-gray-500 mb-1">전압 범위 (V)</label>
-                    <input v-model="form.voltageRange" type="text" placeholder="280~350~403"
-                      class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none text-sm" />
-                  </div>
-                  <div>
-                    <label class="block text-xs font-medium text-gray-500 mb-1">온도 범위</label>
-                    <div class="flex items-center gap-2">
-                      <input v-model="form.temperatureRange" type="text" placeholder="-20~60"
-                        class="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none text-sm" />
-                      <span class="text-sm font-medium text-gray-500 shrink-0">&deg;C</span>
-                    </div>
-                  </div>
-                  <div>
-                    <label class="block text-xs font-medium text-gray-500 mb-1">탄소 발자국 (kg CO₂e)</label>
-                    <div class="flex items-center gap-2">
-                      <input v-model="form.carbonFootprint" type="number" min="0" step="0.1" placeholder="0.0"
-                        class="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none text-sm" />
-                      <span class="text-sm font-medium text-gray-500 shrink-0">kg CO₂e</span>
-                    </div>
-                  </div>
-                </div>
-                <!-- Actions -->
-                <div class="flex justify-between pt-4 border-t border-gray-200">
-                  <button type="button" @click="prevStep"
-                    class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 rounded-lg transition-colors">
-                    <svg class="w-4 h-4 inline mr-1 -mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                      <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
-                    </svg>
-                    이전
-                  </button>
-                  <button type="button" @click="nextStep"
-                    class="px-5 py-2 text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg transition-colors shadow-sm">
-                    다음
-                    <svg class="w-4 h-4 inline ml-1 -mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                      <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
-                    </svg>
-                  </button>
-                </div>
-              </div>
-
-              <!-- Step 3: 확인 및 생성 -->
-              <div v-if="createStep === 3" class="p-6 space-y-6">
-                <div class="flex items-center gap-2 mb-1">
-                  <svg class="w-4 h-4 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                  </svg>
-                  <h3 class="text-sm font-bold text-gray-800 uppercase tracking-wider">Verify &amp; Create</h3>
-                </div>
-
-                <!-- Completion Gauge -->
-                <div class="flex flex-col items-center py-4">
-                  <svg viewBox="0 0 200 200" class="w-40 h-40">
-                    <circle cx="100" cy="100" r="80" fill="none" stroke="#e5e7eb" stroke-width="10"/>
-                    <circle cx="100" cy="100" r="80" fill="none"
-                      stroke="#059669" stroke-width="10" stroke-linecap="round"
-                      :stroke-dasharray="2 * Math.PI * 80"
-                      :stroke-dashoffset="2 * Math.PI * 80 * (1 - completionPct / 100)"
-                      transform="rotate(-90 100 100)"
-                      style="transition: stroke-dashoffset 0.6s ease;"/>
-                    <text x="100" y="90" text-anchor="middle" dominant-baseline="middle" fill="#6b7280" font-size="14" font-weight="500">Completion</text>
-                    <text x="100" y="118" text-anchor="middle" dominant-baseline="middle" fill="#111827" font-size="32" font-weight="700">{{ completionPct }}%</text>
-                  </svg>
-                </div>
-
-                <!-- Key Specs Summary -->
-                <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 bg-gray-50 rounded-xl p-5">
-                  <div class="text-center">
-                    <p class="text-xs text-gray-400 uppercase tracking-wider mb-1">Weight</p>
-                    <p class="text-xl font-bold text-gray-900">{{ form.weight || '--' }}<span class="text-sm font-normal text-gray-400 ml-0.5">kg</span></p>
-                  </div>
-                  <div class="text-center">
-                    <p class="text-xs text-gray-400 uppercase tracking-wider mb-1">Capacity</p>
-                    <p class="text-xl font-bold text-gray-900">{{ form.ratedCapacity || '--' }}<span class="text-sm font-normal text-gray-400 ml-0.5">Ah</span></p>
-                  </div>
-                  <div class="text-center">
-                    <p class="text-xs text-gray-400 uppercase tracking-wider mb-1">Total Energy</p>
-                    <p class="text-xl font-bold text-gray-900">{{ form.totalEnergy || '--' }}<span class="text-sm font-normal text-gray-400 ml-0.5">kWh</span></p>
-                  </div>
-                  <div class="text-center">
-                    <p class="text-xs text-gray-400 uppercase tracking-wider mb-1">Cells</p>
-                    <p class="text-xl font-bold text-gray-900">{{ form.cellCount || '--' }}</p>
-                  </div>
-                </div>
-
-                <!-- Review Grid -->
-                <div class="bg-white border border-gray-200 rounded-xl overflow-hidden">
-                  <div class="px-4 py-3 bg-gray-50 border-b border-gray-200">
-                    <h4 class="text-xs font-bold text-gray-500 uppercase tracking-wider">입력 데이터 확인</h4>
-                  </div>
-                  <div class="p-4 grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3 text-sm">
-                    <div class="flex justify-between py-1 border-b border-gray-50">
-                      <span class="text-gray-400">모델</span>
-                      <span class="text-gray-900 font-medium">{{ form.model || '-' }}</span>
-                    </div>
-                    <div class="flex justify-between py-1 border-b border-gray-50">
-                      <span class="text-gray-400">시리얼번호</span>
-                      <span class="text-gray-900 font-medium">{{ form.serialNumber || '-' }}</span>
-                    </div>
-                    <div class="flex justify-between py-1 border-b border-gray-50">
-                      <span class="text-gray-400">제조사</span>
-                      <span class="text-gray-900 font-medium">{{ form.manufacturerName || '-' }}</span>
-                    </div>
-                    <div class="flex justify-between py-1 border-b border-gray-50">
-                      <span class="text-gray-400">제조국가</span>
-                      <span class="text-gray-900 font-medium">{{ form.manufactureCountry || '-' }}</span>
-                    </div>
-                    <div class="flex justify-between py-1 border-b border-gray-50">
-                      <span class="text-gray-400">셀 제조사</span>
-                      <span class="text-gray-900 font-medium">{{ form.cellManufacturer || '-' }}</span>
-                    </div>
-                    <div class="flex justify-between py-1 border-b border-gray-50">
-                      <span class="text-gray-400">셀 유형</span>
-                      <span class="text-gray-900 font-medium">{{ form.cellType || '-' }}</span>
-                    </div>
-                    <div class="flex justify-between py-1 border-b border-gray-50">
-                      <span class="text-gray-400">화학물질</span>
-                      <span class="text-gray-900 font-medium">{{ form.chemistry || '-' }}</span>
-                    </div>
-                    <div class="flex justify-between py-1 border-b border-gray-50">
-                      <span class="text-gray-400">에너지 밀도</span>
-                      <span class="text-gray-900 font-medium">{{ form.energyDensity ? form.energyDensity + ' Wh/kg' : '-' }}</span>
-                    </div>
-                    <div class="flex justify-between py-1 border-b border-gray-50">
-                      <span class="text-gray-400">전압 범위</span>
-                      <span class="text-gray-900 font-medium">{{ form.voltageRange ? form.voltageRange + ' V' : '-' }}</span>
-                    </div>
-                    <div class="flex justify-between py-1 border-b border-gray-50">
-                      <span class="text-gray-400">온도 범위</span>
-                      <span class="text-gray-900 font-medium">{{ form.temperatureRange ? form.temperatureRange + ' C' : '-' }}</span>
-                    </div>
-                    <div class="flex justify-between py-1 border-b border-gray-50">
-                      <span class="text-gray-400">예상 수명</span>
-                      <span class="text-gray-900 font-medium">{{ form.expectedLifespan ? form.expectedLifespan + ' cycles (약 ' + Math.round(form.expectedLifespan / 365) + '년)' : '-' }}</span>
-                    </div>
-                    <div class="flex justify-between py-1 border-b border-gray-50">
-                      <span class="text-gray-400">탄소 발자국</span>
-                      <span class="text-gray-900 font-medium">{{ form.carbonFootprint ? form.carbonFootprint + ' kg CO₂e' : '-' }}</span>
-                    </div>
-                    <div class="flex justify-between py-1 border-b border-gray-50">
-                      <span class="text-gray-400">DID</span>
-                      <span class="text-gray-900 font-medium font-mono text-xs">{{ form.did || '-' }}</span>
-                    </div>
-                  </div>
-                </div>
-
-                <!-- Actions -->
-                <div class="flex justify-between pt-4 border-t border-gray-200">
-                  <button type="button" @click="prevStep"
-                    class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 rounded-lg transition-colors">
-                    <svg class="w-4 h-4 inline mr-1 -mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                      <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
-                    </svg>
-                    이전
-                  </button>
-                  <div class="flex gap-3">
-                    <button type="button" @click="closeCreateModal"
-                      class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 rounded-lg transition-colors">
-                      취소
-                    </button>
-                    <button type="button" @click="submitCreate" :disabled="creating"
-                      :class="['px-5 py-2 text-sm font-semibold text-white rounded-lg transition-all',
-                        creating ? 'bg-emerald-400 cursor-not-allowed' : 'bg-emerald-600 hover:bg-emerald-700 shadow-sm']">
-                      <span v-if="creating" class="flex items-center gap-2">
-                        <svg class="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
-                          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
-                        </svg>
-                        생성 중...
-                      </span>
-                      <span v-else>여권 생성</span>
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-            </div>
-          </div>
-        </transition>
-      </teleport>
+      <style>@keyframes spin { to { transform: rotate(360deg); } }</style>
     </div>
   `
 });

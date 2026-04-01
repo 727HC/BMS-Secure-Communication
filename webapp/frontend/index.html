@@ -8,36 +8,420 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
   <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+  <!-- Typography: DM Sans for body precision, Plus Jakarta Sans for display weight -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Plus+Jakarta+Sans:wght@600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   <style>
+    /* ═══════════════════════════════════════════════════════
+       BATTERY PASSPORT DESIGN SYSTEM
+       Aesthetic: Industrial Precision Control
+       ═══════════════════════════════════════════════════════ */
+
+    :root {
+      /* ── Surface Palette ── */
+      --bp-void:        #06090f;
+      --bp-surface-1:   #0c1117;
+      --bp-surface-2:   #111820;
+      --bp-surface-3:   #171f29;
+      --bp-surface-4:   #1e2733;
+      --bp-border:      rgba(148, 163, 184, 0.08);
+      --bp-border-hover:rgba(148, 163, 184, 0.15);
+      --bp-border-active:rgba(52, 211, 153, 0.25);
+
+      /* ── Signal Colors ── */
+      --bp-signal:      #34d399;
+      --bp-signal-dim:  rgba(52, 211, 153, 0.15);
+      --bp-signal-glow: rgba(52, 211, 153, 0.06);
+      --bp-warn:        #fbbf24;
+      --bp-warn-dim:    rgba(251, 191, 36, 0.15);
+      --bp-danger:      #f87171;
+      --bp-danger-dim:  rgba(248, 113, 113, 0.15);
+      --bp-info:        #60a5fa;
+      --bp-info-dim:    rgba(96, 165, 250, 0.15);
+      --bp-purple:      #a78bfa;
+      --bp-purple-dim:  rgba(167, 139, 250, 0.15);
+
+      /* ── Text ── */
+      --bp-text-1:      #f1f5f9;
+      --bp-text-2:      #94a3b8;
+      --bp-text-3:      #475569;
+      --bp-text-muted:  #334155;
+
+      /* ── Typography ── */
+      --font-display:   'Plus Jakarta Sans', sans-serif;
+      --font-body:      'DM Sans', sans-serif;
+      --font-mono:      'JetBrains Mono', monospace;
+
+      /* ── Spacing Scale ── */
+      --space-xs:   0.25rem;
+      --space-sm:   0.5rem;
+      --space-md:   1rem;
+      --space-lg:   1.5rem;
+      --space-xl:   2rem;
+      --space-2xl:  3rem;
+
+      /* ── Radii ── */
+      --radius-sm:  0.375rem;
+      --radius-md:  0.625rem;
+      --radius-lg:  0.875rem;
+      --radius-xl:  1.125rem;
+      --radius-full:9999px;
+
+      /* ── Shadows ── */
+      --shadow-card:    0 1px 3px rgba(0,0,0,0.4), 0 0 0 1px var(--bp-border);
+      --shadow-elevated:0 4px 24px rgba(0,0,0,0.5), 0 0 0 1px var(--bp-border);
+      --shadow-glow:    0 0 20px var(--bp-signal-glow), 0 0 60px rgba(52,211,153,0.03);
+    }
+
+    /* ── Base Reset ── */
+    * { box-sizing: border-box; }
     [v-cloak] { display: none; }
-    .fade-enter-active, .fade-leave-active { transition: opacity 0.2s; }
+
+    body {
+      font-family: var(--font-body);
+      background: var(--bp-void);
+      color: var(--bp-text-1);
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    /* ── Transitions ── */
+    .fade-enter-active, .fade-leave-active { transition: opacity 0.25s ease; }
     .fade-enter-from, .fade-leave-to { opacity: 0; }
 
-    /* Sidebar scrollbar */
-    .sidebar-scroll::-webkit-scrollbar { width: 4px; }
+    /* ── Scrollbars ── */
+    .sidebar-scroll::-webkit-scrollbar { width: 3px; }
     .sidebar-scroll::-webkit-scrollbar-track { background: transparent; }
-    .sidebar-scroll::-webkit-scrollbar-thumb { background: rgba(148,163,184,0.25); border-radius: 2px; }
-    .sidebar-scroll::-webkit-scrollbar-thumb:hover { background: rgba(148,163,184,0.4); }
+    .sidebar-scroll::-webkit-scrollbar-thumb { background: rgba(52,211,153,0.15); border-radius: 3px; }
+    .sidebar-scroll::-webkit-scrollbar-thumb:hover { background: rgba(52,211,153,0.3); }
 
-    /* Mobile overlay backdrop */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: var(--bp-surface-1); }
+    ::-webkit-scrollbar-thumb { background: var(--bp-surface-4); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--bp-text-3); }
+
+    /* ── Mobile Overlay ── */
     .sidebar-overlay {
-      background: rgba(0,0,0,0.5);
-      backdrop-filter: blur(2px);
+      background: rgba(6,9,15,0.75);
+      backdrop-filter: blur(8px);
+    }
+
+    /* ═══════ COMPONENT STYLES ═══════ */
+
+    /* ── Cards ── */
+    .bp-card {
+      background: var(--bp-surface-2);
+      border: 1px solid var(--bp-border);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-card);
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+    .bp-card:hover {
+      border-color: var(--bp-border-hover);
+    }
+    .bp-card-glow {
+      background: var(--bp-surface-2);
+      border: 1px solid var(--bp-border);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-card);
+      position: relative;
+    }
+    .bp-card-glow::before {
+      content: '';
+      position: absolute;
+      inset: -1px;
+      border-radius: inherit;
+      background: linear-gradient(135deg, rgba(52,211,153,0.1), transparent 60%);
+      z-index: -1;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+    .bp-card-glow:hover::before { opacity: 1; }
+
+    /* ── Buttons ── */
+    .bp-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      padding: 0.5rem 1rem;
+      font-family: var(--font-body);
+      font-size: 0.8125rem;
+      font-weight: 500;
+      border-radius: var(--radius-md);
+      transition: all 0.15s ease;
+      cursor: pointer;
+      border: none;
+      outline: none;
+    }
+    .bp-btn-primary {
+      background: linear-gradient(135deg, #10b981, #059669);
+      color: white;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.1);
+    }
+    .bp-btn-primary:hover {
+      background: linear-gradient(135deg, #059669, #047857);
+      box-shadow: 0 2px 8px rgba(16,185,129,0.25), inset 0 1px 0 rgba(255,255,255,0.1);
+      transform: translateY(-1px);
+    }
+    .bp-btn-primary:active { transform: translateY(0); }
+    .bp-btn-ghost {
+      background: transparent;
+      color: var(--bp-text-2);
+      border: 1px solid var(--bp-border);
+    }
+    .bp-btn-ghost:hover {
+      background: var(--bp-surface-3);
+      border-color: var(--bp-border-hover);
+      color: var(--bp-text-1);
+    }
+    .bp-btn-danger {
+      background: var(--bp-danger-dim);
+      color: var(--bp-danger);
+      border: 1px solid rgba(248,113,113,0.2);
+    }
+    .bp-btn-danger:hover {
+      background: rgba(248,113,113,0.2);
+    }
+
+    /* ── Inputs ── */
+    .bp-input {
+      width: 100%;
+      padding: 0.625rem 0.875rem;
+      background: var(--bp-surface-1);
+      border: 1px solid var(--bp-border);
+      border-radius: var(--radius-md);
+      color: var(--bp-text-1);
+      font-family: var(--font-body);
+      font-size: 0.875rem;
+      outline: none;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+    .bp-input::placeholder { color: var(--bp-text-3); }
+    .bp-input:focus {
+      border-color: var(--bp-border-active);
+      box-shadow: 0 0 0 3px var(--bp-signal-dim);
+    }
+    .bp-input-icon {
+      padding-left: 2.5rem;
+    }
+    select.bp-input {
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%23475569' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 0.75rem center;
+      padding-right: 2.25rem;
+    }
+    select.bp-input option { background: var(--bp-surface-2); color: var(--bp-text-1); }
+
+    /* ── Tables ── */
+    .bp-table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+      font-size: 0.8125rem;
+    }
+    .bp-table thead th {
+      padding: 0.625rem 1rem;
+      text-align: left;
+      font-weight: 600;
+      font-size: 0.6875rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--bp-text-3);
+      border-bottom: 1px solid var(--bp-border);
+      white-space: nowrap;
+    }
+    .bp-table tbody td {
+      padding: 0.75rem 1rem;
+      border-bottom: 1px solid var(--bp-border);
+      color: var(--bp-text-2);
+    }
+    .bp-table tbody tr {
+      transition: background 0.1s ease;
+    }
+    .bp-table tbody tr:hover {
+      background: var(--bp-surface-3);
+    }
+
+    /* ── Badges ── */
+    .bp-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+      padding: 0.125rem 0.5rem;
+      border-radius: var(--radius-full);
+      font-size: 0.6875rem;
+      font-weight: 600;
+      letter-spacing: 0.01em;
+    }
+    .bp-badge-signal { background: var(--bp-signal-dim); color: var(--bp-signal); }
+    .bp-badge-warn   { background: var(--bp-warn-dim); color: var(--bp-warn); }
+    .bp-badge-danger  { background: var(--bp-danger-dim); color: var(--bp-danger); }
+    .bp-badge-info    { background: var(--bp-info-dim); color: var(--bp-info); }
+    .bp-badge-purple  { background: var(--bp-purple-dim); color: var(--bp-purple); }
+    .bp-badge-muted   { background: var(--bp-surface-4); color: var(--bp-text-2); }
+
+    /* ── Stat Cards ── */
+    .bp-stat {
+      position: relative;
+      overflow: hidden;
+    }
+    .bp-stat::after {
+      content: '';
+      position: absolute;
+      top: 0; right: 0;
+      width: 120px; height: 120px;
+      background: radial-gradient(circle at top right, var(--bp-signal-glow), transparent 70%);
+      pointer-events: none;
+    }
+    .bp-stat-value {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 1.75rem;
+      line-height: 1;
+      color: var(--bp-text-1);
+      letter-spacing: -0.02em;
+    }
+    .bp-stat-label {
+      font-size: 0.75rem;
+      font-weight: 500;
+      color: var(--bp-text-3);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    /* ── Tab Navigation ── */
+    .bp-tabs {
+      display: flex;
+      gap: 0.125rem;
+      padding: 0.25rem;
+      background: var(--bp-surface-1);
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--bp-border);
+    }
+    .bp-tab {
+      flex: 1;
+      padding: 0.5rem 0.75rem;
+      font-size: 0.8125rem;
+      font-weight: 500;
+      color: var(--bp-text-3);
+      border-radius: var(--radius-md);
+      transition: all 0.15s ease;
+      cursor: pointer;
+      text-align: center;
+      border: none;
+      background: none;
+    }
+    .bp-tab:hover { color: var(--bp-text-2); background: var(--bp-surface-3); }
+    .bp-tab-active {
+      background: var(--bp-surface-3) !important;
+      color: var(--bp-signal) !important;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+    }
+
+    /* ── Progress Bars ── */
+    .bp-progress {
+      height: 6px;
+      background: var(--bp-surface-1);
+      border-radius: 3px;
+      overflow: hidden;
+    }
+    .bp-progress-bar {
+      height: 100%;
+      border-radius: 3px;
+      background: linear-gradient(90deg, var(--bp-signal), #6ee7b7);
+      transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    /* ── Display Typography ── */
+    .bp-heading {
+      font-family: var(--font-display);
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: var(--bp-text-1);
+    }
+    .bp-mono {
+      font-family: var(--font-mono);
+      font-size: 0.8125rem;
+      letter-spacing: -0.01em;
+    }
+
+    /* ── Glow Dot (status indicator) ── */
+    .bp-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      position: relative;
+    }
+    .bp-dot::before {
+      content: '';
+      position: absolute;
+      inset: -3px;
+      border-radius: 50%;
+      animation: bp-pulse 2s ease-in-out infinite;
+    }
+    .bp-dot-signal { background: var(--bp-signal); }
+    .bp-dot-signal::before { background: var(--bp-signal-dim); }
+    .bp-dot-warn { background: var(--bp-warn); }
+    .bp-dot-warn::before { background: var(--bp-warn-dim); }
+    .bp-dot-danger { background: var(--bp-danger); }
+    .bp-dot-danger::before { background: var(--bp-danger-dim); }
+
+    @keyframes bp-pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(1.5); }
+    }
+
+    /* ── Utility Animations ── */
+    @keyframes bp-fadeUp {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .bp-animate-in {
+      animation: bp-fadeUp 0.35s ease-out both;
+    }
+    .bp-delay-1 { animation-delay: 0.05s; }
+    .bp-delay-2 { animation-delay: 0.1s; }
+    .bp-delay-3 { animation-delay: 0.15s; }
+    .bp-delay-4 { animation-delay: 0.2s; }
+
+    /* ── Noise Texture Overlay ── */
+    .bp-noise::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      opacity: 0.015;
+      pointer-events: none;
+      z-index: 9999;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
     }
   </style>
   <script>
     tailwind.config = {
       theme: {
+        fontFamily: {
+          sans: ['DM Sans', 'sans-serif'],
+          display: ['Plus Jakarta Sans', 'sans-serif'],
+          mono: ['JetBrains Mono', 'monospace'],
+        },
         extend: {
           colors: {
             primary: { 50:'#ecfdf5',100:'#d1fae5',200:'#a7f3d0',300:'#6ee7b7',400:'#34d399',500:'#10b981',600:'#059669',700:'#047857',800:'#065f46',900:'#064e3b' },
+            bp: {
+              void: '#06090f',
+              s1: '#0c1117',
+              s2: '#111820',
+              s3: '#171f29',
+              s4: '#1e2733',
+            }
           }
         }
       }
     }
   </script>
 </head>
-<body class="bg-gray-50 min-h-screen">
+<body class="min-h-screen bp-noise" style="background: var(--bp-void);">
   <div id="app" v-cloak>
 
     <!-- ===== LOGIN: Full-screen, no sidebar ===== -->
@@ -63,14 +447,14 @@
 
         <!-- ===== SIDEBAR ===== -->
         <aside :class="[
-          'fixed inset-y-0 left-0 z-50 w-60 bg-white border-r border-gray-200 flex flex-col transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:z-auto',
+          'fixed inset-y-0 left-0 z-50 w-60 flex flex-col transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:z-auto',
           mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
-        ]">
+        ]" style="background: var(--bp-surface-1); border-right: 1px solid var(--bp-border);">
 
           <!-- Logo Area -->
-          <div class="flex items-center px-5 h-16 flex-shrink-0 border-b border-gray-200">
+          <div class="flex items-center px-5 h-16 flex-shrink-0" style="border-bottom: 1px solid var(--bp-border);">
             <div class="flex items-center space-x-3 cursor-pointer" @click="navigate('dashboard')">
-              <div class="w-8 h-8 bg-emerald-600 rounded-lg flex items-center justify-center flex-shrink-0">
+              <div class="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style="background: linear-gradient(135deg, #10b981, #059669);">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <rect x="6" y="2" width="12" height="20" rx="2" ry="2"/>
                   <line x1="6" y1="6" x2="18" y2="6"/>
@@ -80,8 +464,8 @@
                 </svg>
               </div>
               <div class="min-w-0">
-                <div class="text-slate-800 font-semibold text-sm leading-tight truncate">Battery Passport</div>
-                <div class="text-slate-400 text-xs leading-tight">GBA 21 Platform</div>
+                <div class="font-semibold text-sm leading-tight truncate" style="color: var(--bp-text-1); font-family: var(--font-display);">Battery Passport</div>
+                <div class="text-xs leading-tight" style="color: var(--bp-text-3);">GBA 21 Platform</div>
               </div>
             </div>
           </div>
@@ -91,7 +475,7 @@
             <template v-for="(group, gi) in groupedNavItems" :key="gi">
               <!-- Section label -->
               <div v-if="group.section" class="px-3 pt-4 pb-1.5 first:pt-0">
-                <span class="text-[10px] font-semibold uppercase tracking-wider text-slate-400">{{ group.section }}</span>
+                <span class="text-[10px] font-semibold uppercase tracking-wider" style="color: var(--bp-text-3); letter-spacing: 0.08em;">{{ group.section }}</span>
               </div>
 
               <!-- Nav items -->
@@ -100,18 +484,24 @@
                 :class="[
                   'group w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-150',
                   currentPage === item.route
-                    ? 'bg-emerald-50 text-emerald-700 border-l-2 border-emerald-600 pl-[10px]'
-                    : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900 border-l-2 border-transparent pl-[10px]'
-                ]">
+                    ? 'pl-[10px]'
+                    : 'pl-[10px]'
+                ]"
+                :style="currentPage === item.route
+                  ? 'background: var(--bp-signal-dim); color: var(--bp-signal); border-left: 2px solid var(--bp-signal);'
+                  : 'color: var(--bp-text-2); border-left: 2px solid transparent;'"
+                @mouseenter="$event.target.style.background = currentPage !== item.route ? 'var(--bp-surface-3)' : 'var(--bp-signal-dim)'"
+                @mouseleave="$event.target.style.background = currentPage !== item.route ? 'transparent' : 'var(--bp-signal-dim)'"
+                >
                 <!-- Dashboard icon -->
-                <svg v-if="item.icon === 'dashboard'" class="w-[18px] h-[18px] flex-shrink-0" :class="currentPage === item.route ? 'text-emerald-600' : 'text-gray-400 group-hover:text-gray-600'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                <svg v-if="item.icon === 'dashboard'" class="w-[18px] h-[18px] flex-shrink-0" :style="currentPage === item.route ? 'color: var(--bp-signal);' : 'color: var(--bp-text-3);'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
                   <rect x="3" y="3" width="7" height="7" rx="1"/>
                   <rect x="14" y="3" width="7" height="7" rx="1"/>
                   <rect x="3" y="14" width="7" height="7" rx="1"/>
                   <rect x="14" y="14" width="7" height="7" rx="1"/>
                 </svg>
                 <!-- Passport icon -->
-                <svg v-else-if="item.icon === 'passport'" class="w-[18px] h-[18px] flex-shrink-0" :class="currentPage === item.route ? 'text-emerald-600' : 'text-gray-400 group-hover:text-gray-600'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                <svg v-else-if="item.icon === 'passport'" class="w-[18px] h-[18px] flex-shrink-0" :style="currentPage === item.route ? 'color: var(--bp-signal);' : 'color: var(--bp-text-3);'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
                   <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
                   <polyline points="14 2 14 8 20 8"/>
                   <line x1="16" y1="13" x2="8" y2="13"/>
@@ -119,20 +509,20 @@
                   <polyline points="10 9 9 9 8 9"/>
                 </svg>
                 <!-- Chain / traceability icon -->
-                <svg v-else-if="item.icon === 'chain'" class="w-[18px] h-[18px] flex-shrink-0" :class="currentPage === item.route ? 'text-emerald-600' : 'text-gray-400 group-hover:text-gray-600'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                <svg v-else-if="item.icon === 'chain'" class="w-[18px] h-[18px] flex-shrink-0" :style="currentPage === item.route ? 'color: var(--bp-signal);' : 'color: var(--bp-text-3);'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
                   <path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/>
                   <path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/>
                 </svg>
                 <!-- Pulse / data icon -->
-                <svg v-else-if="item.icon === 'pulse'" class="w-[18px] h-[18px] flex-shrink-0" :class="currentPage === item.route ? 'text-emerald-600' : 'text-gray-400 group-hover:text-gray-600'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                <svg v-else-if="item.icon === 'pulse'" class="w-[18px] h-[18px] flex-shrink-0" :style="currentPage === item.route ? 'color: var(--bp-signal);' : 'color: var(--bp-text-3);'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
                   <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
                 </svg>
                 <!-- Wrench / service icon -->
-                <svg v-else-if="item.icon === 'wrench'" class="w-[18px] h-[18px] flex-shrink-0" :class="currentPage === item.route ? 'text-emerald-600' : 'text-gray-400 group-hover:text-gray-600'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                <svg v-else-if="item.icon === 'wrench'" class="w-[18px] h-[18px] flex-shrink-0" :style="currentPage === item.route ? 'color: var(--bp-signal);' : 'color: var(--bp-text-3);'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
                   <path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/>
                 </svg>
                 <!-- Recycle icon -->
-                <svg v-else-if="item.icon === 'recycle'" class="w-[18px] h-[18px] flex-shrink-0" :class="currentPage === item.route ? 'text-emerald-600' : 'text-gray-400 group-hover:text-gray-600'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                <svg v-else-if="item.icon === 'recycle'" class="w-[18px] h-[18px] flex-shrink-0" :style="currentPage === item.route ? 'color: var(--bp-signal);' : 'color: var(--bp-text-3);'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
                   <polyline points="7 2 12 7 7 12"/>
                   <path d="M12 7H3a1 1 0 00-1 1v4"/>
                   <polyline points="17 22 12 17 17 12"/>
@@ -141,11 +531,11 @@
                   <polyline points="22 7 17 12"/>
                 </svg>
                 <!-- Audit icon -->
-                <svg v-else-if="item.icon === 'audit'" class="w-[18px] h-[18px] flex-shrink-0" :class="currentPage === item.route ? 'text-emerald-600' : 'text-gray-400 group-hover:text-gray-600'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                <svg v-else-if="item.icon === 'audit'" class="w-[18px] h-[18px] flex-shrink-0" :style="currentPage === item.route ? 'color: var(--bp-signal);' : 'color: var(--bp-text-3);'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
                   <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/>
                 </svg>
                 <!-- QR icon -->
-                <svg v-else-if="item.icon === 'qr'" class="w-[18px] h-[18px] flex-shrink-0" :class="currentPage === item.route ? 'text-emerald-600' : 'text-gray-400 group-hover:text-gray-600'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                <svg v-else-if="item.icon === 'qr'" class="w-[18px] h-[18px] flex-shrink-0" :style="currentPage === item.route ? 'color: var(--bp-signal);' : 'color: var(--bp-text-3);'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
                   <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>
                   <line x1="14" y1="14" x2="14" y2="14.01"/><line x1="21" y1="14" x2="21" y2="14.01"/><line x1="14" y1="21" x2="14" y2="21.01"/><line x1="21" y1="21" x2="21" y2="21.01"/><line x1="17.5" y1="17.5" x2="17.5" y2="17.51"/>
                 </svg>
@@ -159,22 +549,21 @@
           </nav>
 
           <!-- User section at bottom -->
-          <div class="flex-shrink-0 border-t border-gray-200 p-4">
+          <div class="flex-shrink-0 p-4" style="border-top: 1px solid var(--bp-border);">
             <div class="flex items-center space-x-3">
-              <!-- Avatar -->
               <div :class="['w-9 h-9 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0', orgAvatarColor]">
                 {{ userInitials }}
               </div>
-              <!-- Info -->
               <div class="min-w-0 flex-1">
-                <div class="text-sm font-medium text-slate-800 truncate">{{ auth.userId }}</div>
-                <span :class="['inline-block mt-0.5 px-1.5 py-0.5 rounded text-[10px] font-semibold border', orgBadgeClasses]">
+                <div class="text-sm font-medium truncate" style="color: var(--bp-text-1);">{{ auth.userId }}</div>
+                <span class="inline-block mt-0.5 px-1.5 py-0.5 rounded text-[10px] font-semibold bp-badge-signal">
                   {{ orgLabel }}
                 </span>
               </div>
-              <!-- Logout -->
               <button @click="logout" title="로그아웃"
-                class="p-1.5 rounded-lg text-gray-400 hover:text-red-500 hover:bg-gray-100 transition-colors flex-shrink-0">
+                class="p-1.5 rounded-lg transition-colors flex-shrink-0" style="color: var(--bp-text-3);"
+                onmouseenter="this.style.color='var(--bp-danger)';this.style.background='var(--bp-danger-dim)'"
+                onmouseleave="this.style.color='var(--bp-text-3)';this.style.background='transparent'">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/>
                   <polyline points="16 17 21 12 16 7"/>
@@ -189,49 +578,34 @@
         <div class="flex-1 flex flex-col min-w-0 overflow-hidden">
 
           <!-- Top Bar -->
-          <header class="h-14 bg-white border-b border-gray-200 flex items-center justify-between px-4 lg:px-6 flex-shrink-0">
-            <!-- Left: hamburger (mobile) + page title -->
+          <header class="h-14 flex items-center justify-between px-4 lg:px-6 flex-shrink-0" style="background: var(--bp-surface-1); border-bottom: 1px solid var(--bp-border);">
             <div class="flex items-center space-x-3">
-              <!-- Mobile hamburger -->
               <button @click="mobileMenuOpen = !mobileMenuOpen"
-                class="lg:hidden p-1.5 -ml-1.5 rounded-lg text-gray-500 hover:text-gray-700 hover:bg-gray-100 transition-colors">
+                class="lg:hidden p-1.5 -ml-1.5 rounded-lg transition-colors" style="color: var(--bp-text-2);">
                 <svg v-if="!mobileMenuOpen" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <line x1="3" y1="6" x2="21" y2="6"/>
-                  <line x1="3" y1="12" x2="21" y2="12"/>
-                  <line x1="3" y1="18" x2="21" y2="18"/>
+                  <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
                 </svg>
                 <svg v-else width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <line x1="18" y1="6" x2="6" y2="18"/>
-                  <line x1="6" y1="6" x2="18" y2="18"/>
+                  <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
                 </svg>
               </button>
-              <!-- Breadcrumb -->
               <nav class="flex items-center space-x-1.5 text-sm">
-                <span class="text-gray-400 hidden sm:inline">Battery Passport</span>
-                <svg class="w-3.5 h-3.5 text-gray-300 hidden sm:block" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <span class="hidden sm:inline" style="color: var(--bp-text-3);">Battery Passport</span>
+                <svg class="w-3.5 h-3.5 hidden sm:block" style="color: var(--bp-text-muted);" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <polyline points="9 18 15 12 9 6"/>
                 </svg>
-                <span class="text-gray-900 font-semibold">{{ currentPageTitle }}</span>
+                <span class="font-semibold" style="color: var(--bp-text-1); font-family: var(--font-display);">{{ currentPageTitle }}</span>
               </nav>
             </div>
-
-            <!-- Right: connection status -->
             <div class="flex items-center space-x-2">
-              <div :class="['flex items-center space-x-1.5 px-2.5 py-1 rounded-full border',
-                fabricStatus === 'connected' ? 'bg-emerald-50 border-emerald-200' :
-                fabricStatus === 'checking' ? 'bg-amber-50 border-amber-200' :
-                'bg-red-50 border-red-200']">
-                <span class="relative flex h-2 w-2">
-                  <span v-if="fabricStatus === 'connected'" class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                  <span :class="['relative inline-flex rounded-full h-2 w-2',
-                    fabricStatus === 'connected' ? 'bg-emerald-500' :
-                    fabricStatus === 'checking' ? 'bg-amber-500' :
-                    'bg-red-500']"></span>
-                </span>
-                <span :class="['text-xs font-medium hidden sm:inline',
-                  fabricStatus === 'connected' ? 'text-emerald-700' :
-                  fabricStatus === 'checking' ? 'text-amber-700' :
-                  'text-red-700']">
+              <div class="flex items-center space-x-1.5 px-2.5 py-1 rounded-full"
+                :style="fabricStatus === 'connected' ? 'background: var(--bp-signal-dim); border: 1px solid rgba(52,211,153,0.2);' :
+                  fabricStatus === 'checking' ? 'background: var(--bp-warn-dim); border: 1px solid rgba(251,191,36,0.2);' :
+                  'background: var(--bp-danger-dim); border: 1px solid rgba(248,113,113,0.2);'">
+                <span class="bp-dot" :class="fabricStatus === 'connected' ? 'bp-dot-signal' : fabricStatus === 'checking' ? 'bp-dot-warn' : 'bp-dot-danger'"></span>
+                <span class="text-xs font-medium hidden sm:inline"
+                  :style="fabricStatus === 'connected' ? 'color: var(--bp-signal);' :
+                    fabricStatus === 'checking' ? 'color: var(--bp-warn);' : 'color: var(--bp-danger);'">
                   {{ fabricStatus === 'connected' ? 'Fabric 연결됨' : fabricStatus === 'checking' ? '확인 중...' : 'Fabric 연결 끊김' }}
                 </span>
               </div>
@@ -239,7 +613,7 @@
           </header>
 
           <!-- Content Area -->
-          <main class="flex-1 overflow-y-auto">
+          <main class="flex-1 overflow-y-auto" style="background: var(--bp-void);">
             <div class="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
               <component :is="currentPageComponent"
                 :auth="auth"
@@ -256,8 +630,10 @@
     <!-- Toast Notifications -->
     <div class="fixed top-4 right-4 z-[100] space-y-2">
       <div v-for="(toast, i) in toasts" :key="i"
-        :class="['px-4 py-3 rounded-lg shadow-lg text-white text-sm transition-all flex items-center space-x-2',
-          toast.type === 'error' ? 'bg-red-500' : toast.type === 'success' ? 'bg-emerald-500' : 'bg-emerald-600']">
+        class="px-4 py-3 rounded-lg text-sm transition-all flex items-center space-x-2 backdrop-blur-xl"
+        :style="toast.type === 'error'
+          ? 'background: var(--bp-danger-dim); color: var(--bp-danger); border: 1px solid rgba(248,113,113,0.3); box-shadow: var(--shadow-elevated);'
+          : 'background: var(--bp-signal-dim); color: var(--bp-signal); border: 1px solid rgba(52,211,153,0.3); box-shadow: var(--shadow-elevated);'">
         <svg v-if="toast.type === 'success'" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
           <polyline points="20 6 9 17 4 12"/>
         </svg>

@@ -115,302 +115,272 @@ app.component('materials-page', {
     };
   },
   template: `
-  <div class="space-y-6">
-    <!-- Page Header -->
-    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-      <div class="flex items-center gap-3">
-        <div class="w-10 h-10 bg-emerald-600 rounded-lg flex items-center justify-center">
-          <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
-          </svg>
-        </div>
-        <div>
-          <h1 class="text-xl font-bold text-gray-900">원자재 관리</h1>
-          <p class="text-gray-500 text-xs mt-0.5">배터리 원자재 등록 및 공급망 이력 추적</p>
-        </div>
-      </div>
-      <button v-if="isManufacturer" @click="openModal"
-        class="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-emerald-600 rounded-lg hover:bg-emerald-700 transition-colors shadow-sm">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
-        </svg>
-        원자재 등록
-      </button>
-    </div>
+  <div style="display:flex;flex-direction:column;gap:24px;">
 
-    <!-- Search Bar -->
-    <div class="bg-white rounded-lg border border-gray-200 p-3">
-      <div class="relative">
-        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-          <svg class="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-          </svg>
-        </div>
-        <input v-model="searchQuery" type="text" placeholder="자재ID, 명칭, 원산지, 공급업체, 인증번호 검색..."
-          class="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none text-sm" />
-      </div>
-    </div>
-
-    <!-- Loading State -->
-    <div v-if="loading" class="flex flex-col items-center justify-center py-20">
-      <div class="relative">
-        <div class="w-10 h-10 rounded-full border-[3px] border-gray-200"></div>
-        <div class="absolute inset-0 w-10 h-10 rounded-full border-[3px] border-emerald-600 border-t-transparent animate-spin"></div>
-      </div>
-      <p class="mt-3 text-sm text-gray-500">원자재 목록을 불러오고 있습니다...</p>
-    </div>
-
-    <!-- Empty State -->
-    <div v-else-if="filteredMaterials.length === 0" class="bg-white rounded-lg border border-gray-200 overflow-hidden">
-      <div class="flex flex-col items-center justify-center py-16 px-6">
-        <div class="w-16 h-16 rounded-xl bg-emerald-50 flex items-center justify-center mb-4">
-          <svg class="w-8 h-8 text-emerald-400" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+    <!-- ====== PAGE HEADER ====== -->
+    <div class="bp-animate-in" style="display:flex;align-items:center;justify-content:space-between;">
+      <div style="display:flex;align-items:center;gap:14px;">
+        <div style="width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,var(--bp-signal),#059669);display:flex;align-items:center;justify-content:center;">
+          <svg width="22" height="22" fill="none" stroke="#fff" stroke-width="2" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
           </svg>
         </div>
-        <h3 class="text-base font-semibold text-gray-800 mb-1">등록된 원자재가 없습니다</h3>
-        <p class="text-sm text-gray-500 text-center max-w-md">원자재를 등록하여 공급망을 투명하게 추적하세요.</p>
-        <button v-if="isManufacturer" @click="openModal"
-          class="mt-4 inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-emerald-600 rounded-lg hover:bg-emerald-700 transition-colors">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
-          </svg>
-          첫 원자재 등록하기
+        <div>
+          <h1 class="bp-heading" style="font-family:var(--font-display);font-size:1.35rem;color:var(--bp-text-1);margin:0;">원자재 관리</h1>
+          <p style="font-family:var(--font-body);font-size:0.72rem;color:var(--bp-text-3);margin-top:2px;">배터리 원자재 등록 및 공급망 이력 추적</p>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <span class="bp-badge-signal" style="font-family:var(--font-mono);font-size:0.7rem;padding:3px 10px;border-radius:20px;">
+          {{ filteredMaterials.length }}건
+        </span>
+        <button v-if="isManufacturer" @click="openModal" class="bp-btn bp-btn-primary" style="display:inline-flex;align-items:center;gap:6px;font-size:0.82rem;">
+          <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
+          원자재 등록
         </button>
       </div>
     </div>
 
-    <!-- Materials Table -->
-    <div v-else class="bg-white rounded-lg border border-gray-200 overflow-hidden">
-      <div class="px-4 py-3 border-b border-gray-100 bg-gray-50/80 flex items-center justify-between">
-        <div class="flex items-center gap-2">
-          <svg class="w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 10h16M4 14h16M4 18h16"/>
-          </svg>
-          <span class="text-sm font-semibold text-gray-700">원자재 목록</span>
-          <span class="text-xs font-medium text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">{{ filteredMaterials.length }}건</span>
-        </div>
+    <!-- ====== SEARCH BAR ====== -->
+    <div class="bp-card bp-animate-in bp-delay-1" style="padding:12px 16px;">
+      <div style="position:relative;">
+        <svg style="position:absolute;left:12px;top:50%;transform:translateY(-50%);pointer-events:none;" width="16" height="16" fill="none" stroke="var(--bp-text-3)" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+        </svg>
+        <input v-model="searchQuery" type="text" placeholder="자재ID, 명칭, 원산지, 공급업체, 인증번호 검색..."
+          class="bp-input" style="width:100%;padding-left:38px;font-family:var(--font-body);font-size:0.85rem;" />
       </div>
-      <div class="overflow-x-auto">
-        <table class="min-w-full text-sm">
+    </div>
+
+    <!-- ====== LOADING STATE ====== -->
+    <div v-if="loading" class="bp-card bp-animate-in bp-delay-2" style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:72px 0;">
+      <div style="position:relative;width:40px;height:40px;">
+        <div style="position:absolute;inset:0;border-radius:50%;border:3px solid var(--bp-surface-3);"></div>
+        <div style="position:absolute;inset:0;border-radius:50%;border:3px solid var(--bp-signal);border-top-color:transparent;animation:spin 0.8s linear infinite;"></div>
+      </div>
+      <p style="margin-top:14px;font-size:0.85rem;color:var(--bp-text-3);font-family:var(--font-body);">원자재 목록을 불러오고 있습니다...</p>
+    </div>
+
+    <!-- ====== EMPTY STATE ====== -->
+    <div v-else-if="filteredMaterials.length === 0" class="bp-card bp-animate-in bp-delay-2" style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:64px 24px;">
+      <div style="width:64px;height:64px;border-radius:16px;background:var(--bp-surface-3);display:flex;align-items:center;justify-content:center;margin-bottom:16px;">
+        <svg width="32" height="32" fill="none" stroke="var(--bp-text-3)" stroke-width="1.5" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+        </svg>
+      </div>
+      <h3 style="font-family:var(--font-display);font-size:1rem;color:var(--bp-text-1);margin:0 0 4px;">등록된 원자재가 없습니다</h3>
+      <p style="font-size:0.82rem;color:var(--bp-text-3);text-align:center;max-width:320px;font-family:var(--font-body);">원자재를 등록하여 공급망을 투명하게 추적하세요.</p>
+      <button v-if="isManufacturer" @click="openModal" class="bp-btn bp-btn-primary" style="margin-top:16px;display:inline-flex;align-items:center;gap:6px;font-size:0.82rem;">
+        <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
+        첫 원자재 등록하기
+      </button>
+    </div>
+
+    <!-- ====== MATERIALS TABLE ====== -->
+    <div v-else class="bp-card bp-card-glow bp-animate-in bp-delay-2" style="overflow:hidden;">
+      <!-- Table header strip -->
+      <div style="padding:12px 20px;border-bottom:1px solid var(--bp-surface-3);background:var(--bp-surface-1);display:flex;align-items:center;justify-content:space-between;">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span class="bp-dot-signal" style="width:8px;height:8px;"></span>
+          <span style="font-family:var(--font-display);font-size:0.82rem;font-weight:600;color:var(--bp-text-2);">원자재 목록</span>
+        </div>
+        <span class="bp-badge-signal" style="font-family:var(--font-mono);font-size:0.68rem;padding:2px 10px;border-radius:20px;">
+          {{ filteredMaterials.length }}건
+        </span>
+      </div>
+      <div style="overflow-x:auto;">
+        <table class="bp-table" style="width:100%;">
           <thead>
-            <tr class="bg-gray-50 border-b border-gray-100">
-              <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">자재ID</th>
-              <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">명칭</th>
-              <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">원산지</th>
-              <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">공급업체</th>
-              <th class="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">수량</th>
-              <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">단위</th>
-              <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">인증번호</th>
-              <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">등록일</th>
+            <tr>
+              <th>ID</th>
+              <th>이름</th>
+              <th>원산지</th>
+              <th>공급사</th>
+              <th style="text-align:right;">수량</th>
+              <th>단위</th>
+              <th>인증ID</th>
+              <th>등록일</th>
             </tr>
           </thead>
-          <tbody class="divide-y divide-gray-100">
+          <tbody>
             <tr v-for="(m, idx) in filteredMaterials" :key="m.materialId"
-              @click="openDetail(m)"
-              :class="['transition-colors hover:bg-emerald-50/50 cursor-pointer', idx % 2 === 0 ? 'bg-white' : 'bg-gray-50/40']">
-              <td class="px-4 py-3 whitespace-nowrap">
-                <span class="font-mono text-xs text-slate-500">{{ m.materialId }}</span>
-              </td>
-              <td class="px-4 py-3 whitespace-nowrap text-sm font-semibold text-gray-900">{{ m.name }}</td>
-              <td class="px-4 py-3 whitespace-nowrap">
-                <div class="flex items-center">
-                  <svg class="w-3.5 h-3.5 text-gray-400 mr-1.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              @click="openDetail(m)" style="cursor:pointer;">
+              <td><span class="bp-mono" style="font-size:0.75rem;color:var(--bp-text-3);">{{ m.materialId }}</span></td>
+              <td style="font-weight:600;color:var(--bp-text-1);">{{ m.name }}</td>
+              <td>
+                <span style="display:inline-flex;align-items:center;gap:4px;color:var(--bp-text-2);">
+                  <svg width="13" height="13" fill="none" stroke="var(--bp-text-3)" stroke-width="2" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
                     <path stroke-linecap="round" stroke-linejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
                   </svg>
-                  <span class="text-sm text-gray-600">{{ m.origin }}</span>
-                </div>
+                  {{ m.origin }}
+                </span>
               </td>
-              <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600">{{ m.supplier }}</td>
-              <td class="px-4 py-3 whitespace-nowrap text-sm text-right font-medium text-gray-900 tabular-nums">{{ m.quantity }}</td>
-              <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500">{{ m.unit }}</td>
-              <td class="px-4 py-3 whitespace-nowrap">
-                <span v-if="m.certificationId" class="inline-flex items-center text-xs font-mono text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
-                  <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <td style="color:var(--bp-text-2);">{{ m.supplier }}</td>
+              <td style="text-align:right;font-variant-numeric:tabular-nums;font-weight:500;color:var(--bp-text-1);">{{ m.quantity }}</td>
+              <td style="color:var(--bp-text-3);">{{ m.unit }}</td>
+              <td>
+                <span v-if="m.certificationId" class="bp-badge-signal" style="font-family:var(--font-mono);font-size:0.7rem;display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:6px;">
+                  <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
                   </svg>
                   {{ m.certificationId }}
                 </span>
-                <span v-else class="text-xs text-gray-400">-</span>
+                <span v-else style="color:var(--bp-text-3);font-size:0.8rem;">-</span>
               </td>
-              <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500">{{ formatDate(m.createdAt) }}</td>
+              <td style="color:var(--bp-text-3);font-size:0.8rem;">{{ formatDate(m.createdAt) }}</td>
             </tr>
           </tbody>
         </table>
       </div>
     </div>
 
-    <!-- Registration Modal -->
-    <div v-if="showModal" class="fixed inset-0 z-50 overflow-y-auto">
-      <div class="flex items-center justify-center min-h-screen px-4 py-8">
-        <div class="fixed inset-0 bg-gray-900/60 backdrop-blur-sm" @click="closeModal"></div>
-        <div class="relative bg-white rounded-xl shadow-2xl max-w-lg w-full z-10 overflow-hidden">
-          <!-- Modal Header -->
-          <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
-            <div class="flex items-center gap-3">
-              <div class="w-8 h-8 rounded-lg bg-emerald-100 flex items-center justify-center">
-                <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
-                </svg>
-              </div>
-              <h3 class="text-lg font-bold text-gray-900">원자재 등록</h3>
+    <!-- ====== REGISTRATION MODAL ====== -->
+    <div v-if="showModal" style="position:fixed;inset:0;z-index:50;display:flex;align-items:center;justify-content:center;padding:16px;">
+      <div style="position:fixed;inset:0;background:rgba(0,0,0,0.65);backdrop-filter:blur(6px);" @click="closeModal"></div>
+      <div class="bp-card bp-card-glow bp-animate-in" style="position:relative;z-index:1;max-width:520px;width:100%;overflow:hidden;">
+        <!-- Modal Header -->
+        <div style="padding:18px 24px;border-bottom:1px solid var(--bp-surface-3);display:flex;align-items:center;justify-content:space-between;">
+          <div style="display:flex;align-items:center;gap:12px;">
+            <div style="width:34px;height:34px;border-radius:10px;background:var(--bp-surface-3);display:flex;align-items:center;justify-content:center;">
+              <svg width="16" height="16" fill="none" stroke="var(--bp-signal)" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
             </div>
-            <button @click="closeModal" class="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
-              <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
-              </svg>
-            </button>
+            <h3 style="font-family:var(--font-display);font-size:1.1rem;font-weight:700;color:var(--bp-text-1);margin:0;">원자재 등록</h3>
           </div>
-          <!-- Modal Body -->
-          <div class="px-6 py-5 space-y-4">
+          <button @click="closeModal" class="bp-btn bp-btn-ghost" style="padding:6px;">
+            <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+          </button>
+        </div>
+        <!-- Modal Body -->
+        <div style="padding:20px 24px;display:flex;flex-direction:column;gap:16px;">
+          <div>
+            <label style="display:block;font-family:var(--font-body);font-size:0.7rem;font-weight:600;color:var(--bp-text-3);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px;">자재 ID (자동생성)</label>
+            <input v-model="form.materialId" type="text" readonly class="bp-input" style="width:100%;font-family:var(--font-mono);color:var(--bp-text-3);background:var(--bp-surface-1);" />
+          </div>
+          <div>
+            <label style="display:block;font-family:var(--font-body);font-size:0.82rem;font-weight:600;color:var(--bp-text-2);margin-bottom:6px;">명칭 <span style="color:var(--bp-danger);">*</span></label>
+            <input v-model="form.name" type="text" placeholder="예: 리튬, 코발트, 니켈" class="bp-input" style="width:100%;" />
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
             <div>
-              <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">자재 ID (자동생성)</label>
-              <input v-model="form.materialId" type="text" readonly
-                class="w-full px-3 py-2 border border-gray-200 rounded-lg bg-gray-50 text-sm text-gray-500 font-mono"/>
-            </div>
-            <div>
-              <label class="block text-sm font-semibold text-gray-700 mb-1">명칭 <span class="text-red-500">*</span></label>
-              <input v-model="form.name" type="text" placeholder="예: 리튬, 코발트, 니켈"
-                class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none placeholder-gray-400"/>
-            </div>
-            <div class="grid grid-cols-2 gap-4">
-              <div>
-                <label class="block text-sm font-semibold text-gray-700 mb-1">원산지 <span class="text-red-500">*</span></label>
-                <input v-model="form.origin" type="text" placeholder="예: 호주"
-                  class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none placeholder-gray-400"/>
-              </div>
-              <div>
-                <label class="block text-sm font-semibold text-gray-700 mb-1">공급업체 <span class="text-red-500">*</span></label>
-                <input v-model="form.supplier" type="text" placeholder="예: ABC Mining"
-                  class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none placeholder-gray-400"/>
-              </div>
-            </div>
-            <div class="grid grid-cols-2 gap-4">
-              <div>
-                <label class="block text-sm font-semibold text-gray-700 mb-1">수량 <span class="text-red-500">*</span></label>
-                <input v-model="form.quantity" type="number" min="0" step="0.01" placeholder="0"
-                  class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none placeholder-gray-400 tabular-nums"/>
-              </div>
-              <div>
-                <label class="block text-sm font-semibold text-gray-700 mb-1">단위</label>
-                <select v-model="form.unit"
-                  class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none bg-white">
-                  <option value="kg">kg</option>
-                  <option value="g">g</option>
-                  <option value="ton">ton</option>
-                  <option value="lb">lb</option>
-                </select>
-              </div>
+              <label style="display:block;font-family:var(--font-body);font-size:0.82rem;font-weight:600;color:var(--bp-text-2);margin-bottom:6px;">원산지 <span style="color:var(--bp-danger);">*</span></label>
+              <input v-model="form.origin" type="text" placeholder="예: 호주" class="bp-input" style="width:100%;" />
             </div>
             <div>
-              <label class="block text-sm font-semibold text-gray-700 mb-1">인증번호 <span class="text-gray-400 text-xs font-normal">(선택)</span></label>
-              <input v-model="form.certificationId" type="text" placeholder="인증서 번호"
-                class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none placeholder-gray-400"/>
+              <label style="display:block;font-family:var(--font-body);font-size:0.82rem;font-weight:600;color:var(--bp-text-2);margin-bottom:6px;">공급업체 <span style="color:var(--bp-danger);">*</span></label>
+              <input v-model="form.supplier" type="text" placeholder="예: ABC Mining" class="bp-input" style="width:100%;" />
             </div>
           </div>
-          <!-- Modal Footer -->
-          <div class="px-6 py-4 border-t border-gray-200 bg-gray-50 flex justify-end gap-3">
-            <button @click="closeModal"
-              class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
-              취소
-            </button>
-            <button @click="submitMaterial"
-              :disabled="!isFormValid || submitting"
-              :class="['px-4 py-2 text-sm font-semibold rounded-lg transition-all flex items-center',
-                (!isFormValid || submitting)
-                  ? 'bg-gray-100 text-gray-400 cursor-not-allowed border border-gray-200'
-                  : 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-sm']">
-              <svg v-if="submitting" class="w-4 h-4 mr-2 animate-spin" fill="none" viewBox="0 0 24 24">
-                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
-              </svg>
-              {{ submitting ? '등록 중...' : '등록' }}
-            </button>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+            <div>
+              <label style="display:block;font-family:var(--font-body);font-size:0.82rem;font-weight:600;color:var(--bp-text-2);margin-bottom:6px;">수량 <span style="color:var(--bp-danger);">*</span></label>
+              <input v-model="form.quantity" type="number" min="0" step="0.01" placeholder="0" class="bp-input" style="width:100%;font-variant-numeric:tabular-nums;" />
+            </div>
+            <div>
+              <label style="display:block;font-family:var(--font-body);font-size:0.82rem;font-weight:600;color:var(--bp-text-2);margin-bottom:6px;">단위</label>
+              <select v-model="form.unit" class="bp-input" style="width:100%;background:var(--bp-surface-2);">
+                <option value="kg">kg</option>
+                <option value="g">g</option>
+                <option value="ton">ton</option>
+                <option value="lb">lb</option>
+              </select>
+            </div>
           </div>
+          <div>
+            <label style="display:block;font-family:var(--font-body);font-size:0.82rem;font-weight:600;color:var(--bp-text-2);margin-bottom:6px;">인증번호 <span style="font-size:0.72rem;font-weight:400;color:var(--bp-text-3);">(선택)</span></label>
+            <input v-model="form.certificationId" type="text" placeholder="인증서 번호" class="bp-input" style="width:100%;" />
+          </div>
+        </div>
+        <!-- Modal Footer -->
+        <div style="padding:14px 24px;border-top:1px solid var(--bp-surface-3);background:var(--bp-surface-1);display:flex;justify-content:flex-end;gap:10px;">
+          <button @click="closeModal" class="bp-btn bp-btn-ghost">취소</button>
+          <button @click="submitMaterial" :disabled="!isFormValid || submitting"
+            :class="['bp-btn', (!isFormValid || submitting) ? '' : 'bp-btn-primary']"
+            :style="(!isFormValid || submitting) ? 'opacity:0.4;cursor:not-allowed;' : ''"
+            style="display:inline-flex;align-items:center;gap:6px;">
+            <svg v-if="submitting" style="animation:spin 0.8s linear infinite;" width="16" height="16" fill="none" viewBox="0 0 24 24">
+              <circle opacity="0.25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path opacity="0.75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+            </svg>
+            {{ submitting ? '등록 중...' : '등록' }}
+          </button>
         </div>
       </div>
     </div>
-    <!-- Detail Modal -->
-    <div v-if="showDetail && selectedMaterial" class="fixed inset-0 z-50 overflow-y-auto">
-      <div class="flex items-center justify-center min-h-screen px-4 py-8">
-        <div class="fixed inset-0 bg-gray-900/60 backdrop-blur-sm" @click="showDetail = false"></div>
-        <div class="relative bg-white rounded-xl shadow-2xl max-w-lg w-full z-10 overflow-hidden">
-          <!-- Header -->
-          <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
-            <div class="flex items-center gap-3">
-              <div class="w-8 h-8 rounded-lg bg-emerald-100 flex items-center justify-center">
-                <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
-                </svg>
-              </div>
-              <div>
-                <h3 class="text-base font-bold text-gray-900">{{ selectedMaterial.name }}</h3>
-                <p class="text-xs text-gray-400 font-mono">{{ selectedMaterial.materialId }}</p>
-              </div>
-            </div>
-            <button @click="showDetail = false" class="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
-              <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+
+    <!-- ====== DETAIL MODAL ====== -->
+    <div v-if="showDetail && selectedMaterial" style="position:fixed;inset:0;z-index:50;display:flex;align-items:center;justify-content:center;padding:16px;">
+      <div style="position:fixed;inset:0;background:rgba(0,0,0,0.65);backdrop-filter:blur(6px);" @click="showDetail = false"></div>
+      <div class="bp-card bp-card-glow bp-animate-in" style="position:relative;z-index:1;max-width:520px;width:100%;overflow:hidden;">
+        <!-- Header -->
+        <div style="padding:18px 24px;border-bottom:1px solid var(--bp-surface-3);display:flex;align-items:center;justify-content:space-between;">
+          <div style="display:flex;align-items:center;gap:12px;">
+            <div style="width:34px;height:34px;border-radius:10px;background:var(--bp-surface-3);display:flex;align-items:center;justify-content:center;">
+              <svg width="16" height="16" fill="none" stroke="var(--bp-signal)" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
               </svg>
-            </button>
-          </div>
-          <!-- Body -->
-          <div class="px-6 py-5 space-y-5">
-            <div class="grid grid-cols-2 gap-4">
-              <div>
-                <dt class="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-1">원산지</dt>
-                <dd class="text-sm font-medium text-gray-900 flex items-center gap-1.5">
-                  <svg class="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
-                  </svg>
-                  {{ selectedMaterial.origin }}
-                </dd>
-              </div>
-              <div>
-                <dt class="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-1">공급업체</dt>
-                <dd class="text-sm font-medium text-gray-900">{{ selectedMaterial.supplier }}</dd>
-              </div>
-              <div>
-                <dt class="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-1">수량</dt>
-                <dd class="text-sm font-medium text-gray-900 tabular-nums">{{ selectedMaterial.quantity }} {{ selectedMaterial.unit }}</dd>
-              </div>
-              <div>
-                <dt class="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-1">등록일</dt>
-                <dd class="text-sm text-gray-700">{{ formatDate(selectedMaterial.createdAt) }}</dd>
-              </div>
             </div>
-
-            <!-- Certification -->
-            <div v-if="selectedMaterial.certificationId" class="bg-emerald-50 rounded-lg border border-emerald-200 p-4">
-              <div class="flex items-center gap-2 mb-1">
-                <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
-                </svg>
-                <span class="text-xs font-semibold text-emerald-700">인증 확인됨</span>
-              </div>
-              <p class="text-sm font-mono text-emerald-800">{{ selectedMaterial.certificationId }}</p>
-            </div>
-            <div v-else class="bg-gray-50 rounded-lg border border-gray-200 p-4 text-center">
-              <p class="text-xs text-gray-400">인증 정보 없음</p>
-            </div>
-
-            <!-- Creator MSP -->
             <div>
-              <dt class="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-1">등록 기관</dt>
-              <dd class="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                {{ selectedMaterial.creatorMsp || selectedMaterial.creatorMSP || '-' }}
+              <h3 style="font-family:var(--font-display);font-size:1rem;font-weight:700;color:var(--bp-text-1);margin:0;">{{ selectedMaterial.name }}</h3>
+              <p class="bp-mono" style="font-size:0.72rem;color:var(--bp-text-3);margin:2px 0 0;">{{ selectedMaterial.materialId }}</p>
+            </div>
+          </div>
+          <button @click="showDetail = false" class="bp-btn bp-btn-ghost" style="padding:6px;">
+            <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+          </button>
+        </div>
+        <!-- Body -->
+        <div style="padding:20px 24px;display:flex;flex-direction:column;gap:18px;">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+            <div>
+              <dt style="font-size:0.65rem;font-weight:600;color:var(--bp-text-3);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">원산지</dt>
+              <dd style="font-size:0.85rem;font-weight:500;color:var(--bp-text-1);display:flex;align-items:center;gap:6px;margin:0;">
+                <svg width="14" height="14" fill="none" stroke="var(--bp-text-3)" stroke-width="2" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+                </svg>
+                {{ selectedMaterial.origin }}
               </dd>
             </div>
+            <div>
+              <dt style="font-size:0.65rem;font-weight:600;color:var(--bp-text-3);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">공급업체</dt>
+              <dd style="font-size:0.85rem;font-weight:500;color:var(--bp-text-1);margin:0;">{{ selectedMaterial.supplier }}</dd>
+            </div>
+            <div>
+              <dt style="font-size:0.65rem;font-weight:600;color:var(--bp-text-3);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">수량</dt>
+              <dd style="font-size:0.85rem;font-weight:500;color:var(--bp-text-1);font-variant-numeric:tabular-nums;margin:0;">{{ selectedMaterial.quantity }} {{ selectedMaterial.unit }}</dd>
+            </div>
+            <div>
+              <dt style="font-size:0.65rem;font-weight:600;color:var(--bp-text-3);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">등록일</dt>
+              <dd style="font-size:0.82rem;color:var(--bp-text-2);margin:0;">{{ formatDate(selectedMaterial.createdAt) }}</dd>
+            </div>
           </div>
-          <!-- Footer -->
-          <div class="px-6 py-4 border-t border-gray-200 bg-gray-50 flex justify-end">
-            <button @click="showDetail = false"
-              class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
-              닫기
-            </button>
+
+          <!-- Certification -->
+          <div v-if="selectedMaterial.certificationId" style="background:var(--bp-surface-2);border:1px solid var(--bp-signal);border-radius:10px;padding:14px;">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
+              <svg width="16" height="16" fill="none" stroke="var(--bp-signal)" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+              </svg>
+              <span style="font-size:0.72rem;font-weight:600;color:var(--bp-signal);">인증 확인됨</span>
+            </div>
+            <p class="bp-mono" style="font-size:0.82rem;color:var(--bp-signal);margin:0;">{{ selectedMaterial.certificationId }}</p>
           </div>
+          <div v-else style="background:var(--bp-surface-1);border:1px solid var(--bp-surface-3);border-radius:10px;padding:14px;text-align:center;">
+            <p style="font-size:0.75rem;color:var(--bp-text-3);margin:0;">인증 정보 없음</p>
+          </div>
+
+          <!-- Creator MSP -->
+          <div>
+            <dt style="font-size:0.65rem;font-weight:600;color:var(--bp-text-3);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">등록 기관</dt>
+            <dd class="bp-badge-signal" style="display:inline-flex;font-size:0.72rem;font-weight:600;padding:3px 10px;border-radius:6px;margin:0;">
+              {{ selectedMaterial.creatorMsp || selectedMaterial.creatorMSP || '-' }}
+            </dd>
+          </div>
+        </div>
+        <!-- Footer -->
+        <div style="padding:14px 24px;border-top:1px solid var(--bp-surface-3);background:var(--bp-surface-1);display:flex;justify-content:flex-end;">
+          <button @click="showDetail = false" class="bp-btn bp-btn-ghost">닫기</button>
         </div>
       </div>
     </div>
