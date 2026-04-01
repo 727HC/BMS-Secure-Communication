@@ -28,22 +28,22 @@ app.component('audit-log-page', {
     };
 
     const actionColors = {
-      LOGIN: 'bg-[--bp-info-dim] text-blue-700 border-blue-200',
-      REGISTER: 'bg-[--bp-info-dim] text-blue-700 border-blue-200',
-      CREATE_PASSPORT: 'bg-[--bp-signal-dim] text-[--bp-signal] border-emerald-200',
+      LOGIN: 'bg-[--bp-info-dim] text-[#60a5fa] border-[--bp-border]',
+      REGISTER: 'bg-[--bp-info-dim] text-[#60a5fa] border-[--bp-border]',
+      CREATE_PASSPORT: 'bg-[--bp-signal-dim] text-[--bp-signal] border-[--bp-border-active]',
       BIND_VEHICLE: 'bg-[--bp-purple-dim] text-purple-700 border-purple-200',
       RECORD_BMU: 'bg-[--bp-signal-dim] text-teal-700 border-teal-200',
-      REGISTER_MATERIAL: 'bg-[--bp-signal-dim] text-[--bp-signal] border-emerald-200',
+      REGISTER_MATERIAL: 'bg-[--bp-signal-dim] text-[--bp-signal] border-[--bp-border-active]',
       REQUEST_MAINTENANCE: 'bg-[--bp-warn-dim] text-amber-700 border-amber-200',
       LOG_MAINTENANCE: 'bg-[--bp-warn-dim] text-amber-700 border-amber-200',
-      LOG_ACCIDENT: 'bg-[--bp-danger-dim] text-red-700 border-red-200',
+      LOG_ACCIDENT: 'bg-[--bp-danger-dim] text-[--bp-danger] border-[--bp-border]',
       REQUEST_ANALYSIS: 'bg-[--bp-purple-dim] text-purple-700 border-purple-200',
       SUBMIT_ANALYSIS: 'bg-[--bp-purple-dim] text-purple-700 border-purple-200',
       SET_RECYCLE: 'bg-[--bp-signal-dim] text-teal-700 border-teal-200',
       EXTRACT_MATERIALS: 'bg-[--bp-signal-dim] text-teal-700 border-teal-200',
-      DISPOSE_BATTERY: 'bg-[--bp-danger-dim] text-red-700 border-red-200',
+      DISPOSE_BATTERY: 'bg-[--bp-danger-dim] text-[--bp-danger] border-[--bp-border]',
       ISSUE_VC: 'bg-indigo-50 text-indigo-700 border-indigo-200',
-      REVOKE_VC: 'bg-[--bp-danger-dim] text-red-700 border-red-200',
+      REVOKE_VC: 'bg-[--bp-danger-dim] text-[--bp-danger] border-[--bp-border]',
       QUERY: 'bg-[--bp-surface-1] text-[--bp-text-2] border-[--bp-border]',
     };
 
@@ -118,33 +118,33 @@ app.component('audit-log-page', {
     };
   },
   template: `
-  <div class="space-y-6">
-    <!-- Page Header -->
-    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-      <div class="flex items-center gap-3">
-        <div class="w-10 h-10 bg-slate-700 rounded-lg flex items-center justify-center">
-          <svg class="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+  <div style="display:flex;flex-direction:column;gap:24px;">
+
+    <!-- ====== PAGE HEADER ====== -->
+    <div class="bp-animate-in" style="display:flex;align-items:center;justify-content:space-between;">
+      <div style="display:flex;align-items:center;gap:14px;">
+        <div style="width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,#64748b,#475569);display:flex;align-items:center;justify-content:center;">
+          <svg width="22" height="22" fill="none" stroke="#fff" stroke-width="2" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
           </svg>
         </div>
         <div>
-          <h1 class="text-xl font-bold text-[--bp-text-1]">감사 로그</h1>
-          <p class="text-[--bp-text-3] text-xs mt-0.5">플랫폼 내 모든 활동을 추적하고 모니터링합니다</p>
+          <h1 class="bp-heading" style="font-family:var(--font-display);font-size:1.35rem;color:var(--bp-text-1);margin:0;">감사 로그</h1>
+          <p style="font-family:var(--font-body);font-size:0.72rem;color:var(--bp-text-3);margin-top:2px;">플랫폼 내 모든 활동을 추적하고 모니터링합니다</p>
         </div>
       </div>
-      <!-- Auto refresh -->
-      <div class="flex items-center gap-3">
-        <label class="flex items-center gap-2 cursor-pointer select-none">
-          <div class="relative">
-            <input type="checkbox" v-model="autoRefresh" class="sr-only peer"/>
-            <div class="w-9 h-5 bg-[--bp-surface-4] rounded-full peer-checked:bg-emerald-600 transition-colors"></div>
-            <div class="absolute top-[2px] left-[2px] w-4 h-4 bg-[--bp-surface-2] rounded-full  transition-transform peer-checked:translate-x-4"></div>
+      <!-- Auto-refresh + Refresh button -->
+      <div style="display:flex;align-items:center;gap:12px;">
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none;">
+          <div style="position:relative;">
+            <input type="checkbox" v-model="autoRefresh" style="position:absolute;opacity:0;width:0;height:0;" />
+            <div :style="{ width:'36px',height:'20px',borderRadius:'10px',background: autoRefresh ? 'var(--bp-signal)' : 'var(--bp-surface-4)',transition:'background 0.2s' }"></div>
+            <div :style="{ position:'absolute',top:'2px',left: autoRefresh ? '18px' : '2px',width:'16px',height:'16px',borderRadius:'50%',background:'var(--bp-surface-2)',boxShadow:'0 1px 3px rgba(0,0,0,0.2)',transition:'left 0.2s' }"></div>
           </div>
-          <span class="text-xs font-medium text-[--bp-text-2]">실시간</span>
+          <span style="font-size:0.75rem;font-weight:500;color:var(--bp-text-2);">실시간</span>
         </label>
-        <button @click="fetchLogs"
-          class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-[--bp-text-2] bg-[--bp-surface-1] border border-[--bp-border] rounded-lg hover:bg-[--bp-surface-1] transition-colors">
-          <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <button @click="fetchLogs" class="bp-btn bp-btn-ghost" style="display:inline-flex;align-items:center;gap:6px;font-size:0.78rem;">
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
           </svg>
           새로고침
@@ -152,134 +152,138 @@ app.component('audit-log-page', {
       </div>
     </div>
 
-    <!-- Filters -->
-    <div class="bp-card p-3 flex flex-wrap items-center gap-3">
-      <select v-model="filterAction"
-        class="px-3 py-2 border border-[--bp-border] rounded-lg text-sm focus:ring-2 focus:ring-[--bp-signal]/20 focus:border-[--bp-signal] outline-none bg-[--bp-surface-2]">
+    <!-- ====== FILTERS ====== -->
+    <div class="bp-card bp-animate-in bp-delay-1" style="padding:12px 16px;display:flex;flex-wrap:wrap;align-items:center;gap:12px;">
+      <select v-model="filterAction" class="bp-input" style="padding:8px 12px;font-size:0.82rem;background:var(--bp-surface-2);min-width:140px;">
         <option v-for="opt in actionOptions" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
       </select>
-      <label class="flex items-center gap-2 cursor-pointer select-none">
-        <input type="checkbox" v-model="filterWriteOnly" class="w-4 h-4 text-[--bp-signal] border-[--bp-border-hover] rounded focus:ring-[--bp-signal]"/>
-        <span class="text-sm text-[--bp-text-2]">쓰기 작업만</span>
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none;">
+        <input type="checkbox" v-model="filterWriteOnly" style="width:16px;height:16px;accent-color:var(--bp-signal);border-radius:4px;" />
+        <span style="font-size:0.82rem;color:var(--bp-text-2);">쓰기 작업만</span>
       </label>
-      <span class="text-xs text-[--bp-text-3] ml-auto">총 {{ total }}건</span>
+      <span style="margin-left:auto;font-family:var(--font-mono);font-size:0.72rem;color:var(--bp-text-3);">총 {{ total }}건</span>
     </div>
 
-    <!-- Loading -->
-    <div v-if="loading && logs.length === 0" class="bp-card p-12 flex flex-col items-center justify-center">
-      <div class="w-10 h-10 border-[3px] border-[--bp-border] border-t-slate-600 rounded-full animate-spin mb-3"></div>
-      <p class="text-sm text-[--bp-text-3]">감사 로그를 불러오고 있습니다...</p>
+    <!-- ====== LOADING STATE ====== -->
+    <div v-if="loading && logs.length === 0" class="bp-card bp-animate-in bp-delay-2" style="padding:48px;display:flex;flex-direction:column;align-items:center;justify-content:center;">
+      <div style="width:40px;height:40px;border:3px solid var(--bp-surface-3);border-top-color:#64748b;border-radius:50%;animation:spin 0.8s linear infinite;margin-bottom:12px;"></div>
+      <p style="font-size:0.85rem;color:var(--bp-text-3);">감사 로그를 불러오고 있습니다...</p>
     </div>
 
-    <!-- Empty -->
-    <div v-else-if="logs.length === 0" class="bp-card p-12 text-center">
-      <div class="w-16 h-16 rounded-2xl bg-[--bp-surface-3] flex items-center justify-center mx-auto mb-4">
-        <svg class="w-8 h-8 text-[--bp-text-muted]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+    <!-- ====== EMPTY STATE ====== -->
+    <div v-else-if="logs.length === 0" class="bp-card bp-animate-in bp-delay-2" style="padding:48px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;">
+      <div style="width:64px;height:64px;border-radius:16px;background:var(--bp-surface-3);display:flex;align-items:center;justify-content:center;margin-bottom:16px;">
+        <svg width="32" height="32" fill="none" stroke="var(--bp-text-3)" stroke-width="1.5" viewBox="0 0 24 24" style="opacity:0.5;">
           <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
         </svg>
       </div>
-      <p class="text-sm text-[--bp-text-3]">기록된 감사 로그가 없습니다</p>
+      <p style="font-size:0.85rem;color:var(--bp-text-3);">기록된 감사 로그가 없습니다</p>
     </div>
 
-    <!-- Log Table -->
-    <div v-else class="bp-card overflow-hidden">
-      <div class="overflow-x-auto">
-        <table class="min-w-full text-sm">
+    <!-- ====== LOG TABLE ====== -->
+    <div v-else class="bp-card bp-card-glow bp-animate-in bp-delay-2" style="overflow:hidden;">
+      <div style="overflow-x:auto;">
+        <table class="bp-table" style="width:100%;">
           <thead>
-            <tr class="bg-[--bp-surface-1] border-b border-[--bp-border]">
-              <th class="px-4 py-3 text-left text-xs font-semibold text-[--bp-text-3] uppercase tracking-wider">시각</th>
-              <th class="px-4 py-3 text-left text-xs font-semibold text-[--bp-text-3] uppercase tracking-wider">작업</th>
-              <th class="px-4 py-3 text-left text-xs font-semibold text-[--bp-text-3] uppercase tracking-wider">사용자</th>
-              <th class="px-4 py-3 text-left text-xs font-semibold text-[--bp-text-3] uppercase tracking-wider">조직</th>
-              <th class="px-4 py-3 text-left text-xs font-semibold text-[--bp-text-3] uppercase tracking-wider">대상</th>
-              <th class="px-4 py-3 text-center text-xs font-semibold text-[--bp-text-3] uppercase tracking-wider">결과</th>
-              <th class="px-4 py-3 text-right text-xs font-semibold text-[--bp-text-3] uppercase tracking-wider">응답시간</th>
+            <tr>
+              <th>시간</th>
+              <th>액션</th>
+              <th>사용자</th>
+              <th>경로</th>
+              <th style="text-align:center;">상태코드</th>
+              <th style="text-align:right;">응답시간</th>
             </tr>
           </thead>
-          <tbody class="divide-y divide-[--bp-border]">
+          <tbody>
             <template v-for="(log, idx) in logs" :key="log.id">
-              <tr @click="toggleDetail(log.id)"
-                :class="['transition-colors cursor-pointer', expandedId === log.id ? 'bg-[--bp-surface-4]' : idx % 2 === 0 ? 'bg-[--bp-surface-2] hover:bg-[--bp-surface-1]/50' : 'bg-[--bp-surface-1]/30 hover:bg-[--bp-surface-3]/50']">
-                <td class="px-4 py-3 whitespace-nowrap text-xs text-[--bp-text-3]">
-                  <span class="flex items-center gap-1.5">
-                    <svg :class="['w-3 h-3 text-[--bp-text-3] transition-transform', expandedId === log.id ? 'rotate-90' : '']" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+              <tr @click="toggleDetail(log.id)" style="cursor:pointer;"
+                :style="expandedId === log.id ? 'background:var(--bp-surface-2);' : ''">
+                <!-- Timestamp -->
+                <td>
+                  <span style="display:flex;align-items:center;gap:6px;">
+                    <svg :style="{ width:'12px',height:'12px',color:'var(--bp-text-3)',transition:'transform 0.2s',transform: expandedId === log.id ? 'rotate(90deg)' : 'rotate(0deg)' }" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                       <polyline points="9 18 15 12 9 6"/>
                     </svg>
-                    {{ formatTime(log.timestamp) }}
+                    <span class="bp-mono" style="font-size:0.75rem;color:var(--bp-text-3);white-space:nowrap;">{{ formatTime(log.timestamp) }}</span>
                   </span>
                 </td>
-                <td class="px-4 py-3 whitespace-nowrap">
+                <!-- Action badge -->
+                <td>
                   <span :class="['inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold border',
-                    actionColors[log.action] || 'bg-[--bp-surface-1] text-[--bp-text-2] border-[--bp-border]']">
+                    actionColors[log.action] || 'bg-[--bp-surface-1] text-[--bp-text-2] border-[--bp-border]']"
+                    style="white-space:nowrap;">
                     {{ actionLabels[log.action] || log.action }}
                   </span>
                 </td>
-                <td class="px-4 py-3 whitespace-nowrap text-sm text-[--bp-text-2] font-medium">{{ log.userId || (log.action === 'RECORD_BMU' ? '시스템(BMU)' : '-') }}</td>
-                <td class="px-4 py-3 whitespace-nowrap">
-                  <span v-if="log.orgMsp" class="text-xs font-medium px-1.5 py-0.5 rounded"
-                    :class="log.orgMsp === MSP.MANUFACTURER ? 'bg-[--bp-signal-dim] text-[--bp-signal]' :
-                      log.orgMsp === MSP.EV_MANUFACTURER ? 'bg-[--bp-purple-dim] text-purple-700' :
-                      log.orgMsp === MSP.SERVICE ? 'bg-[--bp-warn-dim] text-amber-700' :
-                      log.orgMsp === MSP.REGULATOR ? 'bg-[--bp-signal-dim] text-teal-700' : 'bg-[--bp-surface-1] text-[--bp-text-2]'">
-                    {{ MSP_LABELS[log.orgMsp] || log.orgMsp }}
-                  </span>
-                  <span v-else class="text-xs text-[--bp-text-3] italic">{{ log.action === 'RECORD_BMU' ? '자동수집' : '-' }}</span>
+                <!-- User -->
+                <td style="font-size:0.82rem;font-weight:500;color:var(--bp-text-2);white-space:nowrap;">
+                  {{ log.userId || (log.action === 'RECORD_BMU' ? '시스템(BMU)' : '-') }}
                 </td>
-                <td class="px-4 py-3 whitespace-nowrap">
-                  <span v-if="log.targetId" class="text-xs font-mono text-[--bp-text-3] bg-[--bp-surface-3] px-1.5 py-0.5 rounded truncate max-w-[150px] inline-block">{{ log.targetId }}</span>
-                  <span v-else class="text-xs text-[--bp-text-muted]">-</span>
+                <!-- Path -->
+                <td>
+                  <span v-if="log.path" class="bp-mono" style="font-size:0.72rem;color:var(--bp-text-3);background:var(--bp-surface-3);padding:2px 8px;border-radius:4px;white-space:nowrap;display:inline-block;max-width:200px;overflow:hidden;text-overflow:ellipsis;">{{ log.method }} {{ log.path }}</span>
+                  <span v-else style="font-size:0.75rem;color:var(--bp-text-3);">-</span>
                 </td>
-                <td class="px-4 py-3 whitespace-nowrap text-center">
-                  <span v-if="log.success" class="inline-flex items-center gap-1 text-xs font-semibold text-[--bp-signal]">
-                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> 성공
-                  </span>
-                  <span v-else class="inline-flex items-center gap-1 text-xs font-semibold text-red-600">
-                    <span class="w-1.5 h-1.5 rounded-full bg-red-500"></span> 실패
+                <!-- Status Code with color -->
+                <td style="text-align:center;">
+                  <span class="bp-mono" style="font-size:0.78rem;font-weight:600;white-space:nowrap;"
+                    :style="{
+                      color: log.statusCode < 300 ? 'var(--bp-signal)' :
+                             log.statusCode < 500 ? 'var(--bp-warn)' : 'var(--bp-danger)'
+                    }">
+                    {{ log.statusCode }}
                   </span>
                 </td>
-                <td class="px-4 py-3 whitespace-nowrap text-right text-xs text-[--bp-text-3] tabular-nums">{{ log.duration }}ms</td>
+                <!-- Duration -->
+                <td style="text-align:right;">
+                  <span class="bp-mono" style="font-size:0.75rem;color:var(--bp-text-3);font-variant-numeric:tabular-nums;white-space:nowrap;">{{ log.duration }}ms</span>
+                </td>
               </tr>
-              <!-- Expanded Detail Row -->
+              <!-- Expanded detail row -->
               <tr v-if="expandedId === log.id">
-                <td colspan="7" class="px-4 py-0">
-                  <div class="bg-[--bp-surface-3] rounded-lg border border-[--bp-border] p-4 my-2 space-y-3">
-                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <td colspan="6" style="padding:0 16px;">
+                  <div class="bp-animate-in" style="background:var(--bp-surface-2);border:1px solid var(--bp-surface-3);border-radius:10px;padding:16px;margin:8px 0;display:flex;flex-direction:column;gap:14px;">
+                    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;">
                       <div>
-                        <p class="text-[10px] font-semibold text-[--bp-text-3] uppercase mb-0.5">로그 ID</p>
-                        <p class="text-xs font-mono text-[--bp-text-2] break-all">{{ log.id }}</p>
+                        <p style="font-size:0.6rem;font-weight:600;color:var(--bp-text-3);text-transform:uppercase;margin:0 0 2px;">로그 ID</p>
+                        <p class="bp-mono" style="font-size:0.72rem;color:var(--bp-text-2);word-break:break-all;margin:0;">{{ log.id }}</p>
                       </div>
                       <div>
-                        <p class="text-[10px] font-semibold text-[--bp-text-3] uppercase mb-0.5">HTTP 메서드</p>
-                        <p class="text-xs font-mono text-[--bp-text-2]">{{ log.method }}</p>
+                        <p style="font-size:0.6rem;font-weight:600;color:var(--bp-text-3);text-transform:uppercase;margin:0 0 2px;">HTTP 메서드</p>
+                        <p class="bp-mono" style="font-size:0.72rem;color:var(--bp-text-2);margin:0;">{{ log.method }}</p>
                       </div>
                       <div>
-                        <p class="text-[10px] font-semibold text-[--bp-text-3] uppercase mb-0.5">경로</p>
-                        <p class="text-xs font-mono text-[--bp-text-2] break-all">{{ log.path }}</p>
+                        <p style="font-size:0.6rem;font-weight:600;color:var(--bp-text-3);text-transform:uppercase;margin:0 0 2px;">경로</p>
+                        <p class="bp-mono" style="font-size:0.72rem;color:var(--bp-text-2);word-break:break-all;margin:0;">{{ log.path }}</p>
                       </div>
                       <div>
-                        <p class="text-[10px] font-semibold text-[--bp-text-3] uppercase mb-0.5">상태 코드</p>
-                        <p class="text-xs font-mono" :class="log.statusCode < 400 ? 'text-[--bp-signal]' : 'text-red-600'">{{ log.statusCode }}</p>
+                        <p style="font-size:0.6rem;font-weight:600;color:var(--bp-text-3);text-transform:uppercase;margin:0 0 2px;">상태 코드</p>
+                        <p class="bp-mono" style="font-size:0.72rem;margin:0;"
+                          :style="{
+                            color: log.statusCode < 300 ? 'var(--bp-signal)' :
+                                   log.statusCode < 500 ? 'var(--bp-warn)' : 'var(--bp-danger)'
+                          }">{{ log.statusCode }}</p>
                       </div>
                       <div>
-                        <p class="text-[10px] font-semibold text-[--bp-text-3] uppercase mb-0.5">IP</p>
-                        <p class="text-xs font-mono text-[--bp-text-2]">{{ log.ip || '-' }}</p>
+                        <p style="font-size:0.6rem;font-weight:600;color:var(--bp-text-3);text-transform:uppercase;margin:0 0 2px;">IP</p>
+                        <p class="bp-mono" style="font-size:0.72rem;color:var(--bp-text-2);margin:0;">{{ log.ip || '-' }}</p>
                       </div>
                       <div>
-                        <p class="text-[10px] font-semibold text-[--bp-text-3] uppercase mb-0.5">응답 시간</p>
-                        <p class="text-xs font-mono text-[--bp-text-2]">{{ log.duration }}ms</p>
+                        <p style="font-size:0.6rem;font-weight:600;color:var(--bp-text-3);text-transform:uppercase;margin:0 0 2px;">응답 시간</p>
+                        <p class="bp-mono" style="font-size:0.72rem;color:var(--bp-text-2);margin:0;">{{ log.duration }}ms</p>
                       </div>
                       <div>
-                        <p class="text-[10px] font-semibold text-[--bp-text-3] uppercase mb-0.5">사용자</p>
-                        <p class="text-xs text-[--bp-text-2]">{{ log.userId || '(미인증)' }}</p>
+                        <p style="font-size:0.6rem;font-weight:600;color:var(--bp-text-3);text-transform:uppercase;margin:0 0 2px;">사용자</p>
+                        <p style="font-size:0.72rem;color:var(--bp-text-2);margin:0;">{{ log.userId || '(미인증)' }}</p>
                       </div>
                       <div>
-                        <p class="text-[10px] font-semibold text-[--bp-text-3] uppercase mb-0.5">조직</p>
-                        <p class="text-xs text-[--bp-text-2]">{{ log.orgMsp || '(없음)' }}</p>
+                        <p style="font-size:0.6rem;font-weight:600;color:var(--bp-text-3);text-transform:uppercase;margin:0 0 2px;">조직</p>
+                        <p style="font-size:0.72rem;color:var(--bp-text-2);margin:0;">{{ log.orgMsp || '(없음)' }}</p>
                       </div>
                     </div>
                     <div v-if="log.requestBody">
-                      <p class="text-[10px] font-semibold text-[--bp-text-3] uppercase mb-1">요청 데이터</p>
-                      <pre class="text-xs font-mono text-[--bp-text-2] bg-[--bp-surface-1] border border-[--bp-border] rounded-lg p-3 overflow-x-auto max-h-40">{{ JSON.stringify(log.requestBody, null, 2) }}</pre>
+                      <p style="font-size:0.6rem;font-weight:600;color:var(--bp-text-3);text-transform:uppercase;margin:0 0 6px;">요청 데이터</p>
+                      <pre class="bp-mono" style="font-size:0.72rem;color:var(--bp-text-2);background:var(--bp-surface-1);border:1px solid var(--bp-surface-3);border-radius:8px;padding:12px;overflow-x:auto;max-height:160px;margin:0;">{{ JSON.stringify(log.requestBody, null, 2) }}</pre>
                     </div>
                   </div>
                 </td>
@@ -288,19 +292,20 @@ app.component('audit-log-page', {
           </tbody>
         </table>
       </div>
+
       <!-- Pagination -->
-      <div class="px-4 py-3 border-t border-[--bp-border] bg-[--bp-surface-1]/50 flex items-center justify-between">
-        <span class="text-xs text-[--bp-text-3]">{{ total }}건 중 {{ (page - 1) * 50 + 1 }}~{{ Math.min(page * 50, total) }}</span>
-        <div class="flex items-center gap-2">
+      <div style="padding:12px 20px;border-top:1px solid var(--bp-surface-3);background:var(--bp-surface-1);display:flex;align-items:center;justify-content:space-between;">
+        <span class="bp-mono" style="font-size:0.72rem;color:var(--bp-text-3);">{{ total }}건 중 {{ (page - 1) * 50 + 1 }}~{{ Math.min(page * 50, total) }}</span>
+        <div style="display:flex;align-items:center;gap:8px;">
           <button @click="prevPage" :disabled="page <= 1"
-            :class="['px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors',
-              page <= 1 ? 'bg-[--bp-surface-1] text-[--bp-text-muted] border-[--bp-border] cursor-not-allowed' : 'bg-[--bp-surface-2] text-[--bp-text-2] border-[--bp-border] hover:bg-[--bp-surface-1]']">
+            class="bp-btn bp-btn-ghost" style="font-size:0.75rem;padding:6px 12px;"
+            :style="page <= 1 ? 'opacity:0.3;cursor:not-allowed;' : ''">
             이전
           </button>
-          <span class="text-xs text-[--bp-text-3] tabular-nums">{{ page }} / {{ totalPages }}</span>
+          <span class="bp-mono" style="font-size:0.72rem;color:var(--bp-text-3);font-variant-numeric:tabular-nums;">{{ page }} / {{ totalPages }}</span>
           <button @click="nextPage" :disabled="page >= totalPages"
-            :class="['px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors',
-              page >= totalPages ? 'bg-[--bp-surface-1] text-[--bp-text-muted] border-[--bp-border] cursor-not-allowed' : 'bg-[--bp-surface-2] text-[--bp-text-2] border-[--bp-border] hover:bg-[--bp-surface-1]']">
+            class="bp-btn bp-btn-ghost" style="font-size:0.75rem;padding:6px 12px;"
+            :style="page >= totalPages ? 'opacity:0.3;cursor:not-allowed;' : ''">
             다음
           </button>
         </div>
