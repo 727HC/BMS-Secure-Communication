@@ -28,23 +28,23 @@ app.component('audit-log-page', {
     };
 
     const actionColors = {
-      LOGIN: 'bg-blue-50 text-[#60a5fa] border-gray-200',
-      REGISTER: 'bg-blue-50 text-[#60a5fa] border-gray-200',
-      CREATE_PASSPORT: 'bg-emerald-50 text-emerald-700 border-emerald-500',
-      BIND_VEHICLE: 'bg-purple-50 text-purple-700 border-purple-200',
-      RECORD_BMU: 'bg-emerald-50 text-teal-700 border-teal-200',
-      REGISTER_MATERIAL: 'bg-emerald-50 text-emerald-700 border-emerald-500',
-      REQUEST_MAINTENANCE: 'bg-amber-50 text-amber-700 border-amber-200',
-      LOG_MAINTENANCE: 'bg-amber-50 text-amber-700 border-amber-200',
-      LOG_ACCIDENT: 'bg-red-50 text-red-700 border-gray-200',
-      REQUEST_ANALYSIS: 'bg-purple-50 text-purple-700 border-purple-200',
-      SUBMIT_ANALYSIS: 'bg-purple-50 text-purple-700 border-purple-200',
-      SET_RECYCLE: 'bg-emerald-50 text-teal-700 border-teal-200',
-      EXTRACT_MATERIALS: 'bg-emerald-50 text-teal-700 border-teal-200',
-      DISPOSE_BATTERY: 'bg-red-50 text-red-700 border-gray-200',
+      LOGIN: 'bg-[rgba(107,163,255,0.1)] text-[#60a5fa] border-[rgba(250,250,245,0.06)]',
+      REGISTER: 'bg-[rgba(107,163,255,0.1)] text-[#60a5fa] border-[rgba(250,250,245,0.06)]',
+      CREATE_PASSPORT: 'bg-[rgba(200,255,0,0.08)] text-[#c8ff00] border-emerald-500',
+      BIND_VEHICLE: 'bg-[rgba(192,132,252,0.1)] text-[#c084fc] border-purple-200',
+      RECORD_BMU: 'bg-[rgba(200,255,0,0.08)] text-teal-700 border-teal-200',
+      REGISTER_MATERIAL: 'bg-[rgba(200,255,0,0.08)] text-[#c8ff00] border-emerald-500',
+      REQUEST_MAINTENANCE: 'bg-[rgba(255,184,0,0.1)] text-[#ffb800] border-amber-200',
+      LOG_MAINTENANCE: 'bg-[rgba(255,184,0,0.1)] text-[#ffb800] border-amber-200',
+      LOG_ACCIDENT: 'bg-[rgba(239,68,68,0.1)] text-[#ff6b6b] border-[rgba(250,250,245,0.06)]',
+      REQUEST_ANALYSIS: 'bg-[rgba(192,132,252,0.1)] text-[#c084fc] border-purple-200',
+      SUBMIT_ANALYSIS: 'bg-[rgba(192,132,252,0.1)] text-[#c084fc] border-purple-200',
+      SET_RECYCLE: 'bg-[rgba(200,255,0,0.08)] text-teal-700 border-teal-200',
+      EXTRACT_MATERIALS: 'bg-[rgba(200,255,0,0.08)] text-teal-700 border-teal-200',
+      DISPOSE_BATTERY: 'bg-[rgba(239,68,68,0.1)] text-[#ff6b6b] border-[rgba(250,250,245,0.06)]',
       ISSUE_VC: 'bg-indigo-50 text-indigo-700 border-indigo-200',
-      REVOKE_VC: 'bg-red-50 text-red-700 border-gray-200',
-      QUERY: 'bg-white text-gray-700 border-gray-200',
+      REVOKE_VC: 'bg-[rgba(239,68,68,0.1)] text-[#ff6b6b] border-[rgba(250,250,245,0.06)]',
+      QUERY: 'bg-[#1a1814] text-[rgba(250,250,245,0.7)] border-[rgba(250,250,245,0.06)]',
     };
 
     const actionOptions = [
@@ -152,7 +152,7 @@ app.component('audit-log-page', {
           </svg>
         </div>
         <div>
-          <h1 class="text-gray-900 font-bold" style="font-family:'Pretendard Variable', sans-serif;font-size:1.35rem;color:#111827;margin:0;">감사 로그</h1>
+          <h1 class="text-[#fafaf5] font-bold" style="font-family:'Pretendard Variable', sans-serif;font-size:1.35rem;color:#111827;margin:0;">감사 로그</h1>
           <p style="font-family:'Pretendard Variable', sans-serif;font-size:0.72rem;color:#6b7280;margin-top:2px;">플랫폼 내 모든 활동을 추적하고 모니터링합니다</p>
         </div>
       </div>
@@ -166,7 +166,7 @@ app.component('audit-log-page', {
           </div>
           <span style="font-size:0.75rem;font-weight:500;color:#374151;">실시간</span>
         </label>
-        <button @click="fetchLogs" class="bg-white border border-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-50" style="display:inline-flex;align-items:center;gap:6px;font-size:0.78rem;">
+        <button @click="fetchLogs" class="bg-[#1a1814] border border-[rgba(250,250,245,0.06)] text-[rgba(250,250,245,0.7)] px-4 py-2 rounded-lg text-sm font-medium hover:bg-[#1f1d17]" style="display:inline-flex;align-items:center;gap:6px;font-size:0.78rem;">
           <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
           </svg>
@@ -176,8 +176,8 @@ app.component('audit-log-page', {
     </div>
 
     <!-- ====== FILTERS ====== -->
-    <div class="bg-white rounded-xl border border-gray-200 shadow-sm  " style="padding:12px 16px;display:flex;flex-wrap:wrap;align-items:center;gap:12px;">
-      <select v-model="filterAction" class="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500" style="padding:8px 12px;font-size:0.82rem;background:#ffffff;min-width:140px;">
+    <div class="bg-[#1a1814]  border border-[rgba(250,250,245,0.06)] shadow-none  " style="padding:12px 16px;display:flex;flex-wrap:wrap;align-items:center;gap:12px;">
+      <select v-model="filterAction" class="w-full px-4 py-2.5 bg-[#1f1d17] border border-[rgba(250,250,245,0.06)]  text-[#fafaf5] outline-none focus:border-[#c8ff00]" style="padding:8px 12px;font-size:0.82rem;background:#ffffff;min-width:140px;">
         <option v-for="opt in actionOptions" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
       </select>
       <label style="display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none;">
@@ -188,13 +188,13 @@ app.component('audit-log-page', {
     </div>
 
     <!-- ====== LOADING STATE ====== -->
-    <div v-if="loading && logs.length === 0" class="bg-white rounded-xl border border-gray-200 shadow-sm  " style="padding:48px;display:flex;flex-direction:column;align-items:center;justify-content:center;">
+    <div v-if="loading && logs.length === 0" class="bg-[#1a1814]  border border-[rgba(250,250,245,0.06)] shadow-none  " style="padding:48px;display:flex;flex-direction:column;align-items:center;justify-content:center;">
       <div style="width:40px;height:40px;border:3px solid #f1f5f9;border-top-color:#64748b;border-radius:50%;animation:spin 0.8s linear infinite;margin-bottom:12px;"></div>
       <p style="font-size:0.85rem;color:#6b7280;">감사 로그를 불러오고 있습니다...</p>
     </div>
 
     <!-- ====== EMPTY STATE ====== -->
-    <div v-else-if="logs.length === 0" class="bg-white rounded-xl border border-gray-200 shadow-sm  " style="padding:48px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;">
+    <div v-else-if="logs.length === 0" class="bg-[#1a1814]  border border-[rgba(250,250,245,0.06)] shadow-none  " style="padding:48px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;">
       <div style="width:64px;height:64px;border-radius:16px;background:#f1f5f9;display:flex;align-items:center;justify-content:center;margin-bottom:16px;">
         <svg width="32" height="32" fill="none" stroke="#6b7280" stroke-width="1.5" viewBox="0 0 24 24" style="opacity:0.5;">
           <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
@@ -204,7 +204,7 @@ app.component('audit-log-page', {
     </div>
 
     <!-- ====== LOG TABLE ====== -->
-    <div v-else class="bg-white rounded-xl border border-gray-200 shadow-sm bg-white rounded-xl border border-gray-200 shadow-sm  " style="overflow:hidden;">
+    <div v-else class="bg-[#1a1814]  border border-[rgba(250,250,245,0.06)] shadow-none bg-[#1a1814]  border border-[rgba(250,250,245,0.06)] shadow-none  " style="overflow:hidden;">
       <div style="overflow-x:auto;">
         <table class="w-full text-sm" style="width:100%;">
           <thead>
@@ -236,7 +236,7 @@ app.component('audit-log-page', {
                 <!-- Action badge -->
                 <td>
                   <span :class="['inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold border',
-                    actionColors[log.action] || 'bg-white text-gray-700 border-gray-200']"
+                    actionColors[log.action] || 'bg-[#1a1814] text-[rgba(250,250,245,0.7)] border-[rgba(250,250,245,0.06)]']"
                     style="white-space:nowrap;">
                     {{ actionLabels[log.action] || log.action }}
                   </span>
@@ -336,13 +336,13 @@ app.component('audit-log-page', {
         <span class="font-mono" style="font-size:0.72rem;color:#6b7280;">{{ total }}건 중 {{ (page - 1) * 50 + 1 }}~{{ Math.min(page * 50, total) }}</span>
         <div style="display:flex;align-items:center;gap:8px;">
           <button @click="prevPage" :disabled="page <= 1"
-            class="bg-white border border-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-50" style="font-size:0.75rem;padding:6px 12px;"
+            class="bg-[#1a1814] border border-[rgba(250,250,245,0.06)] text-[rgba(250,250,245,0.7)] px-4 py-2 rounded-lg text-sm font-medium hover:bg-[#1f1d17]" style="font-size:0.75rem;padding:6px 12px;"
             :style="page <= 1 ? 'opacity:0.3;cursor:not-allowed;' : ''">
             이전
           </button>
           <span class="font-mono" style="font-size:0.72rem;color:#6b7280;font-variant-numeric:tabular-nums;">{{ page }} / {{ totalPages }}</span>
           <button @click="nextPage" :disabled="page >= totalPages"
-            class="bg-white border border-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-50" style="font-size:0.75rem;padding:6px 12px;"
+            class="bg-[#1a1814] border border-[rgba(250,250,245,0.06)] text-[rgba(250,250,245,0.7)] px-4 py-2 rounded-lg text-sm font-medium hover:bg-[#1f1d17]" style="font-size:0.75rem;padding:6px 12px;"
             :style="page >= totalPages ? 'opacity:0.3;cursor:not-allowed;' : ''">
             다음
           </button>

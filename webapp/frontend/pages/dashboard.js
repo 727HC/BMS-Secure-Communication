@@ -68,7 +68,7 @@ app.component('dashboard-page', {
         map[c] = (map[c] || 0) + 1;
       });
       const entries = Object.entries(map).sort((a, b) => b[1] - a[1]);
-      const colors = ['#34d399', '#60a5fa', '#a78bfa', '#fbbf24', '#f87171'];
+      const colors = ['#c8ff00', '#8bff57', '#00e5a0', '#00c4d4', '#6ba3ff'];
       return entries.map(([name, count], i) => ({
         name, count, color: colors[i % colors.length],
       }));
@@ -76,14 +76,14 @@ app.component('dashboard-page', {
 
     const statusDistribution = computed(() => {
       const statusColors = {
-        MANUFACTURED: '#60a5fa', ACTIVE: '#34d399', MAINTENANCE: '#fbbf24',
-        ANALYSIS: '#a78bfa', RECYCLING: '#f97316', DISPOSED: '#64748b',
+        MANUFACTURED: '#6ba3ff', ACTIVE: '#c8ff00', MAINTENANCE: '#ffb800',
+        ANALYSIS: '#c084fc', RECYCLING: '#fb923c', DISPOSED: '#6b7280',
       };
       const items = [];
       statusList.forEach(s => {
         const count = countByStatus.value[s] || 0;
         if (count > 0) {
-          items.push({ status: s, label: statusLabels[s], count, color: statusColors[s] || '#64748b' });
+          items.push({ status: s, label: statusLabels[s], count, color: statusColors[s] || '#6b7280' });
         }
       });
       return items;
@@ -131,226 +131,180 @@ app.component('dashboard-page', {
     };
   },
   template: `
-    <div>
-      <!-- ═══ LOADING ═══ -->
-      <div v-if="loading" class="flex flex-col justify-center items-center py-32">
-        <div class="relative w-16 h-16 mb-4">
-          <div class="absolute inset-0 rounded-full" style="border: 2px solid transparent; border-top-color: #059669; animation: dash-spin 0.8s linear infinite;"></div>
-          <div class="absolute inset-2 rounded-full" style="border: 2px solid transparent; border-bottom-color: #059669; opacity: 0.3; animation: dash-spin 1.2s linear infinite reverse;"></div>
-          <div class="absolute inset-0 flex items-center justify-center">
-            <div class="w-2 h-2 rounded-full" style="background: #059669; animation: bp-pulse 1.5s ease-in-out infinite;"></div>
-          </div>
-        </div>
-        <p class="text-xs tracking-widest" style="color: #9ca3af; font-family: 'JetBrains Mono', monospace;">INITIALIZING DASHBOARD...</p>
+    <div style="background: #1a1814; margin: -1.5rem; padding: 2.5rem 2rem; min-height: calc(100vh - 3.5rem);">
+
+      <!-- Loading -->
+      <div v-if="loading" class="flex flex-col items-center justify-center" style="min-height: 60vh;">
+        <div class="w-px h-16 mb-6" style="background: #c8ff00; animation: dashPulse 1s ease-in-out infinite;"></div>
+        <p class="text-xs tracking-[0.3em] uppercase" style="color: rgba(250,250,245,0.2); font-family: 'JetBrains Mono', monospace;">LOADING</p>
       </div>
 
-      <div v-else class="space-y-4">
-
-        <!-- ═══ SYSTEM STATUS RIBBON ═══ -->
-        <div class="bg-white rounded-xl border border-gray-200 shadow-sm px-4 py-2.5 flex items-center justify-between " style="border-left: 3px solid #059669;">
-          <div class="flex items-center gap-5">
-            <div class="flex items-center gap-2">
-              <div class="w-2 h-2 rounded-full bg-emerald-500"></div>
-              <span class="text-[10px] font-medium" style="color: #059669; font-family: 'JetBrains Mono', monospace;">FABRIC CONNECTED</span>
-            </div>
-            <div class="hidden sm:flex items-center gap-1.5" style="color: #6b7280;">
-              <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/></svg>
-              <span class="text-[10px]" style="font-family: 'JetBrains Mono', monospace;">{{ totalCount }} PASSPORTS</span>
-            </div>
-            <div class="hidden md:flex items-center gap-1.5" style="color: #6b7280;">
-              <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-              <span class="text-[10px]" style="font-family: 'JetBrains Mono', monospace;">{{ materialCount }} MATERIALS</span>
-            </div>
-          </div>
-          <div class="flex items-center gap-1.5">
-            <span class="text-[10px]" style="color: #9ca3af; font-family: 'JetBrains Mono', monospace;">LAST SYNC</span>
-            <span class="text-[10px] font-medium" style="color: #374151; font-family: 'JetBrains Mono', monospace;">{{ new Date().toLocaleTimeString('ko-KR', {hour:'2-digit',minute:'2-digit'}) }}</span>
-          </div>
-        </div>
+      <div v-else>
 
         <!-- ═══ HEADER ═══ -->
-        <div class="flex items-end justify-between  ">
+        <div class="flex items-end justify-between mb-16 dash-reveal" style="animation-delay: 0s;">
           <div>
-            <div class="flex items-center gap-2.5">
-              <h1 class="text-xl" style="font-family: 'Pretendard Variable', sans-serif; font-weight: 700; color: #111827;">대시보드</h1>
-              <span class="px-1.5 py-0.5 rounded text-[9px] font-bold tracking-wider" style="background: rgba(16,185,129,0.08); color: #059669; font-family: 'JetBrains Mono', monospace; border: 1px solid rgba(52,211,153,0.2);">LIVE</span>
-            </div>
-            <p class="text-xs mt-0.5" style="color: #6b7280;">배터리 여권 시스템 현황 모니터링</p>
+            <span class="block text-xs tracking-[0.2em] uppercase mb-2" style="color: #c8ff00; font-family: 'JetBrains Mono', monospace;">Overview</span>
+            <h1 style="font-family: 'Pretendard Variable', sans-serif; font-weight: 800; font-size: 2.5rem; color: #fafaf5; letter-spacing: -0.03em;">대시보드</h1>
           </div>
-          <button @click="nav('passports')" class="bg-emerald-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-emerald-700 text-xs">
-            <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-            여권 발급
+          <button @click="nav('passports')"
+            class="px-6 py-3 text-sm font-bold tracking-[0.05em] uppercase transition-all"
+            style="background: #c8ff00; color: #1a1814;"
+            onmouseenter="this.style.background='#d4ff33'"
+            onmouseleave="this.style.background='#c8ff00'">
+            + 여권 발급
           </button>
         </div>
 
-        <!-- ═══ KPI GAUGES ═══ -->
-        <div class="grid grid-cols-2 lg:grid-cols-4 gap-3  ">
-          <div v-for="(kpi, ki) in [
-            { label: '전체 여권', value: totalCount, max: Math.max(totalCount, 1), color: '#34d399', icon: 'M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z', page: 'passports' },
-            { label: '운행중', value: activeCount, max: Math.max(totalCount, 1), color: '#60a5fa', icon: 'M22 12 18 12 15 21 9 3 6 12 2 12', page: 'passports' },
-            { label: '정비 대기', value: maintenanceCount, max: Math.max(totalCount, 1), color: '#fbbf24', icon: 'M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z', page: 'maintenance' },
-            { label: '등록 원자재', value: materialCount, max: Math.max(materialCount, 1), color: '#a78bfa', icon: 'M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71', page: 'materials' }
-          ]" :key="ki"
-            @click="nav(kpi.page)"
-            class="bg-white rounded-xl border border-gray-200 shadow-sm  p-4 cursor-pointer group transition-all duration-200 hover:translate-y-[-2px] hover:shadow-xl">
-            <div class="flex items-start justify-between">
-              <div>
-                <div class="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">{{ kpi.label }}</div>
-                <div class="text-4xl font-bold text-gray-900 tabular-nums" style="font-size: 1.75rem;">{{ kpi.value }}</div>
-              </div>
-              <!-- Mini circular gauge -->
-              <div class="relative w-11 h-11 flex-shrink-0">
-                <svg viewBox="0 0 36 36" class="w-full h-full -rotate-90">
-                  <circle cx="18" cy="18" r="15" fill="none" stroke="#e2e8f0" stroke-width="3"/>
-                  <circle cx="18" cy="18" r="15" fill="none"
-                    :stroke="kpi.color" stroke-width="3" stroke-linecap="round"
-                    :stroke-dasharray="(kpi.value / kpi.max * 94.25) + ' 94.25'"
-                    style="transition: stroke-dasharray 1s cubic-bezier(0.4,0,0.2,1);"/>
-                </svg>
-                <div class="absolute inset-0 flex items-center justify-center">
-                  <svg class="w-3.5 h-3.5" :style="'color: ' + kpi.color" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path :d="kpi.icon"/>
-                  </svg>
-                </div>
-              </div>
-            </div>
+        <!-- ═══ MONUMENTAL KPIs ═══ -->
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-0 mb-20 dash-reveal" style="animation-delay: 0.1s; border-top: 1px solid rgba(250,250,245,0.06);">
+          <div v-for="(kpi, i) in [
+            { num: totalCount, label: '전체 여권', sub: 'TOTAL PASSPORTS' },
+            { num: activeCount, label: '운행중', sub: 'ACTIVE' },
+            { num: maintenanceCount, label: '정비 대기', sub: 'MAINTENANCE' },
+            { num: materialCount, label: '등록 원자재', sub: 'MATERIALS' }
+          ]" :key="i"
+            class="py-8 cursor-pointer transition-all"
+            :style="'border-right: 1px solid rgba(250,250,245,0.06); border-bottom: 1px solid rgba(250,250,245,0.06);' + (i === 0 ? 'padding-left:0;' : 'padding-left:2rem;')"
+            @click="nav(i < 3 ? 'passports' : 'materials')"
+            @mouseenter="$event.currentTarget.style.background='rgba(200,255,0,0.03)'"
+            @mouseleave="$event.currentTarget.style.background='transparent'">
+            <span class="block text-xs tracking-[0.15em] mb-3" style="color: rgba(250,250,245,0.2); font-family: 'JetBrains Mono', monospace;">0{{ i + 1 }}</span>
+            <span class="block leading-none" style="font-family: 'JetBrains Mono', monospace; font-size: clamp(2.5rem, 5vw, 4.5rem); font-weight: 600; color: #fafaf5; letter-spacing: -0.04em;">
+              {{ kpi.num }}
+            </span>
+            <span class="block mt-3 text-sm" style="color: rgba(250,250,245,0.4);">{{ kpi.label }}</span>
+            <span class="block text-xs mt-1 tracking-[0.1em] uppercase" style="color: rgba(250,250,245,0.12); font-family: 'JetBrains Mono', monospace;">{{ kpi.sub }}</span>
           </div>
         </div>
 
-        <!-- ═══ CHARTS + STACKED BAR ═══ -->
-        <div class="grid grid-cols-1 lg:grid-cols-5 gap-4  ">
+        <!-- ═══ MIDDLE: CHART + STATUS — asymmetric split ═══ -->
+        <div class="flex flex-col lg:flex-row gap-16 mb-20">
 
-          <!-- Chemistry donut — spans 3 cols -->
-          <div class="lg:col-span-3 bg-white rounded-xl border border-gray-200 shadow-sm p-5">
-            <div class="flex items-center justify-between mb-4">
-              <h2 class="text-sm font-semibold" style="font-family: 'Pretendard Variable', sans-serif; color: #111827; letter-spacing: -0.01em;">화학 구성</h2>
-              <span class="text-[9px] tracking-wider" style="color: #9ca3af; font-family: 'JetBrains Mono', monospace;">COMPOSITION</span>
-            </div>
-            <div class="flex items-center gap-6">
-              <div class="relative flex-shrink-0" style="width: 120px; height: 120px;">
-                <svg viewBox="0 0 100 100" class="w-full h-full -rotate-90">
-                  <circle cx="50" cy="50" r="40" fill="none" stroke="#e2e8f0" stroke-width="9"/>
+          <!-- LEFT: Donut chart — large -->
+          <div class="lg:w-2/5 dash-reveal" style="animation-delay: 0.2s;">
+            <span class="block text-xs tracking-[0.2em] uppercase mb-6" style="color: #c8ff00; font-family: 'JetBrains Mono', monospace;">화학 구성</span>
+
+            <div class="flex items-center gap-8">
+              <div class="relative flex-shrink-0" style="width: 160px; height: 160px;">
+                <svg viewBox="0 0 100 100" class="w-full h-full" style="transform: rotate(-90deg);">
+                  <circle cx="50" cy="50" r="40" fill="none" stroke="rgba(250,250,245,0.04)" stroke-width="8"/>
                   <circle v-for="(seg, i) in chemistrySegments" :key="i"
                     cx="50" cy="50" r="40" fill="none"
-                    :stroke="seg.color" stroke-width="9"
+                    :stroke="seg.color" stroke-width="8"
                     :stroke-dasharray="seg.dashArray"
                     :stroke-dashoffset="seg.dashOffset"
                     stroke-linecap="round"
-                    class="dash-donut-seg"
-                    style="transition: all 0.8s cubic-bezier(0.4,0,0.2,1); cursor: pointer;"
-                    @mouseenter="$event.target.setAttribute('stroke-width','12')"
-                    @mouseleave="$event.target.setAttribute('stroke-width','9')"/>
+                    style="transition: all 1s cubic-bezier(0.16, 1, 0.3, 1);"/>
                 </svg>
                 <div class="absolute inset-0 flex flex-col items-center justify-center">
-                  <span class="text-lg font-bold" style="font-family: 'Pretendard Variable', sans-serif; color: #111827; letter-spacing: -0.01em;">{{ chemTotal }}</span>
-                  <span class="text-[8px] uppercase tracking-widest" style="color: #9ca3af; font-family: 'JetBrains Mono', monospace;">TOTAL</span>
+                  <span style="font-family: 'JetBrains Mono', monospace; font-size: 2rem; font-weight: 600; color: #fafaf5;">{{ chemTotal }}</span>
                 </div>
               </div>
-              <div class="flex-1 space-y-1.5">
+
+              <div class="space-y-3 flex-1">
                 <div v-for="item in chemistryDistribution" :key="item.name" class="flex items-center justify-between">
-                  <div class="flex items-center gap-2">
-                    <span class="w-2 h-2 rounded-sm" :style="{ backgroundColor: item.color }"></span>
-                    <span class="text-xs" style="color: #374151;">{{ item.name }}</span>
+                  <div class="flex items-center gap-3">
+                    <span class="w-2 h-2" :style="'background: ' + item.color + ';'"></span>
+                    <span class="text-sm" style="color: rgba(250,250,245,0.5);">{{ item.name }}</span>
                   </div>
-                  <span class="text-xs font-bold tabular-nums" style="color: #111827; font-family: 'JetBrains Mono', monospace;">{{ item.count }}</span>
+                  <span class="text-sm tabular-nums" style="color: #fafaf5; font-family: 'JetBrains Mono', monospace;">{{ item.count }}</span>
                 </div>
-                <div v-if="chemistryDistribution.length === 0" class="text-xs py-3" style="color: #9ca3af;">데이터 없음</div>
+                <div v-if="!chemistryDistribution.length" class="text-sm" style="color: rgba(250,250,245,0.2);">데이터 없음</div>
               </div>
             </div>
           </div>
 
-          <!-- Status — stacked bar + legend, spans 2 cols -->
-          <div class="lg:col-span-2 bg-white rounded-xl border border-gray-200 shadow-sm p-5">
-            <div class="flex items-center justify-between mb-4">
-              <h2 class="text-sm font-semibold" style="font-family: 'Pretendard Variable', sans-serif; color: #111827; letter-spacing: -0.01em;">상태 분포</h2>
-              <span class="text-xs font-bold tabular-nums" style="color: #374151; font-family: 'JetBrains Mono', monospace;">{{ statTotal }}</span>
+          <!-- RIGHT: Status distribution — typographic -->
+          <div class="lg:w-3/5 dash-reveal" style="animation-delay: 0.3s;">
+            <div class="flex items-center justify-between mb-6">
+              <span class="text-xs tracking-[0.2em] uppercase" style="color: #c8ff00; font-family: 'JetBrains Mono', monospace;">상태 분포</span>
+              <span class="text-xs tabular-nums" style="color: rgba(250,250,245,0.2); font-family: 'JetBrains Mono', monospace;">TOTAL {{ statTotal }}</span>
             </div>
-            <!-- Stacked horizontal bar -->
-            <div v-if="statusDistribution.length > 0" class="mb-4">
-              <div class="flex h-7 rounded-lg overflow-hidden" style="background: #e2e8f0;">
-                <div v-for="item in statusDistribution" :key="item.status"
-                  class="h-full transition-all duration-700 relative group"
-                  :style="{ width: (item.count / statTotal * 100) + '%', backgroundColor: item.color, minWidth: '4px' }">
-                  <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                    <span class="text-[9px] font-bold text-white drop-shadow-md">{{ item.count }}</span>
-                  </div>
-                </div>
+
+            <!-- Stacked bar -->
+            <div v-if="statusDistribution.length" class="flex h-2 mb-8" style="background: rgba(250,250,245,0.04);">
+              <div v-for="item in statusDistribution" :key="item.status"
+                class="h-full transition-all duration-1000"
+                :style="'width: ' + (item.count / statTotal * 100) + '%; background: ' + item.color + '; min-width: 3px;'">
               </div>
             </div>
-            <!-- Legend -->
-            <div class="space-y-1.5">
-              <div v-for="item in statusDistribution" :key="item.status" class="flex items-center justify-between">
-                <div class="flex items-center gap-2">
-                  <span class="w-2 h-2 rounded-sm" :style="{ backgroundColor: item.color }"></span>
-                  <span class="text-[11px]" :style="{ color: item.color }">{{ item.label }}</span>
+
+            <!-- Legend as typographic list -->
+            <div class="space-y-0">
+              <div v-for="(item, i) in statusDistribution" :key="item.status"
+                class="flex items-center justify-between py-3"
+                :style="i < statusDistribution.length - 1 ? 'border-bottom: 1px solid rgba(250,250,245,0.04);' : ''">
+                <div class="flex items-center gap-3">
+                  <span class="w-2 h-2" :style="'background: ' + item.color + ';'"></span>
+                  <span class="text-sm" style="color: rgba(250,250,245,0.6);">{{ item.label }}</span>
                 </div>
-                <div class="flex items-center gap-2">
-                  <span class="text-[10px] tabular-nums" style="color: #6b7280; font-family: 'JetBrains Mono', monospace;">{{ statTotal > 0 ? Math.round(item.count / statTotal * 100) : 0 }}%</span>
-                  <span class="text-xs font-bold tabular-nums w-5 text-right" style="color: #111827; font-family: 'JetBrains Mono', monospace;">{{ item.count }}</span>
+                <div class="flex items-center gap-4">
+                  <span class="text-xs tabular-nums" style="color: rgba(250,250,245,0.25); font-family: 'JetBrains Mono', monospace;">{{ statTotal > 0 ? Math.round(item.count / statTotal * 100) : 0 }}%</span>
+                  <span class="text-lg tabular-nums font-semibold" style="color: #fafaf5; font-family: 'JetBrains Mono', monospace; min-width: 2rem; text-align: right;">{{ item.count }}</span>
                 </div>
               </div>
-              <div v-if="statusDistribution.length === 0" class="text-xs py-3 text-center" style="color: #9ca3af;">데이터 없음</div>
+              <div v-if="!statusDistribution.length" class="py-6 text-sm" style="color: rgba(250,250,245,0.15);">데이터 없음</div>
             </div>
           </div>
         </div>
 
-        <!-- ═══ RECENT TABLE ═══ -->
-        <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden  ">
-          <div class="px-5 py-3 flex items-center justify-between" style="border-bottom: 1px solid #e5e7eb; background: linear-gradient(90deg, #f1f5f9, #ffffff);">
-            <div class="flex items-center gap-2">
-              <div class="w-1 h-4 rounded-full" style="background: #059669;"></div>
-              <h2 class="text-xs font-semibold" style="font-family: 'Pretendard Variable', sans-serif; color: #111827; letter-spacing: -0.01em;">최근 등록</h2>
-              <span class="text-[9px] tabular-nums px-1.5 py-0.5 rounded" style="background: #e2e8f0; color: #6b7280; font-family: 'JetBrains Mono', monospace;">{{ recentPassports.length }}</span>
-            </div>
-            <button @click="nav('passports')" class="text-[10px] font-medium flex items-center gap-1 transition-colors" style="color: #6b7280;"
-              onmouseenter="this.style.color='#059669'" onmouseleave="this.style.color='#6b7280'">
-              전체 보기 <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+        <!-- ═══ RECENT — minimal typographic table ═══ -->
+        <div class="dash-reveal" style="animation-delay: 0.4s;">
+          <div class="flex items-center justify-between mb-6">
+            <span class="text-xs tracking-[0.2em] uppercase" style="color: #c8ff00; font-family: 'JetBrains Mono', monospace;">최근 등록</span>
+            <button @click="nav('passports')" class="text-xs transition-colors" style="color: rgba(250,250,245,0.25); font-family: 'JetBrains Mono', monospace;"
+              onmouseenter="this.style.color='#c8ff00'" onmouseleave="this.style.color='rgba(250,250,245,0.25)'">
+              전체 보기 →
             </button>
           </div>
 
-          <div v-if="recentPassports.length > 0" class="overflow-x-auto">
-            <table class="w-full text-sm">
-              <thead>
-                <tr><th>제조사</th><th>모델</th><th>무게</th><th>화학</th><th>등록일</th><th>상태</th><th class="text-right">작업</th></tr>
-              </thead>
-              <tbody>
-                <tr v-for="(p, idx) in recentPassports" :key="idx"
-                    @click="$emit('navigate', 'passport-detail', { passportId: p.passportId || p.id })"
-                    class="cursor-pointer " :style="'animation-delay: ' + (idx * 0.03) + 's;'">
-                  <td style="color: #374151;">{{ p.manufacturerName || '-' }}</td>
-                  <td class="font-medium" style="color: #111827;">{{ p.model || '-' }}</td>
-                  <td class="tabular-nums" style="font-family: 'JetBrains Mono', monospace;">{{ p.weight ? p.weight + ' kg' : '-' }}</td>
-                  <td><span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-gray-100 text-gray-600">{{ p.chemistry || '-' }}</span></td>
-                  <td style="color: #6b7280; font-family: 'JetBrains Mono', monospace; font-size: 0.7rem;">{{ formatDate(p.createdAt || p.manufactureDate) }}</td>
-                  <td>
-                    <span class="inline-flex items-center gap-1.5">
-                      <span class="w-1.5 h-1.5 rounded-full" :style="{
-                        backgroundColor: p.status==='MANUFACTURED'?'#60a5fa':p.status==='ACTIVE'?'#34d399':p.status==='MAINTENANCE'?'#fbbf24':p.status==='ANALYSIS'?'#a78bfa':p.status==='RECYCLING'?'#f97316':'#64748b'
-                      }"></span>
-                      <span class="text-xs" style="color: #374151;">{{ statusLabels[p.status] || p.status || '-' }}</span>
-                    </span>
-                  </td>
-                  <td class="text-right">
-                    <button @click.stop="$emit('navigate', 'passport-detail', { passportId: p.passportId || p.id })"
-                      class="text-[10px] font-medium" style="color: #059669;">상세 →</button>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-          <div v-else class="py-14 text-center">
-            <div class="w-11 h-11 mx-auto mb-3 rounded-xl flex items-center justify-center" style="background: #f1f5f9;">
-              <svg class="w-5 h-5" style="color: #9ca3af;" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
-                <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/>
-              </svg>
+          <div v-if="recentPassports.length" style="border-top: 1px solid rgba(250,250,245,0.06);">
+            <!-- Header -->
+            <div class="hidden lg:grid grid-cols-12 gap-4 py-3 text-xs tracking-[0.1em] uppercase"
+              style="color: rgba(250,250,245,0.15); font-family: 'JetBrains Mono', monospace; border-bottom: 1px solid rgba(250,250,245,0.04);">
+              <span class="col-span-3">제조사</span>
+              <span class="col-span-2">모델</span>
+              <span class="col-span-2">화학</span>
+              <span class="col-span-2">등록일</span>
+              <span class="col-span-2">상태</span>
+              <span class="col-span-1 text-right">무게</span>
             </div>
-            <p class="text-xs font-medium" style="color: #374151;">등록된 여권이 없습니다</p>
+
+            <!-- Rows -->
+            <div v-for="(p, idx) in recentPassports" :key="idx"
+              class="grid grid-cols-12 gap-4 py-4 cursor-pointer transition-all items-center"
+              :style="idx < recentPassports.length - 1 ? 'border-bottom: 1px solid rgba(250,250,245,0.03);' : ''"
+              @click="$emit('navigate', 'passport-detail', { passportId: p.passportId || p.id })"
+              @mouseenter="$event.currentTarget.style.background='rgba(200,255,0,0.02)'"
+              @mouseleave="$event.currentTarget.style.background='transparent'">
+              <span class="col-span-3 text-sm font-medium truncate" style="color: rgba(250,250,245,0.7);">{{ p.manufacturerName || '—' }}</span>
+              <span class="col-span-2 text-sm truncate" style="color: #fafaf5;">{{ p.model || '—' }}</span>
+              <span class="col-span-2 text-xs tracking-wider uppercase" style="color: rgba(250,250,245,0.3); font-family: 'JetBrains Mono', monospace;">{{ p.chemistry || '—' }}</span>
+              <span class="col-span-2 text-xs tabular-nums" style="color: rgba(250,250,245,0.2); font-family: 'JetBrains Mono', monospace;">{{ formatDate(p.createdAt || p.manufactureDate) }}</span>
+              <span class="col-span-2">
+                <span class="inline-flex items-center gap-1.5">
+                  <span class="w-1.5 h-1.5 rounded-full" :style="{
+                    background: p.status==='ACTIVE'?'#c8ff00':p.status==='MANUFACTURED'?'#6ba3ff':p.status==='MAINTENANCE'?'#ffb800':p.status==='ANALYSIS'?'#c084fc':'#6b7280'
+                  }"></span>
+                  <span class="text-xs" style="color: rgba(250,250,245,0.4);">{{ statusLabels[p.status] || '—' }}</span>
+                </span>
+              </span>
+              <span class="col-span-1 text-xs tabular-nums text-right" style="color: rgba(250,250,245,0.2); font-family: 'JetBrains Mono', monospace;">{{ p.weight ? p.weight + 'kg' : '—' }}</span>
+            </div>
+          </div>
+
+          <div v-else class="py-16 text-center">
+            <p class="text-sm" style="color: rgba(250,250,245,0.15);">등록된 여권이 없습니다</p>
           </div>
         </div>
+
       </div>
 
       <style>
-        @keyframes dash-spin { to { transform: rotate(360deg); } }
+        @keyframes dashPulse { 0%,100% { opacity: 0.3; } 50% { opacity: 1; } }
+        .dash-reveal { opacity: 0; animation: dashReveal 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        @keyframes dashReveal { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
       </style>
     </div>
   `
