@@ -444,6 +444,50 @@
     .bp-table-compact tbody td { padding: 0.5rem 0.75rem; }
     /* ── Section Divider ── */
     .bp-divider { height: 1px; background: linear-gradient(90deg, var(--bp-border), transparent); }
+    /* ── Shadow Depth Levels ── */
+    .bp-shadow-1 { box-shadow: 0 1px 2px rgba(0,0,0,0.3); }
+    .bp-shadow-2 { box-shadow: 0 2px 8px rgba(0,0,0,0.35); }
+    .bp-shadow-3 { box-shadow: 0 4px 16px rgba(0,0,0,0.4); }
+    .bp-shadow-glow { box-shadow: 0 0 20px var(--bp-signal-glow); }
+    /* ── Global Transitions ── */
+    button, a, input, select { transition: all 0.15s ease; }
+    .bp-card, .bp-card-glow { transition: all 0.2s ease; }
+    /* ── Empty State Enhancement ── */
+    .bp-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 3rem 1rem; }
+    .bp-empty-icon { width: 3rem; height: 3rem; border-radius: 0.75rem; display: flex; align-items: center; justify-content: center; background: var(--bp-surface-3); margin-bottom: 0.75rem; }
+    .bp-empty-title { font-size: 0.875rem; font-weight: 500; color: var(--bp-text-2); }
+    .bp-empty-desc { font-size: 0.75rem; color: var(--bp-text-muted); margin-top: 0.25rem; }
+    /* ── Skeleton Loading ── */
+    .bp-skeleton { background: linear-gradient(90deg, var(--bp-surface-3), var(--bp-surface-4), var(--bp-surface-3)); background-size: 200% 100%; animation: bp-skeleton 1.5s ease-in-out infinite; border-radius: 0.375rem; }
+    @keyframes bp-skeleton { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+    /* ── Tooltips ── */
+    .bp-tooltip { position: relative; }
+    .bp-tooltip::after { content: attr(data-tip); position: absolute; bottom: calc(100% + 6px); left: 50%; transform: translateX(-50%); padding: 0.25rem 0.5rem; background: var(--bp-surface-4); color: var(--bp-text-1); font-size: 0.6875rem; border-radius: 0.375rem; white-space: nowrap; pointer-events: none; opacity: 0; transition: opacity 0.15s; z-index: 50; border: 1px solid var(--bp-border); }
+    .bp-tooltip:hover::after { opacity: 1; }
+    /* ── Selection States ── */
+    ::selection { background: rgba(52,211,153,0.3); color: var(--bp-text-1); }
+    ::-moz-selection { background: rgba(52,211,153,0.3); color: var(--bp-text-1); }
+    /* ── Print ── */
+    @media print {
+      body { background: white !important; color: black !important; }
+      .bp-card { border: 1px solid #ddd !important; background: white !important; box-shadow: none !important; }
+      aside, header, .bp-dot::before { display: none !important; }
+    }
+    /* ── High Contrast ── */
+    @media (prefers-contrast: high) {
+      :root { --bp-border: rgba(148,163,184,0.2); --bp-text-3: #94a3b8; }
+      .bp-card { border-width: 2px; }
+    }
+    /* ── Reduced Motion ── */
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+      .bp-dot::before { animation: none !important; }
+    }
+    /* ── Firefox Scrollbar ── */
+    * { scrollbar-width: thin; scrollbar-color: rgba(52,211,153,0.08) var(--bp-surface-1); }
+    /* ── Performance Hints ── */
+    .bp-animate-in, .bp-dot, .bp-progress-bar { will-change: transform, opacity; }
+    .bp-card-glow::before { will-change: opacity; }
   </style>
   <script>
     tailwind.config = {

@@ -1005,7 +1005,7 @@ app.component('passport-detail-page', {
         </div>
 
         <!-- ==================== TAB 1: IDENTITY ==================== -->
-        <div v-if="activeTab === 'identity'" class="space-y-6">
+        <div v-if="activeTab === 'identity'" class="space-y-5">
 
           <!-- Action Buttons (Manufacturer/Regulator only) -->
           <div v-if="isManufacturer || isEV || isRegulator"
@@ -1273,7 +1273,7 @@ app.component('passport-detail-page', {
         </div>
 
         <!-- ==================== TAB 2: COMPLIANCE ==================== -->
-        <div v-if="activeTab === 'compliance'" class="space-y-6">
+        <div v-if="activeTab === 'compliance'" class="space-y-5">
 
           <!-- Large Circular Gauge — OpenBattery style -->
           <div class="bp-card-sm border border-[--bp-border] overflow-hidden">
@@ -1421,7 +1421,7 @@ app.component('passport-detail-page', {
         </div>
 
         <!-- ==================== TAB 3: TRACEABILITY ==================== -->
-        <div v-if="activeTab === 'traceability'" class="space-y-6">
+        <div v-if="activeTab === 'traceability'" class="space-y-5">
 
           <!-- Pending Request Alert Banner -->
           <div v-if="passport.status === 'MAINTENANCE'"
@@ -1783,7 +1783,7 @@ app.component('passport-detail-page', {
         </div>
 
         <!-- ==================== TAB 5: TRUST ==================== -->
-        <div v-if="activeTab === 'trust'" class="space-y-6">
+        <div v-if="activeTab === 'trust'" class="space-y-5">
 
           <!-- Blockchain Verification Card -->
           <div class="bp-card-sm border border-[--bp-border] overflow-hidden">
