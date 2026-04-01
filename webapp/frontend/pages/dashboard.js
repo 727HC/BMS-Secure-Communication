@@ -223,7 +223,7 @@ app.component('dashboard-page', {
           <!-- Chemistry donut — spans 3 cols -->
           <div class="lg:col-span-3 bp-card p-5">
             <div class="flex items-center justify-between mb-4">
-              <h2 class="text-sm font-semibold" style="font-family: var(--font-display); color: var(--bp-text-1);">화학 구성</h2>
+              <h2 class="text-sm font-semibold" style="font-family: var(--font-display); color: var(--bp-text-1); letter-spacing: -0.01em;">화학 구성</h2>
               <span class="text-[9px] tracking-wider" style="color: var(--bp-text-muted); font-family: var(--font-mono);">COMPOSITION</span>
             </div>
             <div class="flex items-center gap-6">
@@ -242,7 +242,7 @@ app.component('dashboard-page', {
                     @mouseleave="$event.target.setAttribute('stroke-width','9')"/>
                 </svg>
                 <div class="absolute inset-0 flex flex-col items-center justify-center">
-                  <span class="text-lg font-bold" style="font-family: var(--font-display); color: var(--bp-text-1);">{{ chemTotal }}</span>
+                  <span class="text-lg font-bold" style="font-family: var(--font-display); color: var(--bp-text-1); letter-spacing: -0.01em;">{{ chemTotal }}</span>
                   <span class="text-[8px] uppercase tracking-widest" style="color: var(--bp-text-muted); font-family: var(--font-mono);">TOTAL</span>
                 </div>
               </div>
@@ -262,7 +262,7 @@ app.component('dashboard-page', {
           <!-- Status — stacked bar + legend, spans 2 cols -->
           <div class="lg:col-span-2 bp-card p-5">
             <div class="flex items-center justify-between mb-4">
-              <h2 class="text-sm font-semibold" style="font-family: var(--font-display); color: var(--bp-text-1);">상태 분포</h2>
+              <h2 class="text-sm font-semibold" style="font-family: var(--font-display); color: var(--bp-text-1); letter-spacing: -0.01em;">상태 분포</h2>
               <span class="text-xs font-bold tabular-nums" style="color: var(--bp-text-2); font-family: var(--font-mono);">{{ statTotal }}</span>
             </div>
             <!-- Stacked horizontal bar -->
@@ -299,7 +299,7 @@ app.component('dashboard-page', {
           <div class="px-5 py-3 flex items-center justify-between" style="border-bottom: 1px solid var(--bp-border); background: linear-gradient(90deg, var(--bp-surface-3), var(--bp-surface-2));">
             <div class="flex items-center gap-2">
               <div class="w-1 h-4 rounded-full" style="background: var(--bp-signal);"></div>
-              <h2 class="text-xs font-semibold" style="font-family: var(--font-display); color: var(--bp-text-1);">최근 등록</h2>
+              <h2 class="text-xs font-semibold" style="font-family: var(--font-display); color: var(--bp-text-1); letter-spacing: -0.01em;">최근 등록</h2>
               <span class="text-[9px] tabular-nums px-1.5 py-0.5 rounded" style="background: var(--bp-surface-4); color: var(--bp-text-3); font-family: var(--font-mono);">{{ recentPassports.length }}</span>
             </div>
             <button @click="nav('passports')" class="text-[10px] font-medium flex items-center gap-1 transition-colors" style="color: var(--bp-text-3);"
