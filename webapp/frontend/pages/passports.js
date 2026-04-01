@@ -198,7 +198,7 @@ app.component('passports-page', {
   },
   template: `
     <div>
-      <!-- ═══ LOADING ═══ -->
+      <!-- LOADING -->
       <div v-if="loading" class="flex flex-col justify-center items-center py-32">
         <div class="relative w-14 h-14 mb-4">
           <div class="absolute inset-0 rounded-full border-2 border-transparent" style="border-top-color: var(--bp-signal); animation: spin 0.8s linear infinite;"></div>
@@ -209,7 +209,7 @@ app.component('passports-page', {
 
       <div v-else class="space-y-5">
 
-        <!-- ═══ HEADER ═══ -->
+        <!-- HEADER -->
         <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bp-animate-in">
           <div class="flex items-center gap-3">
             <div class="w-10 h-10 rounded-xl flex items-center justify-center" style="background: var(--bp-signal-dim);">
@@ -219,7 +219,7 @@ app.component('passports-page', {
             </div>
             <div>
               <div class="flex items-center gap-2">
-                <h1 class="text-xl bp-heading" style="font-family: var(--font-display);" style="font-family: var(--font-display);">배터리 여권</h1>
+                <h1 class="text-xl bp-heading" style="font-family: var(--font-display);">배터리 여권</h1>
                 <span class="bp-badge bp-badge-signal" style="font-family: var(--font-mono);">{{ filteredPassports.length }}</span>
               </div>
               <p class="text-xs" style="color: var(--bp-text-3);">전체 {{ passports.length }}건 등록</p>
@@ -231,20 +231,23 @@ app.component('passports-page', {
           </button>
         </div>
 
-        <!-- ═══ FILTER BAR ═══ -->
+        <!-- FILTER BAR -->
         <div class="bp-card p-3 flex flex-col sm:flex-row gap-3 bp-animate-in bp-delay-1">
           <div class="relative flex-1">
             <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
               <svg class="w-4 h-4" style="color: var(--bp-text-3);" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
             </div>
-            <input v-model="searchQuery" type="text" placeholder="ID, 시리얼, 모델, 제조사, VIN 검색..." class="bp-input" style="padding-left: 2.25rem; font-size: 0.8125rem;" />
+            <input v-model="searchQuery" type="text" placeholder="ID, 시리얼, 모델, 제조사, VIN 검색..." class="bp-input" style="padding-left: 2.25rem; padding-right: 4.5rem; font-size: 0.8125rem;" />
+            <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+              <kbd style="font-family: var(--font-mono); font-size: 10px; padding: 2px 6px; border-radius: 4px; border: 1px solid var(--bp-border); background: var(--bp-surface-3); color: var(--bp-text-3); line-height: 1;">&#8984;K</kbd>
+            </div>
           </div>
           <select v-model="filterStatus" class="bp-input" style="width: auto; min-width: 140px; font-size: 0.8125rem;">
             <option v-for="opt in statusOptions" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
           </select>
         </div>
 
-        <!-- ═══ TABLE ═══ -->
+        <!-- TABLE -->
         <div class="bp-card overflow-hidden bp-animate-in bp-delay-2">
           <div v-if="filteredPassports.length > 0" class="overflow-x-auto">
             <table class="bp-table">
@@ -261,9 +264,19 @@ app.component('passports-page', {
                 </tr>
               </thead>
               <tbody>
-                <tr v-for="p in filteredPassports" :key="p.passportId"
-                    @click="viewDetail(p.passportId)" class="cursor-pointer bp-animate-in" :style="'animation-delay: ' + (typeof idx !== 'undefined' ? idx * 0.03 : 0) + 's;'">
-                  <td>
+                <tr v-for="(p, idx) in filteredPassports" :key="p.passportId"
+                    @click="viewDetail(p.passportId)" class="cursor-pointer bp-animate-in" style="position: relative;"
+                    :style="'animation-delay: ' + (idx * 0.03) + 's;'">
+                  <td style="position: relative; padding-left: 1.25rem;">
+                    <span class="passport-row-status-bar" :style="{
+                      position: 'absolute', left: 0, top: '4px', bottom: '4px', width: '3px', borderRadius: '0 3px 3px 0',
+                      backgroundColor: p.status === 'MANUFACTURED' ? '#60a5fa' :
+                        p.status === 'ACTIVE' ? '#34d399' :
+                        p.status === 'MAINTENANCE' ? '#fbbf24' :
+                        p.status === 'ANALYSIS' ? '#a78bfa' :
+                        p.status === 'RECYCLING' ? '#f97316' :
+                        p.status === 'DISPOSED' ? '#ef4444' : '#64748b'
+                    }"></span>
                     <span class="text-xs font-medium" style="color: var(--bp-signal); font-family: var(--font-mono);">{{ p.passportId ? p.passportId.substring(0, 20) : '-' }}</span>
                   </td>
                   <td style="font-family: var(--font-mono); font-size: 0.75rem;">{{ p.serialNumber || '-' }}</td>
@@ -324,9 +337,7 @@ app.component('passports-page', {
         </div>
       </div>
 
-      <!-- ═══════════════════════════════════════════════
-           CREATE MODAL — 3-step wizard
-           ═══════════════════════════════════════════════ -->
+      <!-- CREATE MODAL — 3-step wizard -->
       <div v-if="showCreateModal" class="fixed inset-0 z-50 flex items-center justify-center p-4" style="background: rgba(6,9,15,0.8); backdrop-filter: blur(8px);" @click.self="closeCreateModal">
         <div class="w-full max-w-lg rounded-xl overflow-hidden bp-animate-in" style="background: var(--bp-surface-2); border: 1px solid var(--bp-border); box-shadow: var(--shadow-elevated);">
 
@@ -343,25 +354,54 @@ app.component('passports-page', {
             </button>
           </div>
 
-          <!-- Progress bar -->
-          <div class="px-6 pt-4">
-            <div class="flex items-center gap-2 mb-1">
-              <span class="text-[10px] font-medium" style="color: var(--bp-text-3); font-family: var(--font-mono);">COMPLETION</span>
-              <span class="text-[10px] font-bold" style="color: var(--bp-signal); font-family: var(--font-mono);">{{ completionPct }}%</span>
-            </div>
-            <div class="bp-progress">
-              <div class="bp-progress-bar" :style="{ width: completionPct + '%' }"></div>
-            </div>
-            <!-- Step indicators -->
-            <div class="flex items-center mt-3 gap-1">
-              <div v-for="s in 3" :key="s" class="flex-1 h-1 rounded-full transition-all" :style="s <= createStep ? 'background: var(--bp-signal);' : 'background: var(--bp-surface-4);'"></div>
+          <!-- Circular Progress + Step indicators -->
+          <div class="px-6 pt-5 pb-2">
+            <div class="flex items-center justify-between">
+              <!-- Circular progress -->
+              <div class="flex items-center gap-4">
+                <div class="relative w-16 h-16 flex-shrink-0">
+                  <svg viewBox="0 0 64 64" class="w-full h-full" style="transform: rotate(-90deg);">
+                    <circle cx="32" cy="32" r="27" fill="none" stroke="var(--bp-surface-4)" stroke-width="5"/>
+                    <circle cx="32" cy="32" r="27" fill="none" stroke="var(--bp-signal)" stroke-width="5"
+                      stroke-linecap="round"
+                      :stroke-dasharray="2 * Math.PI * 27"
+                      :stroke-dashoffset="2 * Math.PI * 27 * (1 - completionPct / 100)"
+                      style="transition: stroke-dashoffset 0.5s ease;"/>
+                  </svg>
+                  <div class="absolute inset-0 flex items-center justify-center">
+                    <span class="text-xs font-bold" style="color: var(--bp-signal); font-family: var(--font-mono);">{{ completionPct }}%</span>
+                  </div>
+                </div>
+                <div>
+                  <span class="text-[10px] font-medium uppercase tracking-wider" style="color: var(--bp-text-3); font-family: var(--font-mono);">COMPLETION</span>
+                  <p class="text-xs mt-0.5" style="color: var(--bp-text-2);">{{ completionPct >= 100 ? '모든 항목 입력 완료' : '필수 항목을 입력하세요' }}</p>
+                </div>
+              </div>
+
+              <!-- Step circles -->
+              <div class="flex items-center gap-2">
+                <template v-for="s in 3" :key="s">
+                  <div class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all"
+                    :style="s < createStep
+                      ? 'background: var(--bp-signal); color: #fff;'
+                      : s === createStep
+                        ? 'background: var(--bp-signal-dim); color: var(--bp-signal); border: 2px solid var(--bp-signal);'
+                        : 'background: var(--bp-surface-4); color: var(--bp-text-3);'">
+                    <svg v-if="s < createStep" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
+                      <polyline points="20 6 9 17 4 12"/>
+                    </svg>
+                    <span v-else>{{ s }}</span>
+                  </div>
+                  <div v-if="s < 3" class="w-5 h-0.5 rounded-full transition-all" :style="s < createStep ? 'background: var(--bp-signal);' : 'background: var(--bp-surface-4);'"></div>
+                </template>
+              </div>
             </div>
           </div>
 
           <!-- Step content -->
           <div class="px-6 py-5 space-y-3" style="max-height: 400px; overflow-y: auto;">
 
-            <!-- STEP 1: 기본 정보 -->
+            <!-- STEP 1 -->
             <template v-if="createStep === 1">
               <div class="grid grid-cols-2 gap-3">
                 <div class="col-span-2">
@@ -410,7 +450,7 @@ app.component('passports-page', {
               </div>
             </template>
 
-            <!-- STEP 2: 스펙 -->
+            <!-- STEP 2 -->
             <template v-if="createStep === 2">
               <div class="grid grid-cols-2 gap-3">
                 <div>
@@ -446,13 +486,13 @@ app.component('passports-page', {
                   <input v-model="form.temperatureRange" class="bp-input" placeholder="-20~60°C" />
                 </div>
                 <div class="col-span-2">
-                  <label class="block text-[10px] font-semibold uppercase tracking-wider mb-1" style="color: var(--bp-text-3);">탄소 발자국 (kg CO₂)</label>
+                  <label class="block text-[10px] font-semibold uppercase tracking-wider mb-1" style="color: var(--bp-text-3);">탄소 발자국 (kg CO2)</label>
                   <input v-model="form.carbonFootprint" type="number" class="bp-input" placeholder="0" />
                 </div>
               </div>
             </template>
 
-            <!-- STEP 3: 확인 -->
+            <!-- STEP 3 -->
             <template v-if="createStep === 3">
               <div class="rounded-lg p-4 space-y-2" style="background: var(--bp-surface-3); border: 1px solid var(--bp-border);">
                 <div class="flex justify-between text-xs"><span style="color: var(--bp-text-3);">모델</span><span class="font-medium" style="color: var(--bp-text-1);">{{ form.model || '-' }}</span></div>

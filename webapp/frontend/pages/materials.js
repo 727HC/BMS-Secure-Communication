@@ -189,7 +189,7 @@ app.component('materials-page', {
         </span>
       </div>
       <div style="overflow-x:auto;">
-        <table class="bp-table" style="width:100%;">
+        <table class="bp-table" style="font-size: 0.8rem;" style="width:100%;">
           <thead>
             <tr>
               <th>ID</th>

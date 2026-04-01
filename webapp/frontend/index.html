@@ -426,6 +426,19 @@
     .bp-input:focus-visible {
       outline: none; /* already has ring style */
     }
+    /* ── Page Content Transition ── */
+    .bp-page-enter {
+      animation: bp-pageIn 0.3s ease-out both;
+    }
+    @keyframes bp-pageIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @media (max-width: 640px) {
+      .bp-table thead th { font-size: 0.6rem; padding: 0.5rem 0.625rem; }
+      .bp-table tbody td { padding: 0.5rem 0.625rem; font-size: 0.75rem; }
+      .bp-stat-value { font-size: 1.5rem !important; }
+    }
   </style>
   <script>
     tailwind.config = {
@@ -642,7 +655,7 @@
             </div>
           </header>
 
-          <!-- Content Area -->
+          <!-- Content Area (smooth transition) -->
           <main class="flex-1 overflow-y-auto" style="background: var(--bp-void);">
             <div class="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
               <component :is="currentPageComponent"
