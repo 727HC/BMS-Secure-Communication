@@ -43,9 +43,27 @@ apiRouter.get('/status', (req, res) => {
 });
 app.use('/api', apiRouter);
 
+// API 404 — unknown /api/* 경로는 JSON 응답
+app.use('/api', (req, res) => {
+  res.status(404).json({ error: 'API endpoint not found' });
+});
+
 // SPA fallback — serve index.html for non-API routes
 app.use((req, res) => {
   res.sendFile(path.join(__dirname, '..', 'webapp', 'frontend', 'index.html'));
+});
+
+// Central error handler — JSON parse, multer, 내부 에러 통합 처리
+app.use((err, req, res, _next) => {
+  if (err.type === 'entity.parse.failed') {
+    return res.status(400).json({ error: 'Invalid JSON' });
+  }
+  if (err.code === 'LIMIT_FILE_SIZE') {
+    return res.status(413).json({ error: 'File too large' });
+  }
+  log.error('Unhandled error', { error: err.message, path: req.path });
+  const message = process.env.NODE_ENV === 'production' ? 'Internal server error' : err.message;
+  res.status(500).json({ error: message });
 });
 
 // Graceful shutdown

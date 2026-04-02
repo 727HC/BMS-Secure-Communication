@@ -173,7 +173,7 @@ router.get('/passport/:passportId', authenticateToken, async (req, res) => {
     const pageSize = Math.min(parseInt(req.query.pageSize || String(DEFAULT_PAGE_SIZE), 10), MAX_PAGE_SIZE);
     const bookmark = req.query.bookmark || '';
     const result = await vcService.queryCredentialsByPassport(
-      fabricService, req.params.passportId, pageSize, bookmark
+      fabricService, req.params.passportId, pageSize, bookmark, req.user
     );
     res.json(result);
   } catch (err) {
@@ -187,7 +187,7 @@ router.get('/holder/:holderDid', authenticateToken, async (req, res) => {
     const pageSize = Math.min(parseInt(req.query.pageSize || String(DEFAULT_PAGE_SIZE), 10), MAX_PAGE_SIZE);
     const bookmark = req.query.bookmark || '';
     const result = await vcService.queryCredentialsByHolder(
-      fabricService, req.params.holderDid, pageSize, bookmark
+      fabricService, req.params.holderDid, pageSize, bookmark, req.user
     );
     res.json(result);
   } catch (err) {
@@ -201,7 +201,7 @@ router.get('/type/:credType', authenticateToken, async (req, res) => {
     const pageSize = Math.min(parseInt(req.query.pageSize || String(DEFAULT_PAGE_SIZE), 10), MAX_PAGE_SIZE);
     const bookmark = req.query.bookmark || '';
     const result = await vcService.queryCredentialsByType(
-      fabricService, req.params.credType, pageSize, bookmark
+      fabricService, req.params.credType, pageSize, bookmark, req.user
     );
     res.json(result);
   } catch (err) {
@@ -215,7 +215,7 @@ router.get('/revoked/list', authenticateToken, requireMSP(MSP.REGULATOR), async 
     const pageSize = Math.min(parseInt(req.query.pageSize || String(DEFAULT_PAGE_SIZE), 10), MAX_PAGE_SIZE);
     const bookmark = req.query.bookmark || '';
     const result = await vcService.queryRevokedCredentials(
-      fabricService, pageSize, bookmark
+      fabricService, pageSize, bookmark, req.user
     );
     res.json(result);
   } catch (err) {

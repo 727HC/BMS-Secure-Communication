@@ -21,9 +21,9 @@ router.post('/', authenticateToken, requireMSP(MSP.MANUFACTURER), async (req, re
   }
 });
 
-router.get('/', async (req, res) => {
+router.get('/', authenticateToken, async (req, res) => {
   try {
-    const result = await fabricService.evaluateTransaction('QueryRawMaterials', []);
+    const result = await fabricService.evaluateTransaction('QueryRawMaterials', [], req.user);
     res.json(JSON.parse(result.toString()));
   } catch (err) {
     res.status(500).json({ error: err.message });
