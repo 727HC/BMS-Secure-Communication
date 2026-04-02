@@ -2,24 +2,18 @@
 const fabricClient = require('../utils/fabric-client');
 const { readRecentLogs } = require('../utils/log-reader');
 
-// In-memory transaction log (populated from agent structured logs + Fabric queries)
-let txCache = [];
-const MAX_CACHE = 1000;
-
-function recordTx(entry) {
-  txCache.push(entry);
-  if (txCache.length > MAX_CACHE) txCache = txCache.slice(-MAX_CACHE);
-}
+const LOG_READ_LIMIT = 1000;
 
 // Parse structured logs to extract transaction events
 function extractTxFromLogs(hours) {
   const since = new Date(Date.now() - hours * 3600000).toISOString();
-  const { logs } = readRecentLogs(MAX_CACHE, { since });
+  const { logs } = readRecentLogs(LOG_READ_LIMIT, { since });
 
   const txLogs = logs.filter((l) =>
-    l.category === 'fabric' || l.category === 'bmu' ||
+    (l.category === 'fabric' || l.category === 'bmu' ||
     l.category === 'vc' || l.category === 'maintenance' ||
-    l.category === 'recycling' || l.category === 'analysis'
+    l.category === 'recycling' || l.category === 'analysis') &&
+    (l.function || l.action)
   );
 
   return txLogs.map((l) => ({
@@ -38,60 +32,41 @@ async function execute(params) {
 
   switch (action) {
     case 'recent': {
-      // Query BMU records as proxy for recent transactions
-      let records = [];
-      try {
-        const result = await fabricClient.evaluate(
-          'QueryPassportsWithPagination', String(limit), ''
-        );
-        const passports = result.records || result || [];
+      // Primary source: actual transaction logs
+      const logRecords = extractTxFromLogs(hours)
+        .map((r) => ({ ...r, source: 'log' }));
 
-        // Also get recent BMU records if passport_id specified
-        if (passport_id) {
+      // Enrich with Fabric BMU data when passport_id specified
+      let fabricRecords = [];
+      if (passport_id) {
+        try {
           const bmuResult = await fabricClient.evaluate(
             'QueryBMURecordsByPassport', passport_id, String(limit), ''
           );
-          records = (bmuResult.records || []).map((r) => ({
-            type: 'BMU_DATA',
-            id: r.recordId,
-            passportId: r.passportId,
-            timestamp: r.timestamp || r.createdAt,
-            function: 'RecordBMUData',
-            soc: r.soc,
-            voltage: r.voltage,
-          }));
-        }
-
-        // Add passport creation/update events
-        const passportTxs = passports.slice(0, limit).map((p) => ({
-          type: 'PASSPORT',
-          id: p.passportId,
-          passportId: p.passportId,
-          timestamp: p.updatedAt || p.createdAt,
-          function: p.createdAt === p.updatedAt ? 'CreateBatteryPassport' : 'UpdatePassport',
-          status: p.status,
-          org: p.creatorMsp,
-        }));
-
-        records = [...records, ...passportTxs]
-          .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
-          .slice(0, limit);
-        return {
-          action: 'recent',
-          source: 'fabric',
-          count: records.length,
-          transactions: records,
-        };
-      } catch (err) {
-        // Fallback to log-based records
-        records = extractTxFromLogs(hours).slice(-limit);
-        return {
-          action: 'recent',
-          source: 'logs',
-          count: records.length,
-          transactions: records,
-        };
+          fabricRecords = (bmuResult.records || [])
+            .filter((r) => r.status !== 'INVALIDATED')
+            .map((r) => ({
+              timestamp: r.timestamp || r.createdAt,
+              function: 'RecordBMUData',
+              category: 'bmu',
+              success: true,
+              passportId: r.passportId,
+              details: `SOC=${r.soc} V=${r.voltage}`,
+              duration: null,
+              source: 'fabric',
+            }));
+        } catch { /* Fabric unavailable — log-only results */ }
       }
+
+      const records = [...logRecords, ...fabricRecords]
+        .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
+        .slice(0, limit);
+
+      return {
+        action: 'recent',
+        count: records.length,
+        transactions: records,
+      };
     }
 
     case 'stats': {
@@ -133,7 +108,7 @@ async function execute(params) {
 
     case 'search': {
       if (!function_name) {
-        return { error: 'function_name is required for search action' };
+        throw new Error('function_name is required for search action');
       }
 
       const logTxs = extractTxFromLogs(hours);
@@ -170,8 +145,8 @@ async function execute(params) {
     }
 
     default:
-      return { error: `Unknown action: ${action}` };
+      throw new Error(`Unknown action: ${action}`);
   }
 }
 
-module.exports = { execute, recordTx };
+module.exports = { execute };

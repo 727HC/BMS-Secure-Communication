@@ -18,6 +18,10 @@ const thresholds = {
 const SOC_SCALE = 655.35;
 const TEMP_SCALE = 1310.7;
 
+function filterValid(records) {
+  return (records || []).filter((r) => r.status !== 'INVALIDATED');
+}
+
 function scaleSOC(raw) {
   return +(raw / SOC_SCALE).toFixed(1);
 }
@@ -72,9 +76,9 @@ async function execute(params) {
           const result = await fabricClient.evaluate(
             'QueryBMURecordsByPassport', passport_id, String(limit), ''
           );
-          allRecords = result.records || [];
+          allRecords = filterValid(result.records);
         } catch (err) {
-          return { error: `Failed to query BMU records: ${err.message}` };
+          throw new Error(`Failed to query BMU records: ${err.message}`);
         }
       } else {
         // Get records from logs
@@ -95,7 +99,7 @@ async function execute(params) {
             )
           );
           for (const r of results) {
-            if (r.status === 'fulfilled') allRecords.push(...(r.value.records || []));
+            if (r.status === 'fulfilled') allRecords.push(...filterValid(r.value.records));
           }
         } catch { /* ignore */ }
       }
@@ -141,9 +145,11 @@ async function execute(params) {
             )
           );
           for (const res of results) {
-            if (res.status === 'fulfilled' && res.value.records.length > 0) {
+            if (res.status === 'fulfilled') {
               const { pid } = res.value;
-              const r = res.value.records[0];
+              const valid = filterValid(res.value.records);
+              if (valid.length === 0) continue;
+              const r = valid[0];
               latestByPassport.push({
                 passportId: pid,
                 recordId: r.recordId,
@@ -165,7 +171,7 @@ async function execute(params) {
             records: latestByPassport,
           };
         } catch (err) {
-          return { error: `Failed to query passports: ${err.message}` };
+          throw new Error(`Failed to query passports: ${err.message}`);
         }
       }
 
@@ -173,7 +179,7 @@ async function execute(params) {
         const result = await fabricClient.evaluate(
           'QueryBMURecordsByPassport', passport_id, String(limit), ''
         );
-        const records = (result.records || []).map((r) => ({
+        const records = filterValid(result.records).map((r) => ({
           recordId: r.recordId,
           passportId: r.passportId,
           did: r.did,
@@ -199,7 +205,7 @@ async function execute(params) {
           records,
         };
       } catch (err) {
-        return { error: `Failed to query BMU records: ${err.message}` };
+        throw new Error(`Failed to query BMU records: ${err.message}`);
       }
     }
 
@@ -265,12 +271,20 @@ async function execute(params) {
 
     case 'thresholds': {
       if (set_thresholds) {
-        if (set_thresholds.soc_min !== undefined) thresholds.soc_min = set_thresholds.soc_min;
-        if (set_thresholds.soc_max !== undefined) thresholds.soc_max = set_thresholds.soc_max;
-        if (set_thresholds.voltage_min !== undefined) thresholds.voltage_min = set_thresholds.voltage_min;
-        if (set_thresholds.voltage_max !== undefined) thresholds.voltage_max = set_thresholds.voltage_max;
-        if (set_thresholds.temp_min !== undefined) thresholds.temp_min = set_thresholds.temp_min;
-        if (set_thresholds.temp_max !== undefined) thresholds.temp_max = set_thresholds.temp_max;
+        // Apply updates to a copy first for cross-validation
+        const next = { ...thresholds };
+        if (set_thresholds.soc_min !== undefined) next.soc_min = set_thresholds.soc_min;
+        if (set_thresholds.soc_max !== undefined) next.soc_max = set_thresholds.soc_max;
+        if (set_thresholds.voltage_min !== undefined) next.voltage_min = set_thresholds.voltage_min;
+        if (set_thresholds.voltage_max !== undefined) next.voltage_max = set_thresholds.voltage_max;
+        if (set_thresholds.temp_min !== undefined) next.temp_min = set_thresholds.temp_min;
+        if (set_thresholds.temp_max !== undefined) next.temp_max = set_thresholds.temp_max;
+
+        if (next.soc_min >= next.soc_max) throw new Error(`soc_min (${next.soc_min}) must be < soc_max (${next.soc_max})`);
+        if (next.voltage_min >= next.voltage_max) throw new Error(`voltage_min (${next.voltage_min}) must be < voltage_max (${next.voltage_max})`);
+        if (next.temp_min >= next.temp_max) throw new Error(`temp_min (${next.temp_min}) must be < temp_max (${next.temp_max})`);
+
+        Object.assign(thresholds, next);
         return {
           action: 'thresholds',
           message: 'Thresholds updated',
@@ -289,7 +303,7 @@ async function execute(params) {
     }
 
     default:
-      return { error: `Unknown action: ${action}` };
+      throw new Error(`Unknown action: ${action}`);
   }
 }
 
