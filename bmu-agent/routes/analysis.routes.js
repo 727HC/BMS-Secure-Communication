@@ -16,11 +16,14 @@ router.post('/:id/request', authenticateToken, requireMSP(MSP.EV_MANUFACTURER), 
 
 router.post('/:id/result', authenticateToken, requireMSP(MSP.SERVICE), async (req, res) => {
   const { soh, soce, remainingLifeCycle, recycleAvailable } = req.body;
+  if (soh == null || soce == null || remainingLifeCycle == null || recycleAvailable == null) {
+    return res.status(400).json({ error: 'soh, soce, remainingLifeCycle, recycleAvailable required' });
+  }
   try {
     await fabricService.submitTransaction('SubmitAnalysisResult', [
       req.params.id,
-      String(soh || 0), String(soce || 0),
-      String(remainingLifeCycle || 0), String(recycleAvailable || false),
+      String(soh), String(soce),
+      String(remainingLifeCycle), String(recycleAvailable),
     ], req.user);
     res.json({ success: true, passportId: req.params.id });
   } catch (err) {

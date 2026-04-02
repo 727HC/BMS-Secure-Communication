@@ -118,30 +118,30 @@ async function queryCredential(fabricService, credentialId) {
   return JSON.parse(result.toString());
 }
 
-async function queryCredentialsByPassport(fabricService, passportId, pageSize, bookmark) {
+async function queryCredentialsByPassport(fabricService, passportId, pageSize, bookmark, userCtx) {
   const result = await fabricService.evaluateTransaction(
-    'QueryCredentialsByPassport', [passportId, String(pageSize || 100), bookmark || '']
+    'QueryCredentialsByPassport', [passportId, String(pageSize || 100), bookmark || ''], userCtx
   );
   return JSON.parse(result.toString());
 }
 
-async function queryCredentialsByHolder(fabricService, holderDid, pageSize, bookmark) {
+async function queryCredentialsByHolder(fabricService, holderDid, pageSize, bookmark, userCtx) {
   const result = await fabricService.evaluateTransaction(
-    'QueryCredentialsByHolder', [holderDid, String(pageSize || 100), bookmark || '']
+    'QueryCredentialsByHolder', [holderDid, String(pageSize || 100), bookmark || ''], userCtx
   );
   return JSON.parse(result.toString());
 }
 
-async function queryCredentialsByType(fabricService, credType, pageSize, bookmark) {
+async function queryCredentialsByType(fabricService, credType, pageSize, bookmark, userCtx) {
   const result = await fabricService.evaluateTransaction(
-    'QueryCredentialsByType', [credType, String(pageSize || 100), bookmark || '']
+    'QueryCredentialsByType', [credType, String(pageSize || 100), bookmark || ''], userCtx
   );
   return JSON.parse(result.toString());
 }
 
-async function queryRevokedCredentials(fabricService, pageSize, bookmark) {
+async function queryRevokedCredentials(fabricService, pageSize, bookmark, userCtx) {
   const result = await fabricService.evaluateTransaction(
-    'QueryRevokedCredentials', [String(pageSize || 100), bookmark || '']
+    'QueryRevokedCredentials', [String(pageSize || 100), bookmark || ''], userCtx
   );
   return JSON.parse(result.toString());
 }

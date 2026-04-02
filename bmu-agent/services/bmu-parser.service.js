@@ -19,8 +19,8 @@ const PAYLOAD_SIZE = 48;
 
 function parseRawPayload(hexString) {
   const buf = Buffer.from(hexString, 'hex');
-  if (buf.length < PAYLOAD_SIZE) {
-    throw new Error(`rawPayload too short: expected ${PAYLOAD_SIZE} bytes, got ${buf.length}`);
+  if (buf.length !== PAYLOAD_SIZE) {
+    throw new Error(`rawPayload size mismatch: expected ${PAYLOAD_SIZE} bytes, got ${buf.length}`);
   }
 
   const current = buf.readFloatLE(0);

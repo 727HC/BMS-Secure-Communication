@@ -5,7 +5,7 @@ const multer = require('multer');
 const { authenticateToken } = require('../middleware/auth');
 const { requireMSP } = require('../middleware/rbac');
 const fabricService = require('../services/fabric.service');
-const { MSP } = require('../config/constants');
+const { MSP, DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE } = require('../config/constants');
 
 // Vehicle image upload config — static tree 밖에 저장하여 직접 접근 차단
 const fs = require('fs');
@@ -63,10 +63,17 @@ router.post('/', authenticateToken, requireMSP(MSP.MANUFACTURER), async (req, re
   }
 });
 
-// GET /api/passports — List all passports (authenticated, user identity로 RBAC 적용)
+// GET /api/passports — List passports with pagination (user identity로 RBAC 적용)
 router.get('/', authenticateToken, async (req, res) => {
   try {
-    const result = await fabricService.evaluateTransaction('QueryAllPassports', [], req.user);
+    const pageSize = Math.min(
+      parseInt(req.query.pageSize, 10) || DEFAULT_PAGE_SIZE,
+      MAX_PAGE_SIZE
+    );
+    const bookmark = req.query.bookmark || '';
+    const result = await fabricService.evaluateTransaction(
+      'QueryPassportsWithPagination', [String(pageSize), bookmark], req.user
+    );
     res.json(parseResult(result));
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -163,7 +170,7 @@ router.post('/:id/materials', authenticateToken, requireMSP(MSP.MANUFACTURER), a
 // POST /api/passports/:id/correct — Correct passport field
 router.post('/:id/correct', authenticateToken, requireMSP(MSP.MANUFACTURER, MSP.EV_MANUFACTURER, MSP.REGULATOR), async (req, res) => {
   const { fieldName, newValue, reason } = req.body;
-  if (!fieldName || !newValue || !reason) {
+  if (fieldName == null || newValue == null || reason == null) {
     return res.status(400).json({ error: 'fieldName, newValue, reason required' });
   }
   try {

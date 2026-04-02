@@ -277,25 +277,20 @@ async function registerUser(userId, userSecret, orgConfig) {
   return { message: `User ${userId} registered and enrolled`, mspId: org.mspId };
 }
 
-// 로그인 — wallet 확인 → enroll 시도
+// 로그인 — 항상 CA enroll로 비밀번호 검증
 async function loginUser(userId, userSecret, orgConfig) {
   const org = orgConfig || fabricConfig.currentOrg;
-  const w = await getWallet();
-  const label = walletLabel(userId, org.mspId);
-
-  // 1. wallet에 이미 있으면 바로 성공
-  const existing = await w.get(label);
-  if (existing) {
-    return { mspId: org.mspId, userId };
-  }
-
-  // 2. wallet에 없으면 CA enroll 시도
   const ca = getCAForOrg(org);
+
+  // 항상 CA enroll 시도하여 비밀번호 검증 (wallet 캐시 유무와 무관)
   try {
     const enrollment = await ca.enroll({
       enrollmentID: userId,
       enrollmentSecret: userSecret,
     });
+    // enroll 성공 시 wallet 갱신 (인증서 rotation)
+    const w = await getWallet();
+    const label = walletLabel(userId, org.mspId);
     await w.put(label, {
       credentials: {
         certificate: enrollment.certificate,
@@ -304,6 +299,11 @@ async function loginUser(userId, userSecret, orgConfig) {
       mspId: org.mspId,
       type: 'X.509',
     });
+    // 기존 gateway pool에서 제거 (새 인증서로 재연결하도록)
+    if (gatewayPool.has(label)) {
+      try { gatewayPool.get(label).gateway.disconnect(); } catch { /* ignore */ }
+      gatewayPool.delete(label);
+    }
     return { mspId: org.mspId, userId };
   } catch (enrollErr) {
     throw new Error(`로그인 실패: ${enrollErr.message}`);

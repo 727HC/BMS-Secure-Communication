@@ -7,6 +7,9 @@ const { MSP } = require('../config/constants');
 
 router.put('/:id/availability', authenticateToken, requireMSP(MSP.SERVICE, MSP.REGULATOR), async (req, res) => {
   const { available } = req.body;
+  if (typeof available !== 'boolean') {
+    return res.status(400).json({ error: 'available (boolean) required' });
+  }
   try {
     await fabricService.submitTransaction('SetRecycleAvailability', [
       req.params.id, String(available),
