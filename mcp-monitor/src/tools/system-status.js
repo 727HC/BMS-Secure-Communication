@@ -218,7 +218,7 @@ async function execute(params) {
       const agentStatus = await checkAgentStatus(verbose);
 
       // Check node process
-      const nodeProcs = runCommand("ps aux | grep 'node.*server.js' | grep -v grep");
+      const nodeProcs = runCommand("ps aux | grep 'node.*bmu-agent/server\\.js' | grep -v grep");
       agentStatus.process = nodeProcs ? {
         running: true,
         info: nodeProcs.split('\n')[0],
@@ -258,7 +258,7 @@ async function execute(params) {
     }
 
     default:
-      return { error: `Unknown action: ${action}` };
+      throw new Error(`Unknown action: ${action}`);
   }
 }
 

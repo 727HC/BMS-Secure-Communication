@@ -1,6 +1,5 @@
-// Shared Fabric client for MCP monitor — read-only queries via default admin identity
+// Shared Fabric client for MCP monitor — read-only queries only
 const { Gateway, Wallets } = require('fabric-network');
-const FabricCAServices = require('fabric-ca-client');
 const fs = require('fs');
 const path = require('path');
 
@@ -16,6 +15,10 @@ function getOrgConfig() {
   const msp = process.env[`${prefix}MSP`];
   const domain = process.env[`${prefix}DOMAIN`];
   const caName = process.env[`${prefix}CA_NAME`];
+
+  if (!msp) throw new Error(`Missing env: ${prefix}MSP (Fabric org ${orgNum} MSP ID)`);
+  if (!domain) throw new Error(`Missing env: ${prefix}DOMAIN (Fabric org ${orgNum} domain)`);
+
   return {
     mspId: msp,
     domain,
@@ -36,30 +39,20 @@ async function connect() {
   const channelName = process.env.FABRIC_CHANNEL || 'passportchannel';
   const contractName = process.env.FABRIC_CONTRACT || 'passport-contract';
   const identity = process.env.FABRIC_IDENTITY || 'admin';
-  const adminSecret = process.env.FABRIC_ADMIN_SECRET || 'REMOVED_SECRET_ROTATED_2026_04_18';
   const walletPath = process.env.FABRIC_WALLET_PATH ||
     path.resolve(__dirname, '..', '..', '..', 'bmu-agent', 'wallet');
 
   const wallet = await Wallets.newFileSystemWallet(walletPath);
   const label = `${org.mspId}:${identity}`;
 
-  // Enroll if needed
-  let adminId = await wallet.get(label);
+  // Wallet identity must already exist (monitor is read-only, no enrollment)
+  const adminId = await wallet.get(label);
   if (!adminId) {
-    const ccp = JSON.parse(fs.readFileSync(org.ccpPath, 'utf8'));
-    const caInfo = ccp.certificateAuthorities?.[`ca.${org.domain}`];
-    if (caInfo) {
-      const caTLSCACerts = caInfo.tlsCACerts?.pem;
-      const tlsOpts = caTLSCACerts ? { trustedRoots: caTLSCACerts, verify: process.env.FABRIC_CA_TLS_VERIFY !== 'false' } : undefined;
-      const ca = new FabricCAServices(caInfo.url, tlsOpts, caInfo.caName);
-      const enrollment = await ca.enroll({ enrollmentID: identity, enrollmentSecret: adminSecret });
-      await wallet.put(label, {
-        credentials: { certificate: enrollment.certificate, privateKey: enrollment.key.toBytes() },
-        mspId: org.mspId,
-        type: 'X.509',
-      });
-      adminId = await wallet.get(label);
-    }
+    throw new Error(
+      `Wallet identity "${label}" not found at ${walletPath}. ` +
+      'The monitor is read-only and does not enroll identities. ' +
+      'Please enroll via bmu-agent first.'
+    );
   }
 
   const ccp = JSON.parse(fs.readFileSync(org.ccpPath, 'utf8'));

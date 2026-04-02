@@ -67,6 +67,15 @@ function readRecentLogs(count = 100, filter) {
     }
   }
 
+  // Deduplicate (tee + logger can write the same entry twice)
+  const seen = new Set();
+  logs = logs.filter((l) => {
+    const key = `${l.timestamp}|${l.category}|${l.message}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+
   // Apply filter
   if (filter) {
     if (filter.level) logs = logs.filter((l) => l.level === filter.level);

@@ -4,6 +4,18 @@ const { readRecentLogs } = require('../utils/log-reader');
 
 const CRED_TYPES = ['BATTERY_PASSPORT', 'BATTERY_HEALTH', 'MAINTENANCE', 'COMPLIANCE', 'RECYCLING'];
 
+function getDataScope() {
+  const { mspId } = fabricClient.getOrgConfig();
+  const isRegulator = mspId === 'RegulatorMSP';
+  return {
+    msp: mspId,
+    scope: isRegulator ? 'all-orgs' : 'own-org',
+    note: isRegulator
+      ? 'RegulatorMSP sees all credentials'
+      : `${mspId} sees only own-issued credentials`,
+  };
+}
+
 async function execute(params) {
   const { action, passport_id, cred_type, days_until_expiry = 30, limit = 20 } = params;
 
@@ -51,6 +63,7 @@ async function execute(params) {
 
       return {
         action: 'events',
+        dataScope: getDataScope(),
         logEventCount: events.length,
         fabricCredCount: fabricCreds.length,
         events: events.slice(-limit),
@@ -97,6 +110,7 @@ async function execute(params) {
 
       return {
         action: 'expiring',
+        dataScope: getDataScope(),
         threshold: `${days_until_expiry} days`,
         count: expiring.length,
         expired: expiring.filter((e) => e.isExpired).length,
@@ -118,7 +132,7 @@ async function execute(params) {
           );
           const creds = result.records || [];
 
-          const typeStats = { total: creds.length, active: 0, revoked: 0, expired: 0 };
+          const typeStats = { total: 0, active: 0, revoked: 0, expired: 0 };
           const now = new Date();
 
           for (const cred of creds) {
@@ -137,6 +151,7 @@ async function execute(params) {
             stats.total++;
           }
 
+          typeStats.total = typeStats.active + typeStats.revoked + typeStats.expired;
           stats.byType[type] = typeStats;
         } catch {
           stats.byType[type] = { total: 0, error: 'query failed' };
@@ -145,6 +160,7 @@ async function execute(params) {
 
       return {
         action: 'stats',
+        dataScope: getDataScope(),
         passportFilter: passport_id || 'all',
         ...stats,
       };
@@ -176,16 +192,17 @@ async function execute(params) {
 
         return {
           action: 'revoked',
+          dataScope: getDataScope(),
           count: revokedList.length,
           revokedCredentials: revokedList,
         };
       } catch (err) {
-        return { error: `Failed to query revoked credentials: ${err.message}` };
+        throw new Error(`Failed to query revoked credentials: ${err.message}`);
       }
     }
 
     default:
-      return { error: `Unknown action: ${action}` };
+      throw new Error(`Unknown action: ${action}`);
   }
 }
 
