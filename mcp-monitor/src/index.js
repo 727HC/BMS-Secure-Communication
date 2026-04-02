@@ -26,10 +26,10 @@ server.tool(
     action: z.enum(['recent', 'stats', 'search']).describe(
       'recent: 최근 트랜잭션 목록, stats: 성공/실패 통계 및 TPS, search: 특정 함수명으로 검색'
     ),
-    limit: z.number().optional().default(20).describe('조회할 트랜잭션 수 (recent/search)'),
+    limit: z.number().int().min(1).max(500).optional().default(20).describe('조회할 트랜잭션 수 (recent/search)'),
     function_name: z.string().optional().describe('검색할 체인코드 함수명 (search 시 필수)'),
     passport_id: z.string().optional().describe('특정 여권 ID로 필터링'),
-    hours: z.number().optional().default(24).describe('통계 집계 시간 범위 (stats)'),
+    hours: z.number().min(0.1).max(720).optional().default(24).describe('통계 집계 시간 범위 (stats)'),
   },
   async (params) => {
     try {
@@ -53,8 +53,8 @@ server.tool(
       'anomalies: 임계값 초과 데이터 탐지, latest: 최신 BMU 데이터, frequency: 수신 빈도 분석, thresholds: 현재 임계값 설정 조회/변경'
     ),
     passport_id: z.string().optional().describe('특정 여권 ID로 필터링'),
-    limit: z.number().optional().default(50).describe('조회할 레코드 수'),
-    hours: z.number().optional().default(1).describe('분석 시간 범위'),
+    limit: z.number().int().min(1).max(500).optional().default(50).describe('조회할 레코드 수'),
+    hours: z.number().min(0.1).max(720).optional().default(1).describe('분석 시간 범위'),
     set_thresholds: z.object({
       soc_min: z.number().optional(),
       soc_max: z.number().optional(),
@@ -80,15 +80,15 @@ server.tool(
 
 server.tool(
   'monitor_vc',
-  'Verifiable Credential 이벤트 추적. VC 발급/폐기/검증 이벤트 로그, 만료 임박 VC 알림, 상태 통계',
+  'Verifiable Credential 이벤트 추적. VC 발급/폐기 이벤트 로그, 만료 임박 VC 알림, 상태 통계',
   {
     action: z.enum(['events', 'expiring', 'stats', 'revoked']).describe(
       'events: 최근 VC 이벤트 목록, expiring: 만료 임박 VC, stats: VC 상태 통계, revoked: 폐기된 VC 목록'
     ),
     passport_id: z.string().optional().describe('특정 여권 ID로 필터링'),
     cred_type: z.string().optional().describe('VC 타입 필터 (BATTERY_PASSPORT, BATTERY_HEALTH, MAINTENANCE, COMPLIANCE, RECYCLING)'),
-    days_until_expiry: z.number().optional().default(30).describe('만료 임박 기준 일수 (expiring)'),
-    limit: z.number().optional().default(20).describe('조회할 항목 수'),
+    days_until_expiry: z.number().int().min(1).max(365).optional().default(30).describe('만료 임박 기준 일수 (expiring)'),
+    limit: z.number().int().min(1).max(500).optional().default(20).describe('조회할 항목 수'),
   },
   async (params) => {
     try {
