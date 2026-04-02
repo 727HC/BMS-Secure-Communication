@@ -1,9 +1,12 @@
 const express = require('express');
 const router = express.Router();
 const authService = require('../services/auth.service');
+const { authenticateToken } = require('../middleware/auth');
 
-// POST /api/auth/register
-router.post('/register', async (req, res) => {
+const isOpenReg = process.env.ALLOW_OPEN_REGISTRATION === 'true';
+
+// POST /api/auth/register (production: 인증 필요, dev: ALLOW_OPEN_REGISTRATION=true로 개방)
+router.post('/register', ...(isOpenReg ? [] : [authenticateToken]), async (req, res) => {
   const { userId, password, orgNum } = req.body;
 
   if (!userId || !password || !orgNum) {
