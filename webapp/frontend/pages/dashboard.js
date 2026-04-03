@@ -224,6 +224,21 @@ app.component('dashboard-page', {
           <!-- RIGHT: Sidebar panels -->
           <div style="display: flex; flex-direction: column; gap: 1rem;">
 
+            <!-- Fleet GBA Compliance -->
+            <div style="border: 1px solid var(--color-border); border-radius: 0.5rem; padding: 1rem;">
+              <span class="sn-eyebrow" style="display: block; margin-bottom: 0.75rem;">GBA-21 준수 현황</span>
+              <div style="display: flex; align-items: baseline; gap: 0.5rem; margin-bottom: 0.75rem;">
+                <span style="font-family: var(--font-mono); font-size: 1.75rem; font-weight: 700; color: var(--color-text-1);">
+                  {{ passports.length > 0 ? Math.round(passports.filter(p => p.chemistry && p.model && p.manufacturerName).length / passports.length * 100) : 0 }}%
+                </span>
+                <span style="font-size: 0.75rem; color: var(--color-text-3);">평균 준수율</span>
+              </div>
+              <div style="height: 6px; background: rgba(0,0,0,0.04); border-radius: 3px; overflow: hidden;">
+                <div style="height: 100%; border-radius: 3px; background: #16a34a;"
+                  :style="{ width: (passports.length > 0 ? Math.round(passports.filter(p => p.chemistry && p.model && p.manufacturerName).length / passports.length * 100) : 0) + '%' }"></div>
+              </div>
+            </div>
+
             <!-- Chemistry breakdown with bars -->
             <div style="border: 1px solid var(--color-border); border-radius: 0.5rem; padding: 1rem;">
               <span class="sn-eyebrow" style="display: block; margin-bottom: 0.75rem;">화학 구성</span>
