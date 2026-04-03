@@ -243,8 +243,12 @@ app.component('maintenance-page', {
       </div>
 
       <!-- EMPTY STATE -->
-      <div v-if="filteredPassports.length === 0" style="padding: 3rem; text-align: center; border: 1px dashed var(--color-border); border-radius: 0.5rem;">
-        <p style="font-size: 0.875rem; color: var(--color-text-3); margin-bottom: 0;">현재 정비 이력이 없습니다. 배터리 여권이 등록되면 정비 이력을 관리할 수 있습니다.</p>
+      <div v-if="filteredPassports.length === 0" style="position: relative; padding-left: 2rem; min-height: 200px;">
+        <div style="position: absolute; left: 0.75rem; top: 0; bottom: 0; width: 2px; background: rgba(0,0,0,0.06);"></div>
+        <div style="position: absolute; left: 0.5rem; top: 50%; transform: translateY(-50%); width: 12px; height: 12px; border-radius: 50%; background: rgba(0,0,0,0.06);"></div>
+        <div style="display: flex; align-items: center; justify-content: center; min-height: 200px;">
+          <p style="font-size: 0.875rem; color: var(--color-text-3);">현재 정비 이력이 없습니다</p>
+        </div>
       </div>
 
       <!-- TIMELINE VIEW (structural change from flat list) -->
