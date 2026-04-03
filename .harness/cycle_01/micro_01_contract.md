@@ -1,32 +1,35 @@
-# Micro 01 Contract
+# Micro-loop 01 Contract — Dashboard CSS Consolidation
 
-## Ledger Restatement
+This is micro-loop 1 of 15 inside cycle 1.
+Completing this micro-loop does not complete the cycle.
+Completing 15 micro-loops completes only one cycle.
 
-- Cycle 01 / target 12
-- Micro-loop 01 / 15
-- Completed cycles so far: 0
-- Stopping allowed: NO
+## Focus
+Remove the `<style>` block from dashboard.js template and replace all inline styles with global CSS classes.
 
-## Screen Focus
-
-- `login-page`
+## Why This Matters
+Dashboard has the worst case: 80+ lines of re-declared CSS inside its template (lines 136-215) that override the global design system.
 
 ## Aesthetic Hypothesis
+Using consistent global classes instead of per-component overrides will make the dashboard visually coherent with the rest of the app.
 
-로그인 화면을 일반 auth card가 아니라 `access checkpoint / credential intake desk` 로 재구성하면, 제품 첫인상에서 generic SaaS 냄새를 가장 빠르게 끊을 수 있다.
+## Screens Changed
+- Dashboard page
 
-## Functional Constraints
+## Completion Criteria
+- Zero `<style>` tags inside dashboard.js template
+- All dashboard elements use global sn- classes from index.html
+- Dashboard renders correctly with data visible
+- Inline style="" count in dashboard.js reduced by 50%+
 
-- 로그인 / 회원가입 탭 유지
-- 조직 선택 유지
-- 사용자 ID / 비밀번호 입력 유지
-- 기존 submit 흐름 유지
-- 오류 표시 유지
-- `emit('login', data)` 동작 유지
+## Evaluation Evidence
+- Playwright screenshot of dashboard after changes
+- grep count of `style="` before and after
 
-## Build Intent
+## Risks
+- Dashboard already has rendering issues (blank page with opacity:0)
+- Removing inline styles may break layout
 
-- centered card 문법을 버리고, 접수 데스크형 문서 표면으로 재구성
-- 조직 선택을 시각적으로 더 공식적인 issuer selection surface로 재해석
-- 안내 텍스트를 제품 언어에 맞게 정제
-- mobile에서도 정보 우선순위가 무너지지 않게 재배치
+## Anti-patterns to Avoid
+- Adding new inline styles to fix what removing old ones broke
+- Creating dashboard-specific CSS classes (use global only)

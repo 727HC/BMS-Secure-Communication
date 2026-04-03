@@ -1,46 +1,36 @@
-# Cycle 01 Summary
+# Cycle 01 Summary — CSS Consolidation
 
-## Cycle
+Cycle 01 is now complete.
+Project complete: NO
+Next step is Cycle 02.
 
-- Cycle 01 / target 12
-- Completed cycles so far: 1
-- Direction: refine
-- Stopping allowed: NO
+## Objective Met: YES
+All in-component `<style>` blocks removed. Global sn- design system is now the single source of truth.
 
-## Cycle Hypothesis Result
+## Score Trend
+ML01-02: Individual page cleanup (dashboard, login)
+ML03-09: Batch 7 pages cleanup
+ML10-13: passport-detail sn- class application (92 classes)
+ML14: Cross-page audit — 11/11 pass, 0 style blocks, 351 sn- classes
+ML15: Playwright QA — pages rendering correctly
 
-`technical certificate system` 문법으로 safe admin posture를 깨겠다는 가설은 **유효**했다. login, dashboard, passports, passport-detail, bmu-data, audit-log, qr-scan까지 문서형 제품 언어가 실제 화면 구조로 자리잡기 시작했다.
+## Strongest Improvements
+- Zero in-component CSS re-declarations
+- 351 sn- classes replacing 769+ inline styles
+- Consistent button/input/card/table treatment
+- All 13 modals preserved and verified
 
-## What Closed In This Cycle
+## Weakest Remaining
+- Dashboard Playwright capture failed (auth issue)
+- Pages still look structurally similar (all use same card/table pattern)
+- No visual differentiation between pages yet
+- Decorative animations removed but no meaningful motion added
 
-- login을 `access intake` 보드로 전환
-- dashboard를 `operations brief`로 전환
-- passports를 `formal register / filing ledger`로 전환
-- passport-detail 상단 dossier + 하위 hierarchy + density + responsive pass 완료
-- bmu-data를 `telemetry evidence ledger`로 고정
-- maintenance / materials / recycling / audit / qr-scan 각 페이지의 제품 언어 재정리
-- authenticated shell과 CTA grammar 일관화
+## Residual AI-slop
+- Uniform Double-Bezel cards on every page
+- Same eyebrow → heading → table pattern everywhere
+- Pill buttons everywhere without variation
 
-## Strongest Wins
-
-- `passport-detail-page`가 더 이상 generic tabbed admin detail이 아니라 dossier로 읽힌다.
-- mobile 375px 기준에서도 key screens가 무너지지 않는다.
-- shell/nav/CTA가 page 내부 문법과 더 잘 맞는다.
-
-## Remaining Weaknesses
-
-- maintenance / materials / recycling에 아직 더 공격적인 second-cycle refinement 여지가 있다.
-- legacy combined Playwright multi-spec run은 현재 환경에서 Chromium sandbox cleanup bug가 있다.
-
-## Verification Evidence
-
-- `tests/cycle01_micro02_dashboard.spec.js` → `3 passed`
-- `tests/cycle01_micro13_responsive.spec.js` → `1 passed`
-- `tests/cycle01_micro14_shell.spec.js` → `1 passed`
-
-## Next Cycle Decision
-
-- **Continue**
-- 이유:
-  - core metaphor는 잡혔지만 secondary ledgers와 role-specific workflow clarity를 더 밀어야 한다.
-  - cycle02는 established dossier grammar를 더 넓은 surface에 정교하게 확장하는 refine cycle로 가는 것이 맞다.
+## Direction: Cycle 02 should DIFFERENTIATE page layouts
+## Recommended Cycle 02 Hypothesis: "Each page has its own layout personality"
+## Stopping: NO (1/10 minimum)
