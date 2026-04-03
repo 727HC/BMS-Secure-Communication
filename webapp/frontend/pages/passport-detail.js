@@ -793,35 +793,44 @@ app.component('passport-detail-page', {
   template: `
     <div class="min-h-full">
 
-      <!-- ===== HEADER ===== -->
+      <!-- ===== CERTIFICATE HEADER ===== -->
       <div class="mb-6">
-        <button @click="goBack"
-          class="group inline-flex items-center gap-1.5 text-sm font-medium text-gray-400 hover:text-emerald-600 transition-colors mb-4">
-          <svg class="w-4 h-4 transition-transform group-hover:-translate-x-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
-          </svg>
-          배터리 여권 목록
+        <button @click="goBack" class="sn-btn sn-btn-ghost mb-4" style="padding: 0.375rem 0.75rem; font-size: 0.75rem;">
+          ← 목록으로
         </button>
 
-        <div v-if="passport" class="flex flex-col lg:flex-row lg:items-start gap-6">
-          <!-- Left: Title + Key Specs -->
-          <div class="flex-1 min-w-0">
-            <div class="flex items-center gap-3 flex-wrap mb-1.5">
-              <h1 class="text-2xl font-bold text-gray-900">{{ passport.model || '배터리 여권 상세' }}</h1>
-              <span :class="[
-                'inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-semibold border',
-                getStatusBadge(passport.status).bg,
-                getStatusBadge(passport.status).text,
-                getStatusBadge(passport.status).border
-              ]">
-                <span :class="['w-2 h-2 rounded-full', getStatusBadge(passport.status).dot]"></span>
+        <div v-if="passport" style="border: 1px solid var(--color-border); border-radius: 0.75rem; overflow: hidden;">
+          <!-- Document header bar -->
+          <div style="background: var(--color-primary); padding: 1rem 1.5rem; display: flex; align-items: center; justify-content: space-between;">
+            <div>
+              <p style="font-size: 0.6875rem; text-transform: uppercase; letter-spacing: 0.15em; color: rgba(255,255,255,0.5); margin-bottom: 0.25rem;">Battery Passport</p>
+              <h1 class="sn-display" style="font-size: 1.5rem; color: #ffffff;">{{ passport.model || '배터리 여권' }}</h1>
+            </div>
+            <div style="text-align: right;">
+              <span :class="['sn-badge', getStatusBadge(passport.status).bg, getStatusBadge(passport.status).text, 'border', getStatusBadge(passport.status).border]"
+                style="font-size: 0.75rem; padding: 0.25rem 0.75rem;">
                 {{ getStatusBadge(passport.status).label }}
               </span>
+              <p class="sn-mono" style="font-size: 0.6875rem; color: rgba(255,255,255,0.4); margin-top: 0.375rem;">{{ passport.passportId }}</p>
             </div>
-            <div class="flex items-center gap-4 flex-wrap mb-4">
-              <span class="text-sm text-gray-400 font-mono">{{ passport.passportId }}</span>
-              <span v-if="passport.serialNumber" class="text-sm text-gray-400">S/N: {{ passport.serialNumber }}</span>
+          </div>
+
+          <!-- Key specs strip -->
+          <div style="padding: 1rem 1.5rem; display: flex; align-items: center; gap: 2rem; flex-wrap: wrap; border-bottom: 1px solid var(--color-border); background: #fff;">
+            <div v-for="spec in [
+              { label: '제조사', value: passport.manufacturerName },
+              { label: '화학', value: passport.chemistry },
+              { label: '에너지', value: passport.totalEnergy ? passport.totalEnergy + ' kWh' : null },
+              { label: '무게', value: passport.weight ? passport.weight + ' kg' : null },
+              { label: 'S/N', value: passport.serialNumber }
+            ].filter(s => s.value)" :key="spec.label" style="display: flex; align-items: baseline; gap: 0.375rem;">
+              <span class="sn-eyebrow" style="font-size: 0.625rem;">{{ spec.label }}</span>
+              <span style="font-size: 0.8125rem; font-weight: 500; color: var(--color-text-1);">{{ spec.value }}</span>
             </div>
+          </div>
+
+          <!-- Content area (rest of the page goes inside this frame) -->
+          <div style="padding: 1.5rem; background: #fff;">
 
             <!-- Key specs grid -->
             <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
