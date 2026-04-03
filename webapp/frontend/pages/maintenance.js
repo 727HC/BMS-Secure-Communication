@@ -491,7 +491,7 @@ app.component('maintenance-page', {
         <div style="padding:12px 24px;display:flex;justify-content:flex-end;gap:10px;border-top:1px solid rgba(0,0,0,0.06);">
           <button @click="closeModals" class="sn-btn sn-btn-ghost">취소</button>
           <button @click="submitAccident" :disabled="!accidentForm.description||!accidentForm.reporter||!accidentConfirmed||submitting"
-            style="display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:9999px;font-size:0.875rem;font-weight:600;cursor:pointer;border:none;background:#dc2626;color:#fff;"
+            class="sn-btn sn-btn-danger" style="display:inline-flex;align-items:center;gap:6px;"
             :style="(!accidentForm.description||!accidentForm.reporter||!accidentConfirmed||submitting)?'opacity:0.4;cursor:not-allowed;':''">
             <svg v-if="submitting" style="width:14px;height:14px;animation:spin 0.8s linear infinite;" fill="none" viewBox="0 0 24 24"><circle opacity="0.25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path opacity="0.75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
             {{ submitting ? '기록 중...' : '사고 기록' }}

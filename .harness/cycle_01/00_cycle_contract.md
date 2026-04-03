@@ -1,25 +1,26 @@
-# Cycle 01 Contract
+# Cycle 01 Contract — CSS Consolidation & Design System Foundation
 
-## Cycle
+## Cycle Objective
+Eliminate all in-component `<style>` blocks and inline styles. Every visual property must come from the global design system in index.html. This is the foundation — without it, every future cycle will be undermined.
 
-- Cycle 01 / target 12
-- Completed cycles so far: 0
-- Stopping allowed: NO
+## Why This Cycle Matters
+The current codebase has 769 inline styles vs 230 class usages. Components re-declare sn- classes with conflicting values. Until this is fixed, no design change will be consistent.
+
+## Expected Movement
+From: fragmented inline styles per component
+To: single source of truth in index.html CSS
 
 ## Cycle Hypothesis
+Consolidating all styles into the global design system will make the UI more consistent AND reveal structural sameness that needs to be fixed in subsequent cycles.
 
-현재 UI의 안전한 admin 문법을 끊고, 제품 첫인상부터 `technical certificate system` 문법을 세우면 이후 화면 확장이 더 일관되고 덜 AI-평균적이 된다.
+## Visible Improvement by End
+- Zero `<style>` blocks inside component templates
+- Inline `style=""` count reduced by 50%+
+- All pages render correctly using shared classes
+- Consistent typography, spacing, and color across all pages
 
-## Cycle Goal
+## Risks
+- Breaking component rendering by removing inline styles without equivalent global classes
+- Accidentally deleting functionality while refactoring templates
 
-- 진입점과 핵심 구조를 다시 정의한다.
-- generic auth/admin/dashboard 인상을 약화시킨다.
-- 페이지별 문서 타입을 명확히 분리하기 시작한다.
-- 기능 삭제 없이 UI 문법만 강하게 재작성한다.
-
-## Cycle Rules
-
-- 기존 API 호출, 라우팅, 모달, 제출 기능은 유지한다.
-- 디자인 정리보다 제품 정체성 강화가 우선이다.
-- 각 micro-loop는 실제 렌더 검증을 동반한다.
-
+## Direction: BUILD FOUNDATION
