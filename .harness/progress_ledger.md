@@ -1,18 +1,19 @@
 # Progress Ledger
-- **Cycle**: 6 / 12 — **COMPLETE**
-- **Completed cycles**: 6
-- **Stopping**: NO (6/10)
+- **Cycle**: 7 / 12 — **COMPLETE**
+- **Completed cycles**: 7
+- **Stopping**: NO (7/10)
 
-## Structural changes achieved (cycles 5-6):
-- Dashboard: kanban board
-- Passports: card grid
-- Passport detail: scroll document (no tabs)
-- Maintenance: vertical timeline
-- Recycling: grouped sections
-- Audit log: activity feed
-- QR scan: single column flow
+## All structural changes achieved (cycles 5-7):
+- Dashboard: KANBAN BOARD (6 status columns)
+- Passports: CARD GRID (responsive, SOC/SOH gauges)
+- Passport detail: SCROLL DOCUMENT (no tabs, all sections visible)
+- Maintenance: VERTICAL TIMELINE
+- Recycling: GROUPED SECTIONS by status
+- Audit log: ACTIVITY FEED (not table)
+- QR scan: SINGLE COLUMN flow
+- Navigation: SECTIONED with role badge
 - GBA-21 compliance front-and-center
 - Materials: traceability banner
 - BMU: live data indicator
 
-## Next: Cycle 07 — navigation restructure + provenance/compliance flow redesign
+## Next: Cycle 08 — polish the new structures, fix visual issues
