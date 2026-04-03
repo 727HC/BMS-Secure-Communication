@@ -247,8 +247,7 @@ app.component('passports-page', {
               </thead>
               <tbody>
                 <tr v-for="(p, idx) in filteredPassports" :key="p.passportId"
-                    @click="viewDetail(p.passportId)" class="cursor-pointer " style="position: relative;"
-                    :style="'animation-delay: ' + (idx * 0.03) + 's;'">
+                    @click="viewDetail(p.passportId)" class="cursor-pointer" style="position: relative;">
                   <td style="position:relative;padding-left:1.25rem;">
                     <span :style="{
                       position:'absolute',left:0,top:'4px',bottom:'4px',width:'3px',borderRadius:'0 3px 3px 0',
@@ -489,7 +488,6 @@ app.component('passports-page', {
         </div>
       </div>
 
-      <style>@keyframes spin { to { transform: rotate(360deg); } }</style>
     </div>
   `
 });

@@ -986,10 +986,10 @@ app.component('passport-detail-page', {
               <button v-for="tab in tabs" :key="tab.key"
                 @click="switchTab(tab.key)"
                 :class="[
-                  'relative flex items-center gap-2 px-5 py-3.5 text-sm font-medium transition-all whitespace-nowrap min-w-0',
+                  'sn-tab relative flex items-center gap-2 px-5 py-3.5 text-sm font-medium transition-all whitespace-nowrap min-w-0',
                   activeTab === tab.key
-                    ? 'text-emerald-600'
-                    : 'text-gray-400 hover:text-gray-600 hover:bg-[#fafafa]'
+                    ? 'sn-tab-active text-emerald-600'
+                    : 'sn-tab-inactive text-gray-400 hover:text-gray-600 hover:bg-[#fafafa]'
                 ]">
                 <svg class="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                   <path stroke-linecap="round" stroke-linejoin="round" :d="tab.icon"/>
@@ -1034,7 +1034,7 @@ app.component('passport-detail-page', {
                   <path stroke-linecap="round" stroke-linejoin="round" d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0"/>
                 </svg>
               </div>
-              <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wider">배터리 식별정보</h3>
+              <h3 class="sn-heading text-sm font-bold text-gray-900 uppercase tracking-wider">배터리 식별정보</h3>
             </div>
             <div class="p-6">
               <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-10 gap-y-6">
@@ -1097,7 +1097,7 @@ app.component('passport-detail-page', {
                   <path stroke-linecap="round" stroke-linejoin="round" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z"/>
                 </svg>
               </div>
-              <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wider">성능 및 내구성</h3>
+              <h3 class="sn-heading text-sm font-bold text-gray-900 uppercase tracking-wider">성능 및 내구성</h3>
             </div>
             <div class="p-6 space-y-6">
               <!-- 정격용량 (단독, 크게) -->
@@ -1178,7 +1178,7 @@ app.component('passport-detail-page', {
                     <path stroke-linecap="round" stroke-linejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101"/>
                   </svg>
                 </div>
-                <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wider">EV 바인딩</h3>
+                <h3 class="sn-heading text-sm font-bold text-gray-900 uppercase tracking-wider">EV 바인딩</h3>
               </div>
               <button v-if="isEV && !passport.vin" @click="showBindModal = true"
                 class="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-[#16a34a] hover:bg-[#15803d] text-white font-medium text-xs rounded transition-colors">
@@ -1387,7 +1387,7 @@ app.component('passport-detail-page', {
                 </svg>
               </div>
               <div>
-                <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wider">탄소 발자국</h3>
+                <h3 class="sn-heading text-sm font-bold text-gray-900 uppercase tracking-wider">탄소 발자국</h3>
                 <p class="text-[10px] text-gray-400">GBA 21 #20 — Carbon Footprint (kg CO₂e)</p>
               </div>
             </div>
@@ -1483,7 +1483,7 @@ app.component('passport-detail-page', {
                   <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
                 </svg>
               </div>
-              <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wider">배터리 수명 주기</h3>
+              <h3 class="sn-heading text-sm font-bold text-gray-900 uppercase tracking-wider">배터리 수명 주기</h3>
             </div>
             <div class="px-6 py-6">
               <!-- Desktop horizontal timeline -->
@@ -1553,7 +1553,7 @@ app.component('passport-detail-page', {
                   <path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/>
                 </svg>
               </div>
-              <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wider">원자재 정보</h3>
+              <h3 class="sn-heading text-sm font-bold text-gray-900 uppercase tracking-wider">원자재 정보</h3>
               <span class="ml-auto text-xs font-medium text-purple-600 bg-[rgba(192,132,252,0.1)] px-2 py-0.5 rounded-full">{{ linkedMaterialDetails.length }}종</span>
             </div>
             <div class="p-4">
@@ -1589,7 +1589,7 @@ app.component('passport-detail-page', {
                     <path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/>
                   </svg>
                 </div>
-                <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wider">정비 이력</h3>
+                <h3 class="sn-heading text-sm font-bold text-gray-900 uppercase tracking-wider">정비 이력</h3>
                 <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-gray-100 text-gray-600">{{ maintenanceLogs.length }}</span>
               </div>
               <div class="flex gap-2">
@@ -1607,7 +1607,7 @@ app.component('passport-detail-page', {
               <p class="text-gray-400 text-sm">정비 이력이 없습니다</p>
             </div>
             <div v-else class="overflow-x-auto">
-              <table class="w-full text-sm">
+              <table class="sn-table w-full text-sm">
                 <thead><tr class="bg-[#fafafa]/60 border-b border-gray-200">
                   <th class="text-left px-5 py-3 font-semibold text-gray-400 text-xs uppercase tracking-wider">날짜</th>
                   <th class="text-left px-5 py-3 font-semibold text-gray-400 text-xs uppercase tracking-wider">유형</th>
@@ -1636,7 +1636,7 @@ app.component('passport-detail-page', {
                     <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
                   </svg>
                 </div>
-                <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wider">사고 기록</h3>
+                <h3 class="sn-heading text-sm font-bold text-gray-900 uppercase tracking-wider">사고 기록</h3>
                 <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-gray-100 text-gray-600">{{ accidentLogs.length }}</span>
               </div>
               <button v-if="isEV || isService" @click="showAccidentLogModal = true"
@@ -1648,7 +1648,7 @@ app.component('passport-detail-page', {
               <p class="text-gray-400 text-sm">사고 기록이 없습니다</p>
             </div>
             <div v-else class="overflow-x-auto">
-              <table class="w-full text-sm">
+              <table class="sn-table w-full text-sm">
                 <thead><tr class="bg-[#fafafa]/60 border-b border-gray-200">
                   <th class="text-left px-5 py-3 font-semibold text-gray-400 text-xs uppercase tracking-wider">날짜</th>
                   <th class="text-left px-5 py-3 font-semibold text-gray-400 text-xs uppercase tracking-wider">심각도</th>
@@ -1723,7 +1723,7 @@ app.component('passport-detail-page', {
           <div v-else class="space-y-4">
             <div class="bg-white  border border-gray-200 shadow-none overflow-hidden" style="background: #ffffff;">
               <div class="overflow-x-auto">
-                <table class="w-full text-sm">
+                <table class="sn-table w-full text-sm">
                   <thead>
                     <tr class="bg-[#fafafa]/80 border-b border-gray-200">
                       <th class="text-left px-5 py-3.5 font-semibold text-gray-400 text-xs uppercase tracking-wider">기록 ID</th>
@@ -1793,7 +1793,7 @@ app.component('passport-detail-page', {
                   <path d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
                 </svg>
               </div>
-              <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wider">블록체인 검증</h3>
+              <h3 class="sn-heading text-sm font-bold text-gray-900 uppercase tracking-wider">블록체인 검증</h3>
             </div>
             <div class="p-6 space-y-5">
               <!-- DID -->
@@ -1850,7 +1850,7 @@ app.component('passport-detail-page', {
                   </svg>
                 </div>
                 <div>
-                  <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wider">QR 코드</h3>
+                  <h3 class="sn-heading text-sm font-bold text-gray-900 uppercase tracking-wider">QR 코드</h3>
                   <p class="text-[10px] text-gray-400 mt-0.5">이 여권의 QR 코드를 스캔하여 정보를 조회할 수 있습니다</p>
                 </div>
               </div>
@@ -1890,7 +1890,7 @@ app.component('passport-detail-page', {
                   </svg>
                 </div>
                 <div>
-                  <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wider">검증 가능 인증서 (VC)</h3>
+                  <h3 class="sn-heading text-sm font-bold text-gray-900 uppercase tracking-wider">검증 가능 인증서 (VC)</h3>
                   <p class="text-[10px] text-gray-400 mt-0.5">DID 기반 Verifiable Credentials</p>
                 </div>
               </div>
@@ -1956,8 +1956,8 @@ app.component('passport-detail-page', {
 
           <!-- VC Issue Modal -->
           <div v-if="showVcIssueModal" class="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <div class="fixed inset-0 bg-black/40 backdrop-blur-sm" @click="showVcIssueModal = false"></div>
-            <div class="relative bg-white  shadow-xl border border-gray-200 w-full max-w-md">
+            <div class="sn-overlay fixed inset-0 bg-black/40 backdrop-blur-sm" @click="showVcIssueModal = false"></div>
+            <div class="sn-modal relative bg-white shadow-xl border border-gray-200 w-full max-w-md" style="border-radius:1rem">
               <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200">
                 <h3 class="text-base font-bold text-gray-900">인증서 발급</h3>
                 <button @click="showVcIssueModal = false" class="text-gray-400 hover:text-gray-600 transition-colors">
@@ -1979,19 +1979,19 @@ app.component('passport-detail-page', {
                 <div>
                   <label class="block text-xs font-medium text-gray-400 mb-1.5">소유자 DID</label>
                   <input v-model="vcForm.holderDid" type="text" :placeholder="passport?.did || 'did:example:...'"
-                    class="w-full px-3.5 py-2.5 border border-gray-200 rounded focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none text-sm" />
+                    class="sn-input w-full" />
                   <p class="text-[10px] text-gray-400 mt-1">비워두면 여권의 DID가 사용됩니다.</p>
                 </div>
                 <div>
                   <label class="block text-xs font-medium text-gray-400 mb-1.5">만료일</label>
                   <input v-model="vcForm.expiresAt" type="date"
-                    class="w-full px-3.5 py-2.5 border border-gray-200 rounded focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none text-sm" />
+                    class="sn-input w-full" />
                 </div>
                 <div class="flex justify-end gap-3 pt-3 border-t border-gray-200">
                   <button type="button" @click="showVcIssueModal = false"
-                    class="px-4 py-2.5 text-sm font-medium text-gray-600 bg-white border border-gray-200 hover:bg-[#fafafa]  transition-colors">취소</button>
+                    class="sn-btn sn-btn-ghost">취소</button>
                   <button type="submit" :disabled="submitting"
-                    class="px-5 py-2.5 text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700  transition-colors disabled:opacity-50">
+                    class="sn-btn sn-btn-accent disabled:opacity-50">
                     {{ submitting ? '발급 중...' : '발급' }}
                   </button>
                 </div>
@@ -2008,7 +2008,7 @@ app.component('passport-detail-page', {
                 </svg>
               </div>
               <div>
-                <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wider">데이터 정정 이력</h3>
+                <h3 class="sn-heading text-sm font-bold text-gray-900 uppercase tracking-wider">데이터 정정 이력</h3>
                 <p class="text-[10px] text-gray-400 mt-0.5">블록체인에 기록된 여권 데이터 수정 내역</p>
               </div>
             </div>
@@ -2043,7 +2043,7 @@ app.component('passport-detail-page', {
                   <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
                 </svg>
               </div>
-              <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wider">변경 이력</h3>
+              <h3 class="sn-heading text-sm font-bold text-gray-900 uppercase tracking-wider">변경 이력</h3>
             </div>
             <div v-if="historyLoading" class="flex flex-col items-center justify-center py-16">
               <div class="relative">
@@ -2110,8 +2110,8 @@ app.component('passport-detail-page', {
       <teleport to="body">
         <transition name="fade">
           <div v-if="showBindModal" class="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <div class="fixed inset-0 bg-white/60 backdrop-blur-sm" @click="showBindModal = false"></div>
-            <div class="relative bg-white  shadow-2xl w-full max-w-lg border border-gray-200/50 overflow-hidden">
+            <div class="sn-overlay fixed inset-0 bg-white/60 backdrop-blur-sm" @click="showBindModal = false"></div>
+            <div class="sn-modal relative bg-white shadow-2xl w-full max-w-lg border border-gray-200/50 overflow-hidden" style="border-radius:1rem">
               <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
                 <div class="flex items-center gap-3">
                   <div class="w-9 h-9 bg-[rgba(200,255,0,0.08)] rounded flex items-center justify-center">
@@ -2129,22 +2129,22 @@ app.component('passport-detail-page', {
                 <div>
                   <label class="block text-xs font-medium text-gray-400 mb-1.5">VIN</label>
                   <input v-model="bindForm.vin" type="text" placeholder="차량 식별번호"
-                    class="w-full px-3.5 py-2.5 border border-gray-200 rounded focus:border-[#16a34a] outline-none text-sm" />
+                    class="sn-input w-full" />
                 </div>
                 <div>
                   <label class="block text-xs font-medium text-gray-400 mb-1.5">장착일자</label>
                   <input v-model="bindForm.installDate" type="date"
-                    class="w-full px-3.5 py-2.5 border border-gray-200 rounded focus:border-[#16a34a] outline-none text-sm" />
+                    class="sn-input w-full" />
                 </div>
                 <div>
                   <label class="block text-xs font-medium text-gray-400 mb-1.5">EV 제조사</label>
                   <input v-model="bindForm.evManufacturer" type="text" placeholder="EV 제조사명"
-                    class="w-full px-3.5 py-2.5 border border-gray-200 rounded focus:border-[#16a34a] outline-none text-sm" />
+                    class="sn-input w-full" />
                 </div>
                 <div>
                   <label class="block text-xs font-medium text-gray-400 mb-1.5">EV 조립국가</label>
                   <input v-model="bindForm.evAssemblyCountry" type="text" placeholder="KR"
-                    class="w-full px-3.5 py-2.5 border border-gray-200 rounded focus:border-[#16a34a] outline-none text-sm" />
+                    class="sn-input w-full" />
                 </div>
                 <div>
                   <label class="block text-xs font-medium text-gray-400 mb-1.5">차량 사진 <span class="text-gray-400 text-[10px] font-normal">(선택)</span></label>
@@ -2162,9 +2162,9 @@ app.component('passport-detail-page', {
                 </div>
                 <div class="flex justify-end gap-3 pt-3 border-t border-gray-200">
                   <button type="button" @click="showBindModal = false"
-                    class="px-4 py-2.5 text-sm font-medium text-gray-600 bg-white border border-gray-200 hover:bg-[#fafafa]  transition-colors">취소</button>
+                    class="sn-btn sn-btn-ghost">취소</button>
                   <button type="submit" :disabled="submitting"
-                    class="px-5 py-2.5 text-sm font-semibold text-white bg-[#16a34a] hover:bg-[#15803d]  transition-colors disabled:opacity-50">
+                    class="sn-btn sn-btn-primary disabled:opacity-50">
                     {{ submitting ? '처리중...' : '바인딩' }}
                   </button>
                 </div>
@@ -2176,8 +2176,8 @@ app.component('passport-detail-page', {
 
       <!-- Data Correction Modal -->
       <div v-if="showCorrectModal" class="fixed inset-0 z-50 flex items-center justify-center p-4">
-        <div class="fixed inset-0 bg-black/40 backdrop-blur-sm" @click="showCorrectModal = false"></div>
-        <div class="relative bg-white  shadow-xl border border-gray-200 w-full max-w-md">
+        <div class="sn-overlay fixed inset-0 bg-black/40 backdrop-blur-sm" @click="showCorrectModal = false"></div>
+        <div class="sn-modal relative bg-white shadow-xl border border-gray-200 w-full max-w-md" style="border-radius:1rem">
           <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200">
             <h3 class="text-base font-bold text-gray-900">데이터 정정</h3>
             <button @click="showCorrectModal = false" class="text-gray-400 hover:text-gray-600">
@@ -2188,7 +2188,7 @@ app.component('passport-detail-page', {
             <div>
               <label class="block text-xs font-medium text-gray-400 mb-1.5">정정 필드 <span class="text-red-500">*</span></label>
               <select v-model="correctForm.fieldName"
-                class="w-full px-3.5 py-2.5 border border-gray-200 rounded focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 outline-none text-sm bg-white">
+                class="sn-input w-full bg-white">
                 <option value="">선택하세요</option>
                 <option v-for="f in correctableFields" :key="f.value" :value="f.value">{{ f.label }}</option>
               </select>
@@ -2200,18 +2200,18 @@ app.component('passport-detail-page', {
             <div>
               <label class="block text-xs font-medium text-gray-400 mb-1.5">새 값 <span class="text-red-500">*</span></label>
               <input v-model="correctForm.newValue" type="text" placeholder="정정할 값을 입력하세요"
-                class="w-full px-3.5 py-2.5 border border-gray-200 rounded focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 outline-none text-sm" />
+                class="sn-input w-full" />
             </div>
             <div>
               <label class="block text-xs font-medium text-gray-400 mb-1.5">정정 사유 <span class="text-red-500">*</span></label>
               <textarea v-model="correctForm.reason" rows="2" placeholder="정정 사유를 입력하세요"
-                class="w-full px-3.5 py-2.5 border border-gray-200 rounded focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 outline-none text-sm resize-none"></textarea>
+                class="sn-input w-full resize-none"></textarea>
             </div>
             <div class="flex justify-end gap-3 pt-3 border-t border-gray-200">
               <button type="button" @click="showCorrectModal = false"
-                class="px-4 py-2.5 text-sm font-medium text-gray-600 bg-white border border-gray-200 hover:bg-[#fafafa]  transition-colors">취소</button>
+                class="sn-btn sn-btn-ghost">취소</button>
               <button type="submit" :disabled="!correctForm.fieldName || !correctForm.newValue || !correctForm.reason || submitting"
-                class="px-5 py-2.5 text-sm font-semibold text-white bg-amber-600 hover:bg-amber-700  transition-colors disabled:opacity-50">
+                class="sn-btn sn-btn-accent disabled:opacity-50">
                 {{ submitting ? '처리중...' : '정정' }}
               </button>
             </div>
@@ -2221,8 +2221,8 @@ app.component('passport-detail-page', {
 
       <!-- BMU Invalidate Modal -->
       <div v-if="showInvalidateModal" class="fixed inset-0 z-50 flex items-center justify-center p-4">
-        <div class="fixed inset-0 bg-black/40 backdrop-blur-sm" @click="showInvalidateModal = false"></div>
-        <div class="relative bg-white  shadow-xl border border-gray-200 w-full max-w-sm">
+        <div class="sn-overlay fixed inset-0 bg-black/40 backdrop-blur-sm" @click="showInvalidateModal = false"></div>
+        <div class="sn-modal relative bg-white shadow-xl border border-gray-200 w-full max-w-sm" style="border-radius:1rem">
           <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200">
             <h3 class="text-base font-bold text-[#ff6b6b]">BMU 레코드 무효화</h3>
             <button @click="showInvalidateModal = false" class="text-gray-400 hover:text-gray-600">
@@ -2237,13 +2237,13 @@ app.component('passport-detail-page', {
             <div>
               <label class="block text-xs font-medium text-gray-400 mb-1.5">무효화 사유 <span class="text-red-500">*</span></label>
               <textarea v-model="invalidateForm.reason" rows="2" placeholder="무효화 사유를 입력하세요"
-                class="w-full px-3.5 py-2.5 border border-gray-200 rounded focus:ring-2 focus:ring-red-500/20 focus:border-red-500 outline-none text-sm resize-none"></textarea>
+                class="sn-input w-full resize-none"></textarea>
             </div>
             <div class="flex justify-end gap-3 pt-3 border-t border-gray-200">
               <button type="button" @click="showInvalidateModal = false"
-                class="px-4 py-2.5 text-sm font-medium text-gray-600 bg-white border border-gray-200 hover:bg-[#fafafa]  transition-colors">취소</button>
+                class="sn-btn sn-btn-ghost">취소</button>
               <button type="submit" :disabled="!invalidateForm.reason || submitting"
-                class="px-5 py-2.5 text-sm font-semibold text-white bg-red-600 hover:bg-red-700  transition-colors disabled:opacity-50">
+                class="sn-btn sn-btn-danger disabled:opacity-50">
                 {{ submitting ? '처리중...' : '무효화' }}
               </button>
             </div>
@@ -2253,8 +2253,8 @@ app.component('passport-detail-page', {
 
       <!-- Link Raw Materials Modal -->
       <div v-if="showLinkMaterialsModal" class="fixed inset-0 z-50 flex items-center justify-center p-4">
-        <div class="fixed inset-0 bg-black/40 backdrop-blur-sm" @click="showLinkMaterialsModal = false"></div>
-        <div class="relative bg-white  shadow-xl border border-gray-200 w-full max-w-md">
+        <div class="sn-overlay fixed inset-0 bg-black/40 backdrop-blur-sm" @click="showLinkMaterialsModal = false"></div>
+        <div class="sn-modal relative bg-white shadow-xl border border-gray-200 w-full max-w-md" style="border-radius:1rem">
           <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200">
             <h3 class="text-base font-bold text-gray-900">원자재 연결</h3>
             <button @click="showLinkMaterialsModal = false" class="text-gray-400 hover:text-gray-600">
@@ -2284,9 +2284,9 @@ app.component('passport-detail-page', {
           </div>
           <div class="px-6 py-4 border-t border-gray-200 flex justify-end gap-3">
             <button @click="showLinkMaterialsModal = false"
-              class="px-4 py-2.5 text-sm font-medium text-gray-600 bg-white border border-gray-200 hover:bg-[#fafafa]  transition-colors">취소</button>
+              class="sn-btn sn-btn-ghost">취소</button>
             <button @click="submitLinkMaterials" :disabled="submitting"
-              class="px-5 py-2.5 text-sm font-semibold text-white bg-[#16a34a] hover:bg-[#15803d]  transition-colors disabled:opacity-50">
+              class="sn-btn sn-btn-primary disabled:opacity-50">
               {{ submitting ? '처리중...' : '연결' }}
             </button>
           </div>
@@ -2297,8 +2297,8 @@ app.component('passport-detail-page', {
       <teleport to="body">
         <transition name="fade">
           <div v-if="showMaintenanceRequestModal" class="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <div class="fixed inset-0 bg-white/60 backdrop-blur-sm" @click="showMaintenanceRequestModal = false"></div>
-            <div class="relative bg-white  shadow-2xl w-full max-w-md border border-gray-200/50 overflow-hidden">
+            <div class="sn-overlay fixed inset-0 bg-white/60 backdrop-blur-sm" @click="showMaintenanceRequestModal = false"></div>
+            <div class="sn-modal relative bg-white shadow-2xl w-full max-w-md border border-gray-200/50 overflow-hidden" style="border-radius:1rem">
               <div class="px-6 py-4 border-b border-gray-200 flex items-center gap-3">
                 <div class="w-9 h-9 bg-[rgba(255,184,0,0.1)] rounded flex items-center justify-center">
                   <svg class="w-5 h-5 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -2311,9 +2311,9 @@ app.component('passport-detail-page', {
                 <p class="text-sm text-gray-600 mb-5">이 배터리에 대한 정비를 요청하시겠습니까?<br><span class="text-xs text-gray-400 mt-1 block">상태가 MAINTENANCE로 변경됩니다.</span></p>
                 <div class="flex justify-end gap-3">
                   <button @click="showMaintenanceRequestModal = false"
-                    class="px-4 py-2.5 text-sm font-medium text-gray-600 bg-white border border-gray-200 hover:bg-[#fafafa]  transition-colors">취소</button>
+                    class="sn-btn sn-btn-ghost">취소</button>
                   <button @click="submitMaintenanceRequest" :disabled="submitting"
-                    class="px-5 py-2.5 text-sm font-semibold text-white bg-[#fbbf24] hover:bg-amber-600  transition-colors disabled:opacity-50">
+                    class="sn-btn sn-btn-accent disabled:opacity-50">
                     {{ submitting ? '처리중...' : '정비 요청' }}
                   </button>
                 </div>
@@ -2327,8 +2327,8 @@ app.component('passport-detail-page', {
       <teleport to="body">
         <transition name="fade">
           <div v-if="showMaintenanceLogModal" class="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <div class="fixed inset-0 bg-white/60 backdrop-blur-sm" @click="showMaintenanceLogModal = false"></div>
-            <div class="relative bg-white  shadow-2xl w-full max-w-lg border border-gray-200/50 overflow-hidden">
+            <div class="sn-overlay fixed inset-0 bg-white/60 backdrop-blur-sm" @click="showMaintenanceLogModal = false"></div>
+            <div class="sn-modal relative bg-white shadow-2xl w-full max-w-lg border border-gray-200/50 overflow-hidden" style="border-radius:1rem">
               <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
                 <div class="flex items-center gap-3">
                   <div class="w-9 h-9 bg-[rgba(200,255,0,0.08)] rounded flex items-center justify-center">
@@ -2346,28 +2346,28 @@ app.component('passport-detail-page', {
                 <div>
                   <label class="block text-xs font-medium text-gray-400 mb-1.5">날짜</label>
                   <input v-model="maintenanceForm.date" type="date"
-                    class="w-full px-3.5 py-2.5 border border-gray-200 rounded focus:border-[#16a34a] outline-none text-sm" />
+                    class="sn-input w-full" />
                 </div>
                 <div>
                   <label class="block text-xs font-medium text-gray-400 mb-1.5">유형</label>
                   <input v-model="maintenanceForm.type" type="text" placeholder="정기점검 / 부품교체 / 긴급수리"
-                    class="w-full px-3.5 py-2.5 border border-gray-200 rounded focus:border-[#16a34a] outline-none text-sm" />
+                    class="sn-input w-full" />
                 </div>
                 <div>
                   <label class="block text-xs font-medium text-gray-400 mb-1.5">내용</label>
                   <textarea v-model="maintenanceForm.description" rows="3" placeholder="정비 내용을 상세히 기입하세요"
-                    class="w-full px-3.5 py-2.5 border border-gray-200 rounded focus:border-[#16a34a] outline-none text-sm resize-none"></textarea>
+                    class="sn-input w-full resize-none"></textarea>
                 </div>
                 <div>
                   <label class="block text-xs font-medium text-gray-400 mb-1.5">기술자</label>
                   <input v-model="maintenanceForm.technician" type="text" placeholder="기술자명"
-                    class="w-full px-3.5 py-2.5 border border-gray-200 rounded focus:border-[#16a34a] outline-none text-sm" />
+                    class="sn-input w-full" />
                 </div>
                 <div class="flex justify-end gap-3 pt-3 border-t border-gray-200">
                   <button type="button" @click="showMaintenanceLogModal = false"
-                    class="px-4 py-2.5 text-sm font-medium text-gray-600 bg-white border border-gray-200 hover:bg-[#fafafa]  transition-colors">취소</button>
+                    class="sn-btn sn-btn-ghost">취소</button>
                   <button type="submit" :disabled="submitting"
-                    class="px-5 py-2.5 text-sm font-semibold text-white bg-[#16a34a] hover:bg-[#15803d]  transition-colors disabled:opacity-50">
+                    class="sn-btn sn-btn-primary disabled:opacity-50">
                     {{ submitting ? '처리중...' : '추가' }}
                   </button>
                 </div>
@@ -2381,8 +2381,8 @@ app.component('passport-detail-page', {
       <teleport to="body">
         <transition name="fade">
           <div v-if="showAccidentLogModal" class="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <div class="fixed inset-0 bg-white/60 backdrop-blur-sm" @click="showAccidentLogModal = false"></div>
-            <div class="relative bg-white  shadow-2xl w-full max-w-lg border border-gray-200/50 overflow-hidden">
+            <div class="sn-overlay fixed inset-0 bg-white/60 backdrop-blur-sm" @click="showAccidentLogModal = false"></div>
+            <div class="sn-modal relative bg-white shadow-2xl w-full max-w-lg border border-gray-200/50 overflow-hidden" style="border-radius:1rem">
               <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
                 <div class="flex items-center gap-3">
                   <div class="w-9 h-9 bg-[rgba(239,68,68,0.1)] rounded flex items-center justify-center">
@@ -2411,18 +2411,18 @@ app.component('passport-detail-page', {
                 <div>
                   <label class="block text-xs font-medium text-gray-400 mb-1.5">내용 <span class="text-red-500">*</span></label>
                   <textarea v-model="accidentForm.description" rows="3" placeholder="사고 상세 내용"
-                    class="w-full px-3.5 py-2.5 border border-gray-200 rounded focus:border-[#16a34a] outline-none text-sm resize-none"></textarea>
+                    class="sn-input w-full resize-none"></textarea>
                 </div>
                 <div>
                   <label class="block text-xs font-medium text-gray-400 mb-1.5">보고자 <span class="text-red-500">*</span></label>
                   <input v-model="accidentForm.reporter" type="text" placeholder="보고자명"
-                    class="w-full px-3.5 py-2.5 border border-gray-200 rounded focus:border-[#16a34a] outline-none text-sm" />
+                    class="sn-input w-full" />
                 </div>
                 <div class="flex justify-end gap-3 pt-3 border-t border-gray-200">
                   <button type="button" @click="showAccidentLogModal = false"
-                    class="px-4 py-2.5 text-sm font-medium text-gray-600 bg-white border border-gray-200 hover:bg-[#fafafa]  transition-colors">취소</button>
+                    class="sn-btn sn-btn-ghost">취소</button>
                   <button type="submit" :disabled="submitting"
-                    class="px-5 py-2.5 text-sm font-semibold text-white bg-[rgba(239,68,68,0.1)]0 hover:bg-red-600  transition-colors disabled:opacity-50">
+                    class="sn-btn sn-btn-danger disabled:opacity-50">
                     {{ submitting ? '처리중...' : '추가' }}
                   </button>
                 </div>
@@ -2436,8 +2436,8 @@ app.component('passport-detail-page', {
       <teleport to="body">
         <transition name="fade">
           <div v-if="showAnalysisRequestModal" class="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <div class="fixed inset-0 bg-white/60 backdrop-blur-sm" @click="showAnalysisRequestModal = false"></div>
-            <div class="relative bg-white  shadow-2xl w-full max-w-md border border-gray-200/50 overflow-hidden">
+            <div class="sn-overlay fixed inset-0 bg-white/60 backdrop-blur-sm" @click="showAnalysisRequestModal = false"></div>
+            <div class="sn-modal relative bg-white shadow-2xl w-full max-w-md border border-gray-200/50 overflow-hidden" style="border-radius:1rem">
               <div class="px-6 py-4 border-b border-gray-200 flex items-center gap-3">
                 <div class="w-9 h-9 bg-[rgba(192,132,252,0.1)] rounded flex items-center justify-center">
                   <svg class="w-5 h-5 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -2450,9 +2450,9 @@ app.component('passport-detail-page', {
                 <p class="text-sm text-gray-600 mb-5">이 배터리에 대한 분석을 요청하시겠습니까?<br><span class="text-xs text-gray-400 mt-1 block">상태가 ANALYSIS로 변경됩니다.</span></p>
                 <div class="flex justify-end gap-3">
                   <button @click="showAnalysisRequestModal = false"
-                    class="px-4 py-2.5 text-sm font-medium text-gray-600 bg-white border border-gray-200 hover:bg-[#fafafa]  transition-colors">취소</button>
+                    class="sn-btn sn-btn-ghost">취소</button>
                   <button @click="submitAnalysisRequest" :disabled="submitting"
-                    class="px-5 py-2.5 text-sm font-semibold text-white bg-purple-600 hover:bg-purple-700  transition-colors disabled:opacity-50">
+                    class="sn-btn sn-btn-accent disabled:opacity-50">
                     {{ submitting ? '처리중...' : '분석 요청' }}
                   </button>
                 </div>
@@ -2466,8 +2466,8 @@ app.component('passport-detail-page', {
       <teleport to="body">
         <transition name="fade">
           <div v-if="showAnalysisResultModal" class="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <div class="fixed inset-0 bg-white/60 backdrop-blur-sm" @click="showAnalysisResultModal = false"></div>
-            <div class="relative bg-white  shadow-2xl w-full max-w-lg border border-gray-200/50 overflow-hidden">
+            <div class="sn-overlay fixed inset-0 bg-white/60 backdrop-blur-sm" @click="showAnalysisResultModal = false"></div>
+            <div class="sn-modal relative bg-white shadow-2xl w-full max-w-lg border border-gray-200/50 overflow-hidden" style="border-radius:1rem">
               <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
                 <div class="flex items-center gap-3">
                   <div class="w-9 h-9 bg-indigo-100 rounded flex items-center justify-center">
@@ -2486,18 +2486,18 @@ app.component('passport-detail-page', {
                   <div>
                     <label class="block text-xs font-medium text-gray-400 mb-1.5">SOH (%)</label>
                     <input v-model="analysisForm.soh" type="number" step="0.1" placeholder="85"
-                      class="w-full px-3.5 py-2.5 border border-gray-200 rounded focus:border-[#16a34a] outline-none text-sm" />
+                      class="sn-input w-full" />
                   </div>
                   <div>
                     <label class="block text-xs font-medium text-gray-400 mb-1.5">SOCE (%)</label>
                     <input v-model="analysisForm.soce" type="number" step="0.1" placeholder="90"
-                      class="w-full px-3.5 py-2.5 border border-gray-200 rounded focus:border-[#16a34a] outline-none text-sm" />
+                      class="sn-input w-full" />
                   </div>
                 </div>
                 <div>
                   <label class="block text-xs font-medium text-gray-400 mb-1.5">잔여 수명 주기</label>
                   <input v-model="analysisForm.remainingLifeCycle" type="number" placeholder="1500"
-                    class="w-full px-3.5 py-2.5 border border-gray-200 rounded focus:border-[#16a34a] outline-none text-sm" />
+                    class="sn-input w-full" />
                 </div>
                 <div class="flex items-center gap-3 py-2 px-3.5 bg-[#fafafa] rounded border border-gray-200">
                   <input v-model="analysisForm.recycleAvailable" type="checkbox" id="recycleCheckDetail2"
@@ -2506,9 +2506,9 @@ app.component('passport-detail-page', {
                 </div>
                 <div class="flex justify-end gap-3 pt-3 border-t border-gray-200">
                   <button type="button" @click="showAnalysisResultModal = false"
-                    class="px-4 py-2.5 text-sm font-medium text-gray-600 bg-white border border-gray-200 hover:bg-[#fafafa]  transition-colors">취소</button>
+                    class="sn-btn sn-btn-ghost">취소</button>
                   <button type="submit" :disabled="submitting"
-                    class="px-5 py-2.5 text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700  transition-colors disabled:opacity-50">
+                    class="sn-btn sn-btn-accent disabled:opacity-50">
                     {{ submitting ? '처리중...' : '제출' }}
                   </button>
                 </div>
@@ -2522,8 +2522,8 @@ app.component('passport-detail-page', {
       <teleport to="body">
         <transition name="fade">
           <div v-if="showRecycleModal" class="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <div class="fixed inset-0 bg-white/60 backdrop-blur-sm" @click="showRecycleModal = false"></div>
-            <div class="relative bg-white  shadow-2xl w-full max-w-md border border-gray-200/50 overflow-hidden">
+            <div class="sn-overlay fixed inset-0 bg-white/60 backdrop-blur-sm" @click="showRecycleModal = false"></div>
+            <div class="sn-modal relative bg-white shadow-2xl w-full max-w-md border border-gray-200/50 overflow-hidden" style="border-radius:1rem">
               <div class="px-6 py-4 border-b border-gray-200 flex items-center gap-3">
                 <div class="w-9 h-9 bg-orange-100 rounded flex items-center justify-center">
                   <svg class="w-5 h-5 text-orange-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -2536,13 +2536,13 @@ app.component('passport-detail-page', {
                 <p class="text-sm text-gray-600 mb-6">이 배터리의 재활용 가능 여부를 판정합니다.</p>
                 <div class="flex justify-end gap-3">
                   <button @click="showRecycleModal = false"
-                    class="px-4 py-2.5 text-sm font-medium text-gray-600 bg-white border border-gray-200 hover:bg-[#fafafa]  transition-colors">취소</button>
+                    class="sn-btn sn-btn-ghost">취소</button>
                   <button @click="submitRecycleAvailability(false)" :disabled="submitting"
-                    class="px-5 py-2.5 text-sm font-semibold text-white bg-[rgba(239,68,68,0.1)]0 hover:bg-red-600  transition-colors disabled:opacity-50">
+                    class="sn-btn sn-btn-danger disabled:opacity-50">
                     재활용 불가
                   </button>
                   <button @click="submitRecycleAvailability(true)" :disabled="submitting"
-                    class="px-5 py-2.5 text-sm font-semibold text-white bg-[#16a34a] hover:bg-[#15803d]  transition-colors disabled:opacity-50">
+                    class="sn-btn sn-btn-primary disabled:opacity-50">
                     재활용 가능
                   </button>
                 </div>
@@ -2556,8 +2556,8 @@ app.component('passport-detail-page', {
       <teleport to="body">
         <transition name="fade">
           <div v-if="showExtractModal" class="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <div class="fixed inset-0 bg-white/60 backdrop-blur-sm" @click="showExtractModal = false"></div>
-            <div class="relative bg-white  shadow-2xl w-full max-w-lg border border-gray-200/50 overflow-hidden">
+            <div class="sn-overlay fixed inset-0 bg-white/60 backdrop-blur-sm" @click="showExtractModal = false"></div>
+            <div class="sn-modal relative bg-white shadow-2xl w-full max-w-lg border border-gray-200/50 overflow-hidden" style="border-radius:1rem">
               <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
                 <div class="flex items-center gap-3">
                   <div class="w-9 h-9 bg-teal-100 rounded flex items-center justify-center">
@@ -2575,14 +2575,14 @@ app.component('passport-detail-page', {
                 <div>
                   <label class="block text-xs font-medium text-gray-400 mb-1.5">재활용 비율 (JSON)</label>
                   <textarea v-model="extractForm.recyclingRatesJson" rows="6"
-                    class="w-full px-3.5 py-2.5 border border-gray-200 rounded focus:border-[#16a34a] outline-none text-sm font-mono resize-none bg-[#fafafa]"></textarea>
+                    class="sn-input w-full font-mono resize-none bg-[#fafafa]"></textarea>
                   <p class="text-xs text-gray-400 mt-1.5">예: { "cobalt": 95, "nickel": 90, "lithium": 80 }</p>
                 </div>
                 <div class="flex justify-end gap-3 pt-3 border-t border-gray-200">
                   <button type="button" @click="showExtractModal = false"
-                    class="px-4 py-2.5 text-sm font-medium text-gray-600 bg-white border border-gray-200 hover:bg-[#fafafa]  transition-colors">취소</button>
+                    class="sn-btn sn-btn-ghost">취소</button>
                   <button type="submit" :disabled="submitting"
-                    class="px-5 py-2.5 text-sm font-semibold text-white bg-teal-600 hover:bg-teal-700  transition-colors disabled:opacity-50">
+                    class="sn-btn sn-btn-primary disabled:opacity-50">
                     {{ submitting ? '처리중...' : '등록' }}
                   </button>
                 </div>
@@ -2596,8 +2596,8 @@ app.component('passport-detail-page', {
       <teleport to="body">
         <transition name="fade">
           <div v-if="showDisposeConfirm" class="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <div class="fixed inset-0 bg-white/60 backdrop-blur-sm" @click="showDisposeConfirm = false"></div>
-            <div class="relative bg-white  shadow-2xl w-full max-w-sm border border-gray-200/50 overflow-hidden">
+            <div class="sn-overlay fixed inset-0 bg-white/60 backdrop-blur-sm" @click="showDisposeConfirm = false"></div>
+            <div class="sn-modal relative bg-white shadow-2xl w-full max-w-sm border border-gray-200/50 overflow-hidden" style="border-radius:1rem">
               <div class="p-6 text-center">
                 <div class="mx-auto w-14 h-14 bg-[rgba(239,68,68,0.1)] rounded-full flex items-center justify-center mb-4">
                   <svg class="w-7 h-7 text-[#ff6b6b]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -2608,9 +2608,9 @@ app.component('passport-detail-page', {
                 <p class="text-sm text-gray-400 mb-6">정말로 이 배터리를 폐기 처리하시겠습니까?<br>이 작업은 되돌릴 수 없습니다.</p>
                 <div class="flex gap-3">
                   <button @click="showDisposeConfirm = false"
-                    class="flex-1 px-4 py-2.5 text-sm font-medium text-gray-600 bg-white border border-gray-200 hover:bg-[#fafafa]  transition-colors">취소</button>
+                    class="sn-btn sn-btn-ghost flex-1">취소</button>
                   <button @click="disposeBattery" :disabled="submitting"
-                    class="flex-1 px-4 py-2.5 text-sm font-semibold text-white bg-red-600 hover:bg-red-700  transition-colors disabled:opacity-50">
+                    class="sn-btn sn-btn-danger flex-1 disabled:opacity-50">
                     {{ submitting ? '처리중...' : '폐기 확인' }}
                   </button>
                 </div>

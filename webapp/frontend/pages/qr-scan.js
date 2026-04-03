@@ -168,7 +168,7 @@ app.component('qr-scan-page', {
               </svg>
               카메라 열기
             </button>
-            <button v-else @click="stopScan" style="font-size:0.75rem;padding:6px 12px;background:#fef2f2;color:#dc2626;border:none;border-radius:6px;cursor:pointer;box-shadow:inset 0 0 0 1px rgba(220,38,38,0.2);">
+            <button v-else @click="stopScan" class="sn-btn sn-btn-danger" style="font-size:0.75rem;padding:6px 12px;">
               카메라 닫기
             </button>
           </div>
@@ -210,7 +210,7 @@ app.component('qr-scan-page', {
               </svg>
               NFC 활성화
             </button>
-            <button v-else @click="stopNfc" style="font-size:0.75rem;padding:6px 12px;background:#fef2f2;color:#dc2626;border:none;border-radius:6px;cursor:pointer;box-shadow:inset 0 0 0 1px rgba(220,38,38,0.2);">NFC 중지</button>
+            <button v-else @click="stopNfc" class="sn-btn sn-btn-danger" style="font-size:0.75rem;padding:6px 12px;">NFC 중지</button>
           </div>
           <div style="padding:24px 16px;display:flex;flex-direction:column;align-items:center;text-align:center;">
             <div v-if="nfcScanning" style="display:flex;flex-direction:column;align-items:center;">
