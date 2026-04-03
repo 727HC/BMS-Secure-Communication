@@ -1003,7 +1003,7 @@ app.component('passport-detail-page', {
       <div v-else>
 
         <!-- Tab Navigation (scroll-to-section) -->
-        <div class="bg-white  border border-gray-200 shadow-none mb-6 overflow-hidden" style="position: sticky; top: 0; z-index: 10;">
+        <div class="bg-white  border border-gray-200 shadow-none mb-6 overflow-hidden" style="position: sticky; top: 0; z-index: 10; background: #fff; border-bottom: 1px solid rgba(0,0,0,0.06); box-shadow: 0 2px 8px rgba(0,0,0,0.06);">
           <div class="relative">
             <!-- Bottom border line (full width) -->
             <div class="absolute bottom-0 left-0 right-0 h-[2px]" style="background: #e5e7eb;"></div>
@@ -1022,6 +1022,12 @@ app.component('passport-detail-page', {
 
         <!-- ==================== TAB 1: IDENTITY ==================== -->
         <div id="section-identity" class="space-y-5">
+
+          <!-- Section Header -->
+          <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem; padding-top: 1.5rem;">
+            <div style="width: 4px; height: 24px; border-radius: 2px; background: #2563eb;"></div>
+            <h2 style="font-size: 1rem; font-weight: 600; color: var(--color-text-1); margin: 0;">배터리 식별정보</h2>
+          </div>
 
           <!-- Action Buttons (Manufacturer/Regulator only) -->
           <div v-if="isManufacturer || isEV || isRegulator"
@@ -1291,6 +1297,12 @@ app.component('passport-detail-page', {
         <!-- ==================== TAB 2: COMPLIANCE ==================== -->
         <div id="section-compliance" class="space-y-5" style="margin-top: 2rem;">
 
+          <!-- Section Header -->
+          <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem; padding-top: 1.5rem;">
+            <div style="width: 4px; height: 24px; border-radius: 2px; background: #16a34a;"></div>
+            <h2 style="font-size: 1rem; font-weight: 600; color: var(--color-text-1); margin: 0;">GBA 21 규제 준수</h2>
+          </div>
+
           <!-- Large Circular Gauge — OpenBattery style -->
           <div class="bg-white  border border-gray-200 shadow-none overflow-hidden" style="background: #ffffff;">
             <div class="px-6 py-5 border-b border-gray-200">
@@ -1439,6 +1451,12 @@ app.component('passport-detail-page', {
         <!-- ==================== TAB 3: TRACEABILITY ==================== -->
         <div id="section-traceability" class="space-y-5" style="margin-top: 2rem;">
 
+          <!-- Section Header -->
+          <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem; padding-top: 1.5rem;">
+            <div style="width: 4px; height: 24px; border-radius: 2px; background: #d97706;"></div>
+            <h2 style="font-size: 1rem; font-weight: 600; color: var(--color-text-1); margin: 0;">이력 추적</h2>
+          </div>
+
           <!-- Pending Request Alert Banner -->
           <div v-if="passport.status === 'MAINTENANCE'"
             class="flex items-center gap-3 px-5 py-4 bg-[rgba(255,184,0,0.1)] border border-amber-200 ">
@@ -1502,59 +1520,26 @@ app.component('passport-detail-page', {
               <h3 class="sn-heading text-sm font-bold text-gray-900 uppercase tracking-wider">배터리 수명 주기</h3>
             </div>
             <div class="px-6 py-6">
-              <!-- Desktop horizontal timeline -->
-              <div class="hidden sm:block">
-                <div class="flex items-start justify-between relative">
-                  <div v-for="(step, i) in lifecycleSteps" :key="step.key"
-                       class="flex flex-col items-center relative" style="flex:1;">
-                    <!-- Connector line -->
-                    <div v-if="i < lifecycleSteps.length - 1"
-                         class="absolute top-5 h-0.5 transition-all duration-500"
-                         :class="getLifecycleState(step.key, passport.status) === 'completed' ? 'bg-emerald-400' : 'bg-gray-100'"
-                         :style="{ left: '50%', right: '-50%' }"></div>
-                    <!-- Step circle -->
-                    <div class="relative z-10 flex items-center justify-center w-10 h-10 rounded-full border-2 transition-all duration-500"
-                         :class="[
-                           getLifecycleState(step.key, passport.status) === 'completed' ? 'bg-[#34d399] border-emerald-500 text-white' : '',
-                           getLifecycleState(step.key, passport.status) === 'current' ? 'bg-white border-emerald-500 pd-pulse' : '',
-                           getLifecycleState(step.key, passport.status) === 'future' ? 'bg-white border-gray-200 text-gray-400' : '',
-                         ]">
-                      <svg v-if="getLifecycleState(step.key, passport.status) === 'completed'" class="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
-                        <polyline points="20 6 9 17 4 12"/>
-                      </svg>
-                      <div v-else-if="getLifecycleState(step.key, passport.status) === 'current'" class="w-3 h-3 rounded-full bg-[#34d399]"></div>
-                      <span v-else class="text-xs font-bold text-gray-400">{{ i + 1 }}</span>
+              <!-- Lifecycle Rail -->
+              <div style="display: flex; align-items: center; gap: 0; margin: 1.5rem 0; padding: 1rem; background: rgba(0,0,0,0.02); border-radius: 8px;">
+                <div v-for="(step, i) in lifecycleSteps" :key="step.key" style="display: flex; align-items: center; flex: 1;">
+                  <div style="display: flex; flex-direction: column; align-items: center; gap: 0.375rem; flex: 1;">
+                    <div style="width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.625rem; font-weight: 700;"
+                      :style="getLifecycleState(step.key, passport.status) === 'current'
+                        ? 'background: var(--color-accent); color: #fff;'
+                        : getLifecycleState(step.key, passport.status) === 'completed'
+                          ? 'background: #dcfce7; color: #16a34a;'
+                          : 'background: rgba(0,0,0,0.04); color: var(--color-text-3);'">
+                      <svg v-if="getLifecycleState(step.key, passport.status) === 'completed'" width="12" height="12" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+                      <span v-else>{{ i + 1 }}</span>
                     </div>
-                    <p class="mt-2 text-xs font-medium text-center leading-tight"
-                       :class="getLifecycleState(step.key, passport.status) === 'future' ? 'text-gray-400' : 'text-emerald-600'">
+                    <span style="font-size: 0.625rem; font-weight: 500; text-align: center; white-space: nowrap;"
+                      :style="getLifecycleState(step.key, passport.status) === 'current' ? 'color: var(--color-accent); font-weight: 700;' : getLifecycleState(step.key, passport.status) === 'completed' ? 'color: #16a34a;' : 'color: var(--color-text-3);'">
                       {{ step.label }}
-                    </p>
+                    </span>
                   </div>
-                </div>
-              </div>
-              <!-- Mobile vertical timeline -->
-              <div class="sm:hidden space-y-0">
-                <div v-for="(step, i) in lifecycleSteps" :key="step.key" class="flex items-start gap-3">
-                  <div class="flex flex-col items-center">
-                    <div class="flex items-center justify-center w-8 h-8 rounded-full border-2 transition-all"
-                         :class="[
-                           getLifecycleState(step.key, passport.status) === 'completed' ? 'bg-[#34d399] border-emerald-500' : '',
-                           getLifecycleState(step.key, passport.status) === 'current' ? 'bg-white border-emerald-500 pd-pulse' : '',
-                           getLifecycleState(step.key, passport.status) === 'future' ? 'bg-white border-gray-200' : '',
-                         ]">
-                      <svg v-if="getLifecycleState(step.key, passport.status) === 'completed'" class="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
-                        <polyline points="20 6 9 17 4 12"/>
-                      </svg>
-                      <div v-else-if="getLifecycleState(step.key, passport.status) === 'current'" class="w-2.5 h-2.5 rounded-full bg-[#34d399]"></div>
-                      <span v-else class="text-xs font-bold text-gray-400">{{ i + 1 }}</span>
-                    </div>
-                    <div v-if="i < lifecycleSteps.length - 1" class="w-0.5 h-6"
-                         :class="getLifecycleState(step.key, passport.status) === 'completed' ? 'bg-emerald-400' : 'bg-gray-100'"></div>
-                  </div>
-                  <p class="text-sm font-medium pt-1.5"
-                     :class="getLifecycleState(step.key, passport.status) === 'future' ? 'text-gray-400' : 'text-emerald-600'">
-                    {{ step.label }}
-                  </p>
+                  <div v-if="i < lifecycleSteps.length - 1" style="height: 2px; flex: 0.5; margin-top: -1rem;"
+                    :style="getLifecycleState(step.key, passport.status) === 'completed' ? 'background: #16a34a;' : 'background: rgba(0,0,0,0.06);'"></div>
                 </div>
               </div>
             </div>
@@ -1720,6 +1705,13 @@ app.component('passport-detail-page', {
 
         <!-- ==================== TAB 4: DATA ==================== -->
         <div id="section-data" style="margin-top: 2rem;">
+
+          <!-- Section Header -->
+          <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem; padding-top: 1.5rem;">
+            <div style="width: 4px; height: 24px; border-radius: 2px; background: #7c3aed;"></div>
+            <h2 style="font-size: 1rem; font-weight: 600; color: var(--color-text-1); margin: 0;">BMU 데이터</h2>
+          </div>
+
           <div v-if="bmuLoading" class="flex flex-col items-center justify-center py-20">
             <div class="relative">
               <div class="w-10 h-10 border-4 border-emerald-100 rounded-full"></div>
@@ -1800,6 +1792,12 @@ app.component('passport-detail-page', {
 
         <!-- ==================== TAB 5: TRUST ==================== -->
         <div id="section-trust" class="space-y-5" style="margin-top: 2rem;">
+
+          <!-- Section Header -->
+          <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem; padding-top: 1.5rem;">
+            <div style="width: 4px; height: 24px; border-radius: 2px; background: #0ea5e9;"></div>
+            <h2 style="font-size: 1rem; font-weight: 600; color: var(--color-text-1); margin: 0;">신뢰 검증</h2>
+          </div>
 
           <!-- Blockchain Verification Card -->
           <div class="bg-white  border border-gray-200 shadow-none overflow-hidden" style="background: #ffffff;">
