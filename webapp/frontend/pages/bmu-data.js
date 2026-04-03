@@ -20,6 +20,7 @@ app.component('bmu-data-page', {
     });
 
     const hasSearched = ref(false);
+    const lastFetchedAt = ref(null);
 
     function decodeStatusFlags(flags) {
       const num = typeof flags === 'number' ? flags : parseInt(flags, 10);
@@ -60,6 +61,7 @@ app.component('bmu-data-page', {
         const data = await props.api.get('/bmu/records/' + encodeURIComponent(passportId.value.trim()));
         records.value = Array.isArray(data) ? data : (data.records || []);
         hasSearched.value = true;
+        lastFetchedAt.value = new Date();
       } catch (e) {
         window.$toast('error', 'BMU 데이터 조회 실패: ' + e.message);
         records.value = [];
@@ -142,7 +144,7 @@ app.component('bmu-data-page', {
       passportId, records, loading, autoRefresh, refreshing, hasSearched,
       sortedRecords, decodeStatusFlags, getBadgeClasses, getDotClasses,
       fetchRecords, handleSearch, formatTimestamp, formatNumber, scaleSOC, scaleTemp,
-      countdown,
+      countdown, lastFetchedAt,
     };
   },
   template: `
@@ -151,7 +153,13 @@ app.component('bmu-data-page', {
     <!-- ===== HEADER ===== -->
     <div style="padding-bottom:0.75rem;border-bottom:1px solid var(--color-border,rgba(0,0,0,0.08));display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
       <div>
-        <h1 class="sn-display" style="font-size:1.5rem;margin:0;">배터리 데이터</h1>
+        <div style="display:flex;align-items:center;">
+          <h1 class="sn-display" style="font-size:1.5rem;margin:0;">배터리 데이터</h1>
+          <span v-if="autoRefresh" style="display: inline-flex; align-items: center; gap: 0.375rem; padding: 0.25rem 0.625rem; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 9999px; font-size: 0.6875rem; font-weight: 600; color: #16a34a; margin-left: 0.75rem;">
+            <span style="width: 6px; height: 6px; border-radius: 50%; background: #16a34a; animation: pulse 1.5s infinite;"></span>
+            LIVE
+          </span>
+        </div>
         <p class="sn-caption" style="margin-top:0.2rem;font-size:0.78rem;">BMU 실시간 센서 데이터 계기판</p>
       </div>
 
@@ -283,6 +291,9 @@ app.component('bmu-data-page', {
           </transition>
           <span style="padding:2px 8px;border-radius:6px;font-family:'JetBrains Mono', monospace;font-size:0.7rem;color:#6b7280;background:#f1f5f9;">
             {{ passportId }}
+          </span>
+          <span v-if="lastFetchedAt" style="font-size:0.7rem;color:#a3a3a3;">
+            최근 조회: {{ lastFetchedAt.toLocaleTimeString('ko-KR') }}
           </span>
         </div>
       </div>
