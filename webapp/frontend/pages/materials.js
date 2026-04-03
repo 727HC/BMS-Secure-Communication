@@ -115,13 +115,13 @@ app.component('materials-page', {
     };
   },
   template: `
-  <div style="display:flex;flex-direction:column;gap:24px;">
+  <div style="display:flex;flex-direction:column;gap:16px;">
 
     <!-- ====== PAGE HEADER ====== -->
-    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px;">
-      <div>
-        <h1 class="sn-display" style="font-size:1.75rem;">원자재 관리</h1>
-        <p class="sn-caption" style="margin-top:0.25rem;">배터리 원자재 등록 및 공급망 이력 추적</p>
+    <div style="padding-bottom:0.75rem;border-bottom:1px solid var(--color-border,rgba(0,0,0,0.08));display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <h1 class="sn-display" style="font-size:1.5rem;margin:0;">원자재 관리</h1>
+        <span style="font-family:'JetBrains Mono',monospace;font-size:0.7rem;font-weight:700;padding:2px 8px;border-radius:20px;background:#f5f5f5;color:#525252;">{{ materials.length }}건</span>
       </div>
       <button v-if="isManufacturer" @click="openModal" class="sn-btn sn-btn-primary" style="display:inline-flex;align-items:center;gap:6px;">
         <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
@@ -130,9 +130,9 @@ app.component('materials-page', {
     </div>
 
     <!-- ====== SEARCH BAR ====== -->
-    <div class="sn-panel" style="padding:12px 16px;">
+    <div class="sn-panel" style="padding:8px 12px;">
       <input v-model="searchQuery" type="text" placeholder="자재ID, 명칭, 원산지, 공급업체, 인증번호 검색..."
-        class="sn-input" style="width:100%;font-size:0.85rem;" />
+        class="sn-input" style="width:100%;font-size:0.8125rem;" />
     </div>
 
     <!-- ====== LOADING STATE ====== -->
@@ -161,7 +161,7 @@ app.component('materials-page', {
 
     <!-- ====== MATERIALS TABLE ====== -->
     <div v-else class="sn-panel" style="overflow:hidden;">
-      <div style="overflow-x:auto;">
+      <div style="overflow-x:auto;font-size:0.8125rem;">
         <table class="sn-table">
           <thead>
             <tr>

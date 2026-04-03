@@ -195,7 +195,7 @@ app.component('maintenance-page', {
     };
   },
   template: `
-  <div style="display:flex;flex-direction:column;gap:24px;">
+  <div style="display:flex;flex-direction:column;gap:16px;">
 
     <!-- LOADING -->
     <div v-if="loading" style="display:flex;flex-direction:column;justify-content:center;align-items:center;padding:128px 0;">
@@ -209,10 +209,10 @@ app.component('maintenance-page', {
     <template v-else>
 
       <!-- HEADER -->
-      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px;">
+      <div style="padding-bottom:0.75rem;border-bottom:1px solid var(--color-border,rgba(0,0,0,0.08));display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
         <div>
-          <h1 class="sn-display" style="font-size:1.75rem;">정비 / 서비스</h1>
-          <p class="sn-caption" style="margin-top:0.25rem;">배터리 정비 요청, 완료 기록 및 사고 이력 관리</p>
+          <h1 class="sn-display" style="font-size:1.5rem;margin:0;">정비 / 서비스</h1>
+          <p class="sn-caption" style="margin-top:0.2rem;font-size:0.78rem;">배터리 정비 요청, 완료 기록 및 사고 이력 관리</p>
         </div>
         <button @click="fetchPassports" class="sn-btn sn-btn-ghost" style="display:inline-flex;align-items:center;gap:6px;">
           <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -252,14 +252,14 @@ app.component('maintenance-page', {
       </div>
 
       <!-- PASSPORT CARDS -->
-      <div v-else style="display:flex;flex-direction:column;gap:16px;">
+      <div v-else style="display:flex;flex-direction:column;gap:10px;">
         <div v-for="(p, idx) in filteredPassports" :key="p.passportId"
              class="sn-panel"
              style="overflow:hidden;cursor:pointer;transition:all 0.5s cubic-bezier(0.16,1,0.3,1);"
              @click="navigateToDetail(p)"
              @mouseenter="$event.currentTarget.style.boxShadow='0 4px 20px rgba(0,0,0,0.08),inset 0 0 0 1px rgba(0,0,0,0.08)'"
              @mouseleave="$event.currentTarget.style.boxShadow=''">
-          <div style="display:flex;gap:16px;padding:16px 20px;">
+          <div style="display:flex;gap:12px;padding:12px 16px;">
 
             <!-- Timeline dot column -->
             <div style="display:flex;flex-direction:column;align-items:center;flex-shrink:0;padding-top:4px;">

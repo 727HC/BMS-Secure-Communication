@@ -146,13 +146,13 @@ app.component('bmu-data-page', {
     };
   },
   template: `
-  <div style="display:flex;flex-direction:column;gap:24px;">
+  <div style="display:flex;flex-direction:column;gap:16px;">
 
     <!-- ===== HEADER ===== -->
-    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px;">
+    <div style="padding-bottom:0.75rem;border-bottom:1px solid var(--color-border,rgba(0,0,0,0.08));display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
       <div>
-        <h1 class="sn-display" style="font-size:1.75rem;">배터리 데이터</h1>
-        <p class="sn-caption" style="margin-top:0.25rem;">BMU 실시간 센서 데이터 계기판</p>
+        <h1 class="sn-display" style="font-size:1.5rem;margin:0;">배터리 데이터</h1>
+        <p class="sn-caption" style="margin-top:0.2rem;font-size:0.78rem;">BMU 실시간 센서 데이터 계기판</p>
       </div>
 
       <!-- Auto-refresh toggle with countdown -->
@@ -178,7 +178,7 @@ app.component('bmu-data-page', {
     </div>
 
     <!-- ===== SEARCH BAR ===== -->
-    <div class="sn-panel" style="padding:20px;">
+    <div class="sn-panel" style="padding:12px 16px;">
       <div style="display:flex;align-items:flex-end;gap:12px;">
         <div style="flex:1;">
           <label class="sn-eyebrow" style="display:block;margin-bottom:8px;">
@@ -288,7 +288,7 @@ app.component('bmu-data-page', {
       </div>
 
       <!-- Table body -->
-      <div style="overflow-x:auto;">
+      <div style="overflow-x:auto;font-size:0.8125rem;">
         <table class="sn-table">
           <thead>
             <tr>

@@ -207,13 +207,13 @@ app.component('passports-page', {
         <p style="font-size:0.85rem;color:#a3a3a3;font-family:'JetBrains Mono',monospace;">LOADING REGISTRY...</p>
       </div>
 
-      <div v-else class="space-y-5">
+      <div v-else class="space-y-4">
 
         <!-- HEADER -->
-        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px;">
-          <div>
-            <h1 class="sn-display" style="font-size:1.75rem;">배터리 여권</h1>
-            <p class="sn-caption" style="margin-top:0.25rem;">전체 {{ passports.length }}건 등록</p>
+        <div style="padding-bottom:0.75rem;margin-bottom:0;border-bottom:1px solid var(--color-border,rgba(0,0,0,0.08));display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+          <div style="display:flex;align-items:center;gap:10px;">
+            <h1 class="sn-display" style="font-size:1.5rem;margin:0;">배터리 여권</h1>
+            <span style="font-family:'JetBrains Mono',monospace;font-size:0.7rem;font-weight:700;padding:2px 8px;border-radius:20px;background:#f5f5f5;color:#525252;">{{ passports.length }}건</span>
           </div>
           <button v-if="isManufacturer" @click="openCreateModal" class="sn-btn sn-btn-primary" style="display:inline-flex;align-items:center;gap:6px;">
             <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
@@ -222,7 +222,7 @@ app.component('passports-page', {
         </div>
 
         <!-- FILTER BAR -->
-        <div class="sn-panel" style="padding:12px 16px;display:flex;flex-wrap:wrap;gap:10px;align-items:center;">
+        <div class="sn-panel" style="padding:8px 12px;display:flex;flex-wrap:wrap;gap:8px;align-items:center;">
           <input v-model="searchQuery" type="text" placeholder="ID, 시리얼, 모델, 제조사, VIN 검색..." class="sn-input" style="flex:1;min-width:200px;font-size:0.8125rem;" />
           <select v-model="filterStatus" class="sn-input" style="width:auto;min-width:140px;font-size:0.8125rem;">
             <option v-for="opt in statusOptions" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
@@ -231,7 +231,7 @@ app.component('passports-page', {
 
         <!-- TABLE -->
         <div class="sn-panel" style="overflow:hidden;">
-          <div v-if="filteredPassports.length > 0" class="overflow-x-auto">
+          <div v-if="filteredPassports.length > 0" class="overflow-x-auto" style="font-size:0.8125rem;">
             <table class="sn-table">
               <thead>
                 <tr>
