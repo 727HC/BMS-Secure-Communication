@@ -151,7 +151,18 @@ app.component('dashboard-page', {
         </div>
 
         <!-- ═══ KANBAN BOARD — status columns ═══ -->
-        <div style="display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; min-height: 60vh; align-items: start;">
+
+        <!-- Summary bar -->
+        <div style="display: flex; height: 8px; border-radius: 4px; overflow: hidden; background: rgba(0,0,0,0.03); gap: 2px; margin-bottom: 1rem;">
+          <div v-for="status in statusList" :key="status + '_bar'"
+            style="height: 100%; min-width: 2px; border-radius: 2px; transition: width 0.3s;"
+            :style="{
+              width: (totalCount > 0 ? (countByStatus[status] || 0) / totalCount * 100 : 0) + '%',
+              background: status==='ACTIVE'?'#16a34a':status==='MANUFACTURED'?'#2563eb':status==='MAINTENANCE'?'#d97706':status==='ANALYSIS'?'#7c3aed':status==='RECYCLING'?'#ea580c':'#a3a3a3'
+            }"></div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 8px; min-height: 60vh; align-items: start;">
 
           <!-- One column per status -->
           <div v-for="status in statusList" :key="status"

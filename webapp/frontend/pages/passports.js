@@ -208,7 +208,10 @@ app.component('passports-page', {
         <!-- HEADER -->
         <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.25rem; padding-bottom: 0.75rem; border-bottom: 1px solid var(--color-border);">
           <div>
-            <h1 class="sn-display" style="font-size: 1.5rem;">배터리 여권</h1>
+            <div style="display: flex; align-items: baseline; gap: 0.5rem;">
+              <h1 class="sn-display" style="font-size: 1.5rem;">배터리 여권</h1>
+              <span style="font-family: var(--font-mono); font-size: 0.875rem; color: var(--color-text-3); margin-left: 0.5rem;">{{ filteredPassports.length }}건</span>
+            </div>
             <p class="sn-caption" style="margin-top: 0.125rem;">총 {{ passports.length }}건의 배터리 여권이 등록되어 있습니다</p>
           </div>
           <button v-if="isManufacturer" @click="openCreateModal" class="sn-btn sn-btn-accent" style="display:inline-flex;align-items:center;gap:6px;">
@@ -259,7 +262,7 @@ app.component('passports-page', {
               </div>
 
               <!-- SOC/SOH gauges -->
-              <div style="display: flex; gap: 1rem; align-items: center;">
+              <div v-if="p.currentSoc != null || p.currentSoh != null" style="display: flex; gap: 1rem; align-items: center;">
                 <div v-if="p.currentSoc != null" style="flex: 1;">
                   <div style="display: flex; justify-content: space-between; margin-bottom: 0.25rem;">
                     <span style="font-size: 0.5625rem; color: var(--color-text-3);">SOC</span>
@@ -279,6 +282,7 @@ app.component('passports-page', {
                   </div>
                 </div>
               </div>
+              <div v-else style="font-size: 0.625rem; color: var(--color-text-3); font-style: italic;">센서 데이터 없음</div>
             </div>
           </div>
         </div>
