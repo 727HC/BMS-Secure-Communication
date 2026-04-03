@@ -151,16 +151,16 @@ app.component('bmu-data-page', {
   <div style="display:flex;flex-direction:column;gap:16px;">
 
     <!-- ===== HEADER ===== -->
-    <div style="padding-bottom:0.75rem;border-bottom:1px solid var(--color-border,rgba(0,0,0,0.08));display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.25rem; padding-bottom: 0.75rem; border-bottom: 1px solid var(--color-border);">
       <div>
         <div style="display:flex;align-items:center;">
-          <h1 class="sn-display" style="font-size:1.5rem;margin:0;">배터리 데이터</h1>
+          <h1 class="sn-display" style="font-size: 1.5rem;">배터리 데이터</h1>
           <span v-if="autoRefresh" style="display: inline-flex; align-items: center; gap: 0.375rem; padding: 0.25rem 0.625rem; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 9999px; font-size: 0.6875rem; font-weight: 600; color: #16a34a; margin-left: 0.75rem;">
             <span style="width: 6px; height: 6px; border-radius: 50%; background: #16a34a; animation: pulse 1.5s infinite;"></span>
             LIVE
           </span>
         </div>
-        <p class="sn-caption" style="margin-top:0.2rem;font-size:0.78rem;">BMU 실시간 센서 데이터 계기판</p>
+        <p class="sn-caption" style="margin-top: 0.125rem;">BMU 실시간 센서 데이터 계기판</p>
       </div>
 
       <!-- Auto-refresh toggle with countdown -->
@@ -205,7 +205,7 @@ app.component('bmu-data-page', {
         </div>
         <button @click="handleSearch"
                 :disabled="!passportId.trim() || loading"
-                class="sn-btn sn-btn-primary"
+                class="sn-btn sn-btn-accent"
                 :style="(!passportId.trim() || loading) ? 'cursor:not-allowed;opacity:0.5;' : ''"
                 style="display:inline-flex;align-items:center;gap:8px;">
           <svg v-if="!loading" style="width:16px;height:16px;" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -222,14 +222,8 @@ app.component('bmu-data-page', {
     </div>
 
     <!-- ===== LOADING (initial) ===== -->
-    <div v-if="loading && !autoRefresh" class="sn-panel" style="overflow:hidden;">
-      <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:80px 0;">
-        <div style="position:relative;width:48px;height:48px;">
-          <div style="position:absolute;inset:0;border-radius:50%;border:3px solid #e5e5e5;"></div>
-          <div style="position:absolute;inset:0;border-radius:50%;border:3px solid transparent;border-top-color:#171717;animation:spin 0.8s linear infinite;"></div>
-        </div>
-        <p style="margin-top:16px;font-size:0.875rem;color:#a3a3a3;">데이터를 조회하고 있습니다...</p>
-      </div>
+    <div v-if="loading && !autoRefresh" style="display: flex; align-items: center; justify-content: center; min-height: 40vh;">
+      <div style="width: 28px; height: 28px; border: 2px solid rgba(0,0,0,0.06); border-top-color: var(--color-accent); border-radius: 50%; animation: spin 0.8s linear infinite;"></div>
     </div>
 
     <!-- ===== EMPTY: no search yet ===== -->

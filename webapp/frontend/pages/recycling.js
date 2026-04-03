@@ -264,10 +264,10 @@ app.component('recycling-page', {
   <div style="display:flex;flex-direction:column;gap:16px;">
 
     <!-- ====== PAGE HEADER ====== -->
-    <div style="padding-bottom:0.75rem;border-bottom:1px solid var(--color-border,rgba(0,0,0,0.08));display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.25rem; padding-bottom: 0.75rem; border-bottom: 1px solid var(--color-border);">
       <div>
-        <h1 class="sn-display" style="font-size:1.5rem;margin:0;">재활용 관리</h1>
-        <p class="sn-caption" style="margin-top:0.2rem;font-size:0.78rem;">배터리 분석, 재활용 판정 및 폐기 처리 관리</p>
+        <h1 class="sn-display" style="font-size: 1.5rem;">재활용 관리</h1>
+        <p class="sn-caption" style="margin-top: 0.125rem;">배터리 분석, 재활용 판정 및 폐기 처리 관리</p>
       </div>
       <button @click="fetchPassports" class="sn-btn sn-btn-ghost" style="display:inline-flex;align-items:center;gap:6px;font-size:0.82rem;">
         <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -332,23 +332,13 @@ app.component('recycling-page', {
     </div>
 
     <!-- ====== LOADING STATE ====== -->
-    <div v-if="loading" class="sn-panel" style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:72px 0;">
-      <div style="position:relative;width:40px;height:40px;">
-        <div style="position:absolute;inset:0;border-radius:50%;border:3px solid #e5e5e5;"></div>
-        <div style="position:absolute;inset:0;border-radius:50%;border:3px solid #171717;border-top-color:transparent;animation:spin 0.8s linear infinite;"></div>
-      </div>
-      <p style="margin-top:14px;font-size:0.85rem;color:#a3a3a3;">여권 목록을 불러오고 있습니다...</p>
+    <div v-if="loading" style="display: flex; align-items: center; justify-content: center; min-height: 40vh;">
+      <div style="width: 28px; height: 28px; border: 2px solid rgba(0,0,0,0.06); border-top-color: var(--color-accent); border-radius: 50%; animation: spin 0.8s linear infinite;"></div>
     </div>
 
     <!-- ====== EMPTY STATE ====== -->
-    <div v-else-if="filteredPassports.length === 0" class="sn-panel" style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:64px 24px;">
-      <div style="width:56px;height:56px;border-radius:12px;background:#f5f5f5;display:flex;align-items:center;justify-content:center;margin-bottom:16px;">
-        <svg width="28" height="28" fill="none" stroke="#a3a3a3" stroke-width="1.5" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
-        </svg>
-      </div>
-      <h3 style="font-size:1rem;font-weight:600;color:#171717;margin:0 0 4px;">재활용 관리 대상 배터리가 없습니다</h3>
-      <p style="font-size:0.82rem;color:#a3a3a3;text-align:center;max-width:360px;">배터리 여권이 등록되면 재활용 관리를 시작할 수 있습니다.</p>
+    <div v-else-if="filteredPassports.length === 0" style="padding: 3rem; text-align: center; border: 1px dashed var(--color-border); border-radius: 0.5rem;">
+      <p style="font-size: 0.875rem; color: var(--color-text-3); margin-bottom: 0;">재활용 관리 대상 배터리가 없습니다. 배터리 여권이 등록되면 재활용 관리를 시작할 수 있습니다.</p>
     </div>
 
     <!-- ====== MAIN TABLE ====== -->
@@ -515,7 +505,7 @@ app.component('recycling-page', {
           <button @click="closeModals" class="sn-btn sn-btn-ghost">취소</button>
           <button @click="submitAnalysisResult"
             :disabled="!analysisForm.soh || !analysisForm.soce || !analysisForm.remainingLifeCycle || submitting"
-            class="sn-btn sn-btn-primary" style="display:inline-flex;align-items:center;gap:6px;"
+            class="sn-btn sn-btn-accent" style="display:inline-flex;align-items:center;gap:6px;"
             :style="(!analysisForm.soh || !analysisForm.soce || !analysisForm.remainingLifeCycle || submitting) ? 'opacity:0.4;cursor:not-allowed;' : ''">
             <svg v-if="submitting" style="animation:spin 0.8s linear infinite;" width="16" height="16" fill="none" viewBox="0 0 24 24">
               <circle opacity="0.25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -562,7 +552,7 @@ app.component('recycling-page', {
         <div style="padding:14px 24px;border-top:1px solid rgba(0,0,0,0.06);display:flex;justify-content:flex-end;gap:10px;">
           <button @click="closeModals" class="sn-btn sn-btn-ghost">취소</button>
           <button @click="submitRecycleToggle" :disabled="submitting"
-            class="sn-btn sn-btn-primary" style="display:inline-flex;align-items:center;gap:6px;"
+            class="sn-btn sn-btn-accent" style="display:inline-flex;align-items:center;gap:6px;"
             :style="submitting ? 'opacity:0.4;cursor:not-allowed;' : ''">
             <svg v-if="submitting" style="animation:spin 0.8s linear infinite;" width="16" height="16" fill="none" viewBox="0 0 24 24">
               <circle opacity="0.25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -614,7 +604,7 @@ app.component('recycling-page', {
         <div style="padding:14px 24px;border-top:1px solid rgba(0,0,0,0.06);display:flex;justify-content:flex-end;gap:10px;">
           <button @click="closeModals" class="sn-btn sn-btn-ghost">취소</button>
           <button @click="submitExtract" :disabled="submitting"
-            class="sn-btn sn-btn-primary" style="display:inline-flex;align-items:center;gap:6px;"
+            class="sn-btn sn-btn-accent" style="display:inline-flex;align-items:center;gap:6px;"
             :style="submitting ? 'opacity:0.4;cursor:not-allowed;' : ''">
             <svg v-if="submitting" style="animation:spin 0.8s linear infinite;" width="16" height="16" fill="none" viewBox="0 0 24 24">
               <circle opacity="0.25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
