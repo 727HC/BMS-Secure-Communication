@@ -145,15 +145,15 @@ app.component('qr-scan-page', {
     };
   },
   template: `
-  <div style="display:flex;flex-direction:column;gap:24px;">
+  <div style="display:flex;flex-direction:column;gap:16px;">
 
     <!-- ====== PAGE HEADER ====== -->
-    <div>
-      <h1 class="sn-display" style="font-size:1.75rem;">QR / NFC 스캔</h1>
-      <p class="sn-caption" style="margin-top:0.25rem;">배터리 여권 QR 코드 또는 NFC 태그를 스캔하여 정보를 조회합니다</p>
+    <div style="padding-bottom:0.75rem;border-bottom:1px solid var(--color-border,rgba(0,0,0,0.08));">
+      <h1 class="sn-display" style="font-size:1.5rem;margin:0;">QR / NFC 스캔</h1>
+      <p class="sn-caption" style="margin-top:0.2rem;font-size:0.78rem;">배터리 여권 QR 코드 또는 NFC 태그를 스캔하여 정보를 조회합니다</p>
     </div>
 
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
 
       <!-- ====== LEFT: SCANNER AREA ====== -->
       <div style="display:flex;flex-direction:column;gap:16px;">
@@ -234,7 +234,7 @@ app.component('qr-scan-page', {
         </div>
 
         <!-- Manual Input -->
-        <div class="sn-panel" style="padding:20px;">
+        <div class="sn-panel" style="padding:12px 16px;">
           <h2 style="font-size:0.85rem;font-weight:600;color:#171717;margin:0 0 12px;">수동 입력</h2>
           <div style="display:flex;gap:8px;">
             <input v-model="manualId" type="text" placeholder="여권 ID를 입력하세요 (예: BP-SDI-001)"

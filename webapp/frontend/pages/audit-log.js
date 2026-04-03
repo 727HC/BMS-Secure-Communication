@@ -141,13 +141,13 @@ app.component('audit-log-page', {
     };
   },
   template: `
-  <div style="display:flex;flex-direction:column;gap:24px;">
+  <div style="display:flex;flex-direction:column;gap:16px;">
 
     <!-- ====== PAGE HEADER ====== -->
-    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px;">
-      <div>
-        <h1 class="sn-display" style="font-size:1.75rem;">감사 로그</h1>
-        <p class="sn-caption" style="margin-top:0.25rem;">플랫폼 내 모든 활동을 추적하고 모니터링합니다</p>
+    <div style="padding-bottom:0.75rem;border-bottom:1px solid var(--color-border,rgba(0,0,0,0.08));display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <h1 class="sn-display" style="font-size:1.5rem;margin:0;">감사 로그</h1>
+        <span style="font-family:'JetBrains Mono',monospace;font-size:0.7rem;font-weight:700;padding:2px 8px;border-radius:20px;background:#f5f5f5;color:#525252;">{{ total }}건</span>
       </div>
       <div style="display:flex;align-items:center;gap:12px;">
         <label style="display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none;">
@@ -168,7 +168,7 @@ app.component('audit-log-page', {
     </div>
 
     <!-- ====== FILTERS ====== -->
-    <div class="sn-panel" style="padding:12px 16px;display:flex;flex-wrap:wrap;align-items:center;gap:12px;">
+    <div class="sn-panel" style="padding:8px 12px;display:flex;flex-wrap:wrap;align-items:center;gap:10px;">
       <select v-model="filterAction" class="sn-input" style="min-width:140px;font-size:0.82rem;">
         <option v-for="opt in actionOptions" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
       </select>
@@ -197,7 +197,7 @@ app.component('audit-log-page', {
 
     <!-- ====== LOG TABLE ====== -->
     <div v-else class="sn-panel" style="overflow:hidden;">
-      <div style="overflow-x:auto;">
+      <div style="overflow-x:auto;font-size:0.8125rem;">
         <table class="sn-table">
           <thead>
             <tr>
