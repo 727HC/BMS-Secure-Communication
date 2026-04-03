@@ -1,13 +1,13 @@
 # Progress Ledger
 
 ## Current Position
-- **Cycle**: 1 / target 12 — **COMPLETE**
+- **Cycle**: 2 / target 12 — **COMPLETE**
 - **Micro-loop**: 15 / 15
-- **Completed cycles**: 1
-- **Stopping allowed**: NO (1/10 minimum)
+- **Completed cycles**: 2
+- **Stopping allowed**: NO (2/10 minimum)
 
-## Cycle 01 Result
-CSS Consolidation: 0 style blocks, 351 sn- classes, 13 modals preserved. All pages render. Foundation complete.
+## Cycle 02 Result
+Layout differentiation: Login(split), Dashboard(cardless inline), Passports(table registry), Detail(certificate tabs). Each page structurally distinct.
 
-## Next: Cycle 02
-Hypothesis: Each page gets its own layout personality. Dashboard ≠ registry ≠ detail.
+## Next: Cycle 03
+Hypothesis: Passport detail as formal technical certificate. Strengthen the domain metaphor.
