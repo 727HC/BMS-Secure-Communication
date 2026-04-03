@@ -138,8 +138,18 @@ app.component('materials-page', {
     <!-- ====== TRACEABILITY HEADER ====== -->
     <div v-if="!loading && filteredMaterials.length > 0" style="display: flex; align-items: center; gap: 1rem; padding: 0.75rem 1rem; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 0.5rem; margin-bottom: 1rem;">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
-      <span style="font-size: 0.8125rem; color: #16a34a; font-weight: 500;">블록체인 인증 공급망 추적</span>
-      <span style="font-size: 0.75rem; color: #525252; margin-left: auto;">{{ filteredMaterials.filter(m => m.certificationId).length }}/{{ filteredMaterials.length }} 인증</span>
+      <div style="flex: 1;">
+        <span style="font-size: 0.8125rem; color: #16a34a; font-weight: 500;">블록체인 인증 공급망 추적</span>
+        <div style="display: flex; align-items: center; gap: 0.5rem; margin-top: 0.5rem;">
+          <div style="flex: 1; max-width: 120px; height: 4px; background: rgba(22,163,74,0.15); border-radius: 2px; overflow: hidden;">
+            <div style="height: 100%; background: #16a34a; border-radius: 2px;"
+              :style="{ width: (filteredMaterials.length > 0 ? (filteredMaterials.filter(m => m.certificationId).length / filteredMaterials.length * 100) : 0) + '%' }"></div>
+          </div>
+          <span style="font-size: 0.625rem; color: #16a34a; font-weight: 600;">
+            {{ filteredMaterials.filter(m => m.certificationId).length }}/{{ filteredMaterials.length }} 인증
+          </span>
+        </div>
+      </div>
     </div>
 
     <!-- ====== LOADING STATE ====== -->
