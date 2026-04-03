@@ -135,6 +135,13 @@ app.component('materials-page', {
         class="sn-input" style="width:100%;font-size:0.8125rem;" />
     </div>
 
+    <!-- ====== TRACEABILITY HEADER ====== -->
+    <div v-if="!loading && filteredMaterials.length > 0" style="display: flex; align-items: center; gap: 1rem; padding: 0.75rem 1rem; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 0.5rem; margin-bottom: 1rem;">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+      <span style="font-size: 0.8125rem; color: #16a34a; font-weight: 500;">블록체인 인증 공급망 추적</span>
+      <span style="font-size: 0.75rem; color: #525252; margin-left: auto;">{{ filteredMaterials.filter(m => m.certificationId).length }}/{{ filteredMaterials.length }} 인증</span>
+    </div>
+
     <!-- ====== LOADING STATE ====== -->
     <div v-if="loading" class="sn-panel" style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:72px 0;">
       <div style="position:relative;width:40px;height:40px;">
@@ -185,13 +192,13 @@ app.component('materials-page', {
               <td style="text-align:right;font-variant-numeric:tabular-nums;font-weight:500;color:#171717;">{{ m.quantity }}</td>
               <td style="color:#a3a3a3;">{{ m.unit }}</td>
               <td>
-                <span v-if="m.certificationId" style="font-family:'JetBrains Mono',monospace;font-size:0.7rem;display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:6px;background:#f0fdf4;color:#16a34a;">
-                  <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <span v-if="m.certificationId" style="display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;background:#f0fdf4;border:1px solid #bbf7d0;font-size:0.75rem;font-weight:600;color:#16a34a;">
+                  <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
                   </svg>
-                  {{ m.certificationId }}
+                  인증됨
                 </span>
-                <span v-else style="color:#a3a3a3;font-size:0.8rem;">-</span>
+                <span v-else style="font-size:0.75rem;color:#a3a3a3;font-style:italic;">미인증</span>
               </td>
               <td style="color:#a3a3a3;font-size:0.8rem;">{{ formatDate(m.createdAt) }}</td>
             </tr>

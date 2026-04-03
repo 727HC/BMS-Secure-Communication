@@ -238,6 +238,14 @@ app.component('maintenance-page', {
         </button>
       </div>
 
+      <!-- SUMMARY STAT -->
+      <div v-if="filteredPassports.length > 0" style="display: flex; gap: 1.5rem; margin-bottom: 1rem;">
+        <div style="display: flex; align-items: baseline; gap: 0.375rem;">
+          <span style="font-family: var(--font-mono); font-size: 1.25rem; font-weight: 700; color: var(--color-text-1);">{{ filteredPassports.length }}</span>
+          <span style="font-size: 0.75rem; color: var(--color-text-3);">대상 여권</span>
+        </div>
+      </div>
+
       <!-- EMPTY STATE -->
       <div v-if="filteredPassports.length === 0" class="sn-panel">
         <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:80px 24px;">
@@ -255,7 +263,7 @@ app.component('maintenance-page', {
       <div v-else style="display:flex;flex-direction:column;gap:10px;">
         <div v-for="(p, idx) in filteredPassports" :key="p.passportId"
              class="sn-panel"
-             style="overflow:hidden;cursor:pointer;transition:all 0.5s cubic-bezier(0.16,1,0.3,1);"
+             :style="'overflow:hidden;cursor:pointer;transition:all 0.5s cubic-bezier(0.16,1,0.3,1);border-left:3px solid ' + (p.status === \'MAINTENANCE\' ? \'#d97706\' : (p.maintenanceLogs && p.maintenanceLogs.length > 0) ? \'#16a34a\' : \'transparent\') + ';'"
              @click="navigateToDetail(p)"
              @mouseenter="$event.currentTarget.style.boxShadow='0 4px 20px rgba(0,0,0,0.08),inset 0 0 0 1px rgba(0,0,0,0.08)'"
              @mouseleave="$event.currentTarget.style.boxShadow=''">
