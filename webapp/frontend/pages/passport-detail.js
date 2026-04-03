@@ -817,6 +817,16 @@ app.component('passport-detail-page', {
 
           <!-- Key specs strip -->
           <div style="padding: 1rem 1.5rem; display: flex; align-items: center; gap: 2rem; flex-wrap: wrap; border-bottom: 1px solid var(--color-border); background: #fff;">
+            <div style="display: flex; align-items: center; gap: 0.5rem;">
+              <div style="width: 28px; height: 28px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.75rem; font-family: var(--font-mono);"
+                :style="{ background: gbaCompliance.pct >= 90 ? '#f0fdf4' : gbaCompliance.pct >= 50 ? '#fffbeb' : '#fef2f2', color: gbaCompliance.pct >= 90 ? '#16a34a' : gbaCompliance.pct >= 50 ? '#d97706' : '#dc2626' }">
+                {{ complianceGrade }}
+              </div>
+              <div>
+                <span class="sn-eyebrow" style="font-size: 0.5625rem;">GBA-21</span>
+                <span style="font-size: 0.75rem; font-weight: 600; color: var(--color-text-1); display: block;">{{ gbaCompliance.pct }}%</span>
+              </div>
+            </div>
             <div v-for="spec in [
               { label: '제조사', value: passport.manufacturerName },
               { label: '화학', value: passport.chemistry },
