@@ -207,8 +207,15 @@ app.component('dashboard-page', {
 
               <!-- Empty column -->
               <div v-if="!passports.filter(pp => pp.status === status).length"
-                style="flex: 1; display: flex; align-items: center; justify-content: center;">
-                <span style="font-size: 0.625rem; color: var(--color-text-3);">없음</span>
+                style="flex: 1; display: flex; align-items: center; justify-content: center; padding: 1rem;">
+                <span style="font-size: 0.625rem; color: var(--color-text-3); text-align: center; line-height: 1.5;">
+                  {{ status === 'ACTIVE' ? '여권을 차량에 바인딩하면\n운행 상태로 전환됩니다'
+                   : status === 'MAINTENANCE' ? 'EV제조사가 정비를\n요청하면 표시됩니다'
+                   : status === 'ANALYSIS' ? '검증기관이 분석을\n요청하면 표시됩니다'
+                   : status === 'RECYCLING' ? '재활용 판정을 받은\n여권이 표시됩니다'
+                   : status === 'DISPOSED' ? '폐기 처리된\n여권이 표시됩니다'
+                   : '없음' }}
+                </span>
               </div>
             </div>
           </div>

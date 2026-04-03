@@ -98,6 +98,12 @@ app.component('login-page', {
                 <div v-if="i < 3" style="width: 40px; height: 1px; background: rgba(255,255,255,0.1); margin: 0 0.5rem; margin-bottom: 1rem;"></div>
               </div>
             </div>
+            <p style="font-size: 0.75rem; color: rgba(255,255,255,0.35); margin-top: 1.5rem; line-height: 1.6;">
+              {{ orgNum === 1 ? '여권 발급 · 원자재 등록 · 데이터 정정'
+               : orgNum === 2 ? '차량 바인딩 · 정비 요청 · 사고 기록'
+               : orgNum === 3 ? '정비 완료 · 분석 결과 · 재활용 판정'
+               : '규제 검증 · 원자재 추출 · 폐기 처리' }}
+            </p>
           </div>
 
           <div style="display: flex; gap: 1.25rem;">
