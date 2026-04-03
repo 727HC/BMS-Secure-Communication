@@ -141,123 +141,99 @@ app.component('dashboard-page', {
 
       <div v-else>
 
-        <!-- HEADER -->
-        <div class="flex items-center justify-between mb-8">
+        <!-- CONTROL ROOM HEADER — distinct from other pages -->
+        <div style="display: flex; align-items: flex-end; justify-content: space-between; padding-bottom: 1.5rem; margin-bottom: 1.5rem; border-bottom: 1px solid var(--color-border);">
           <div>
-            <p class="sn-eyebrow mb-1">Overview</p>
-            <h1 class="sn-display" style="font-size: 2rem;">대시보드</h1>
+            <h1 class="sn-display" style="font-size: 1.5rem; margin-bottom: 0.25rem;">대시보드</h1>
+            <span class="sn-caption">{{ totalCount }}건 등록 · {{ activeCount }}건 운행 중</span>
           </div>
-          <button @click="nav('passports')" class="sn-btn sn-btn-accent">+ 여권 발급</button>
+          <button @click="nav('passports')" class="sn-btn sn-btn-primary">+ 여권 발급</button>
         </div>
 
-        <!-- KPI STRIP -->
-        <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+        <!-- INLINE METRICS — NOT cards, just numbers in a row with dividers -->
+        <div style="display: flex; align-items: baseline; gap: 2rem; flex-wrap: wrap; margin-bottom: 2rem;">
           <div v-for="(kpi, i) in [
-            { num: totalCount,       label: '전체 여권',    sub: 'TOTAL',       page: 'passports'  },
-            { num: activeCount,      label: '운행 중',      sub: 'ACTIVE',      page: 'passports'  },
-            { num: maintenanceCount, label: '정비 대기',    sub: 'MAINTENANCE', page: 'passports'  },
-            { num: materialCount,    label: '등록 원자재',  sub: 'MATERIALS',   page: 'materials'  }
-          ]" :key="i"
-            class="sn-card sn-lift" @click="nav(kpi.page)" style="cursor: pointer;">
-            <div class="sn-card-inner">
-              <p class="sn-eyebrow mb-2">{{ kpi.sub }}</p>
-              <p class="sn-display" style="font-size: clamp(1.75rem, 4vw, 2.5rem); font-variant-numeric: tabular-nums;">{{ kpi.num }}</p>
-              <p class="sn-caption" style="margin-top: 0.375rem;">{{ kpi.label }}</p>
-            </div>
+            { num: totalCount,       label: '전체',     color: 'var(--color-text-1)', page: 'passports' },
+            { num: activeCount,      label: '운행',     color: '#16a34a',              page: 'passports' },
+            { num: maintenanceCount, label: '정비',     color: '#d97706',              page: 'passports' },
+            { num: materialCount,    label: '원자재',   color: '#2563eb',              page: 'materials' }
+          ]" :key="i" @click="nav(kpi.page)"
+            style="cursor: pointer; display: flex; align-items: baseline; gap: 0.5rem;">
+            <span class="sn-mono" style="font-size: 1.75rem; font-weight: 700; font-variant-numeric: tabular-nums;"
+              :style="{ color: kpi.color }">{{ kpi.num }}</span>
+            <span class="sn-caption">{{ kpi.label }}</span>
           </div>
         </div>
 
-        <!-- STATUS + CHEMISTRY ROW -->
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-3 mb-6">
-
-          <!-- STATUS -->
-          <div class="sn-card">
-            <div class="sn-card-inner">
-              <div class="flex items-center justify-between mb-4">
-                <p class="sn-eyebrow">상태 분포</p>
-                <span class="sn-caption" style="font-variant-numeric: tabular-nums;">합계 {{ statTotal }}</span>
-              </div>
-              <div v-if="statusDistribution.length" class="flex overflow-hidden mb-4" style="height: 8px; border-radius: 9999px; background: rgba(0,0,0,0.03); gap: 2px;">
-                <div v-for="item in statusDistribution" :key="item.status"
-                  style="height: 100%; border-radius: 9999px; min-width: 4px;"
-                  :style="{ width: (item.count / statTotal * 100) + '%', background: item.color }"></div>
-              </div>
-              <div class="flex flex-wrap gap-x-4 gap-y-2">
-                <div v-for="item in statusDistribution" :key="item.status" class="flex items-center gap-1.5">
-                  <span style="width: 7px; height: 7px; border-radius: 50%;" :style="{ background: item.color }"></span>
-                  <span class="sn-caption" style="color: var(--color-text-2);">{{ item.label }}</span>
-                  <span class="sn-mono">{{ item.count }}</span>
-                </div>
-                <span v-if="!statusDistribution.length" class="sn-caption">데이터 없음</span>
-              </div>
-            </div>
+        <!-- STATUS BAR — full width, no card wrapper -->
+        <div style="margin-bottom: 2rem;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+            <span class="sn-eyebrow">상태 분포</span>
           </div>
-
-          <!-- CHEMISTRY -->
-          <div class="sn-card">
-            <div class="sn-card-inner">
-              <div class="flex items-center justify-between mb-4">
-                <p class="sn-eyebrow">화학 구성</p>
-                <span class="sn-caption" style="font-variant-numeric: tabular-nums;">합계 {{ chemTotal }}</span>
-              </div>
-              <div class="flex flex-wrap gap-2">
-                <span v-for="item in chemistryDistribution" :key="item.name" class="sn-badge" style="background: rgba(0,0,0,0.03); padding: 0.3125rem 0.75rem;">
-                  <span style="width: 7px; height: 7px; border-radius: 50%;" :style="{ background: item.color }"></span>
-                  <span style="font-weight: 500; color: var(--color-text-1);">{{ item.name }}</span>
-                  <span class="sn-mono">{{ item.count }}</span>
-                </span>
-                <span v-if="!chemistryDistribution.length" class="sn-caption">데이터 없음</span>
-              </div>
-            </div>
+          <div v-if="statusDistribution.length" style="display: flex; height: 6px; border-radius: 3px; overflow: hidden; background: rgba(0,0,0,0.03); gap: 1px; margin-bottom: 0.75rem;">
+            <div v-for="item in statusDistribution" :key="item.status"
+              style="height: 100%; min-width: 3px;"
+              :style="{ width: (item.count / statTotal * 100) + '%', background: item.color }"></div>
+          </div>
+          <div style="display: flex; flex-wrap: wrap; gap: 1rem;">
+            <span v-for="item in statusDistribution" :key="item.status" class="flex items-center gap-1.5">
+              <span style="width: 6px; height: 6px; border-radius: 2px;" :style="{ background: item.color }"></span>
+              <span class="sn-caption" style="color: var(--color-text-2);">{{ item.label }}</span>
+              <span class="sn-mono" style="color: var(--color-text-1);">{{ item.count }}</span>
+            </span>
           </div>
         </div>
 
-        <!-- RECENT PASSPORTS TABLE -->
-        <div class="sn-card">
-          <div class="sn-card-inner">
-            <div class="flex items-center justify-between mb-5">
-              <p class="sn-eyebrow">최근 등록 여권</p>
-              <button @click="nav('passports')" class="sn-btn sn-btn-ghost">전체 보기 →</button>
-            </div>
+        <!-- CHEMISTRY — inline, no card -->
+        <div v-if="chemistryDistribution.length" style="display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 2rem;">
+          <span v-for="item in chemistryDistribution" :key="item.name"
+            style="display: inline-flex; align-items: center; gap: 0.375rem; padding: 0.25rem 0.625rem; border-radius: 3px; background: rgba(0,0,0,0.03);">
+            <span style="width: 6px; height: 6px; border-radius: 2px;" :style="{ background: item.color }"></span>
+            <span style="font-size: 0.8125rem; color: var(--color-text-1);">{{ item.name }}</span>
+            <span class="sn-mono" style="color: var(--color-text-3);">{{ item.count }}</span>
+          </span>
+        </div>
 
-            <div v-if="recentPassports.length" style="overflow-x: auto;">
-              <table class="sn-table">
-                <thead>
-                  <tr>
-                    <th>제조사</th>
-                    <th>모델</th>
-                    <th>화학</th>
-                    <th>등록일</th>
-                    <th>상태</th>
-                    <th style="text-align: right;">무게</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr v-for="(p, idx) in recentPassports.slice(0, 6)" :key="idx"
-                    @click="$emit('navigate', 'passport-detail', { passportId: p.passportId || p.id })">
-                    <td style="color: var(--color-text-1); font-weight: 500;">{{ p.manufacturerName || '—' }}</td>
-                    <td>{{ p.model || '—' }}</td>
-                    <td><span class="sn-badge" style="background: rgba(0,0,0,0.03);">{{ p.chemistry || '—' }}</span></td>
-                    <td class="sn-caption">{{ formatDate(p.createdAt || p.manufactureDate) }}</td>
-                    <td>
-                      <span class="flex items-center gap-1.5">
-                        <span style="width: 6px; height: 6px; border-radius: 50%;"
-                          :style="{ background: p.status==='ACTIVE'?'#16a34a':p.status==='MANUFACTURED'?'#2563eb':p.status==='MAINTENANCE'?'#d97706':p.status==='ANALYSIS'?'#7c3aed':p.status==='RECYCLING'?'#ea580c':'#a3a3a3' }"></span>
-                        <span class="sn-caption" style="color: var(--color-text-2);">{{ statusLabels[p.status] || '—' }}</span>
-                      </span>
-                    </td>
-                    <td style="text-align: right;" class="sn-mono">{{ p.weight ? p.weight + ' kg' : '—' }}</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
+        <!-- RECENT PASSPORTS — compact list, NOT in a card -->
+        <div>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+            <span class="sn-eyebrow">최근 등록</span>
+            <button @click="nav('passports')" class="sn-btn sn-btn-ghost" style="padding: 0.375rem 0.75rem; font-size: 0.75rem;">전체 보기 →</button>
+          </div>
 
-            <div v-else class="flex flex-col items-center justify-center py-12 gap-3 text-center">
-              <p class="sn-body">등록된 배터리 여권이 없습니다.</p>
-              <p class="sn-caption">첫 번째 여권을 발급하여 추적을 시작하세요.</p>
-              <button @click="nav('passports')" class="sn-btn sn-btn-accent mt-2">+ 여권 발급하기</button>
-            </div>
+          <div v-if="recentPassports.length">
+            <table class="sn-table">
+              <thead>
+                <tr>
+                  <th>모델</th>
+                  <th>제조사</th>
+                  <th>상태</th>
+                  <th style="text-align: right;">무게</th>
+                  <th style="text-align: right;">등록</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="(p, idx) in recentPassports.slice(0, 8)" :key="idx"
+                  @click="$emit('navigate', 'passport-detail', { passportId: p.passportId || p.id })" style="cursor: pointer;">
+                  <td style="font-weight: 500; color: var(--color-text-1);">{{ p.model || '—' }}</td>
+                  <td>{{ p.manufacturerName || '—' }}</td>
+                  <td>
+                    <span class="flex items-center gap-1.5">
+                      <span style="width: 6px; height: 6px; border-radius: 2px;"
+                        :style="{ background: p.status==='ACTIVE'?'#16a34a':p.status==='MANUFACTURED'?'#2563eb':p.status==='MAINTENANCE'?'#d97706':p.status==='ANALYSIS'?'#7c3aed':p.status==='RECYCLING'?'#ea580c':'#a3a3a3' }"></span>
+                      <span class="sn-caption" style="color: var(--color-text-2);">{{ statusLabels[p.status] || '—' }}</span>
+                    </span>
+                  </td>
+                  <td class="sn-mono" style="text-align: right;">{{ p.weight ? p.weight + 'kg' : '—' }}</td>
+                  <td class="sn-caption" style="text-align: right;">{{ formatDate(p.createdAt || p.manufactureDate) }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
 
+          <div v-else class="flex flex-col items-center py-12 gap-3 text-center">
+            <p class="sn-body">등록된 배터리 여권이 없습니다.</p>
+            <button @click="nav('passports')" class="sn-btn sn-btn-accent mt-2">+ 여권 발급하기</button>
           </div>
         </div>
 
