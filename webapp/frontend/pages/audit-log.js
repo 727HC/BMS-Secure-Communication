@@ -144,10 +144,10 @@ app.component('audit-log-page', {
   <div style="display:flex;flex-direction:column;gap:16px;">
 
     <!-- ====== PAGE HEADER ====== -->
-    <div style="padding-bottom:0.75rem;border-bottom:1px solid var(--color-border,rgba(0,0,0,0.08));display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
-      <div style="display:flex;align-items:center;gap:10px;">
-        <h1 class="sn-display" style="font-size:1.5rem;margin:0;">감사 로그</h1>
-        <span style="font-family:'JetBrains Mono',monospace;font-size:0.7rem;font-weight:700;padding:2px 8px;border-radius:20px;background:#f5f5f5;color:#525252;">{{ total }}건</span>
+    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.25rem; padding-bottom: 0.75rem; border-bottom: 1px solid var(--color-border);">
+      <div>
+        <h1 class="sn-display" style="font-size: 1.5rem;">감사 로그</h1>
+        <p class="sn-caption" style="margin-top: 0.125rem;">총 {{ total }}건의 감사 기록</p>
       </div>
       <div style="display:flex;align-items:center;gap:12px;">
         <label style="display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none;">
@@ -180,19 +180,13 @@ app.component('audit-log-page', {
     </div>
 
     <!-- ====== LOADING STATE ====== -->
-    <div v-if="loading && logs.length === 0" class="sn-panel" style="padding:48px;display:flex;flex-direction:column;align-items:center;justify-content:center;">
-      <div style="width:40px;height:40px;border:3px solid #e5e5e5;border-top-color:#171717;border-radius:50%;animation:spin 0.8s linear infinite;margin-bottom:12px;"></div>
-      <p style="font-size:0.85rem;color:#a3a3a3;">감사 로그를 불러오고 있습니다...</p>
+    <div v-if="loading && logs.length === 0" style="display: flex; align-items: center; justify-content: center; min-height: 40vh;">
+      <div style="width: 28px; height: 28px; border: 2px solid rgba(0,0,0,0.06); border-top-color: var(--color-accent); border-radius: 50%; animation: spin 0.8s linear infinite;"></div>
     </div>
 
     <!-- ====== EMPTY STATE ====== -->
-    <div v-else-if="logs.length === 0" class="sn-panel" style="padding:48px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;">
-      <div style="width:56px;height:56px;border-radius:12px;background:#f5f5f5;display:flex;align-items:center;justify-content:center;margin-bottom:16px;">
-        <svg width="28" height="28" fill="none" stroke="#a3a3a3" stroke-width="1.5" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
-        </svg>
-      </div>
-      <p style="font-size:0.85rem;color:#a3a3a3;">기록된 감사 로그가 없습니다</p>
+    <div v-else-if="logs.length === 0" style="padding: 3rem; text-align: center; border: 1px dashed var(--color-border); border-radius: 0.5rem;">
+      <p style="font-size: 0.875rem; color: var(--color-text-3); margin-bottom: 0;">기록된 감사 로그가 없습니다.</p>
     </div>
 
     <!-- ====== LOG TABLE ====== -->

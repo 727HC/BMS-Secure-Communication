@@ -199,23 +199,19 @@ app.component('passports-page', {
   template: `
     <div>
       <!-- LOADING -->
-      <div v-if="loading" class="flex flex-col justify-center items-center py-32">
-        <div class="relative w-14 h-14 mb-4">
-          <div class="absolute inset-0 rounded-full border-2 border-transparent" style="border-top-color: #c8ff00; animation: spin 0.8s linear infinite;"></div>
-          <div class="absolute inset-2 rounded-full border-2 border-transparent" style="border-bottom-color: #c8ff00; opacity: 0.3; animation: spin 1.2s linear infinite reverse;"></div>
-        </div>
-        <p style="font-size:0.85rem;color:#a3a3a3;font-family:'JetBrains Mono',monospace;">LOADING REGISTRY...</p>
+      <div v-if="loading" style="display: flex; align-items: center; justify-content: center; min-height: 40vh;">
+        <div style="width: 28px; height: 28px; border: 2px solid rgba(0,0,0,0.06); border-top-color: var(--color-accent); border-radius: 50%; animation: spin 0.8s linear infinite;"></div>
       </div>
 
       <div v-else class="space-y-4">
 
         <!-- HEADER -->
-        <div style="padding-bottom:0.75rem;margin-bottom:0;border-bottom:1px solid var(--color-border,rgba(0,0,0,0.08));display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
-          <div style="display:flex;align-items:center;gap:10px;">
-            <h1 class="sn-display" style="font-size:1.5rem;margin:0;">배터리 여권</h1>
-            <span style="font-family:'JetBrains Mono',monospace;font-size:0.7rem;font-weight:700;padding:2px 8px;border-radius:20px;background:#f5f5f5;color:#525252;">{{ passports.length }}건</span>
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.25rem; padding-bottom: 0.75rem; border-bottom: 1px solid var(--color-border);">
+          <div>
+            <h1 class="sn-display" style="font-size: 1.5rem;">배터리 여권</h1>
+            <p class="sn-caption" style="margin-top: 0.125rem;">총 {{ passports.length }}건의 배터리 여권이 등록되어 있습니다</p>
           </div>
-          <button v-if="isManufacturer" @click="openCreateModal" class="sn-btn sn-btn-primary" style="display:inline-flex;align-items:center;gap:6px;">
+          <button v-if="isManufacturer" @click="openCreateModal" class="sn-btn sn-btn-accent" style="display:inline-flex;align-items:center;gap:6px;">
             <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
             여권 발급
           </button>
@@ -310,14 +306,9 @@ app.component('passports-page', {
           </div>
 
           <!-- Empty state -->
-          <div v-else style="padding:80px 24px;text-align:center;">
-            <div style="width:56px;height:56px;border-radius:12px;background:#f5f5f5;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;">
-              <svg width="28" height="28" fill="none" viewBox="0 0 24 24" stroke="#a3a3a3" stroke-width="1.5">
-                <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/>
-              </svg>
-            </div>
-            <p style="font-size:0.875rem;font-weight:600;color:#171717;margin:0 0 4px;">등록된 여권이 없습니다</p>
-            <p style="font-size:0.8rem;color:#a3a3a3;margin:0;">검색 조건을 변경하거나 새 여권을 발급하세요.</p>
+          <div v-else style="padding: 3rem; text-align: center; border: 1px dashed var(--color-border); border-radius: 0.5rem;">
+            <p style="font-size: 0.875rem; color: var(--color-text-3); margin-bottom: 0.75rem;">등록된 여권이 없습니다. 검색 조건을 변경하거나 새 여권을 발급하세요.</p>
+            <button v-if="isManufacturer" @click="openCreateModal" class="sn-btn sn-btn-accent">여권 발급</button>
           </div>
         </div>
       </div>
@@ -488,8 +479,8 @@ app.component('passports-page', {
             <div v-else></div>
             <div style="display:flex;align-items:center;gap:8px;">
               <button @click="closeCreateModal" class="sn-btn sn-btn-ghost">취소</button>
-              <button v-if="createStep < 3" @click="nextStep" class="sn-btn sn-btn-primary">다음</button>
-              <button v-else @click="submitCreate" :disabled="creating" class="sn-btn sn-btn-primary" :style="creating ? 'opacity:0.6;cursor:not-allowed;' : ''">
+              <button v-if="createStep < 3" @click="nextStep" class="sn-btn sn-btn-accent">다음</button>
+              <button v-else @click="submitCreate" :disabled="creating" class="sn-btn sn-btn-accent" :style="creating ? 'opacity:0.6;cursor:not-allowed;' : ''">
                 <svg v-if="creating" style="width:14px;height:14px;animation:spin 0.8s linear infinite;margin-right:4px;" fill="none" viewBox="0 0 24 24"><circle opacity="0.25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path opacity="0.75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
                 {{ creating ? '생성 중...' : '여권 생성' }}
               </button>
