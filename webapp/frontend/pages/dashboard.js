@@ -150,24 +150,24 @@ app.component('dashboard-page', {
           <button @click="nav('passports')" class="sn-btn sn-btn-primary">+ 여권 발급</button>
         </div>
 
-        <!-- INLINE METRICS — NOT cards, just numbers in a row with dividers -->
-        <div style="display: flex; align-items: baseline; gap: 2rem; flex-wrap: wrap; margin-bottom: 2rem;">
+        <!-- DENSE METRICS STRIP -->
+        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; background: var(--color-border); border-radius: 0.5rem; overflow: hidden; margin-bottom: 1.5rem;">
           <div v-for="(kpi, i) in [
-            { num: totalCount,       label: '전체',     color: 'var(--color-text-1)', page: 'passports' },
-            { num: activeCount,      label: '운행',     color: '#16a34a',              page: 'passports' },
-            { num: maintenanceCount, label: '정비',     color: '#d97706',              page: 'passports' },
-            { num: materialCount,    label: '원자재',   color: '#2563eb',              page: 'materials' }
+            { num: totalCount,       label: '전체 여권',  color: 'var(--color-text-1)', page: 'passports' },
+            { num: activeCount,      label: '운행 중',    color: '#16a34a',              page: 'passports' },
+            { num: maintenanceCount, label: '정비 대기',  color: '#d97706',              page: 'passports' },
+            { num: materialCount,    label: '등록 원자재', color: '#2563eb',              page: 'materials' }
           ]" :key="i" @click="nav(kpi.page)"
-            style="cursor: pointer; display: flex; align-items: baseline; gap: 0.5rem;">
-            <span class="sn-mono" style="font-size: 1.75rem; font-weight: 700; font-variant-numeric: tabular-nums;"
+            style="cursor: pointer; background: #fff; padding: 1rem 1.25rem;">
+            <span class="sn-mono" style="font-size: 1.5rem; font-weight: 700; font-variant-numeric: tabular-nums; display: block;"
               :style="{ color: kpi.color }">{{ kpi.num }}</span>
-            <span class="sn-caption">{{ kpi.label }}</span>
+            <span class="sn-caption" style="font-size: 0.6875rem;">{{ kpi.label }}</span>
           </div>
         </div>
 
-        <!-- STATUS BAR — full width, no card wrapper -->
-        <div style="margin-bottom: 2rem;">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+        <!-- STATUS BAR — dense -->
+        <div style="margin-bottom: 1.25rem;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.375rem;">
             <span class="sn-eyebrow">상태 분포</span>
           </div>
           <div v-if="statusDistribution.length" style="display: flex; height: 6px; border-radius: 3px; overflow: hidden; background: rgba(0,0,0,0.03); gap: 1px; margin-bottom: 0.75rem;">
@@ -184,8 +184,8 @@ app.component('dashboard-page', {
           </div>
         </div>
 
-        <!-- CHEMISTRY — inline, no card -->
-        <div v-if="chemistryDistribution.length" style="display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 2rem;">
+        <!-- CHEMISTRY — inline, dense -->
+        <div v-if="chemistryDistribution.length" style="display: flex; flex-wrap: wrap; gap: 0.375rem; margin-bottom: 1.25rem;">
           <span v-for="item in chemistryDistribution" :key="item.name"
             style="display: inline-flex; align-items: center; gap: 0.375rem; padding: 0.25rem 0.625rem; border-radius: 3px; background: rgba(0,0,0,0.03);">
             <span style="width: 6px; height: 6px; border-radius: 2px;" :style="{ background: item.color }"></span>
