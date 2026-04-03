@@ -1,5 +1,5 @@
 # Progress Ledger
-- **Cycle**: 8 / 12 — **COMPLETE**
-- **Completed cycles**: 8
-- **Stopping**: NO (8/10)
-## Next: Cycle 09
+- **Cycle**: 9 / 12 — **COMPLETE**
+- **Completed cycles**: 9
+- **Stopping**: NO (9/10 — one more cycle to reach minimum)
+## Next: Cycle 10 — final integration + regression test
