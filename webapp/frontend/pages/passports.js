@@ -228,6 +228,17 @@ app.component('passports-page', {
           </select>
         </div>
 
+        <!-- Sort control -->
+        <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.75rem;">
+          <span style="font-size: 0.6875rem; color: var(--color-text-3);">정렬:</span>
+          <button v-for="s in [{v:'', l:'최신순'}, {v:'gba', l:'GBA'}]" :key="s.v"
+            @click="sortBy = s.v" type="button"
+            style="font-size: 0.6875rem; padding: 0.25rem 0.5rem; background: none; border: none; cursor: pointer; border-radius: 3px;"
+            :style="sortBy === s.v ? 'color: var(--color-text-1); background: rgba(0,0,0,0.04);' : 'color: var(--color-text-3);'">
+            {{ s.l }}
+          </button>
+        </div>
+
         <!-- CARD GRID -->
         <div v-if="filteredPassports.length > 0">
           <!-- CARD GRID (structural change from table) -->
