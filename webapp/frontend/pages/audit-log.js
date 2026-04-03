@@ -189,132 +189,81 @@ app.component('audit-log-page', {
       <p style="font-size: 0.875rem; color: var(--color-text-3); margin-bottom: 0;">기록된 감사 로그가 없습니다.</p>
     </div>
 
-    <!-- ====== LOG TABLE ====== -->
+    <!-- ====== ACTIVITY FEED (structural change from table) ====== -->
     <div v-else class="sn-panel" style="overflow:hidden;">
-      <div style="overflow-x:auto;font-size:0.8125rem;">
-        <table class="sn-table">
-          <thead>
-            <tr>
-              <th>시간</th>
-              <th>액션</th>
-              <th>사용자</th>
-              <th>경로</th>
-              <th style="text-align:center;">상태코드</th>
-              <th style="text-align:right;">응답시간</th>
-            </tr>
-          </thead>
-          <tbody>
-            <template v-for="(log, idx) in logs" :key="log.id">
-              <tr @click="toggleDetail(log.id)" style="cursor:pointer;"
-                :style="expandedId === log.id ? 'background:#fafafa;' : ''">
-                <!-- Timestamp with relative time -->
-                <td>
-                  <span style="display:flex;flex-direction:column;gap:2px;">
-                    <span style="display:flex;align-items:center;gap:6px;">
-                      <svg :style="{ width:'12px',height:'12px',color:'#6b7280',transition:'transform 0.2s',transform: expandedId === log.id ? 'rotate(90deg)' : 'rotate(0deg)' }" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                        <polyline points="9 18 15 12 9 6"/>
-                      </svg>
-                      <span class="font-mono" style="font-size:0.75rem;color:#6b7280;white-space:nowrap;">{{ formatTime(log.timestamp) }}</span>
-                    </span>
-                    <span v-if="relativeTime(log.timestamp)" class="font-mono" style="font-size:0.65rem;color:#6b7280;opacity:0.7;padding-left:18px;white-space:nowrap;">{{ relativeTime(log.timestamp) }}</span>
-                  </span>
-                </td>
-                <!-- Action badge -->
-                <td>
-                  <span :class="['inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold border',
-                    actionColors[log.action] || 'bg-[#1a1814] text-[rgba(250,250,245,0.7)] border-[rgba(250,250,245,0.06)]']"
-                    style="white-space:nowrap;">
-                    {{ actionLabels[log.action] || log.action }}
-                  </span>
-                </td>
-                <!-- User -->
-                <td style="font-size:0.82rem;font-weight:500;color:#374151;white-space:nowrap;">
-                  {{ log.userId || (log.action === 'RECORD_BMU' ? '시스템(BMU)' : '-') }}
-                </td>
-                <!-- Path -->
-                <td>
-                  <span v-if="log.path" class="font-mono" style="font-size:0.72rem;color:#6b7280;background:#f1f5f9;padding:2px 8px;border-radius:4px;white-space:nowrap;display:inline-block;max-width:200px;overflow:hidden;text-overflow:ellipsis;">{{ log.method }} {{ log.path }}</span>
-                  <span v-else style="font-size:0.75rem;color:#6b7280;">-</span>
-                </td>
-                <!-- Status Code with enhanced color pill -->
-                <td style="text-align:center;">
-                  <span class="font-mono"
-                    :style="{
-                      fontSize: '0.75rem',
-                      fontWeight: 700,
-                      whiteSpace: 'nowrap',
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: '4px',
-                      padding: '2px 10px',
-                      borderRadius: '20px',
-                      color: getStatusStyle(log.statusCode).color,
-                      background: getStatusStyle(log.statusCode).bg,
-                    }">
-                    <span :style="{
-                      width: '5px',
-                      height: '5px',
-                      borderRadius: '50%',
-                      background: getStatusStyle(log.statusCode).color,
-                      flexShrink: 0,
-                    }"></span>
-                    {{ log.statusCode }}
-                  </span>
-                </td>
-                <!-- Duration -->
-                <td style="text-align:right;">
-                  <span class="font-mono" style="font-size:0.75rem;color:#6b7280;font-variant-numeric:tabular-nums;white-space:nowrap;">{{ log.duration }}ms</span>
-                </td>
-              </tr>
-              <!-- Expanded detail row -->
-              <tr v-if="expandedId === log.id">
-                <td colspan="6" style="padding:0 16px;">
-                  <div style="background:#fafafa;box-shadow:inset 0 0 0 1px rgba(0,0,0,0.06);border-radius:10px;padding:16px;margin:8px 0;display:flex;flex-direction:column;gap:14px;">
-                    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;">
-                      <div>
-                        <p style="font-size:0.6rem;font-weight:600;color:#6b7280;text-transform:uppercase;margin:0 0 2px;">로그 ID</p>
-                        <p class="font-mono" style="font-size:0.72rem;color:#374151;word-break:break-all;margin:0;">{{ log.id }}</p>
-                      </div>
-                      <div>
-                        <p style="font-size:0.6rem;font-weight:600;color:#6b7280;text-transform:uppercase;margin:0 0 2px;">HTTP 메서드</p>
-                        <p class="font-mono" style="font-size:0.72rem;color:#374151;margin:0;">{{ log.method }}</p>
-                      </div>
-                      <div>
-                        <p style="font-size:0.6rem;font-weight:600;color:#6b7280;text-transform:uppercase;margin:0 0 2px;">경로</p>
-                        <p class="font-mono" style="font-size:0.72rem;color:#374151;word-break:break-all;margin:0;">{{ log.path }}</p>
-                      </div>
-                      <div>
-                        <p style="font-size:0.6rem;font-weight:600;color:#6b7280;text-transform:uppercase;margin:0 0 2px;">상태 코드</p>
-                        <p class="font-mono" style="font-size:0.72rem;margin:0;"
-                          :style="{ color: getStatusStyle(log.statusCode).color }">{{ log.statusCode }}</p>
-                      </div>
-                      <div>
-                        <p style="font-size:0.6rem;font-weight:600;color:#6b7280;text-transform:uppercase;margin:0 0 2px;">IP</p>
-                        <p class="font-mono" style="font-size:0.72rem;color:#374151;margin:0;">{{ log.ip || '-' }}</p>
-                      </div>
-                      <div>
-                        <p style="font-size:0.6rem;font-weight:600;color:#6b7280;text-transform:uppercase;margin:0 0 2px;">응답 시간</p>
-                        <p class="font-mono" style="font-size:0.72rem;color:#374151;margin:0;">{{ log.duration }}ms</p>
-                      </div>
-                      <div>
-                        <p style="font-size:0.6rem;font-weight:600;color:#6b7280;text-transform:uppercase;margin:0 0 2px;">사용자</p>
-                        <p style="font-size:0.72rem;color:#374151;margin:0;">{{ log.userId || '(미인증)' }}</p>
-                      </div>
-                      <div>
-                        <p style="font-size:0.6rem;font-weight:600;color:#6b7280;text-transform:uppercase;margin:0 0 2px;">조직</p>
-                        <p style="font-size:0.72rem;color:#374151;margin:0;">{{ log.orgMsp || '(없음)' }}</p>
-                      </div>
-                    </div>
-                    <div v-if="log.requestBody">
-                      <p class="sn-eyebrow" style="margin:0 0 6px;">요청 데이터</p>
-                      <pre style="font-family:'JetBrains Mono',monospace;font-size:0.72rem;color:#525252;background:#fff;box-shadow:inset 0 0 0 1px rgba(0,0,0,0.06);border-radius:8px;padding:12px;overflow-x:auto;max-height:160px;margin:0;">{{ JSON.stringify(log.requestBody, null, 2) }}</pre>
-                    </div>
-                  </div>
-                </td>
-              </tr>
-            </template>
-          </tbody>
-        </table>
+      <div style="display: flex; flex-direction: column; gap: 1px; background: rgba(0,0,0,0.03);">
+        <template v-for="(log, idx) in logs" :key="log.id">
+          <div @click="toggleDetail(log.id)" style="background: #fff; padding: 0.75rem 1rem; display: flex; gap: 0.75rem; align-items: flex-start; cursor: pointer;"
+            :style="expandedId === log.id ? 'background:#fafafa;' : ''">
+            <!-- Action icon dot -->
+            <div style="width: 8px; height: 8px; border-radius: 50%; margin-top: 0.375rem; flex-shrink: 0;"
+              :style="{ background: actionColors[log.action] ? '#16a34a' : '#a3a3a3' }"></div>
+            <!-- Content -->
+            <div style="flex: 1; min-width: 0;">
+              <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.25rem;">
+                <span style="font-size: 0.8125rem; font-weight: 500; color: var(--color-text-1);">{{ actionLabels[log.action] || log.action }}</span>
+                <span style="font-size: 0.625rem; color: var(--color-text-3);">{{ relativeTime(log.timestamp) }}</span>
+                <svg :style="{ width:'10px',height:'10px',color:'#6b7280',transition:'transform 0.2s',transform: expandedId === log.id ? 'rotate(90deg)' : 'rotate(0deg)', marginLeft:'auto', flexShrink:0 }" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                  <polyline points="9 18 15 12 9 6"/>
+                </svg>
+              </div>
+              <div style="font-size: 0.75rem; color: var(--color-text-3);">
+                {{ log.userId || (log.action === 'RECORD_BMU' ? '시스템(BMU)' : '-') }}
+                <span v-if="log.path" style="font-family:'JetBrains Mono',monospace;"> · {{ log.method }} {{ log.path }}</span>
+                <span style="font-family:'JetBrains Mono',monospace;"> · {{ formatTime(log.timestamp) }}</span>
+              </div>
+            </div>
+            <!-- Status code -->
+            <span style="font-family: var(--font-mono); font-size: 0.625rem; padding: 0.125rem 0.375rem; border-radius: 3px; flex-shrink:0;"
+              :style="{ background: log.statusCode < 400 ? '#f0fdf4' : '#fef2f2', color: log.statusCode < 400 ? '#16a34a' : '#dc2626' }">
+              {{ log.statusCode || '—' }}
+            </span>
+          </div>
+          <!-- Expanded detail panel -->
+          <div v-if="expandedId === log.id" style="background:#fafafa;border-top:1px solid rgba(0,0,0,0.04);padding:12px 16px 16px;">
+            <div style="background:#fff;box-shadow:inset 0 0 0 1px rgba(0,0,0,0.06);border-radius:10px;padding:16px;display:flex;flex-direction:column;gap:14px;">
+              <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;">
+                <div>
+                  <p style="font-size:0.6rem;font-weight:600;color:#6b7280;text-transform:uppercase;margin:0 0 2px;">로그 ID</p>
+                  <p class="font-mono" style="font-size:0.72rem;color:#374151;word-break:break-all;margin:0;">{{ log.id }}</p>
+                </div>
+                <div>
+                  <p style="font-size:0.6rem;font-weight:600;color:#6b7280;text-transform:uppercase;margin:0 0 2px;">HTTP 메서드</p>
+                  <p class="font-mono" style="font-size:0.72rem;color:#374151;margin:0;">{{ log.method }}</p>
+                </div>
+                <div>
+                  <p style="font-size:0.6rem;font-weight:600;color:#6b7280;text-transform:uppercase;margin:0 0 2px;">경로</p>
+                  <p class="font-mono" style="font-size:0.72rem;color:#374151;word-break:break-all;margin:0;">{{ log.path }}</p>
+                </div>
+                <div>
+                  <p style="font-size:0.6rem;font-weight:600;color:#6b7280;text-transform:uppercase;margin:0 0 2px;">상태 코드</p>
+                  <p class="font-mono" style="font-size:0.72rem;margin:0;"
+                    :style="{ color: getStatusStyle(log.statusCode).color }">{{ log.statusCode }}</p>
+                </div>
+                <div>
+                  <p style="font-size:0.6rem;font-weight:600;color:#6b7280;text-transform:uppercase;margin:0 0 2px;">IP</p>
+                  <p class="font-mono" style="font-size:0.72rem;color:#374151;margin:0;">{{ log.ip || '-' }}</p>
+                </div>
+                <div>
+                  <p style="font-size:0.6rem;font-weight:600;color:#6b7280;text-transform:uppercase;margin:0 0 2px;">응답 시간</p>
+                  <p class="font-mono" style="font-size:0.72rem;color:#374151;margin:0;">{{ log.duration }}ms</p>
+                </div>
+                <div>
+                  <p style="font-size:0.6rem;font-weight:600;color:#6b7280;text-transform:uppercase;margin:0 0 2px;">사용자</p>
+                  <p style="font-size:0.72rem;color:#374151;margin:0;">{{ log.userId || '(미인증)' }}</p>
+                </div>
+                <div>
+                  <p style="font-size:0.6rem;font-weight:600;color:#6b7280;text-transform:uppercase;margin:0 0 2px;">조직</p>
+                  <p style="font-size:0.72rem;color:#374151;margin:0;">{{ log.orgMsp || '(없음)' }}</p>
+                </div>
+              </div>
+              <div v-if="log.requestBody">
+                <p class="sn-eyebrow" style="margin:0 0 6px;">요청 데이터</p>
+                <pre style="font-family:'JetBrains Mono',monospace;font-size:0.72rem;color:#525252;background:#fafafa;box-shadow:inset 0 0 0 1px rgba(0,0,0,0.06);border-radius:8px;padding:12px;overflow-x:auto;max-height:160px;margin:0;">{{ JSON.stringify(log.requestBody, null, 2) }}</pre>
+              </div>
+            </div>
+          </div>
+        </template>
       </div>
 
       <!-- Pagination -->

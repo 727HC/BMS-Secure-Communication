@@ -341,114 +341,134 @@ app.component('recycling-page', {
       <p style="font-size: 0.875rem; color: var(--color-text-3); margin-bottom: 0;">재활용 관리 대상 배터리가 없습니다. 배터리 여권이 등록되면 재활용 관리를 시작할 수 있습니다.</p>
     </div>
 
-    <!-- ====== MAIN TABLE ====== -->
-    <div v-else class="sn-panel" style="overflow:hidden;">
-      <div style="overflow-x:auto;font-size:0.8125rem;">
-        <table class="sn-table">
-          <thead>
-            <tr>
-              <th>여권ID</th>
-              <th>시리얼</th>
-              <th>상태</th>
-              <th>SOH</th>
-              <th style="text-align:center;">재활용가능</th>
-              <th>재활용률</th>
-              <th style="text-align:right;">액션</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="(p, idx) in filteredPassports" :key="p.passportId">
-              <td><span class="font-mono" style="font-size:0.78rem;color:#374151;">{{ p.passportId }}</span></td>
-              <td class="font-mono" style="font-size:0.78rem;color:#6b7280;">{{ p.serialNumber || '-' }}</td>
-              <td>
-                <span :class="['inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold', getStatusBadge(p.status).bg]">
-                  <span :class="['w-1.5 h-1.5 rounded-full mr-1.5', getStatusBadge(p.status).dot]"></span>
-                  {{ getStatusBadge(p.status).label }}
-                </span>
-              </td>
-              <!-- SOH with progress bar -->
-              <td>
-                <div v-if="p.currentSoh != null" style="display:flex;align-items:center;gap:10px;min-width:110px;">
-                  <div style="flex:1;position:relative;">
-                    <div class="h-2 bg-[#33302a] rounded-full overflow-hidden" :class="getSohTrackBg(p.currentSoh)" style="height:6px;overflow:hidden;">
-                      <div :class="getSohBg(p.currentSoh)" style="height:6px;border-radius:999px;transition:width 0.4s;position:relative;" :style="{ width: Math.min(p.currentSoh, 100) + '%' }">
-                        <!-- Shimmer effect -->
-                        <div style="position:absolute;inset:0;border-radius:999px;background:linear-gradient(90deg,transparent 0%,rgba(255,255,255,0.3) 50%,transparent 100%);animation:shimmer 2s infinite;"></div>
-                      </div>
-                    </div>
-                  </div>
-                  <span :class="getSohColor(p.currentSoh)" style="font-family:'JetBrains Mono', monospace;font-size:0.82rem;font-weight:700;white-space:nowrap;">
-                    {{ p.currentSoh }}%
-                  </span>
+    <!-- ====== GROUPED SECTION VIEW (structural change from flat table) ====== -->
+    <div v-else style="display:flex;flex-direction:column;gap:1.25rem;">
+
+      <!-- Section: 분석 대기 -->
+      <template v-if="filteredPassports.filter(p => !p.recycleAvailable && p.status !== 'RECYCLING' && p.status !== 'DISPOSED').length > 0">
+        <div>
+          <div style="display:flex;align-items:center;gap:0.625rem;padding:0.5rem 0.75rem;background:#f8faff;border:1px solid #dbeafe;border-radius:6px 6px 0 0;">
+            <span style="font-size:0.75rem;font-weight:700;color:#2563eb;">분석 대기</span>
+            <span style="font-size:0.625rem;font-weight:700;background:#dbeafe;color:#2563eb;padding:0.125rem 0.5rem;border-radius:99px;">{{ filteredPassports.filter(p => !p.recycleAvailable && p.status !== 'RECYCLING' && p.status !== 'DISPOSED').length }}</span>
+          </div>
+          <div style="border:1px solid #dbeafe;border-top:none;border-radius:0 0 6px 6px;overflow:hidden;">
+            <div v-for="(p, idx) in filteredPassports.filter(p => !p.recycleAvailable && p.status !== 'RECYCLING' && p.status !== 'DISPOSED')" :key="p.passportId"
+              :style="idx > 0 ? 'border-top:1px solid rgba(0,0,0,0.05);' : ''"
+              style="background:#fff;padding:0.75rem 1rem;display:flex;align-items:center;justify-content:space-between;gap:1rem;">
+              <div style="min-width:0;">
+                <div style="font-family:'JetBrains Mono',monospace;font-size:0.78rem;font-weight:600;color:#374151;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ p.passportId }}</div>
+                <div style="font-size:0.72rem;color:#6b7280;margin-top:2px;">S/N: {{ p.serialNumber || '-' }}</div>
+              </div>
+              <div style="display:flex;align-items:center;gap:0.5rem;flex-shrink:0;" @click.stop>
+                <button v-if="canRequestAnalysis" @click="requestAnalysis(p)"
+                  class="sn-btn sn-btn-ghost" style="font-size:0.72rem;padding:4px 10px;display:inline-flex;align-items:center;gap:4px;color:#2563eb;border-color:#2563eb;">
+                  <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+                  분석 요청
+                </button>
+                <button v-if="canSubmitAnalysis" @click="openAnalysisResult(p)"
+                  class="sn-btn sn-btn-ghost" style="font-size:0.72rem;padding:4px 10px;display:inline-flex;align-items:center;gap:4px;color:#7c3aed;border-color:#7c3aed;">
+                  <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                  분석 결과
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </template>
+
+      <!-- Section: 재활용 가능 -->
+      <template v-if="filteredPassports.filter(p => p.recycleAvailable === true && p.status !== 'RECYCLING' && p.status !== 'DISPOSED').length > 0">
+        <div>
+          <div style="display:flex;align-items:center;gap:0.625rem;padding:0.5rem 0.75rem;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:6px 6px 0 0;">
+            <span style="font-size:0.75rem;font-weight:700;color:#16a34a;">재활용 가능</span>
+            <span style="font-size:0.625rem;font-weight:700;background:#bbf7d0;color:#16a34a;padding:0.125rem 0.5rem;border-radius:99px;">{{ filteredPassports.filter(p => p.recycleAvailable === true && p.status !== 'RECYCLING' && p.status !== 'DISPOSED').length }}</span>
+          </div>
+          <div style="border:1px solid #bbf7d0;border-top:none;border-radius:0 0 6px 6px;overflow:hidden;">
+            <div v-for="(p, idx) in filteredPassports.filter(p => p.recycleAvailable === true && p.status !== 'RECYCLING' && p.status !== 'DISPOSED')" :key="p.passportId"
+              :style="idx > 0 ? 'border-top:1px solid rgba(0,0,0,0.05);' : ''"
+              style="background:#fff;padding:0.75rem 1rem;display:flex;align-items:center;justify-content:space-between;gap:1rem;">
+              <div style="min-width:0;flex:1;">
+                <div style="font-family:'JetBrains Mono',monospace;font-size:0.78rem;font-weight:600;color:#374151;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ p.passportId }}</div>
+                <div style="font-size:0.72rem;color:#6b7280;margin-top:2px;">
+                  SOH: <span :class="getSohColor(p.currentSoh)" style="font-weight:600;">{{ p.currentSoh != null ? p.currentSoh + '%' : '미측정' }}</span>
                 </div>
-                <span v-else style="font-size:0.75rem;color:#6b7280;">미측정</span>
-              </td>
-              <!-- Recycle availability badge -->
-              <td style="text-align:center;">
-                <span v-if="p.recycleAvailable === true" class="bg-[rgba(200,255,0,0.08)] text-[#c8ff00]" style="display:inline-flex;align-items:center;gap:4px;font-size:0.7rem;padding:2px 8px;border-radius:20px;">
-                  <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
-                  가능
-                </span>
-                <span v-else-if="p.recycleAvailable === false" style="display:inline-flex;align-items:center;gap:4px;font-size:0.7rem;padding:2px 8px;border-radius:20px;background:#f1f5f9;color:#6b7280;border:1px solid #e2e8f0;">
-                  <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
-                  불가
-                </span>
-                <span v-else style="font-size:0.7rem;padding:2px 8px;border-radius:20px;background:#ffffff;color:#6b7280;border:1px solid #f1f5f9;">
-                  미판정
-                </span>
-              </td>
-              <!-- Recycling rates with shimmer -->
-              <td>
-                <div v-if="getRecyclingRateEntries(p.recyclingRates).length > 0" style="display:flex;flex-direction:column;gap:6px;min-width:140px;">
+                <!-- Recycling rates -->
+                <div v-if="getRecyclingRateEntries(p.recyclingRates).length > 0" style="display:flex;flex-direction:column;gap:4px;margin-top:6px;">
                   <div v-for="entry in getRecyclingRateEntries(p.recyclingRates)" :key="entry.key"
                     style="display:flex;align-items:center;gap:8px;">
-                    <span style="font-size:0.7rem;font-weight:500;color:#374151;width:60px;text-align:right;flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" :title="entry.key">{{ entry.key }}</span>
-                    <div class="h-2 bg-[#33302a] rounded-full overflow-hidden" style="flex:1;height:6px;min-width:50px;background:#f1f5f9;overflow:hidden;">
-                      <div :class="getRateBarColor(entry.value)" style="height:6px;border-radius:999px;transition:width 0.4s;position:relative;" :style="{ width: Math.min(entry.value, 100) + '%' }">
-                        <!-- Shimmer effect on rate bars -->
-                        <div style="position:absolute;inset:0;border-radius:999px;background:linear-gradient(90deg,transparent 0%,rgba(255,255,255,0.3) 50%,transparent 100%);animation:shimmer 2s infinite;"></div>
-                      </div>
+                    <span style="font-size:0.68rem;color:#6b7280;width:56px;text-align:right;flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" :title="entry.key">{{ entry.key }}</span>
+                    <div style="flex:1;height:5px;background:#f1f5f9;border-radius:999px;overflow:hidden;min-width:50px;">
+                      <div :class="getRateBarColor(entry.value)" style="height:5px;border-radius:999px;transition:width 0.4s;" :style="{ width: Math.min(entry.value, 100) + '%' }"></div>
                     </div>
-                    <span style="font-family:'JetBrains Mono', monospace;font-size:0.7rem;font-weight:700;color:#374151;width:36px;flex-shrink:0;font-variant-numeric:tabular-nums;">{{ entry.value }}%</span>
+                    <span style="font-family:'JetBrains Mono',monospace;font-size:0.68rem;font-weight:700;color:#374151;width:32px;flex-shrink:0;">{{ entry.value }}%</span>
                   </div>
                 </div>
-                <span v-else style="font-size:0.75rem;color:#6b7280;">-</span>
-              </td>
-              <!-- Actions -->
-              <td style="text-align:right;">
-                <div v-if="hasAnyAction(p)" style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;">
-                  <button v-if="canRequestAnalysis && p.status !== 'DISPOSED'" @click="requestAnalysis(p)"
-                    class="sn-btn sn-btn-ghost" style="font-size:0.72rem;padding:4px 10px;display:inline-flex;align-items:center;gap:4px;width:100%;justify-content:center;color:#2563eb;border-color:#2563eb;">
-                    <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
-                    분석 요청
-                  </button>
-                  <button v-if="canSubmitAnalysis && p.status !== 'DISPOSED'" @click="openAnalysisResult(p)"
-                    class="sn-btn sn-btn-ghost" style="font-size:0.72rem;padding:4px 10px;display:inline-flex;align-items:center;gap:4px;width:100%;justify-content:center;color:#7c3aed;border-color:#7c3aed;">
-                    <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-                    분석 결과
-                  </button>
-                  <button v-if="canToggleRecycle && p.status !== 'DISPOSED'" @click="openRecycleToggle(p)"
-                    class="sn-btn sn-btn-ghost" style="font-size:0.72rem;padding:4px 10px;display:inline-flex;align-items:center;gap:4px;width:100%;justify-content:center;color:#059669;border-color:#059669;">
-                    <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                    재활용 판정
-                  </button>
-                  <button v-if="canExtract && p.status !== 'DISPOSED'" @click="openExtract(p)"
-                    class="sn-btn sn-btn-ghost" style="font-size:0.72rem;padding:4px 10px;display:inline-flex;align-items:center;gap:4px;width:100%;justify-content:center;color:#d97706;border-color:#d97706;">
-                    <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
-                    원자재 추출
-                  </button>
-                  <button v-if="canDispose && p.status !== 'DISPOSED'" @click="openDispose(p)"
-                    class="sn-btn sn-btn-danger" style="font-size:0.72rem;padding:4px 10px;display:inline-flex;align-items:center;gap:4px;width:100%;justify-content:center;">
-                    <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-                    폐기 처리
-                  </button>
-                </div>
-                <span v-else-if="p.status === 'DISPOSED'" style="font-size:0.75rem;color:#6b7280;">폐기 완료</span>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+              </div>
+              <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0;" @click.stop>
+                <button v-if="canToggleRecycle" @click="openRecycleToggle(p)"
+                  class="sn-btn sn-btn-ghost" style="font-size:0.72rem;padding:4px 10px;display:inline-flex;align-items:center;gap:4px;color:#059669;border-color:#059669;">
+                  <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                  재활용 판정
+                </button>
+                <button v-if="canExtract" @click="openExtract(p)"
+                  class="sn-btn sn-btn-ghost" style="font-size:0.72rem;padding:4px 10px;display:inline-flex;align-items:center;gap:4px;color:#d97706;border-color:#d97706;">
+                  <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+                  원자재 추출
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </template>
+
+      <!-- Section: 원자재 추출 완료 (RECYCLING status) -->
+      <template v-if="filteredPassports.filter(p => p.status === 'RECYCLING').length > 0">
+        <div>
+          <div style="display:flex;align-items:center;gap:0.625rem;padding:0.5rem 0.75rem;background:#fffbeb;border:1px solid #fde68a;border-radius:6px 6px 0 0;">
+            <span style="font-size:0.75rem;font-weight:700;color:#d97706;">원자재 추출 완료</span>
+            <span style="font-size:0.625rem;font-weight:700;background:#fde68a;color:#d97706;padding:0.125rem 0.5rem;border-radius:99px;">{{ filteredPassports.filter(p => p.status === 'RECYCLING').length }}</span>
+          </div>
+          <div style="border:1px solid #fde68a;border-top:none;border-radius:0 0 6px 6px;overflow:hidden;">
+            <div v-for="(p, idx) in filteredPassports.filter(p => p.status === 'RECYCLING')" :key="p.passportId"
+              :style="idx > 0 ? 'border-top:1px solid rgba(0,0,0,0.05);' : ''"
+              style="background:#fff;padding:0.75rem 1rem;display:flex;align-items:center;justify-content:space-between;gap:1rem;">
+              <div style="min-width:0;">
+                <div style="font-family:'JetBrains Mono',monospace;font-size:0.78rem;font-weight:600;color:#374151;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ p.passportId }}</div>
+                <div style="font-size:0.72rem;color:#6b7280;margin-top:2px;">S/N: {{ p.serialNumber || '-' }}</div>
+              </div>
+              <div style="display:flex;align-items:center;gap:0.5rem;flex-shrink:0;" @click.stop>
+                <button v-if="canDispose" @click="openDispose(p)"
+                  class="sn-btn sn-btn-danger" style="font-size:0.72rem;padding:4px 10px;display:inline-flex;align-items:center;gap:4px;">
+                  <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                  폐기 처리
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </template>
+
+      <!-- Section: 폐기 -->
+      <template v-if="filteredPassports.filter(p => p.status === 'DISPOSED').length > 0">
+        <div>
+          <div style="display:flex;align-items:center;gap:0.625rem;padding:0.5rem 0.75rem;background:#fef2f2;border:1px solid #fecaca;border-radius:6px 6px 0 0;">
+            <span style="font-size:0.75rem;font-weight:700;color:#dc2626;">폐기</span>
+            <span style="font-size:0.625rem;font-weight:700;background:#fecaca;color:#dc2626;padding:0.125rem 0.5rem;border-radius:99px;">{{ filteredPassports.filter(p => p.status === 'DISPOSED').length }}</span>
+          </div>
+          <div style="border:1px solid #fecaca;border-top:none;border-radius:0 0 6px 6px;overflow:hidden;">
+            <div v-for="(p, idx) in filteredPassports.filter(p => p.status === 'DISPOSED')" :key="p.passportId"
+              :style="idx > 0 ? 'border-top:1px solid rgba(0,0,0,0.05);' : ''"
+              style="background:#fff;padding:0.75rem 1rem;display:flex;align-items:center;justify-content:space-between;gap:1rem;">
+              <div style="min-width:0;">
+                <div style="font-family:'JetBrains Mono',monospace;font-size:0.78rem;font-weight:600;color:#374151;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ p.passportId }}</div>
+                <div style="font-size:0.72rem;color:#6b7280;margin-top:2px;">S/N: {{ p.serialNumber || '-' }}</div>
+              </div>
+              <span style="font-size:0.72rem;color:#6b7280;">폐기 완료</span>
+            </div>
+          </div>
+        </div>
+      </template>
+
     </div>
 
     <!-- ==================== MODALS ==================== -->

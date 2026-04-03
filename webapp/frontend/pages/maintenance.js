@@ -247,91 +247,58 @@ app.component('maintenance-page', {
         <p style="font-size: 0.875rem; color: var(--color-text-3); margin-bottom: 0;">현재 정비 이력이 없습니다. 배터리 여권이 등록되면 정비 이력을 관리할 수 있습니다.</p>
       </div>
 
-      <!-- PASSPORT CARDS -->
-      <div v-else style="display:flex;flex-direction:column;gap:10px;">
+      <!-- TIMELINE VIEW (structural change from flat list) -->
+      <div v-else style="position: relative; padding-left: 2rem;">
+        <!-- Timeline line -->
+        <div style="position: absolute; left: 0.75rem; top: 0; bottom: 0; width: 2px; background: rgba(0,0,0,0.06);"></div>
+
         <div v-for="(p, idx) in filteredPassports" :key="p.passportId"
-             class="sn-panel"
-             :style="'overflow:hidden;cursor:pointer;transition:all 0.5s cubic-bezier(0.16,1,0.3,1);border-left:3px solid ' + (p.status === \'MAINTENANCE\' ? \'#d97706\' : (p.maintenanceLogs && p.maintenanceLogs.length > 0) ? \'#16a34a\' : \'transparent\') + ';'"
-             @click="navigateToDetail(p)"
-             @mouseenter="$event.currentTarget.style.boxShadow='0 4px 20px rgba(0,0,0,0.08),inset 0 0 0 1px rgba(0,0,0,0.08)'"
-             @mouseleave="$event.currentTarget.style.boxShadow=''">
-          <div style="display:flex;gap:12px;padding:12px 16px;">
+          @click="navigateToDetail(p)"
+          style="position: relative; margin-bottom: 1rem; cursor: pointer;">
+          <!-- Timeline dot -->
+          <div style="position: absolute; left: -1.625rem; top: 0.75rem; width: 10px; height: 10px; border-radius: 50%; border: 2px solid #fff;"
+            :style="{ background: p.status==='MAINTENANCE'?'#d97706':p.status==='ANALYSIS'?'#7c3aed':'#16a34a' }"></div>
 
-            <!-- Timeline dot column -->
-            <div style="display:flex;flex-direction:column;align-items:center;flex-shrink:0;padding-top:4px;">
-              <div :style="{
-                width: '12px', height: '12px', borderRadius: '50%', flexShrink: 0,
-                background: p.status === 'MAINTENANCE' ? '#d97706' : (p.accidentLogs && p.accidentLogs.length > 0) ? '#dc2626' : '#059669',
-                boxShadow: p.status === 'MAINTENANCE' ? '0 0 0 4px rgba(217,119,6,0.08)' : (p.accidentLogs && p.accidentLogs.length > 0) ? '0 0 0 4px rgba(220,38,38,0.08)' : '0 0 0 4px rgba(16,185,129,0.08)'
-              }"></div>
-              <div style="width:2px;flex:1;margin-top:6px;border-radius:1px;background:#f1f5f9;min-height:20px;"></div>
+          <!-- Entry card -->
+          <div style="background: #fff; border: 1px solid rgba(0,0,0,0.06); border-radius: 8px; padding: 0.875rem 1rem;">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.5rem;">
+              <span style="font-size: 0.875rem; font-weight: 600; color: var(--color-text-1);">{{ p.model || p.passportId }}</span>
+              <span style="font-size: 0.625rem; font-weight: 600; padding: 0.125rem 0.5rem; border-radius: 3px;"
+                :style="{ background: p.status==='MAINTENANCE'?'#fffbeb':'#f0fdf4', color: p.status==='MAINTENANCE'?'#d97706':'#16a34a' }">
+                {{ getStatusBadge(p.status).label }}
+              </span>
             </div>
-
-            <!-- Content -->
-            <div style="flex:1;min-width:0;">
-              <!-- Top row: ID + status + counts -->
-              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
-                <div style="display:flex;align-items:center;gap:10px;min-width:0;">
-                  <span style="font-family:'JetBrains Mono', monospace;font-size:0.82rem;font-weight:600;color:#111827;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:220px;" :title="p.passportId">
-                    {{ p.passportId }}
-                  </span>
-                  <span :class="['inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold', getStatusBadge(p.status).bg]">
-                    <span :class="['w-1.5 h-1.5 rounded-full', getStatusBadge(p.status).dot]"></span>
-                    {{ getStatusBadge(p.status).label }}
-                  </span>
-                </div>
-                <div style="display:flex;align-items:center;gap:12px;flex-shrink:0;">
-                  <span style="display:inline-flex;align-items:center;gap:4px;font-family:'JetBrains Mono', monospace;font-size:0.75rem;font-weight:600;"
-                    :style="(p.maintenanceLogs && p.maintenanceLogs.length > 0) ? 'color:#059669' : 'color:#6b7280'">
-                    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-                    </svg>
-                    {{ p.maintenanceLogs ? p.maintenanceLogs.length : 0 }}건
-                  </span>
-                  <span v-if="p.accidentLogs && p.accidentLogs.length > 0"
-                    class="bg-[rgba(239,68,68,0.1)] text-[#ff6b6b]" style="display:inline-flex;align-items:center;gap:4px;font-size:0.7rem;font-family:'JetBrains Mono', monospace;font-weight:700;">
-                    <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
-                    </svg>
-                    사고 {{ p.accidentLogs.length }}
-                  </span>
-                </div>
-              </div>
-
-              <!-- Serial number -->
-              <div style="font-family:'JetBrains Mono', monospace;font-size:0.72rem;color:#6b7280;margin-bottom:12px;">
-                S/N: {{ p.serialNumber || '-' }}
-              </div>
-
-              <!-- Actions row -->
-              <div style="display:flex;align-items:center;gap:8px;" @click.stop>
-                <button v-if="canRequestMaintenance && p.status === 'ACTIVE'"
-                  @click="openMaintenanceRequest(p)"
-                  class="sn-btn sn-btn-ghost" style="font-size:0.75rem;padding:4px 10px;display:inline-flex;align-items:center;gap:4px;">
-                  <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
-                  </svg>
-                  정비요청
-                </button>
-                <button v-if="canLogMaintenance && p.status === 'MAINTENANCE'"
-                  @click="openMaintenanceLog(p)"
-                  class="sn-btn sn-btn-accent" style="font-size:0.75rem;padding:4px 10px;display:inline-flex;align-items:center;gap:4px;">
-                  <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                  </svg>
-                  정비완료
-                </button>
-                <button v-if="canLogAccident"
-                  @click="openAccident(p)"
-                  style="font-size:0.75rem;padding:4px 10px;display:inline-flex;align-items:center;gap:4px;background:#fef2f2;color:#dc2626;border:none;border-radius:6px;cursor:pointer;box-shadow:inset 0 0 0 1px rgba(220,38,38,0.2);">
-                  <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
-                  </svg>
-                  사고기록
-                </button>
-                <span v-if="!canRequestMaintenance && !canLogMaintenance && !canLogAccident"
-                  style="font-size:0.72rem;color:#a3a3a3;">-</span>
-              </div>
+            <div style="font-size: 0.75rem; color: var(--color-text-3); font-family: var(--font-mono);">{{ p.passportId }}</div>
+            <div v-if="p.maintenanceLogs && p.maintenanceLogs.length" style="margin-top: 0.5rem; font-size: 0.75rem; color: var(--color-text-2);">
+              정비 {{ p.maintenanceLogs.length }}건 기록
+            </div>
+            <!-- Actions row -->
+            <div v-if="canRequestMaintenance || canLogMaintenance || canLogAccident"
+              style="display:flex;align-items:center;gap:8px;margin-top:0.625rem;" @click.stop>
+              <button v-if="canRequestMaintenance && p.status === 'ACTIVE'"
+                @click="openMaintenanceRequest(p)"
+                class="sn-btn sn-btn-ghost" style="font-size:0.75rem;padding:4px 10px;display:inline-flex;align-items:center;gap:4px;">
+                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
+                </svg>
+                정비요청
+              </button>
+              <button v-if="canLogMaintenance && p.status === 'MAINTENANCE'"
+                @click="openMaintenanceLog(p)"
+                class="sn-btn sn-btn-accent" style="font-size:0.75rem;padding:4px 10px;display:inline-flex;align-items:center;gap:4px;">
+                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                정비완료
+              </button>
+              <button v-if="canLogAccident"
+                @click="openAccident(p)"
+                style="font-size:0.75rem;padding:4px 10px;display:inline-flex;align-items:center;gap:4px;background:#fef2f2;color:#dc2626;border:none;border-radius:6px;cursor:pointer;box-shadow:inset 0 0 0 1px rgba(220,38,38,0.2);">
+                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                </svg>
+                사고기록
+              </button>
             </div>
           </div>
         </div>
