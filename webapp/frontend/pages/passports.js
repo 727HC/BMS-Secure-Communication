@@ -204,53 +204,35 @@ app.component('passports-page', {
           <div class="absolute inset-0 rounded-full border-2 border-transparent" style="border-top-color: #c8ff00; animation: spin 0.8s linear infinite;"></div>
           <div class="absolute inset-2 rounded-full border-2 border-transparent" style="border-bottom-color: #c8ff00; opacity: 0.3; animation: spin 1.2s linear infinite reverse;"></div>
         </div>
-        <p class="text-sm" style="color: rgba(250,250,245,0.35); font-family: 'JetBrains Mono', monospace;">LOADING REGISTRY...</p>
+        <p style="font-size:0.85rem;color:#a3a3a3;font-family:'JetBrains Mono',monospace;">LOADING REGISTRY...</p>
       </div>
 
       <div v-else class="space-y-5">
 
         <!-- HEADER -->
-        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 ">
-          <div class="flex items-center gap-3">
-            <div class="w-10 h-10  flex items-center justify-center" style="background: rgba(16,185,129,0.08);">
-              <svg class="w-5 h-5" style="color: #c8ff00;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/>
-              </svg>
-            </div>
-            <div>
-              <div class="flex items-center gap-2">
-                <h1 class="text-xl text-[#fafaf5] font-bold" style="font-family: 'Pretendard Variable', sans-serif;">배터리 여권</h1>
-                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-[rgba(200,255,0,0.08)] text-[#c8ff00]" style="font-family: 'JetBrains Mono', monospace;">{{ filteredPassports.length }}</span>
-              </div>
-              <p class="text-xs" style="color: rgba(250,250,245,0.35);">전체 {{ passports.length }}건 등록</p>
-            </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px;">
+          <div>
+            <h1 class="sn-display" style="font-size:1.75rem;">배터리 여권</h1>
+            <p class="sn-caption" style="margin-top:0.25rem;">전체 {{ passports.length }}건 등록</p>
           </div>
-          <button v-if="isManufacturer" @click="openCreateModal" class="bg-[#c8ff00] text-[#1a1814] px-4 py-2 rounded text-sm font-medium hover:bg-[#d4ff33]">
-            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          <button v-if="isManufacturer" @click="openCreateModal" class="sn-btn sn-btn-primary" style="display:inline-flex;align-items:center;gap:6px;">
+            <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
             여권 발급
           </button>
         </div>
 
         <!-- FILTER BAR -->
-        <div class="bg-[#1a1814]  border border-[rgba(250,250,245,0.06)] shadow-none p-3 flex flex-col sm:flex-row gap-3  ">
-          <div class="relative flex-1">
-            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <svg class="w-4 h-4" style="color: rgba(250,250,245,0.35);" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-            </div>
-            <input v-model="searchQuery" type="text" placeholder="ID, 시리얼, 모델, 제조사, VIN 검색..." class="w-full px-4 py-2.5 bg-[#1f1d17] border border-[rgba(250,250,245,0.06)]  text-[#fafaf5] outline-none focus:border-[#c8ff00]" style="padding-left: 2.25rem; padding-right: 4.5rem; font-size: 0.8125rem;" />
-            <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-              <kbd style="font-family: 'JetBrains Mono', monospace; font-size: 10px; padding: 2px 6px; border-radius: 4px; border: 1px solid rgba(250,250,245,0.06); background: #1f1d17; color: rgba(250,250,245,0.35); line-height: 1;">&#8984;K</kbd>
-            </div>
-          </div>
-          <select v-model="filterStatus" class="w-full px-4 py-2.5 bg-[#1f1d17] border border-[rgba(250,250,245,0.06)]  text-[#fafaf5] outline-none focus:border-[#c8ff00]" style="width: auto; min-width: 140px; font-size: 0.8125rem;">
+        <div class="sn-panel" style="padding:12px 16px;display:flex;flex-wrap:wrap;gap:10px;align-items:center;">
+          <input v-model="searchQuery" type="text" placeholder="ID, 시리얼, 모델, 제조사, VIN 검색..." class="sn-input" style="flex:1;min-width:200px;font-size:0.8125rem;" />
+          <select v-model="filterStatus" class="sn-input" style="width:auto;min-width:140px;font-size:0.8125rem;">
             <option v-for="opt in statusOptions" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
           </select>
         </div>
 
         <!-- TABLE -->
-        <div class="bg-[#1a1814]  border border-[rgba(250,250,245,0.06)] shadow-none overflow-hidden  ">
+        <div class="sn-panel" style="overflow:hidden;">
           <div v-if="filteredPassports.length > 0" class="overflow-x-auto">
-            <table class="w-full text-sm">
+            <table class="sn-table">
               <thead>
                 <tr>
                   <th>ID</th>
@@ -267,21 +249,16 @@ app.component('passports-page', {
                 <tr v-for="(p, idx) in filteredPassports" :key="p.passportId"
                     @click="viewDetail(p.passportId)" class="cursor-pointer " style="position: relative;"
                     :style="'animation-delay: ' + (idx * 0.03) + 's;'">
-                  <td style="position: relative; padding-left: 1.25rem;">
-                    <span class="passport-row-status-bar" :style="{
-                      position: 'absolute', left: 0, top: '4px', bottom: '4px', width: '3px', borderRadius: '0 3px 3px 0',
-                      backgroundColor: p.status === 'MANUFACTURED' ? '#60a5fa' :
-                        p.status === 'ACTIVE' ? '#34d399' :
-                        p.status === 'MAINTENANCE' ? '#fbbf24' :
-                        p.status === 'ANALYSIS' ? '#a78bfa' :
-                        p.status === 'RECYCLING' ? '#f97316' :
-                        p.status === 'DISPOSED' ? '#ef4444' : '#64748b'
+                  <td style="position:relative;padding-left:1.25rem;">
+                    <span :style="{
+                      position:'absolute',left:0,top:'4px',bottom:'4px',width:'3px',borderRadius:'0 3px 3px 0',
+                      backgroundColor: p.status==='MANUFACTURED'?'#60a5fa':p.status==='ACTIVE'?'#34d399':p.status==='MAINTENANCE'?'#fbbf24':p.status==='ANALYSIS'?'#a78bfa':p.status==='RECYCLING'?'#f97316':p.status==='DISPOSED'?'#ef4444':'#64748b'
                     }"></span>
-                    <span class="text-xs font-medium" style="color: #c8ff00; font-family: 'JetBrains Mono', monospace;">{{ p.passportId ? p.passportId.substring(0, 20) : '-' }}</span>
+                    <span style="font-size:0.75rem;font-family:'JetBrains Mono',monospace;color:#525252;">{{ p.passportId ? p.passportId.substring(0,20) : '-' }}</span>
                   </td>
-                  <td style="font-family: 'JetBrains Mono', monospace; font-size: 0.75rem;">{{ p.serialNumber || '-' }}</td>
-                  <td class="font-medium" style="color: #fafaf5;">{{ p.model || '-' }}</td>
-                  <td>{{ p.manufacturerName || '-' }}</td>
+                  <td style="font-family:'JetBrains Mono',monospace;font-size:0.75rem;color:#525252;">{{ p.serialNumber || '-' }}</td>
+                  <td style="font-weight:600;color:#171717;">{{ p.model || '-' }}</td>
+                  <td style="color:#525252;">{{ p.manufacturerName || '-' }}</td>
                   <td>
                     <span class="inline-flex items-center gap-1.5">
                       <span class="w-1.5 h-1.5 rounded-full" :style="{
@@ -302,22 +279,21 @@ app.component('passports-page', {
                     </span>
                   </td>
                   <td>
-                    <div v-if="p.currentSoc != null" class="flex items-center gap-2 min-w-[90px]">
-                      <div class="flex-1 h-1.5 rounded-full overflow-hidden" style="background: #e2e8f0;">
-                        <div :class="['h-full rounded-full transition-all', getSocColor(scaleSOC(p.currentSoc))]"
-                          :style="{ width: Math.min(scaleSOC(p.currentSoc), 100) + '%' }"></div>
+                    <div v-if="p.currentSoc != null" style="display:flex;align-items:center;gap:8px;min-width:90px;">
+                      <div style="flex:1;height:6px;border-radius:999px;overflow:hidden;background:#e5e5e5;">
+                        <div :style="{ width:Math.min(scaleSOC(p.currentSoc),100)+'%', height:'100%', borderRadius:'999px', background: scaleSOC(p.currentSoc)>50?'#171717':scaleSOC(p.currentSoc)>20?'#f59e0b':'#ef4444' }"></div>
                       </div>
-                      <span class="text-xs tabular-nums font-medium w-8 text-right" style="font-family: 'JetBrains Mono', monospace; color: rgba(250,250,245,0.7);">{{ scaleSOC(p.currentSoc) }}%</span>
+                      <span style="font-family:'JetBrains Mono',monospace;font-size:0.75rem;font-weight:600;color:#525252;">{{ scaleSOC(p.currentSoc) }}%</span>
                     </div>
-                    <span v-else class="text-xs" style="color: rgba(250,250,245,0.2);">—</span>
+                    <span v-else style="color:#a3a3a3;font-size:0.8rem;">—</span>
                   </td>
                   <td>
-                    <span v-if="p.currentSoh != null" class="text-xs tabular-nums" style="font-family: 'JetBrains Mono', monospace; color: rgba(250,250,245,0.7);">{{ p.currentSoh }}%</span>
-                    <span v-else class="text-xs" style="color: rgba(250,250,245,0.2);">—</span>
+                    <span v-if="p.currentSoh != null" style="font-family:'JetBrains Mono',monospace;font-size:0.75rem;color:#525252;">{{ p.currentSoh }}%</span>
+                    <span v-else style="color:#a3a3a3;font-size:0.8rem;">—</span>
                   </td>
                   <td>
-                    <span v-if="p.vin" class="text-xs" style="font-family: 'JetBrains Mono', monospace; color: rgba(250,250,245,0.7);">{{ p.vin }}</span>
-                    <span v-else class="text-xs" style="color: rgba(250,250,245,0.2);">—</span>
+                    <span v-if="p.vin" style="font-family:'JetBrains Mono',monospace;font-size:0.75rem;color:#525252;">{{ p.vin }}</span>
+                    <span v-else style="color:#a3a3a3;font-size:0.8rem;">—</span>
                   </td>
                 </tr>
               </tbody>
@@ -325,74 +301,66 @@ app.component('passports-page', {
           </div>
 
           <!-- Empty state -->
-          <div v-else class="py-20 text-center">
-            <div class="w-14 h-14 mx-auto mb-4  flex items-center justify-center" style="background: #1f1d17;">
-              <svg class="w-7 h-7" style="color: rgba(250,250,245,0.2);" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+          <div v-else style="padding:80px 24px;text-align:center;">
+            <div style="width:56px;height:56px;border-radius:12px;background:#f5f5f5;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;">
+              <svg width="28" height="28" fill="none" viewBox="0 0 24 24" stroke="#a3a3a3" stroke-width="1.5">
                 <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/>
               </svg>
             </div>
-            <p class="text-sm font-medium" style="color: rgba(250,250,245,0.7);">등록된 여권이 없습니다</p>
-            <p class="text-xs mt-1" style="color: rgba(250,250,245,0.2);">검색 조건을 변경하거나 새 여권을 발급하세요.</p>
+            <p style="font-size:0.875rem;font-weight:600;color:#171717;margin:0 0 4px;">등록된 여권이 없습니다</p>
+            <p style="font-size:0.8rem;color:#a3a3a3;margin:0;">검색 조건을 변경하거나 새 여권을 발급하세요.</p>
           </div>
         </div>
       </div>
 
       <!-- CREATE MODAL — 3-step wizard -->
-      <div v-if="showCreateModal" class="fixed inset-0 z-50 flex items-center justify-center p-4" style="background: rgba(6,9,15,0.8); backdrop-filter: blur(6px);" @click.self="closeCreateModal">
-        <div class="w-full max-w-lg  overflow-hidden " style="background: #1a1814; border: 1px solid rgba(250,250,245,0.06); box-shadow: 0 4px 20px rgba(0,0,0,0.08);">
+      <div v-if="showCreateModal" class="sn-overlay" @click.self="closeCreateModal">
+        <div class="sn-modal" style="max-width:560px;">
 
           <!-- Modal header -->
-          <div class="px-6 py-4 flex items-center justify-between" style="border-bottom: 1px solid #e5e7eb;">
+          <div style="padding:20px 24px;border-bottom:1px solid rgba(0,0,0,0.06);display:flex;align-items:center;justify-content:space-between;">
             <div>
-              <h3 class="text-base font-semibold" style="font-family: 'Pretendard Variable', sans-serif; color: #fafaf5; letter-spacing: -0.01em;">배터리 여권 발급</h3>
-              <p class="text-xs mt-0.5" style="color: rgba(250,250,245,0.35);">단계 {{ createStep }} / 3</p>
+              <h3 style="font-size:1.05rem;font-weight:700;color:#171717;margin:0;">배터리 여권 발급</h3>
+              <p style="font-size:0.75rem;color:#a3a3a3;margin:4px 0 0;">단계 {{ createStep }} / 3</p>
             </div>
-            <button @click="closeCreateModal" class="p-1.5 rounded transition-colors" style="color: rgba(250,250,245,0.35);"
-              onmouseenter="this.style.color='#dc2626';this.style.background='rgba(220,38,38,0.08)'"
-              onmouseleave="this.style.color='#6b7280';this.style.background='transparent'">
-              <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            <button @click="closeCreateModal" class="sn-btn sn-btn-ghost" style="padding:6px 10px;">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
             </button>
           </div>
 
           <!-- Circular Progress + Step indicators -->
-          <div class="px-6 pt-5 pb-2">
-            <div class="flex items-center justify-between">
+          <div style="padding:20px 24px 12px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;">
               <!-- Circular progress -->
-              <div class="flex items-center gap-4">
-                <div class="relative w-16 h-16 flex-shrink-0">
-                  <svg viewBox="0 0 64 64" class="w-full h-full" style="transform: rotate(-90deg);">
-                    <circle cx="32" cy="32" r="27" fill="none" stroke="#e2e8f0" stroke-width="5"/>
-                    <circle cx="32" cy="32" r="27" fill="none" stroke="#059669" stroke-width="5"
+              <div style="display:flex;align-items:center;gap:16px;">
+                <div style="position:relative;width:56px;height:56px;flex-shrink:0;">
+                  <svg viewBox="0 0 64 64" style="width:100%;height:100%;transform:rotate(-90deg);">
+                    <circle cx="32" cy="32" r="27" fill="none" stroke="#e5e5e5" stroke-width="5"/>
+                    <circle cx="32" cy="32" r="27" fill="none" stroke="#171717" stroke-width="5"
                       stroke-linecap="round"
                       :stroke-dasharray="2 * Math.PI * 27"
                       :stroke-dashoffset="2 * Math.PI * 27 * (1 - completionPct / 100)"
-                      style="transition: stroke-dashoffset 0.5s ease;"/>
+                      style="transition: stroke-dashoffset 0.5s cubic-bezier(0.16,1,0.3,1);"/>
                   </svg>
-                  <div class="absolute inset-0 flex items-center justify-center">
-                    <span class="text-xs font-bold" style="color: #c8ff00; font-family: 'JetBrains Mono', monospace;">{{ completionPct }}%</span>
+                  <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;">
+                    <span style="font-size:0.7rem;font-weight:700;color:#171717;font-family:'JetBrains Mono',monospace;">{{ completionPct }}%</span>
                   </div>
                 </div>
                 <div>
-                  <span class="text-[10px] font-medium uppercase tracking-wider" style="color: rgba(250,250,245,0.35); font-family: 'JetBrains Mono', monospace;">COMPLETION</span>
-                  <p class="text-xs mt-0.5" style="color: rgba(250,250,245,0.7);">{{ completionPct >= 100 ? '모든 항목 입력 완료' : '필수 항목을 입력하세요' }}</p>
+                  <span class="sn-eyebrow">COMPLETION</span>
+                  <p style="font-size:0.8rem;color:#525252;margin:4px 0 0;">{{ completionPct >= 100 ? '모든 항목 입력 완료' : '필수 항목을 입력하세요' }}</p>
                 </div>
               </div>
 
               <!-- Step circles -->
-              <div class="flex items-center gap-2">
+              <div style="display:flex;align-items:center;gap:8px;">
                 <template v-for="s in 3" :key="s">
-                  <div class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all"
-                    :style="s < createStep
-                      ? 'background: #059669; color: #fff;'
-                      : s === createStep
-                        ? 'background: rgba(16,185,129,0.08); color: #c8ff00; border: 2px solid #059669;'
-                        : 'background: #e2e8f0; color: rgba(250,250,245,0.35);'">
-                    <svg v-if="s < createStep" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
-                      <polyline points="20 6 9 17 4 12"/>
-                    </svg>
+                  <div style="width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:0.75rem;font-weight:700;transition:all 0.3s;"
+                    :style="s < createStep ? 'background:#171717;color:#fff;' : s===createStep ? 'background:#f5f5f5;color:#171717;box-shadow:inset 0 0 0 2px #171717;' : 'background:#f5f5f5;color:#a3a3a3;'">
+                    <svg v-if="s < createStep" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
                     <span v-else>{{ s }}</span>
                   </div>
-                  <div v-if="s < 3" class="w-5 h-0.5 rounded-full transition-all" :style="s < createStep ? 'background: #059669;' : 'background: #e2e8f0;'"></div>
+                  <div v-if="s < 3" style="width:20px;height:2px;border-radius:1px;transition:background 0.3s;" :style="s < createStep ? 'background:#171717;' : 'background:#e5e5e5;'"></div>
                 </template>
               </div>
             </div>
@@ -405,47 +373,47 @@ app.component('passports-page', {
             <template v-if="createStep === 1">
               <div class="grid grid-cols-2 gap-3">
                 <div class="col-span-2">
-                  <label class="block text-[10px] font-semibold uppercase tracking-wider mb-1" style="color: rgba(250,250,245,0.35);">DID *</label>
-                  <input v-model="form.did" class="w-full px-4 py-2.5 bg-[#1f1d17] border border-[rgba(250,250,245,0.06)]  text-[#fafaf5] outline-none focus:border-[#c8ff00]" placeholder="DID 식별자" />
+                  <label class="sn-eyebrow" style="display:block;margin-bottom:6px;">DID *</label>
+                  <input v-model="form.did" class="sn-input" placeholder="DID 식별자" />
                 </div>
                 <div>
-                  <label class="block text-[10px] font-semibold uppercase tracking-wider mb-1" style="color: rgba(250,250,245,0.35);">모델 *</label>
-                  <input v-model="form.model" class="w-full px-4 py-2.5 bg-[#1f1d17] border border-[rgba(250,250,245,0.06)]  text-[#fafaf5] outline-none focus:border-[#c8ff00]" placeholder="모델명" />
+                  <label class="sn-eyebrow" style="display:block;margin-bottom:6px;">모델 *</label>
+                  <input v-model="form.model" class="sn-input" placeholder="모델명" />
                 </div>
                 <div>
-                  <label class="block text-[10px] font-semibold uppercase tracking-wider mb-1" style="color: rgba(250,250,245,0.35);">시리얼번호 *</label>
-                  <input v-model="form.serialNumber" class="w-full px-4 py-2.5 bg-[#1f1d17] border border-[rgba(250,250,245,0.06)]  text-[#fafaf5] outline-none focus:border-[#c8ff00]" placeholder="SN-001" />
+                  <label class="sn-eyebrow" style="display:block;margin-bottom:6px;">시리얼번호 *</label>
+                  <input v-model="form.serialNumber" class="sn-input" placeholder="SN-001" />
                 </div>
                 <div>
-                  <label class="block text-[10px] font-semibold uppercase tracking-wider mb-1" style="color: rgba(250,250,245,0.35);">제조사 *</label>
-                  <input v-model="form.manufacturerName" class="w-full px-4 py-2.5 bg-[#1f1d17] border border-[rgba(250,250,245,0.06)]  text-[#fafaf5] outline-none focus:border-[#c8ff00]" placeholder="제조사명" />
+                  <label class="sn-eyebrow" style="display:block;margin-bottom:6px;">제조사 *</label>
+                  <input v-model="form.manufacturerName" class="sn-input" placeholder="제조사명" />
                 </div>
                 <div>
-                  <label class="block text-[10px] font-semibold uppercase tracking-wider mb-1" style="color: rgba(250,250,245,0.35);">제조국</label>
-                  <input v-model="form.manufactureCountry" class="w-full px-4 py-2.5 bg-[#1f1d17] border border-[rgba(250,250,245,0.06)]  text-[#fafaf5] outline-none focus:border-[#c8ff00]" placeholder="KR" />
+                  <label class="sn-eyebrow" style="display:block;margin-bottom:6px;">제조국</label>
+                  <input v-model="form.manufactureCountry" class="sn-input" placeholder="KR" />
                 </div>
                 <div>
-                  <label class="block text-[10px] font-semibold uppercase tracking-wider mb-1" style="color: rgba(250,250,245,0.35);">셀 제조사</label>
-                  <input v-model="form.cellManufacturer" class="w-full px-4 py-2.5 bg-[#1f1d17] border border-[rgba(250,250,245,0.06)]  text-[#fafaf5] outline-none focus:border-[#c8ff00]" placeholder="셀 제조사" />
+                  <label class="sn-eyebrow" style="display:block;margin-bottom:6px;">셀 제조사</label>
+                  <input v-model="form.cellManufacturer" class="sn-input" placeholder="셀 제조사" />
                 </div>
                 <div>
-                  <label class="block text-[10px] font-semibold uppercase tracking-wider mb-1" style="color: rgba(250,250,245,0.35);">셀 제조국</label>
-                  <input v-model="form.cellManufactureCountry" class="w-full px-4 py-2.5 bg-[#1f1d17] border border-[rgba(250,250,245,0.06)]  text-[#fafaf5] outline-none focus:border-[#c8ff00]" placeholder="KR" />
+                  <label class="sn-eyebrow" style="display:block;margin-bottom:6px;">셀 제조국</label>
+                  <input v-model="form.cellManufactureCountry" class="sn-input" placeholder="KR" />
                 </div>
                 <div>
-                  <label class="block text-[10px] font-semibold uppercase tracking-wider mb-1" style="color: rgba(250,250,245,0.35);">제조일</label>
-                  <input v-model="form.manufactureDate" type="date" class="w-full px-4 py-2.5 bg-[#1f1d17] border border-[rgba(250,250,245,0.06)]  text-[#fafaf5] outline-none focus:border-[#c8ff00]" />
+                  <label class="sn-eyebrow" style="display:block;margin-bottom:6px;">제조일</label>
+                  <input v-model="form.manufactureDate" type="date" class="sn-input" />
                 </div>
                 <div>
-                  <label class="block text-[10px] font-semibold uppercase tracking-wider mb-1" style="color: rgba(250,250,245,0.35);">셀 타입</label>
-                  <select v-model="form.cellType" class="w-full px-4 py-2.5 bg-[#1f1d17] border border-[rgba(250,250,245,0.06)]  text-[#fafaf5] outline-none focus:border-[#c8ff00]">
+                  <label class="sn-eyebrow" style="display:block;margin-bottom:6px;">셀 타입</label>
+                  <select v-model="form.cellType" class="sn-input">
                     <option value="">선택</option>
                     <option>Prismatic</option><option>Cylindrical</option><option>Pouch</option>
                   </select>
                 </div>
                 <div>
-                  <label class="block text-[10px] font-semibold uppercase tracking-wider mb-1" style="color: rgba(250,250,245,0.35);">화학구성</label>
-                  <input v-model="form.chemistry" class="w-full px-4 py-2.5 bg-[#1f1d17] border border-[rgba(250,250,245,0.06)]  text-[#fafaf5] outline-none focus:border-[#c8ff00]" placeholder="NMC811" />
+                  <label class="sn-eyebrow" style="display:block;margin-bottom:6px;">화학구성</label>
+                  <input v-model="form.chemistry" class="sn-input" placeholder="NMC811" />
                 </div>
               </div>
             </template>
@@ -454,70 +422,67 @@ app.component('passports-page', {
             <template v-if="createStep === 2">
               <div class="grid grid-cols-2 gap-3">
                 <div>
-                  <label class="block text-[10px] font-semibold uppercase tracking-wider mb-1" style="color: rgba(250,250,245,0.35);">셀 수</label>
-                  <input v-model="form.cellCount" type="number" class="w-full px-4 py-2.5 bg-[#1f1d17] border border-[rgba(250,250,245,0.06)]  text-[#fafaf5] outline-none focus:border-[#c8ff00]" placeholder="96" />
+                  <label class="sn-eyebrow" style="display:block;margin-bottom:6px;">셀 수</label>
+                  <input v-model="form.cellCount" type="number" class="sn-input" placeholder="96" />
                 </div>
                 <div>
-                  <label class="block text-[10px] font-semibold uppercase tracking-wider mb-1" style="color: rgba(250,250,245,0.35);">무게 (kg)</label>
-                  <input v-model="form.weight" type="number" class="w-full px-4 py-2.5 bg-[#1f1d17] border border-[rgba(250,250,245,0.06)]  text-[#fafaf5] outline-none focus:border-[#c8ff00]" placeholder="450" />
+                  <label class="sn-eyebrow" style="display:block;margin-bottom:6px;">무게 (kg)</label>
+                  <input v-model="form.weight" type="number" class="sn-input" placeholder="450" />
                 </div>
                 <div>
-                  <label class="block text-[10px] font-semibold uppercase tracking-wider mb-1" style="color: rgba(250,250,245,0.35);">총 에너지 (kWh)</label>
-                  <input v-model="form.totalEnergy" type="number" class="w-full px-4 py-2.5 bg-[#1f1d17] border border-[rgba(250,250,245,0.06)]  text-[#fafaf5] outline-none focus:border-[#c8ff00]" placeholder="72.6" />
+                  <label class="sn-eyebrow" style="display:block;margin-bottom:6px;">총 에너지 (kWh)</label>
+                  <input v-model="form.totalEnergy" type="number" class="sn-input" placeholder="72.6" />
                 </div>
                 <div>
-                  <label class="block text-[10px] font-semibold uppercase tracking-wider mb-1" style="color: rgba(250,250,245,0.35);">에너지 밀도</label>
-                  <input v-model="form.energyDensity" type="number" class="w-full px-4 py-2.5 bg-[#1f1d17] border border-[rgba(250,250,245,0.06)]  text-[#fafaf5] outline-none focus:border-[#c8ff00]" placeholder="161" />
+                  <label class="sn-eyebrow" style="display:block;margin-bottom:6px;">에너지 밀도</label>
+                  <input v-model="form.energyDensity" type="number" class="sn-input" placeholder="161" />
                 </div>
                 <div>
-                  <label class="block text-[10px] font-semibold uppercase tracking-wider mb-1" style="color: rgba(250,250,245,0.35);">정격 용량 (Ah)</label>
-                  <input v-model="form.ratedCapacity" type="number" class="w-full px-4 py-2.5 bg-[#1f1d17] border border-[rgba(250,250,245,0.06)]  text-[#fafaf5] outline-none focus:border-[#c8ff00]" placeholder="180" />
+                  <label class="sn-eyebrow" style="display:block;margin-bottom:6px;">정격 용량 (Ah)</label>
+                  <input v-model="form.ratedCapacity" type="number" class="sn-input" placeholder="180" />
                 </div>
                 <div>
-                  <label class="block text-[10px] font-semibold uppercase tracking-wider mb-1" style="color: rgba(250,250,245,0.35);">예상 수명 (사이클)</label>
-                  <input v-model="form.expectedLifespan" type="number" class="w-full px-4 py-2.5 bg-[#1f1d17] border border-[rgba(250,250,245,0.06)]  text-[#fafaf5] outline-none focus:border-[#c8ff00]" placeholder="3000" />
+                  <label class="sn-eyebrow" style="display:block;margin-bottom:6px;">예상 수명 (사이클)</label>
+                  <input v-model="form.expectedLifespan" type="number" class="sn-input" placeholder="3000" />
                 </div>
                 <div>
-                  <label class="block text-[10px] font-semibold uppercase tracking-wider mb-1" style="color: rgba(250,250,245,0.35);">전압 범위</label>
-                  <input v-model="form.voltageRange" class="w-full px-4 py-2.5 bg-[#1f1d17] border border-[rgba(250,250,245,0.06)]  text-[#fafaf5] outline-none focus:border-[#c8ff00]" placeholder="280-403V" />
+                  <label class="sn-eyebrow" style="display:block;margin-bottom:6px;">전압 범위</label>
+                  <input v-model="form.voltageRange" class="sn-input" placeholder="280-403V" />
                 </div>
                 <div>
-                  <label class="block text-[10px] font-semibold uppercase tracking-wider mb-1" style="color: rgba(250,250,245,0.35);">온도 범위</label>
-                  <input v-model="form.temperatureRange" class="w-full px-4 py-2.5 bg-[#1f1d17] border border-[rgba(250,250,245,0.06)]  text-[#fafaf5] outline-none focus:border-[#c8ff00]" placeholder="-20~60°C" />
+                  <label class="sn-eyebrow" style="display:block;margin-bottom:6px;">온도 범위</label>
+                  <input v-model="form.temperatureRange" class="sn-input" placeholder="-20~60°C" />
                 </div>
                 <div class="col-span-2">
-                  <label class="block text-[10px] font-semibold uppercase tracking-wider mb-1" style="color: rgba(250,250,245,0.35);">탄소 발자국 (kg CO2)</label>
-                  <input v-model="form.carbonFootprint" type="number" class="w-full px-4 py-2.5 bg-[#1f1d17] border border-[rgba(250,250,245,0.06)]  text-[#fafaf5] outline-none focus:border-[#c8ff00]" placeholder="0" />
+                  <label class="sn-eyebrow" style="display:block;margin-bottom:6px;">탄소 발자국 (kg CO2)</label>
+                  <input v-model="form.carbonFootprint" type="number" class="sn-input" placeholder="0" />
                 </div>
               </div>
             </template>
 
             <!-- STEP 3 -->
             <template v-if="createStep === 3">
-              <div class="rounded p-4 space-y-2" style="background: #1f1d17; border: 1px solid rgba(250,250,245,0.06);">
-                <div class="flex justify-between text-xs"><span style="color: rgba(250,250,245,0.35);">모델</span><span class="font-medium" style="color: #fafaf5;">{{ form.model || '-' }}</span></div>
-                <div class="flex justify-between text-xs"><span style="color: rgba(250,250,245,0.35);">시리얼</span><span class="font-medium" style="color: #fafaf5; font-family: 'JetBrains Mono', monospace;">{{ form.serialNumber || '-' }}</span></div>
-                <div class="flex justify-between text-xs"><span style="color: rgba(250,250,245,0.35);">제조사</span><span class="font-medium" style="color: #fafaf5;">{{ form.manufacturerName || '-' }}</span></div>
-                <div class="flex justify-between text-xs"><span style="color: rgba(250,250,245,0.35);">DID</span><span class="font-medium" style="color: #c8ff00; font-family: 'JetBrains Mono', monospace;">{{ form.did || '-' }}</span></div>
-                <div class="flex justify-between text-xs"><span style="color: rgba(250,250,245,0.35);">셀</span><span class="font-medium" style="color: #fafaf5;">{{ form.cellType || '-' }} / {{ form.chemistry || '-' }}</span></div>
-                <div class="flex justify-between text-xs"><span style="color: rgba(250,250,245,0.35);">무게 / 에너지</span><span class="font-medium" style="color: #fafaf5;">{{ form.weight || '-' }}kg / {{ form.totalEnergy || '-' }}kWh</span></div>
+              <div style="border-radius:0.75rem;padding:16px;display:flex;flex-direction:column;gap:10px;box-shadow:inset 0 0 0 1px rgba(0,0,0,0.06);background:#fafafa;">
+                <div style="display:flex;justify-content:space-between;font-size:0.82rem;"><span style="color:#a3a3a3;">모델</span><span style="font-weight:600;color:#171717;">{{ form.model || '-' }}</span></div>
+                <div style="display:flex;justify-content:space-between;font-size:0.82rem;"><span style="color:#a3a3a3;">시리얼</span><span style="font-weight:600;color:#171717;font-family:'JetBrains Mono',monospace;">{{ form.serialNumber || '-' }}</span></div>
+                <div style="display:flex;justify-content:space-between;font-size:0.82rem;"><span style="color:#a3a3a3;">제조사</span><span style="font-weight:600;color:#171717;">{{ form.manufacturerName || '-' }}</span></div>
+                <div style="display:flex;justify-content:space-between;font-size:0.82rem;"><span style="color:#a3a3a3;">DID</span><span style="font-weight:600;color:#525252;font-family:'JetBrains Mono',monospace;font-size:0.75rem;">{{ form.did || '-' }}</span></div>
+                <div style="display:flex;justify-content:space-between;font-size:0.82rem;"><span style="color:#a3a3a3;">셀</span><span style="font-weight:600;color:#171717;">{{ form.cellType || '-' }} / {{ form.chemistry || '-' }}</span></div>
+                <div style="display:flex;justify-content:space-between;font-size:0.82rem;"><span style="color:#a3a3a3;">무게 / 에너지</span><span style="font-weight:600;color:#171717;">{{ form.weight || '-' }}kg / {{ form.totalEnergy || '-' }}kWh</span></div>
               </div>
             </template>
           </div>
 
           <!-- Modal footer -->
-          <div class="px-6 py-4 flex items-center justify-between" style="border-top: 1px solid #e5e7eb;">
-            <button v-if="createStep > 1" @click="prevStep" class="bg-[#1a1814] border border-[rgba(250,250,245,0.06)] text-[rgba(250,250,245,0.7)] px-4 py-2 rounded text-sm font-medium hover:bg-[#1f1d17]">이전</button>
+          <div style="padding:16px 24px;border-top:1px solid rgba(0,0,0,0.06);display:flex;align-items:center;justify-content:space-between;">
+            <button v-if="createStep > 1" @click="prevStep" class="sn-btn sn-btn-ghost">이전</button>
             <div v-else></div>
-            <div class="flex items-center gap-2">
-              <button @click="closeCreateModal" class="bg-[#1a1814] border border-[rgba(250,250,245,0.06)] text-[rgba(250,250,245,0.7)] px-4 py-2 rounded text-sm font-medium hover:bg-[#1f1d17]">취소</button>
-              <button v-if="createStep < 3" @click="nextStep" class="bg-[#c8ff00] text-[#1a1814] px-4 py-2 rounded text-sm font-medium hover:bg-[#d4ff33]">다음</button>
-              <button v-else @click="submitCreate" :disabled="creating" class="bg-[#c8ff00] text-[#1a1814] px-4 py-2 rounded text-sm font-medium hover:bg-[#d4ff33]">
-                <span v-if="creating" class="inline-flex items-center">
-                  <svg class="animate-spin -ml-1 mr-1.5 h-3.5 w-3.5" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
-                  생성 중...
-                </span>
-                <span v-else>여권 생성</span>
+            <div style="display:flex;align-items:center;gap:8px;">
+              <button @click="closeCreateModal" class="sn-btn sn-btn-ghost">취소</button>
+              <button v-if="createStep < 3" @click="nextStep" class="sn-btn sn-btn-primary">다음</button>
+              <button v-else @click="submitCreate" :disabled="creating" class="sn-btn sn-btn-primary" :style="creating ? 'opacity:0.6;cursor:not-allowed;' : ''">
+                <svg v-if="creating" style="width:14px;height:14px;animation:spin 0.8s linear infinite;margin-right:4px;" fill="none" viewBox="0 0 24 24"><circle opacity="0.25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path opacity="0.75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+                {{ creating ? '생성 중...' : '여권 생성' }}
               </button>
             </div>
           </div>

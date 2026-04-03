@@ -1,0 +1,11 @@
+{"t":0,"agent":"system","event":"keyword_detected","keyword":"code-review"}
+{"t":0,"agent":"ab7e655","agent_type":"codex:codex-rescue","event":"agent_start","parent_mode":"none"}
+{"t":0,"agent":"ab7e655","agent_type":"codex:codex-rescue","event":"agent_stop","success":true,"duration_ms":551786}
+{"t":0,"agent":"aa57d86","agent_type":"Explore","event":"agent_start","parent_mode":"none"}
+{"t":0,"agent":"af170b0","agent_type":"Explore","event":"agent_start","parent_mode":"none"}
+{"t":0,"agent":"af170b0","agent_type":"Explore","event":"agent_stop","success":true,"duration_ms":32207}
+{"t":0,"agent":"aa57d86","agent_type":"Explore","event":"agent_stop","success":true,"duration_ms":85102}
+{"t":0,"agent":"aae1222","agent_type":"document-specialist","event":"agent_start","parent_mode":"none"}
+{"t":0,"agent":"aae1222","agent_type":"document-specialist","event":"agent_stop","success":true,"duration_ms":86102}
+{"t":0,"agent":"a205517","agent_type":"document-specialist","event":"agent_start","parent_mode":"none"}
+{"t":0,"agent":"a205517","agent_type":"document-specialist","event":"agent_stop","success":true,"duration_ms":259700}

@@ -1,0 +1,7 @@
+{
+  "tool_name": "Bash",
+  "tool_input_preview": "{\"command\":\"source /home/<USER>/.nvm/nvm.sh && nvm use 22 && openclaw skills setup gemini 2>&1\",\"timeout\":30000,\"description\":\"Setup gemini skill in openclaw\"}",
+  "error": "Exit code 1\nNow using node v22.22.2 (npm v10.9.7)\nerror: too many arguments for 'skills'. Expected 0 arguments but got 2.",
+  "timestamp": "2026-04-03T05:13:35.385Z",
+  "retry_count": 1
+}

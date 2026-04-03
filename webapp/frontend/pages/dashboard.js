@@ -131,181 +131,255 @@ app.component('dashboard-page', {
     };
   },
   template: `
-    <div style="background: #1a1814; margin: -1.5rem; padding: 2.5rem 2rem; min-height: calc(100vh - 3.5rem);">
+    <div style="background: #fafafa; min-height: 100%; padding: 2rem 1.5rem; font-family: 'Pretendard Variable', Pretendard, sans-serif;">
 
-      <!-- Loading -->
-      <div v-if="loading" class="flex flex-col items-center justify-center" style="min-height: 60vh;">
-        <div class="w-px h-16 mb-6" style="background: #c8ff00; animation: dashPulse 1s ease-in-out infinite;"></div>
-        <p class="text-xs tracking-[0.3em] uppercase" style="color: rgba(250,250,245,0.2); font-family: 'JetBrains Mono', monospace;">LOADING</p>
+      <style>
+        @keyframes sn-reveal {
+          from { opacity: 0; transform: translateY(14px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+        .sn-panel {
+          background: rgba(0,0,0,0.02);
+          padding: 6px;
+          border-radius: 1.25rem;
+        }
+        .sn-panel-inner {
+          background: #ffffff;
+          border-radius: calc(1.25rem - 6px);
+          padding: 1.5rem;
+        }
+        .sn-eyebrow {
+          font-size: 11px;
+          text-transform: uppercase;
+          letter-spacing: 0.15em;
+          color: #a3a3a3;
+          word-break: keep-all;
+        }
+        .sn-table { width: 100%; border-collapse: collapse; }
+        .sn-table thead tr { border-bottom: 1.5px solid #f5f5f5; }
+        .sn-table thead th {
+          font-size: 11px;
+          text-transform: uppercase;
+          letter-spacing: 0.12em;
+          color: #a3a3a3;
+          font-weight: 500;
+          padding: 0 0.75rem 0.75rem 0;
+          text-align: left;
+          white-space: nowrap;
+        }
+        .sn-table tbody tr {
+          border-bottom: 1px solid #f5f5f5;
+          transition: all 0.5s cubic-bezier(0.16,1,0.3,1);
+          cursor: pointer;
+        }
+        .sn-table tbody tr:last-child { border-bottom: none; }
+        .sn-table tbody tr:hover { background: #fafafa; }
+        .sn-table tbody td {
+          font-size: 0.875rem;
+          color: #525252;
+          padding: 0.75rem 0.75rem 0.75rem 0;
+          vertical-align: middle;
+        }
+        .sn-btn-accent {
+          display: inline-flex;
+          align-items: center;
+          gap: 0.375rem;
+          padding: 0.625rem 1.25rem;
+          border-radius: 9999px;
+          background: #16a34a;
+          color: #ffffff;
+          font-size: 0.875rem;
+          font-weight: 600;
+          border: none;
+          cursor: pointer;
+          transition: all 0.5s cubic-bezier(0.16,1,0.3,1);
+          font-family: 'Pretendard Variable', Pretendard, sans-serif;
+        }
+        .sn-btn-accent:hover { transform: scale(1.02); background: #15803d; }
+        .sn-btn-ghost {
+          display: inline-flex;
+          align-items: center;
+          gap: 0.375rem;
+          padding: 0.5rem 1rem;
+          border-radius: 9999px;
+          background: transparent;
+          color: #525252;
+          font-size: 0.8125rem;
+          font-weight: 500;
+          border: 1.5px solid #e5e5e5;
+          cursor: pointer;
+          transition: all 0.5s cubic-bezier(0.16,1,0.3,1);
+          font-family: 'Pretendard Variable', Pretendard, sans-serif;
+        }
+        .sn-btn-ghost:hover { border-color: #a3a3a3; color: #171717; }
+      </style>
+
+      <!-- LOADING -->
+      <div v-if="loading" style="min-height: 60vh; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1rem;">
+        <div style="width: 32px; height: 32px; border: 2.5px solid #e5e5e5; border-top-color: #16a34a; border-radius: 50%; animation: spin 0.8s linear infinite;"></div>
+        <p class="sn-eyebrow">데이터를 불러오는 중입니다</p>
+        <style>@keyframes spin { to { transform: rotate(360deg); } }</style>
       </div>
 
       <div v-else>
 
-        <!-- ═══ HEADER ═══ -->
-        <div class="flex items-end justify-between mb-16 dash-reveal" style="animation-delay: 0s;">
+        <!-- HEADER — stagger 0ms -->
+        <div class="flex items-center justify-between mb-8"
+          style="animation: sn-reveal 0.6s cubic-bezier(0.16,1,0.3,1) forwards; animation-delay: 0ms; opacity: 1;">
           <div>
-            <span class="block text-xs tracking-[0.2em] uppercase mb-2" style="color: #c8ff00; font-family: 'JetBrains Mono', monospace;">Overview</span>
-            <h1 style="font-family: 'Pretendard Variable', sans-serif; font-weight: 800; font-size: 2.5rem; color: #fafaf5; letter-spacing: -0.03em;">대시보드</h1>
+            <p class="sn-eyebrow mb-1">Overview</p>
+            <h1 style="font-family: 'Outfit', 'Pretendard Variable', sans-serif; font-size: 2rem; font-weight: 600; color: #171717; letter-spacing: -0.04em; line-height: 1.1;">대시보드</h1>
           </div>
-          <button @click="nav('passports')"
-            class="px-6 py-3 text-sm font-semibold tracking-[0.05em] uppercase transition-all"
-            style="background: #c8ff00; color: #1a1814;"
-            onmouseenter="this.style.background='#d4ff33'"
-            onmouseleave="this.style.background='#c8ff00'">
-            + 여권 발급
+          <button @click="nav('passports')" class="sn-btn-accent">
+            <span style="font-size: 1rem; line-height: 1;">+</span>
+            여권 발급
           </button>
         </div>
 
-        <!-- ═══ MONUMENTAL KPIs ═══ -->
-        <div class="grid grid-cols-2 lg:grid-cols-4 gap-0 mb-20 dash-reveal" style="animation-delay: 0.1s; border-top: 1px solid rgba(250,250,245,0.06);">
+        <!-- KPI STRIP — stagger 80ms -->
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6"
+          style="animation: sn-reveal 0.6s cubic-bezier(0.16,1,0.3,1) forwards; animation-delay: 80ms; opacity: 1;">
           <div v-for="(kpi, i) in [
-            { num: totalCount, label: '전체 여권', sub: 'TOTAL PASSPORTS' },
-            { num: activeCount, label: '운행중', sub: 'ACTIVE' },
-            { num: maintenanceCount, label: '정비 대기', sub: 'MAINTENANCE' },
-            { num: materialCount, label: '등록 원자재', sub: 'MATERIALS' }
+            { num: totalCount,       label: '전체 여권',    sub: 'TOTAL',       page: 'passports'  },
+            { num: activeCount,      label: '운행 중',      sub: 'ACTIVE',      page: 'passports'  },
+            { num: maintenanceCount, label: '정비 대기',    sub: 'MAINTENANCE', page: 'passports'  },
+            { num: materialCount,    label: '등록 원자재',  sub: 'MATERIALS',   page: 'materials'  }
           ]" :key="i"
-            class="py-8 cursor-pointer transition-all"
-            :style="'border-right: 1px solid rgba(250,250,245,0.06); border-bottom: 1px solid rgba(250,250,245,0.06);' + (i === 0 ? 'padding-left:0;' : 'padding-left:2rem;')"
-            @click="nav(i < 3 ? 'passports' : 'materials')"
-            @mouseenter="$event.currentTarget.style.background='rgba(200,255,0,0.03)'"
-            @mouseleave="$event.currentTarget.style.background='transparent'">
-            <span class="block text-xs tracking-[0.15em] mb-3" style="color: rgba(250,250,245,0.2); font-family: 'JetBrains Mono', monospace;">0{{ i + 1 }}</span>
-            <span class="block leading-none" style="font-family: 'JetBrains Mono', monospace; font-size: clamp(2.5rem, 5vw, 4.5rem); font-weight: 600; color: #fafaf5; letter-spacing: -0.04em;">
-              {{ kpi.num }}
-            </span>
-            <span class="block mt-3 text-sm" style="color: rgba(250,250,245,0.4);">{{ kpi.label }}</span>
-            <span class="block text-xs mt-1 tracking-[0.1em] uppercase" style="color: rgba(250,250,245,0.12); font-family: 'JetBrains Mono', monospace;">{{ kpi.sub }}</span>
-          </div>
-        </div>
-
-        <!-- ═══ MIDDLE: CHART + STATUS — asymmetric split ═══ -->
-        <div class="flex flex-col lg:flex-row gap-16 mb-20">
-
-          <!-- LEFT: Donut chart — large -->
-          <div class="lg:w-2/5 dash-reveal" style="animation-delay: 0.2s;">
-            <span class="block text-xs tracking-[0.2em] uppercase mb-6" style="color: #c8ff00; font-family: 'JetBrains Mono', monospace;">화학 구성</span>
-
-            <div class="flex items-center gap-8">
-              <div class="relative flex-shrink-0" style="width: 160px; height: 160px;">
-                <svg viewBox="0 0 100 100" class="w-full h-full" style="transform: rotate(-90deg);">
-                  <circle cx="50" cy="50" r="40" fill="none" stroke="rgba(250,250,245,0.04)" stroke-width="8"/>
-                  <circle v-for="(seg, i) in chemistrySegments" :key="i"
-                    cx="50" cy="50" r="40" fill="none"
-                    :stroke="seg.color" stroke-width="8"
-                    :stroke-dasharray="seg.dashArray"
-                    :stroke-dashoffset="seg.dashOffset"
-                    stroke-linecap="round"
-                    style="transition: all 1s cubic-bezier(0.16, 1, 0.3, 1);"/>
-                </svg>
-                <div class="absolute inset-0 flex flex-col items-center justify-center">
-                  <span style="font-family: 'JetBrains Mono', monospace; font-size: 2rem; font-weight: 600; color: #fafaf5;">{{ chemTotal }}</span>
-                </div>
-              </div>
-
-              <div class="space-y-3 flex-1">
-                <div v-for="item in chemistryDistribution" :key="item.name" class="flex items-center justify-between">
-                  <div class="flex items-center gap-3">
-                    <span class="w-2 h-2" :style="'background: ' + item.color + ';'"></span>
-                    <span class="text-sm" style="color: rgba(250,250,245,0.5);">{{ item.name }}</span>
-                  </div>
-                  <span class="text-sm tabular-nums" style="color: #fafaf5; font-family: 'JetBrains Mono', monospace;">{{ item.count }}</span>
-                </div>
-                <div v-if="!chemistryDistribution.length" class="text-sm" style="color: rgba(250,250,245,0.2);">데이터 없음</div>
-              </div>
-            </div>
-          </div>
-
-          <!-- RIGHT: Status distribution — typographic -->
-          <div class="lg:w-3/5 dash-reveal" style="animation-delay: 0.3s;">
-            <div class="flex items-center justify-between mb-6">
-              <span class="text-xs tracking-[0.2em] uppercase" style="color: #c8ff00; font-family: 'JetBrains Mono', monospace;">상태 분포</span>
-              <span class="text-xs tabular-nums" style="color: rgba(250,250,245,0.2); font-family: 'JetBrains Mono', monospace;">TOTAL {{ statTotal }}</span>
-            </div>
-
-            <!-- Stacked bar -->
-            <div v-if="statusDistribution.length" class="flex h-2 mb-8" style="background: rgba(250,250,245,0.04);">
-              <div v-for="item in statusDistribution" :key="item.status"
-                class="h-full transition-all duration-1000"
-                :style="'width: ' + (item.count / statTotal * 100) + '%; background: ' + item.color + '; min-width: 3px;'">
-              </div>
-            </div>
-
-            <!-- Legend as typographic list -->
-            <div class="space-y-0">
-              <div v-for="(item, i) in statusDistribution" :key="item.status"
-                class="flex items-center justify-between py-3"
-                :style="i < statusDistribution.length - 1 ? 'border-bottom: 1px solid rgba(250,250,245,0.04);' : ''">
-                <div class="flex items-center gap-3">
-                  <span class="w-2 h-2" :style="'background: ' + item.color + ';'"></span>
-                  <span class="text-sm" style="color: rgba(250,250,245,0.6);">{{ item.label }}</span>
-                </div>
-                <div class="flex items-center gap-4">
-                  <span class="text-xs tabular-nums" style="color: rgba(250,250,245,0.25); font-family: 'JetBrains Mono', monospace;">{{ statTotal > 0 ? Math.round(item.count / statTotal * 100) : 0 }}%</span>
-                  <span class="text-lg tabular-nums font-semibold" style="color: #fafaf5; font-family: 'JetBrains Mono', monospace; min-width: 2rem; text-align: right;">{{ item.count }}</span>
-                </div>
-              </div>
-              <div v-if="!statusDistribution.length" class="py-6 text-sm" style="color: rgba(250,250,245,0.15);">데이터 없음</div>
+            class="sn-panel"
+            style="cursor: pointer; transition: all 0.5s cubic-bezier(0.16,1,0.3,1);"
+            :style="{ animationDelay: (80 + i * 40) + 'ms' }"
+            @click="nav(kpi.page)"
+            @mouseenter="$event.currentTarget.style.transform='translateY(-2px)'"
+            @mouseleave="$event.currentTarget.style.transform='translateY(0)'">
+            <div class="sn-panel-inner">
+              <p class="sn-eyebrow mb-2">{{ kpi.sub }}</p>
+              <p style="font-size: clamp(1.75rem, 4vw, 2.5rem); font-weight: 700; color: #171717; letter-spacing: -0.04em; line-height: 1; font-variant-numeric: tabular-nums; font-family: 'Outfit', monospace;">{{ kpi.num }}</p>
+              <p style="font-size: 0.8125rem; color: #525252; margin-top: 0.375rem; word-break: keep-all;">{{ kpi.label }}</p>
             </div>
           </div>
         </div>
 
-        <!-- ═══ RECENT — minimal typographic table ═══ -->
-        <div class="dash-reveal" style="animation-delay: 0.4s;">
-          <div class="flex items-center justify-between mb-6">
-            <span class="text-xs tracking-[0.2em] uppercase" style="color: #c8ff00; font-family: 'JetBrains Mono', monospace;">최근 등록</span>
-            <button @click="nav('passports')" class="text-xs transition-colors" style="color: rgba(250,250,245,0.25); font-family: 'JetBrains Mono', monospace;"
-              onmouseenter="this.style.color='#c8ff00'" onmouseleave="this.style.color='rgba(250,250,245,0.25)'">
-              전체 보기 →
-            </button>
-          </div>
+        <!-- STATUS + CHEMISTRY ROW — stagger 240ms -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-3 mb-6"
+          style="animation: sn-reveal 0.6s cubic-bezier(0.16,1,0.3,1) forwards; animation-delay: 240ms; opacity: 1;">
 
-          <div v-if="recentPassports.length" style="border-top: 1px solid rgba(250,250,245,0.06);">
-            <!-- Header -->
-            <div class="hidden lg:grid grid-cols-12 gap-4 py-3 text-xs tracking-[0.1em] uppercase"
-              style="color: rgba(250,250,245,0.15); font-family: 'JetBrains Mono', monospace; border-bottom: 1px solid rgba(250,250,245,0.04);">
-              <span class="col-span-3">제조사</span>
-              <span class="col-span-2">모델</span>
-              <span class="col-span-2">화학</span>
-              <span class="col-span-2">등록일</span>
-              <span class="col-span-2">상태</span>
-              <span class="col-span-1 text-right">무게</span>
-            </div>
+          <!-- STATUS: Segmented bar -->
+          <div class="sn-panel">
+            <div class="sn-panel-inner">
+              <div class="flex items-center justify-between mb-4">
+                <p class="sn-eyebrow">상태 분포</p>
+                <span style="font-size: 11px; letter-spacing: 0.08em; color: #a3a3a3; font-variant-numeric: tabular-nums;">합계 {{ statTotal }}</span>
+              </div>
 
-            <!-- Rows -->
-            <div v-for="(p, idx) in recentPassports" :key="idx"
-              class="grid grid-cols-12 gap-4 py-4 cursor-pointer transition-all items-center"
-              :style="idx < recentPassports.length - 1 ? 'border-bottom: 1px solid rgba(250,250,245,0.03);' : ''"
-              @click="$emit('navigate', 'passport-detail', { passportId: p.passportId || p.id })"
-              @mouseenter="$event.currentTarget.style.background='rgba(200,255,0,0.02)'"
-              @mouseleave="$event.currentTarget.style.background='transparent'">
-              <span class="col-span-3 text-sm font-medium truncate" style="color: rgba(250,250,245,0.7);">{{ p.manufacturerName || '—' }}</span>
-              <span class="col-span-2 text-sm truncate" style="color: #fafaf5;">{{ p.model || '—' }}</span>
-              <span class="col-span-2 text-xs tracking-wider uppercase" style="color: rgba(250,250,245,0.3); font-family: 'JetBrains Mono', monospace;">{{ p.chemistry || '—' }}</span>
-              <span class="col-span-2 text-xs tabular-nums" style="color: rgba(250,250,245,0.2); font-family: 'JetBrains Mono', monospace;">{{ formatDate(p.createdAt || p.manufactureDate) }}</span>
-              <span class="col-span-2">
-                <span class="inline-flex items-center gap-1.5">
-                  <span class="w-1.5 h-1.5 rounded-full" :style="{
-                    background: p.status==='ACTIVE'?'#c8ff00':p.status==='MANUFACTURED'?'#6ba3ff':p.status==='MAINTENANCE'?'#ffb800':p.status==='ANALYSIS'?'#c084fc':'#6b7280'
-                  }"></span>
-                  <span class="text-xs" style="color: rgba(250,250,245,0.4);">{{ statusLabels[p.status] || '—' }}</span>
-                </span>
-              </span>
-              <span class="col-span-1 text-xs tabular-nums text-right" style="color: rgba(250,250,245,0.2); font-family: 'JetBrains Mono', monospace;">{{ p.weight ? p.weight + 'kg' : '—' }}</span>
+              <!-- Horizontal segmented bar -->
+              <div v-if="statusDistribution.length" style="display: flex; height: 8px; border-radius: 9999px; overflow: hidden; background: #f5f5f5; gap: 2px; margin-bottom: 1rem;">
+                <div v-for="item in statusDistribution" :key="item.status"
+                  style="height: 100%; border-radius: 9999px; min-width: 4px; transition: all 0.5s cubic-bezier(0.16,1,0.3,1);"
+                  :style="{ width: (item.count / statTotal * 100) + '%', background: item.color }">
+                </div>
+              </div>
+              <div v-else style="height: 8px; border-radius: 9999px; background: #f5f5f5; margin-bottom: 1rem;"></div>
+
+              <!-- Legend dots -->
+              <div style="display: flex; flex-wrap: wrap; gap: 0.625rem 1rem;">
+                <div v-for="item in statusDistribution" :key="item.status"
+                  class="flex items-center gap-1.5">
+                  <span style="width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0;"
+                    :style="{ background: item.color }"></span>
+                  <span style="font-size: 0.8125rem; color: #525252; word-break: keep-all;">{{ item.label }}</span>
+                  <span style="font-size: 0.8125rem; color: #a3a3a3; font-variant-numeric: tabular-nums;">{{ item.count }}</span>
+                </div>
+                <div v-if="!statusDistribution.length" class="sn-eyebrow">데이터 없음</div>
+              </div>
             </div>
           </div>
 
-          <div v-else class="py-16 text-center">
-            <p class="text-sm" style="color: rgba(250,250,245,0.15);">등록된 여권이 없습니다</p>
+          <!-- CHEMISTRY: Inline pill tags -->
+          <div class="sn-panel">
+            <div class="sn-panel-inner">
+              <div class="flex items-center justify-between mb-4">
+                <p class="sn-eyebrow">화학 구성</p>
+                <span style="font-size: 11px; letter-spacing: 0.08em; color: #a3a3a3; font-variant-numeric: tabular-nums;">합계 {{ chemTotal }}</span>
+              </div>
+              <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
+                <div v-for="item in chemistryDistribution" :key="item.name"
+                  style="display: inline-flex; align-items: center; gap: 0.375rem; padding: 0.3125rem 0.75rem; border-radius: 9999px; border: 1.5px solid #e5e5e5; background: #ffffff;">
+                  <span style="width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0;"
+                    :style="{ background: item.color }"></span>
+                  <span style="font-size: 0.8125rem; font-weight: 500; color: #171717;">{{ item.name }}</span>
+                  <span style="font-size: 11px; color: #a3a3a3; font-variant-numeric: tabular-nums;">{{ item.count }}</span>
+                </div>
+                <div v-if="!chemistryDistribution.length" class="sn-eyebrow">데이터 없음</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- RECENT PASSPORTS TABLE — stagger 360ms -->
+        <div class="sn-panel"
+          style="animation: sn-reveal 0.6s cubic-bezier(0.16,1,0.3,1) forwards; animation-delay: 360ms; opacity: 1;">
+          <div class="sn-panel-inner">
+            <div class="flex items-center justify-between mb-5">
+              <p class="sn-eyebrow">최근 등록 여권</p>
+              <button @click="nav('passports')" class="sn-btn-ghost">전체 보기 →</button>
+            </div>
+
+            <!-- Table with data -->
+            <div v-if="recentPassports.length" style="overflow-x: auto;">
+              <table class="sn-table">
+                <thead>
+                  <tr>
+                    <th>제조사</th>
+                    <th>모델</th>
+                    <th>화학</th>
+                    <th>등록일</th>
+                    <th>상태</th>
+                    <th style="text-align: right;">무게</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="(p, idx) in recentPassports.slice(0, 6)" :key="idx"
+                    @click="$emit('navigate', 'passport-detail', { passportId: p.passportId || p.id })">
+                    <td style="color: #171717; font-weight: 500; max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ p.manufacturerName || '—' }}</td>
+                    <td style="max-width: 100px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ p.model || '—' }}</td>
+                    <td>
+                      <span style="display: inline-flex; align-items: center; gap: 0.3rem; padding: 0.2rem 0.5rem; border-radius: 9999px; background: #f5f5f5; font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: #525252; font-weight: 500;">
+                        {{ p.chemistry || '—' }}
+                      </span>
+                    </td>
+                    <td style="white-space: nowrap; color: #a3a3a3; font-size: 0.8125rem;">{{ formatDate(p.createdAt || p.manufactureDate) }}</td>
+                    <td>
+                      <span style="display: inline-flex; align-items: center; gap: 0.375rem;">
+                        <span style="width: 6px; height: 6px; border-radius: 50; flex-shrink: 0;"
+                          :style="{
+                            borderRadius: '50%',
+                            background: p.status==='ACTIVE'?'#16a34a'
+                              :p.status==='MANUFACTURED'?'#2563eb'
+                              :p.status==='MAINTENANCE'?'#d97706'
+                              :p.status==='ANALYSIS'?'#7c3aed'
+                              :p.status==='RECYCLING'?'#ea580c'
+                              :'#a3a3a3'
+                          }"></span>
+                        <span style="font-size: 0.8125rem; color: #525252; word-break: keep-all;">{{ statusLabels[p.status] || '—' }}</span>
+                      </span>
+                    </td>
+                    <td style="text-align: right; color: #a3a3a3; font-variant-numeric: tabular-nums; white-space: nowrap;">{{ p.weight ? p.weight + ' kg' : '—' }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <!-- Empty state -->
+            <div v-else style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 3rem 1rem; gap: 1rem; text-align: center;">
+              <p style="font-size: 0.9375rem; color: #a3a3a3; word-break: keep-all;">등록된 배터리 여권이 없습니다.</p>
+              <p style="font-size: 0.8125rem; color: #d4d4d4; word-break: keep-all;">첫 번째 여권을 발급하여 추적을 시작하세요.</p>
+              <button @click="nav('passports')" class="sn-btn-accent" style="margin-top: 0.5rem;">+ 여권 발급하기</button>
+            </div>
+
           </div>
         </div>
 
       </div>
-
-      <style>
-        @keyframes dashPulse { 0%,100% { opacity: 0.3; } 50% { opacity: 1; } }
-        .dash-reveal { opacity: 0; animation: dashReveal 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
-        @keyframes dashReveal { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
-      </style>
     </div>
   `
 });
