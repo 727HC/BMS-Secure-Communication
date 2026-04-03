@@ -148,17 +148,9 @@ app.component('qr-scan-page', {
   <div style="display:flex;flex-direction:column;gap:24px;">
 
     <!-- ====== PAGE HEADER ====== -->
-    <div class="" style="display:flex;align-items:center;gap:14px;">
-      <div style="width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,#059669,#059669);display:flex;align-items:center;justify-content:center;">
-        <svg width="22" height="22" fill="none" stroke="#fff" stroke-width="2" viewBox="0 0 24 24">
-          <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>
-          <line x1="14" y1="14" x2="14" y2="14.01"/><line x1="21" y1="14" x2="21" y2="14.01"/><line x1="14" y1="21" x2="14" y2="21.01"/><line x1="21" y1="21" x2="21" y2="21.01"/><line x1="17.5" y1="17.5" x2="17.5" y2="17.51"/>
-        </svg>
-      </div>
-      <div>
-        <h1 class="text-[#fafaf5] font-bold" style="font-family:'Pretendard Variable', sans-serif;font-size:1.35rem;color:#111827;margin:0;">QR / NFC 스캔</h1>
-        <p style="font-family:'Pretendard Variable', sans-serif;font-size:0.72rem;color:#6b7280;margin-top:2px;">배터리 여권 QR 코드 또는 NFC 태그를 스캔하여 정보를 조회합니다</p>
-      </div>
+    <div>
+      <h1 class="sn-display" style="font-size:1.75rem;">QR / NFC 스캔</h1>
+      <p class="sn-caption" style="margin-top:0.25rem;">배터리 여권 QR 코드 또는 NFC 태그를 스캔하여 정보를 조회합니다</p>
     </div>
 
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;">
@@ -167,16 +159,16 @@ app.component('qr-scan-page', {
       <div style="display:flex;flex-direction:column;gap:16px;">
 
         <!-- Camera Scanner -->
-        <div class="bg-[#1a1814]  border border-[rgba(250,250,245,0.06)] shadow-none bg-[#1a1814]  border border-[rgba(250,250,245,0.06)] shadow-none  " style="overflow:hidden;">
-          <div style="padding:14px 20px;border-bottom:1px solid #f1f5f9;display:flex;align-items:center;justify-content:space-between;">
-            <span style="font-family:'Pretendard Variable', sans-serif;font-size:0.85rem;font-weight:600;color:#111827;">카메라 스캔</span>
-            <button v-if="!scanning" @click="startScan" class="bg-[#c8ff00] text-[#1a1814] px-4 py-2 rounded text-sm font-medium hover:bg-[#d4ff33]" style="font-size:0.75rem;padding:6px 12px;display:inline-flex;align-items:center;gap:6px;">
+        <div class="sn-panel" style="overflow:hidden;">
+          <div style="padding:14px 20px;border-bottom:1px solid rgba(0,0,0,0.06);display:flex;align-items:center;justify-content:space-between;">
+            <span style="font-size:0.85rem;font-weight:600;color:#171717;">카메라 스캔</span>
+            <button v-if="!scanning" @click="startScan" class="sn-btn sn-btn-primary" style="font-size:0.75rem;padding:6px 12px;display:inline-flex;align-items:center;gap:6px;">
               <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/>
               </svg>
               카메라 열기
             </button>
-            <button v-else @click="stopScan" class="bg-[rgba(239,68,68,0.1)] text-[#ff6b6b] border border-red-200 px-4 py-2 rounded text-sm font-medium hover:bg-red-100" style="font-size:0.75rem;padding:6px 12px;">
+            <button v-else @click="stopScan" style="font-size:0.75rem;padding:6px 12px;background:#fef2f2;color:#dc2626;border:none;border-radius:6px;cursor:pointer;box-shadow:inset 0 0 0 1px rgba(220,38,38,0.2);">
               카메라 닫기
             </button>
           </div>
@@ -206,19 +198,19 @@ app.component('qr-scan-page', {
         </div>
 
         <!-- NFC Scanner -->
-        <div v-if="nfcSupported" class="bg-[#1a1814]  border border-[rgba(250,250,245,0.06)] shadow-none  " style="overflow:hidden;">
-          <div style="padding:14px 20px;border-bottom:1px solid #f1f5f9;display:flex;align-items:center;justify-content:space-between;">
+        <div v-if="nfcSupported" class="sn-panel" style="overflow:hidden;">
+          <div style="padding:14px 20px;border-bottom:1px solid rgba(0,0,0,0.06);display:flex;align-items:center;justify-content:space-between;">
             <div style="display:flex;align-items:center;gap:8px;">
-              <span style="font-family:'Pretendard Variable', sans-serif;font-size:0.85rem;font-weight:600;color:#111827;">NFC 스캔</span>
-              <span class="bg-[rgba(107,163,255,0.1)] text-[#6ba3ff]" style="font-size:0.6rem;padding:1px 6px;border-radius:4px;">Web NFC</span>
+              <span style="font-size:0.85rem;font-weight:600;color:#171717;">NFC 스캔</span>
+              <span style="font-size:0.6rem;padding:1px 6px;border-radius:4px;background:#eff6ff;color:#2563eb;">Web NFC</span>
             </div>
-            <button v-if="!nfcScanning" @click="startNfc" class="inline-flex items-center gap-1.5 px-4 py-2 rounded text-sm font-medium" style="font-size:0.75rem;padding:6px 12px;display:inline-flex;align-items:center;gap:6px;background:#2563eb;color:#fff;border:none;">
+            <button v-if="!nfcScanning" @click="startNfc" class="sn-btn sn-btn-primary" style="font-size:0.75rem;padding:6px 12px;display:inline-flex;align-items:center;gap:6px;">
               <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071c3.904-3.905 10.236-3.905 14.14 0M1.394 9.393c5.857-5.858 15.355-5.858 21.213 0"/>
               </svg>
               NFC 활성화
             </button>
-            <button v-else @click="stopNfc" class="bg-[rgba(239,68,68,0.1)] text-[#ff6b6b] border border-red-200 px-4 py-2 rounded text-sm font-medium hover:bg-red-100" style="font-size:0.75rem;padding:6px 12px;">NFC 중지</button>
+            <button v-else @click="stopNfc" style="font-size:0.75rem;padding:6px 12px;background:#fef2f2;color:#dc2626;border:none;border-radius:6px;cursor:pointer;box-shadow:inset 0 0 0 1px rgba(220,38,38,0.2);">NFC 중지</button>
           </div>
           <div style="padding:24px 16px;display:flex;flex-direction:column;align-items:center;text-align:center;">
             <div v-if="nfcScanning" style="display:flex;flex-direction:column;align-items:center;">
@@ -242,17 +234,13 @@ app.component('qr-scan-page', {
         </div>
 
         <!-- Manual Input -->
-        <div class="bg-[#1a1814]  border border-[rgba(250,250,245,0.06)] shadow-none  " style="padding:20px;">
-          <h2 style="font-family:'Pretendard Variable', sans-serif;font-size:0.85rem;font-weight:600;color:#111827;margin:0 0 12px;">수동 입력</h2>
+        <div class="sn-panel" style="padding:20px;">
+          <h2 style="font-size:0.85rem;font-weight:600;color:#171717;margin:0 0 12px;">수동 입력</h2>
           <div style="display:flex;gap:8px;">
             <input v-model="manualId" type="text" placeholder="여권 ID를 입력하세요 (예: BP-SDI-001)"
-              @keyup.enter="handleManualSearch"
-              class="w-full px-4 py-2.5 bg-[#1f1d17] border border-[rgba(250,250,245,0.06)]  text-[#fafaf5] outline-none focus:border-[#c8ff00]" style="flex:1;" />
-            <button @click="handleManualSearch" :disabled="!manualId.trim()"
-              class="bg-[#c8ff00] text-[#1a1814] px-4 py-2 rounded text-sm font-medium hover:bg-[#d4ff33]" style="padding:8px 18px;"
-              :style="!manualId.trim() ? 'opacity:0.4;cursor:not-allowed;' : ''">
-              조회
-            </button>
+              @keyup.enter="handleManualSearch" class="sn-input" style="flex:1;" />
+            <button @click="handleManualSearch" :disabled="!manualId.trim()" class="sn-btn sn-btn-primary" style="padding:8px 18px;"
+              :style="!manualId.trim() ? 'opacity:0.4;cursor:not-allowed;' : ''">조회</button>
           </div>
         </div>
       </div>
@@ -260,64 +248,61 @@ app.component('qr-scan-page', {
       <!-- ====== RIGHT: RESULT AREA ====== -->
       <div>
         <!-- Loading -->
-        <div v-if="loadingPassport" class="bg-[#1a1814]  border border-[rgba(250,250,245,0.06)] shadow-none " style="padding:48px;display:flex;flex-direction:column;align-items:center;justify-content:center;">
-          <div style="width:40px;height:40px;border:3px solid #f1f5f9;border-top-color:#059669;border-radius:50%;animation:spin 0.8s linear infinite;margin-bottom:12px;"></div>
-          <p style="font-size:0.85rem;color:#6b7280;">여권 정보 조회 중...</p>
+        <div v-if="loadingPassport" class="sn-panel" style="padding:48px;display:flex;flex-direction:column;align-items:center;justify-content:center;">
+          <div style="width:40px;height:40px;border:3px solid #e5e5e5;border-top-color:#171717;border-radius:50%;animation:spin 0.8s linear infinite;margin-bottom:12px;"></div>
+          <p style="font-size:0.85rem;color:#a3a3a3;">여권 정보 조회 중...</p>
         </div>
 
         <!-- Result Card -->
-        <div v-else-if="passportData" class="bg-[#1a1814]  border border-[rgba(250,250,245,0.06)] shadow-none bg-[#1a1814]  border border-[rgba(250,250,245,0.06)] shadow-none " style="overflow:hidden;">
-          <!-- Success header strip -->
-          <div style="padding:14px 20px;border-bottom:1px solid #f1f5f9;background:#ffffff;display:flex;align-items:center;gap:8px;">
-            <span class="bp-dot-signal" style="width:8px;height:8px;"></span>
-            <span style="font-size:0.82rem;font-weight:600;color:#059669;">여권 정보 확인됨</span>
+        <div v-else-if="passportData" class="sn-panel" style="overflow:hidden;">
+          <div style="padding:14px 20px;border-bottom:1px solid rgba(0,0,0,0.06);display:flex;align-items:center;gap:8px;">
+            <span style="width:8px;height:8px;border-radius:50%;background:#16a34a;display:inline-block;"></span>
+            <span style="font-size:0.82rem;font-weight:600;color:#16a34a;">여권 정보 확인됨</span>
           </div>
           <div style="padding:20px;display:flex;flex-direction:column;gap:16px;">
-            <!-- Model + Status -->
             <div style="display:flex;align-items:center;justify-content:space-between;">
-              <h3 style="font-family:'Pretendard Variable', sans-serif;font-size:1.15rem;font-weight:700;color:#111827;margin:0;">{{ passportData.model || '-' }}</h3>
-              <span :class="['inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border',
-                statusColors[passportData.status] || 'bg-[#1a1814] text-[rgba(250,250,245,0.7)] border-[rgba(250,250,245,0.1)]']">
+              <h3 style="font-size:1.15rem;font-weight:700;color:#171717;margin:0;">{{ passportData.model || '-' }}</h3>
+              <span :class="['inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border', statusColors[passportData.status] || 'bg-[#f5f5f5] text-[#525252] border-[rgba(0,0,0,0.06)]']">
                 {{ statusLabels[passportData.status] || passportData.status }}
               </span>
             </div>
 
             <!-- Info grid -->
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-              <div style="background:#ffffff;border:1px solid #f1f5f9;border-radius:8px;padding:10px 12px;">
-                <p style="font-size:0.6rem;color:#6b7280;text-transform:uppercase;font-weight:500;margin:0;">여권 ID</p>
-                <p class="font-mono" style="font-size:0.75rem;color:#374151;margin:4px 0 0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ passportData.passportId }}</p>
+              <div style="background:#fafafa;box-shadow:inset 0 0 0 1px rgba(0,0,0,0.06);border-radius:8px;padding:10px 12px;">
+                <p class="sn-eyebrow" style="margin:0;">여권 ID</p>
+                <p style="font-family:'JetBrains Mono',monospace;font-size:0.75rem;color:#525252;margin:4px 0 0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ passportData.passportId }}</p>
               </div>
-              <div style="background:#ffffff;border:1px solid #f1f5f9;border-radius:8px;padding:10px 12px;">
-                <p style="font-size:0.6rem;color:#6b7280;text-transform:uppercase;font-weight:500;margin:0;">시리얼번호</p>
-                <p class="font-mono" style="font-size:0.75rem;color:#374151;margin:4px 0 0;">{{ passportData.serialNumber || '-' }}</p>
+              <div style="background:#fafafa;box-shadow:inset 0 0 0 1px rgba(0,0,0,0.06);border-radius:8px;padding:10px 12px;">
+                <p class="sn-eyebrow" style="margin:0;">시리얼번호</p>
+                <p style="font-family:'JetBrains Mono',monospace;font-size:0.75rem;color:#525252;margin:4px 0 0;">{{ passportData.serialNumber || '-' }}</p>
               </div>
-              <div style="background:#ffffff;border:1px solid #f1f5f9;border-radius:8px;padding:10px 12px;">
-                <p style="font-size:0.6rem;color:#6b7280;text-transform:uppercase;font-weight:500;margin:0;">제조사</p>
-                <p style="font-size:0.85rem;font-weight:500;color:#374151;margin:4px 0 0;">{{ passportData.manufacturerName || '-' }}</p>
+              <div style="background:#fafafa;box-shadow:inset 0 0 0 1px rgba(0,0,0,0.06);border-radius:8px;padding:10px 12px;">
+                <p class="sn-eyebrow" style="margin:0;">제조사</p>
+                <p style="font-size:0.85rem;font-weight:500;color:#525252;margin:4px 0 0;">{{ passportData.manufacturerName || '-' }}</p>
               </div>
-              <div style="background:#ffffff;border:1px solid #f1f5f9;border-radius:8px;padding:10px 12px;">
-                <p style="font-size:0.6rem;color:#6b7280;text-transform:uppercase;font-weight:500;margin:0;">화학물질</p>
-                <p style="font-size:0.85rem;font-weight:500;color:#374151;margin:4px 0 0;">{{ passportData.chemistry || '-' }}</p>
+              <div style="background:#fafafa;box-shadow:inset 0 0 0 1px rgba(0,0,0,0.06);border-radius:8px;padding:10px 12px;">
+                <p class="sn-eyebrow" style="margin:0;">화학물질</p>
+                <p style="font-size:0.85rem;font-weight:500;color:#525252;margin:4px 0 0;">{{ passportData.chemistry || '-' }}</p>
               </div>
-              <div style="background:#ffffff;border:1px solid #f1f5f9;border-radius:8px;padding:10px 12px;">
-                <p style="font-size:0.6rem;color:#6b7280;text-transform:uppercase;font-weight:500;margin:0;">총 에너지</p>
-                <p style="font-size:0.85rem;font-weight:500;color:#374151;margin:4px 0 0;">{{ passportData.totalEnergy ? passportData.totalEnergy + ' kWh' : '-' }}</p>
+              <div style="background:#fafafa;box-shadow:inset 0 0 0 1px rgba(0,0,0,0.06);border-radius:8px;padding:10px 12px;">
+                <p class="sn-eyebrow" style="margin:0;">총 에너지</p>
+                <p style="font-size:0.85rem;font-weight:500;color:#525252;margin:4px 0 0;">{{ passportData.totalEnergy ? passportData.totalEnergy + ' kWh' : '-' }}</p>
               </div>
-              <div style="background:#ffffff;border:1px solid #f1f5f9;border-radius:8px;padding:10px 12px;">
-                <p style="font-size:0.6rem;color:#6b7280;text-transform:uppercase;font-weight:500;margin:0;">VIN</p>
-                <p class="font-mono" style="font-size:0.75rem;color:#374151;margin:4px 0 0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ passportData.vin || '미바인딩' }}</p>
+              <div style="background:#fafafa;box-shadow:inset 0 0 0 1px rgba(0,0,0,0.06);border-radius:8px;padding:10px 12px;">
+                <p class="sn-eyebrow" style="margin:0;">VIN</p>
+                <p style="font-family:'JetBrains Mono',monospace;font-size:0.75rem;color:#525252;margin:4px 0 0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ passportData.vin || '미바인딩' }}</p>
               </div>
             </div>
 
             <!-- DID -->
-            <div v-if="passportData.did" style="background:#ffffff;border:1px solid #059669;border-radius:8px;padding:10px 12px;">
-              <p style="font-size:0.6rem;color:#059669;text-transform:uppercase;font-weight:500;margin:0;">DID</p>
-              <p class="font-mono" style="font-size:0.72rem;color:#059669;margin:4px 0 0;word-break:break-all;">{{ passportData.did }}</p>
+            <div v-if="passportData.did" style="background:#f0fdf4;box-shadow:inset 0 0 0 1px rgba(22,163,74,0.2);border-radius:8px;padding:10px 12px;">
+              <p class="sn-eyebrow" style="color:#16a34a;margin:0;">DID</p>
+              <p style="font-family:'JetBrains Mono',monospace;font-size:0.72rem;color:#16a34a;margin:4px 0 0;word-break:break-all;">{{ passportData.did }}</p>
             </div>
 
             <!-- Action -->
-            <button @click="goToDetail" class="bg-[#c8ff00] text-[#1a1814] px-4 py-2 rounded text-sm font-medium hover:bg-[#d4ff33]" style="width:100%;padding:12px;font-size:0.85rem;font-weight:600;display:flex;align-items:center;justify-content:center;gap:8px;border-radius:10px;">
+            <button @click="goToDetail" class="sn-btn sn-btn-primary" style="width:100%;padding:12px;font-size:0.85rem;display:flex;align-items:center;justify-content:center;gap:8px;">
               <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6"/>
               </svg>
@@ -327,14 +312,14 @@ app.component('qr-scan-page', {
         </div>
 
         <!-- Empty state -->
-        <div v-else class="bg-[#1a1814]  border border-[rgba(250,250,245,0.06)] shadow-none  " style="padding:48px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;">
-          <div style="width:64px;height:64px;border-radius:16px;background:#f1f5f9;display:flex;align-items:center;justify-content:center;margin-bottom:16px;">
-            <svg width="32" height="32" fill="none" stroke="#6b7280" stroke-width="1.5" viewBox="0 0 24 24" style="opacity:0.5;">
+        <div v-else class="sn-panel" style="padding:48px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;">
+          <div style="width:56px;height:56px;border-radius:12px;background:#f5f5f5;display:flex;align-items:center;justify-content:center;margin-bottom:16px;">
+            <svg width="28" height="28" fill="none" stroke="#a3a3a3" stroke-width="1.5" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
             </svg>
           </div>
-          <p style="font-size:0.85rem;font-weight:500;color:#6b7280;margin:0 0 4px;">QR 코드를 스캔하거나 여권 ID를 입력하세요</p>
-          <p style="font-size:0.72rem;color:#6b7280;">스캔 결과가 여기에 표시됩니다</p>
+          <p style="font-size:0.85rem;font-weight:500;color:#525252;margin:0 0 4px;">QR 코드를 스캔하거나 여권 ID를 입력하세요</p>
+          <p style="font-size:0.72rem;color:#a3a3a3;">스캔 결과가 여기에 표시됩니다</p>
         </div>
       </div>
     </div>

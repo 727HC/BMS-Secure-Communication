@@ -264,19 +264,12 @@ app.component('recycling-page', {
   <div style="display:flex;flex-direction:column;gap:24px;">
 
     <!-- ====== PAGE HEADER ====== -->
-    <div class="" style="display:flex;align-items:center;justify-content:space-between;">
-      <div style="display:flex;align-items:center;gap:14px;">
-        <div style="width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,#14b8a6,#0d9488);display:flex;align-items:center;justify-content:center;">
-          <svg width="22" height="22" fill="none" stroke="#fff" stroke-width="2" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
-          </svg>
-        </div>
-        <div>
-          <h1 class="text-[#fafaf5] font-bold" style="font-family:'Pretendard Variable', sans-serif;font-size:1.35rem;color:#111827;margin:0;">재활용 관리</h1>
-          <p style="font-family:'Pretendard Variable', sans-serif;font-size:0.72rem;color:#6b7280;margin-top:2px;">배터리 분석, 재활용 판정 및 폐기 처리 관리</p>
-        </div>
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px;">
+      <div>
+        <h1 class="sn-display" style="font-size:1.75rem;">재활용 관리</h1>
+        <p class="sn-caption" style="margin-top:0.25rem;">배터리 분석, 재활용 판정 및 폐기 처리 관리</p>
       </div>
-      <button @click="fetchPassports" class="bg-[#1a1814] border border-[rgba(250,250,245,0.06)] text-[rgba(250,250,245,0.7)] px-4 py-2 rounded text-sm font-medium hover:bg-[#1f1d17]" style="display:inline-flex;align-items:center;gap:6px;font-size:0.82rem;">
+      <button @click="fetchPassports" class="sn-btn sn-btn-ghost" style="display:inline-flex;align-items:center;gap:6px;font-size:0.82rem;">
         <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
         </svg>
@@ -285,94 +278,83 @@ app.component('recycling-page', {
     </div>
 
     <!-- ====== STATUS SUMMARY CARDS ====== -->
-    <div class=" " style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;">
-      <div class="bg-[#1a1814]  border border-[rgba(250,250,245,0.06)] shadow-none" style="padding:14px 16px;">
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;">
+      <div class="sn-panel" style="padding:14px 16px;">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
-          <span style="font-size:0.68rem;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:0.04em;">전체</span>
-          <div style="width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;background:#f1f5f9;">
-            <svg width="14" height="14" fill="none" stroke="#6b7280" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 10h16M4 14h16M4 18h16"/></svg>
+          <span class="sn-eyebrow">전체</span>
+          <div style="width:28px;height:28px;border-radius:8px;background:#f5f5f5;display:flex;align-items:center;justify-content:center;">
+            <svg width="14" height="14" fill="none" stroke="#a3a3a3" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 10h16M4 14h16M4 18h16"/></svg>
           </div>
         </div>
-        <span style="font-family:'JetBrains Mono', monospace;font-size:1.5rem;font-weight:800;color:#111827;">{{ tabCounts.all }}</span>
+        <span style="font-family:'JetBrains Mono',monospace;font-size:1.5rem;font-weight:800;color:#171717;">{{ tabCounts.all }}</span>
       </div>
-      <div class="bg-[#1a1814]  border border-[rgba(250,250,245,0.06)] shadow-none" style="padding:14px 16px;">
+      <div class="sn-panel" style="padding:14px 16px;">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
-          <span style="font-size:0.68rem;font-weight:600;color:#059669;text-transform:uppercase;letter-spacing:0.04em;">재활용가능</span>
-          <div style="width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;background:rgba(16,185,129,0.08);">
-            <svg width="14" height="14" fill="none" stroke="#059669" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          <span class="sn-eyebrow" style="color:#16a34a;">재활용가능</span>
+          <div style="width:28px;height:28px;border-radius:8px;background:#f0fdf4;display:flex;align-items:center;justify-content:center;">
+            <svg width="14" height="14" fill="none" stroke="#16a34a" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
           </div>
         </div>
-        <span style="font-family:'JetBrains Mono', monospace;font-size:1.5rem;font-weight:800;color:#059669;">{{ tabCounts.recyclable }}</span>
+        <span style="font-family:'JetBrains Mono',monospace;font-size:1.5rem;font-weight:800;color:#16a34a;">{{ tabCounts.recyclable }}</span>
       </div>
-      <div class="bg-[#1a1814]  border border-[rgba(250,250,245,0.06)] shadow-none" style="padding:14px 16px;">
+      <div class="sn-panel" style="padding:14px 16px;">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
-          <span style="font-size:0.68rem;font-weight:600;color:#60a5fa;text-transform:uppercase;letter-spacing:0.04em;">재활용중</span>
-          <div style="width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;background:rgba(37,99,235,0.08);">
-            <svg width="14" height="14" fill="none" stroke="#60a5fa" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+          <span class="sn-eyebrow" style="color:#2563eb;">재활용중</span>
+          <div style="width:28px;height:28px;border-radius:8px;background:#eff6ff;display:flex;align-items:center;justify-content:center;">
+            <svg width="14" height="14" fill="none" stroke="#2563eb" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
           </div>
         </div>
-        <span style="font-family:'JetBrains Mono', monospace;font-size:1.5rem;font-weight:800;color:#60a5fa;">{{ tabCounts.recycling }}</span>
+        <span style="font-family:'JetBrains Mono',monospace;font-size:1.5rem;font-weight:800;color:#2563eb;">{{ tabCounts.recycling }}</span>
       </div>
-      <div class="bg-[#1a1814]  border border-[rgba(250,250,245,0.06)] shadow-none" style="padding:14px 16px;">
+      <div class="sn-panel" style="padding:14px 16px;">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
-          <span style="font-size:0.68rem;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:0.04em;">폐기완료</span>
-          <div style="width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;background:#f1f5f9;">
-            <svg width="14" height="14" fill="none" stroke="#6b7280" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+          <span class="sn-eyebrow">폐기완료</span>
+          <div style="width:28px;height:28px;border-radius:8px;background:#f5f5f5;display:flex;align-items:center;justify-content:center;">
+            <svg width="14" height="14" fill="none" stroke="#a3a3a3" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
           </div>
         </div>
-        <span style="font-family:'JetBrains Mono', monospace;font-size:1.5rem;font-weight:800;color:#6b7280;">{{ tabCounts.disposed }}</span>
+        <span style="font-family:'JetBrains Mono',monospace;font-size:1.5rem;font-weight:800;color:#a3a3a3;">{{ tabCounts.disposed }}</span>
       </div>
     </div>
 
     <!-- ====== FILTER TABS ====== -->
-    <div class="flex bg-[#2a2720]  p-1  " style="display:flex;align-items:center;gap:4px;padding:4px;width:fit-content;">
+    <div style="display:flex;gap:4px;border-bottom:1px solid rgba(0,0,0,0.06);">
       <button v-for="tab in tabs" :key="tab.key" @click="activeTab = tab.key"
-        :class="['flex-1 py-2 text-sm font-medium text-[rgba(250,250,245,0.35)] rounded text-center cursor-pointer hover:text-[rgba(250,250,245,0.7)]', activeTab === tab.key ? 'bg-[#1a1814] text-[#c8ff00] shadow-none' : '']"
-        style="display:inline-flex;align-items:center;gap:6px;padding:8px 14px;font-size:0.82rem;border-radius:8px;cursor:pointer;transition:all 0.2s;">
+        style="display:inline-flex;align-items:center;gap:6px;padding:8px 14px;font-size:0.85rem;font-weight:500;cursor:pointer;border:none;background:none;border-bottom:2px solid transparent;margin-bottom:-1px;transition:all 0.2s;"
+        :style="activeTab===tab.key ? 'color:#171717;border-bottom-color:#171717;' : 'color:#a3a3a3;'">
         <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" :d="tab.icon"/>
         </svg>
         {{ tab.label }}
-        <span style="font-family:'JetBrains Mono', monospace;font-size:0.68rem;padding:1px 7px;border-radius:12px;background:#f1f5f9;margin-left:2px;">
-          {{ tabCounts[tab.key] }}
-        </span>
+        <span style="font-family:'JetBrains Mono',monospace;font-size:0.68rem;padding:1px 7px;border-radius:12px;background:#f5f5f5;"
+          :style="activeTab===tab.key ? 'color:#171717;' : 'color:#a3a3a3;'">{{ tabCounts[tab.key] }}</span>
       </button>
     </div>
 
     <!-- ====== LOADING STATE ====== -->
-    <div v-if="loading" class="bg-[#1a1814]  border border-[rgba(250,250,245,0.06)] shadow-none  " style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:72px 0;">
+    <div v-if="loading" class="sn-panel" style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:72px 0;">
       <div style="position:relative;width:40px;height:40px;">
-        <div style="position:absolute;inset:0;border-radius:50%;border:3px solid #f1f5f9;"></div>
-        <div style="position:absolute;inset:0;border-radius:50%;border:3px solid #14b8a6;border-top-color:transparent;animation:spin 0.8s linear infinite;"></div>
+        <div style="position:absolute;inset:0;border-radius:50%;border:3px solid #e5e5e5;"></div>
+        <div style="position:absolute;inset:0;border-radius:50%;border:3px solid #171717;border-top-color:transparent;animation:spin 0.8s linear infinite;"></div>
       </div>
-      <p style="margin-top:14px;font-size:0.85rem;color:#6b7280;font-family:'Pretendard Variable', sans-serif;">여권 목록을 불러오고 있습니다...</p>
+      <p style="margin-top:14px;font-size:0.85rem;color:#a3a3a3;">여권 목록을 불러오고 있습니다...</p>
     </div>
 
     <!-- ====== EMPTY STATE ====== -->
-    <div v-else-if="filteredPassports.length === 0" class="bg-[#1a1814]  border border-[rgba(250,250,245,0.06)] shadow-none  " style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:64px 24px;">
-      <div style="width:64px;height:64px;border-radius:16px;background:#f1f5f9;display:flex;align-items:center;justify-content:center;margin-bottom:16px;">
-        <svg width="32" height="32" fill="none" stroke="#6b7280" stroke-width="1.5" viewBox="0 0 24 24">
+    <div v-else-if="filteredPassports.length === 0" class="sn-panel" style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:64px 24px;">
+      <div style="width:56px;height:56px;border-radius:12px;background:#f5f5f5;display:flex;align-items:center;justify-content:center;margin-bottom:16px;">
+        <svg width="28" height="28" fill="none" stroke="#a3a3a3" stroke-width="1.5" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
         </svg>
       </div>
-      <h3 style="font-family:'Pretendard Variable', sans-serif;font-size:1rem;color:#111827;margin:0 0 4px;">재활용 관리 대상 배터리가 없습니다</h3>
-      <p style="font-size:0.82rem;color:#6b7280;text-align:center;max-width:360px;font-family:'Pretendard Variable', sans-serif;">배터리 여권이 등록되면 재활용 관리를 시작할 수 있습니다.</p>
+      <h3 style="font-size:1rem;font-weight:600;color:#171717;margin:0 0 4px;">재활용 관리 대상 배터리가 없습니다</h3>
+      <p style="font-size:0.82rem;color:#a3a3a3;text-align:center;max-width:360px;">배터리 여권이 등록되면 재활용 관리를 시작할 수 있습니다.</p>
     </div>
 
     <!-- ====== MAIN TABLE ====== -->
-    <div v-else class="bg-[#1a1814]  border border-[rgba(250,250,245,0.06)] shadow-none bg-[#1a1814]  border border-[rgba(250,250,245,0.06)] shadow-none  " style="overflow:hidden;">
-      <!-- Table header strip -->
-      <div style="padding:12px 20px;border-bottom:1px solid #f1f5f9;background:#ffffff;display:flex;align-items:center;justify-content:space-between;">
-        <div style="display:flex;align-items:center;gap:8px;">
-          <span class="bp-dot-signal" style="width:8px;height:8px;"></span>
-          <span style="font-family:'Pretendard Variable', sans-serif;font-size:0.82rem;font-weight:600;color:#374151;">재활용 현황</span>
-        </div>
-        <span class="bg-[rgba(200,255,0,0.08)] text-[#c8ff00]" style="font-family:'JetBrains Mono', monospace;font-size:0.68rem;padding:2px 10px;border-radius:20px;">
-          {{ filteredPassports.length }}건
-        </span>
-      </div>
+    <div v-else class="sn-panel" style="overflow:hidden;">
       <div style="overflow-x:auto;">
-        <table class="w-full text-sm" style="width:100%;">
+        <table class="sn-table">
           <thead>
             <tr>
               <th>여권ID</th>
@@ -482,59 +464,58 @@ app.component('recycling-page', {
     <!-- ==================== MODALS ==================== -->
 
     <!-- ====== ANALYSIS RESULT MODAL ====== -->
-    <div v-if="showAnalysisResultModal" style="position:fixed;inset:0;z-index:50;display:flex;align-items:center;justify-content:center;padding:16px;">
-      <div style="position:fixed;inset:0;background:rgba(0,0,0,0.65);backdrop-filter:blur(6px);" @click="closeModals"></div>
-      <div class="bg-[#1a1814]  border border-[rgba(250,250,245,0.06)] shadow-none bg-[#1a1814]  border border-[rgba(250,250,245,0.06)] shadow-none " style="position:relative;z-index:1;max-width:460px;width:100%;overflow:hidden;">
-        <div style="padding:18px 24px;border-bottom:1px solid #f1f5f9;display:flex;align-items:center;justify-content:space-between;">
+    <div v-if="showAnalysisResultModal" class="sn-overlay" @click.self="closeModals">
+      <div class="sn-modal" style="max-width:460px;width:100%;">
+        <div style="padding:18px 24px;border-bottom:1px solid rgba(0,0,0,0.06);display:flex;align-items:center;justify-content:space-between;">
           <div style="display:flex;align-items:center;gap:12px;">
-            <div style="width:34px;height:34px;border-radius:10px;background:#f1f5f9;display:flex;align-items:center;justify-content:center;">
-              <svg width="16" height="16" fill="none" stroke="#7c3aed" stroke-width="2" viewBox="0 0 24 24">
+            <div style="width:34px;height:34px;border-radius:10px;background:#f5f5f5;display:flex;align-items:center;justify-content:center;">
+              <svg width="16" height="16" fill="none" stroke="#525252" stroke-width="2" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
               </svg>
             </div>
-            <h3 style="font-family:'Pretendard Variable', sans-serif;font-size:1.1rem;font-weight:700;color:#111827;margin:0;">분석 결과 제출</h3>
+            <h3 style="font-size:1.1rem;font-weight:700;color:#171717;margin:0;">분석 결과 제출</h3>
           </div>
-          <button @click="closeModals" class="bg-[#1a1814] border border-[rgba(250,250,245,0.06)] text-[rgba(250,250,245,0.7)] px-4 py-2 rounded text-sm font-medium hover:bg-[#1f1d17]" style="padding:6px;">
+          <button @click="closeModals" class="sn-btn sn-btn-ghost" style="padding:6px;">
             <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
           </button>
         </div>
         <div style="padding:20px 24px;display:flex;flex-direction:column;gap:16px;">
-          <div style="padding:12px;background:#ffffff;border:1px solid #f1f5f9;border-radius:8px;">
-            <p style="font-size:0.65rem;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:0.05em;margin:0 0 2px;">대상 여권</p>
-            <p class="font-mono" style="font-size:0.85rem;font-weight:600;color:#111827;margin:0;">{{ selectedPassport?.passportId }}</p>
+          <div style="padding:12px;background:#fafafa;box-shadow:inset 0 0 0 1px rgba(0,0,0,0.06);border-radius:8px;">
+            <p class="sn-eyebrow" style="margin:0 0 2px;">대상 여권</p>
+            <p class="font-mono" style="font-size:0.85rem;font-weight:600;color:#171717;margin:0;">{{ selectedPassport?.passportId }}</p>
           </div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
             <div>
-              <label style="display:block;font-size:0.82rem;font-weight:600;color:#374151;margin-bottom:6px;">SOH (%) <span style="color:#dc2626;">*</span></label>
-              <input v-model="analysisForm.soh" type="number" min="0" max="100" step="0.1" placeholder="0.0" class="w-full px-4 py-2.5 bg-[#1f1d17] border border-[rgba(250,250,245,0.06)]  text-[#fafaf5] outline-none focus:border-[#c8ff00]" style="width:100%;font-variant-numeric:tabular-nums;" />
+              <label style="display:block;font-size:0.82rem;font-weight:600;color:#525252;margin-bottom:6px;">SOH (%) <span style="color:#dc2626;">*</span></label>
+              <input v-model="analysisForm.soh" type="number" min="0" max="100" step="0.1" placeholder="0.0" class="sn-input" style="width:100%;font-variant-numeric:tabular-nums;" />
             </div>
             <div>
-              <label style="display:block;font-size:0.82rem;font-weight:600;color:#374151;margin-bottom:6px;">SOCE (%) <span style="color:#dc2626;">*</span></label>
-              <input v-model="analysisForm.soce" type="number" min="0" max="100" step="0.1" placeholder="0.0" class="w-full px-4 py-2.5 bg-[#1f1d17] border border-[rgba(250,250,245,0.06)]  text-[#fafaf5] outline-none focus:border-[#c8ff00]" style="width:100%;font-variant-numeric:tabular-nums;" />
+              <label style="display:block;font-size:0.82rem;font-weight:600;color:#525252;margin-bottom:6px;">SOCE (%) <span style="color:#dc2626;">*</span></label>
+              <input v-model="analysisForm.soce" type="number" min="0" max="100" step="0.1" placeholder="0.0" class="sn-input" style="width:100%;font-variant-numeric:tabular-nums;" />
             </div>
           </div>
           <div>
-            <label style="display:block;font-size:0.82rem;font-weight:600;color:#374151;margin-bottom:6px;">잔여 수명 사이클 <span style="color:#dc2626;">*</span></label>
-            <input v-model="analysisForm.remainingLifeCycle" type="number" min="0" step="1" placeholder="0" class="w-full px-4 py-2.5 bg-[#1f1d17] border border-[rgba(250,250,245,0.06)]  text-[#fafaf5] outline-none focus:border-[#c8ff00]" style="width:100%;font-variant-numeric:tabular-nums;" />
+            <label style="display:block;font-size:0.82rem;font-weight:600;color:#525252;margin-bottom:6px;">잔여 수명 사이클 <span style="color:#dc2626;">*</span></label>
+            <input v-model="analysisForm.remainingLifeCycle" type="number" min="0" step="1" placeholder="0" class="sn-input" style="width:100%;font-variant-numeric:tabular-nums;" />
           </div>
-          <div style="display:flex;align-items:center;padding:12px;background:#ffffff;border:1px solid #f1f5f9;border-radius:8px;">
+          <div style="display:flex;align-items:center;padding:12px;background:#fafafa;box-shadow:inset 0 0 0 1px rgba(0,0,0,0.06);border-radius:8px;">
             <label style="display:flex;align-items:center;cursor:pointer;flex:1;">
               <div style="position:relative;">
                 <input type="checkbox" v-model="analysisForm.recycleAvailable" style="position:absolute;opacity:0;width:0;height:0;" />
-                <div :style="{ width:'36px',height:'20px',borderRadius:'10px',background: analysisForm.recycleAvailable ? '#059669' : '#e2e8f0',transition:'background 0.2s' }"></div>
+                <div :style="{ width:'36px',height:'20px',borderRadius:'10px',background: analysisForm.recycleAvailable ? '#059669' : '#e5e5e5',transition:'background 0.2s' }"></div>
                 <div :style="{ position:'absolute',top:'2px',left: analysisForm.recycleAvailable ? '18px' : '2px',width:'16px',height:'16px',borderRadius:'50%',background:'#ffffff',boxShadow:'0 1px 3px rgba(0,0,0,0.2)',transition:'left 0.2s' }"></div>
               </div>
-              <span style="margin-left:12px;font-size:0.85rem;font-weight:600;" :style="{ color: analysisForm.recycleAvailable ? '#059669' : '#6b7280' }">
+              <span style="margin-left:12px;font-size:0.85rem;font-weight:600;" :style="{ color: analysisForm.recycleAvailable ? '#059669' : '#a3a3a3' }">
                 {{ analysisForm.recycleAvailable ? '재활용 가능' : '재활용 불가' }}
               </span>
             </label>
           </div>
         </div>
-        <div style="padding:14px 24px;border-top:1px solid #f1f5f9;background:#ffffff;display:flex;justify-content:flex-end;gap:10px;">
-          <button @click="closeModals" class="bg-[#1a1814] border border-[rgba(250,250,245,0.06)] text-[rgba(250,250,245,0.7)] px-4 py-2 rounded text-sm font-medium hover:bg-[#1f1d17]">취소</button>
+        <div style="padding:14px 24px;border-top:1px solid rgba(0,0,0,0.06);display:flex;justify-content:flex-end;gap:10px;">
+          <button @click="closeModals" class="sn-btn sn-btn-ghost">취소</button>
           <button @click="submitAnalysisResult"
             :disabled="!analysisForm.soh || !analysisForm.soce || !analysisForm.remainingLifeCycle || submitting"
-            class="bg-[#c8ff00] text-[#1a1814] px-4 py-2 rounded text-sm font-medium hover:bg-[#d4ff33]" style="display:inline-flex;align-items:center;gap:6px;"
+            class="sn-btn sn-btn-primary" style="display:inline-flex;align-items:center;gap:6px;"
             :style="(!analysisForm.soh || !analysisForm.soce || !analysisForm.remainingLifeCycle || submitting) ? 'opacity:0.4;cursor:not-allowed;' : ''">
             <svg v-if="submitting" style="animation:spin 0.8s linear infinite;" width="16" height="16" fill="none" viewBox="0 0 24 24">
               <circle opacity="0.25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -547,42 +528,41 @@ app.component('recycling-page', {
     </div>
 
     <!-- ====== RECYCLE TOGGLE MODAL ====== -->
-    <div v-if="showRecycleToggleModal" style="position:fixed;inset:0;z-index:50;display:flex;align-items:center;justify-content:center;padding:16px;">
-      <div style="position:fixed;inset:0;background:rgba(0,0,0,0.65);backdrop-filter:blur(6px);" @click="closeModals"></div>
-      <div class="bg-[#1a1814]  border border-[rgba(250,250,245,0.06)] shadow-none bg-[#1a1814]  border border-[rgba(250,250,245,0.06)] shadow-none " style="position:relative;z-index:1;max-width:400px;width:100%;overflow:hidden;">
-        <div style="padding:18px 24px;border-bottom:1px solid #f1f5f9;display:flex;align-items:center;justify-content:space-between;">
+    <div v-if="showRecycleToggleModal" class="sn-overlay" @click.self="closeModals">
+      <div class="sn-modal" style="max-width:400px;width:100%;">
+        <div style="padding:18px 24px;border-bottom:1px solid rgba(0,0,0,0.06);display:flex;align-items:center;justify-content:space-between;">
           <div style="display:flex;align-items:center;gap:12px;">
-            <div style="width:34px;height:34px;border-radius:10px;background:#f1f5f9;display:flex;align-items:center;justify-content:center;">
+            <div style="width:34px;height:34px;border-radius:10px;background:#f0fdf4;display:flex;align-items:center;justify-content:center;">
               <svg width="16" height="16" fill="none" stroke="#059669" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
             </div>
-            <h3 style="font-family:'Pretendard Variable', sans-serif;font-size:1.1rem;font-weight:700;color:#111827;margin:0;">재활용 판정</h3>
+            <h3 style="font-size:1.1rem;font-weight:700;color:#171717;margin:0;">재활용 판정</h3>
           </div>
-          <button @click="closeModals" class="bg-[#1a1814] border border-[rgba(250,250,245,0.06)] text-[rgba(250,250,245,0.7)] px-4 py-2 rounded text-sm font-medium hover:bg-[#1f1d17]" style="padding:6px;">
+          <button @click="closeModals" class="sn-btn sn-btn-ghost" style="padding:6px;">
             <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
           </button>
         </div>
         <div style="padding:20px 24px;">
-          <div style="padding:12px;background:#ffffff;border:1px solid #f1f5f9;border-radius:8px;margin-bottom:20px;">
-            <p style="font-size:0.65rem;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:0.05em;margin:0 0 2px;">대상 여권</p>
-            <p class="font-mono" style="font-size:0.85rem;font-weight:600;color:#111827;margin:0;">{{ selectedPassport?.passportId }}</p>
+          <div style="padding:12px;background:#fafafa;box-shadow:inset 0 0 0 1px rgba(0,0,0,0.06);border-radius:8px;margin-bottom:20px;">
+            <p class="sn-eyebrow" style="margin:0 0 2px;">대상 여권</p>
+            <p class="font-mono" style="font-size:0.85rem;font-weight:600;color:#171717;margin:0;">{{ selectedPassport?.passportId }}</p>
           </div>
           <div style="display:flex;align-items:center;justify-content:center;padding:24px 0;">
             <label style="display:flex;align-items:center;cursor:pointer;">
               <div style="position:relative;">
                 <input type="checkbox" v-model="recycleToggleValue" style="position:absolute;opacity:0;width:0;height:0;" />
-                <div :style="{ width:'56px',height:'28px',borderRadius:'14px',background: recycleToggleValue ? '#059669' : '#e2e8f0',transition:'background 0.2s' }"></div>
+                <div :style="{ width:'56px',height:'28px',borderRadius:'14px',background: recycleToggleValue ? '#059669' : '#e5e5e5',transition:'background 0.2s' }"></div>
                 <div :style="{ position:'absolute',top:'2px',left: recycleToggleValue ? '30px' : '2px',width:'24px',height:'24px',borderRadius:'50%',background:'#ffffff',boxShadow:'0 1px 3px rgba(0,0,0,0.2)',transition:'left 0.2s' }"></div>
               </div>
-              <span style="margin-left:16px;font-size:1rem;font-weight:600;" :style="{ color: recycleToggleValue ? '#059669' : '#6b7280' }">
+              <span style="margin-left:16px;font-size:1rem;font-weight:600;" :style="{ color: recycleToggleValue ? '#059669' : '#a3a3a3' }">
                 {{ recycleToggleValue ? '재활용 가능' : '재활용 불가' }}
               </span>
             </label>
           </div>
         </div>
-        <div style="padding:14px 24px;border-top:1px solid #f1f5f9;background:#ffffff;display:flex;justify-content:flex-end;gap:10px;">
-          <button @click="closeModals" class="bg-[#1a1814] border border-[rgba(250,250,245,0.06)] text-[rgba(250,250,245,0.7)] px-4 py-2 rounded text-sm font-medium hover:bg-[#1f1d17]">취소</button>
+        <div style="padding:14px 24px;border-top:1px solid rgba(0,0,0,0.06);display:flex;justify-content:flex-end;gap:10px;">
+          <button @click="closeModals" class="sn-btn sn-btn-ghost">취소</button>
           <button @click="submitRecycleToggle" :disabled="submitting"
-            class="bg-[#c8ff00] text-[#1a1814] px-4 py-2 rounded text-sm font-medium hover:bg-[#d4ff33]" style="display:inline-flex;align-items:center;gap:6px;"
+            class="sn-btn sn-btn-primary" style="display:inline-flex;align-items:center;gap:6px;"
             :style="submitting ? 'opacity:0.4;cursor:not-allowed;' : ''">
             <svg v-if="submitting" style="animation:spin 0.8s linear infinite;" width="16" height="16" fill="none" viewBox="0 0 24 24">
               <circle opacity="0.25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -595,47 +575,46 @@ app.component('recycling-page', {
     </div>
 
     <!-- ====== EXTRACT MODAL ====== -->
-    <div v-if="showExtractModal" style="position:fixed;inset:0;z-index:50;display:flex;align-items:center;justify-content:center;padding:16px;">
-      <div style="position:fixed;inset:0;background:rgba(0,0,0,0.65);backdrop-filter:blur(6px);" @click="closeModals"></div>
-      <div class="bg-[#1a1814]  border border-[rgba(250,250,245,0.06)] shadow-none bg-[#1a1814]  border border-[rgba(250,250,245,0.06)] shadow-none " style="position:relative;z-index:1;max-width:460px;width:100%;overflow:hidden;">
-        <div style="padding:18px 24px;border-bottom:1px solid #f1f5f9;display:flex;align-items:center;justify-content:space-between;">
+    <div v-if="showExtractModal" class="sn-overlay" @click.self="closeModals">
+      <div class="sn-modal" style="max-width:460px;width:100%;">
+        <div style="padding:18px 24px;border-bottom:1px solid rgba(0,0,0,0.06);display:flex;align-items:center;justify-content:space-between;">
           <div style="display:flex;align-items:center;gap:12px;">
-            <div style="width:34px;height:34px;border-radius:10px;background:#f1f5f9;display:flex;align-items:center;justify-content:center;">
+            <div style="width:34px;height:34px;border-radius:10px;background:#fffbeb;display:flex;align-items:center;justify-content:center;">
               <svg width="16" height="16" fill="none" stroke="#d97706" stroke-width="2" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
               </svg>
             </div>
-            <h3 style="font-family:'Pretendard Variable', sans-serif;font-size:1.1rem;font-weight:700;color:#111827;margin:0;">원자재 추출 기록</h3>
+            <h3 style="font-size:1.1rem;font-weight:700;color:#171717;margin:0;">원자재 추출 기록</h3>
           </div>
-          <button @click="closeModals" class="bg-[#1a1814] border border-[rgba(250,250,245,0.06)] text-[rgba(250,250,245,0.7)] px-4 py-2 rounded text-sm font-medium hover:bg-[#1f1d17]" style="padding:6px;">
+          <button @click="closeModals" class="sn-btn sn-btn-ghost" style="padding:6px;">
             <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
           </button>
         </div>
         <div style="padding:20px 24px;display:flex;flex-direction:column;gap:14px;">
-          <div style="padding:12px;background:#ffffff;border:1px solid #f1f5f9;border-radius:8px;">
-            <p style="font-size:0.65rem;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:0.05em;margin:0 0 2px;">대상 여권</p>
-            <p class="font-mono" style="font-size:0.85rem;font-weight:600;color:#111827;margin:0;">{{ selectedPassport?.passportId }}</p>
+          <div style="padding:12px;background:#fafafa;box-shadow:inset 0 0 0 1px rgba(0,0,0,0.06);border-radius:8px;">
+            <p class="sn-eyebrow" style="margin:0 0 2px;">대상 여권</p>
+            <p class="font-mono" style="font-size:0.85rem;font-weight:600;color:#171717;margin:0;">{{ selectedPassport?.passportId }}</p>
           </div>
-          <label style="font-size:0.82rem;font-weight:600;color:#374151;">회수율 (원자재별 %)</label>
+          <label style="font-size:0.82rem;font-weight:600;color:#525252;">회수율 (원자재별 %)</label>
           <div v-for="(entry, idx) in extractEntries" :key="idx" style="display:flex;align-items:center;gap:8px;">
-            <input v-model="entry.key" type="text" placeholder="원자재명" class="w-full px-4 py-2.5 bg-[#1f1d17] border border-[rgba(250,250,245,0.06)]  text-[#fafaf5] outline-none focus:border-[#c8ff00]" style="flex:1;" />
+            <input v-model="entry.key" type="text" placeholder="원자재명" class="sn-input" style="flex:1;" />
             <div style="position:relative;width:80px;">
-              <input v-model="entry.value" type="number" min="0" max="100" step="0.1" placeholder="0" class="w-full px-4 py-2.5 bg-[#1f1d17] border border-[rgba(250,250,245,0.06)]  text-[#fafaf5] outline-none focus:border-[#c8ff00]" style="width:100%;padding-right:24px;font-variant-numeric:tabular-nums;" />
-              <span style="position:absolute;right:10px;top:50%;transform:translateY(-50%);font-size:0.72rem;color:#6b7280;">%</span>
+              <input v-model="entry.value" type="number" min="0" max="100" step="0.1" placeholder="0" class="sn-input" style="width:100%;padding-right:24px;font-variant-numeric:tabular-nums;" />
+              <span style="position:absolute;right:10px;top:50%;transform:translateY(-50%);font-size:0.72rem;color:#a3a3a3;">%</span>
             </div>
-            <button v-if="extractEntries.length > 1" @click="removeExtractEntry(idx)" class="bg-[#1a1814] border border-[rgba(250,250,245,0.06)] text-[rgba(250,250,245,0.7)] px-4 py-2 rounded text-sm font-medium hover:bg-[#1f1d17]" style="padding:6px;color:#dc2626;">
+            <button v-if="extractEntries.length > 1" @click="removeExtractEntry(idx)" class="sn-btn sn-btn-ghost" style="padding:6px;color:#dc2626;">
               <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
             </button>
           </div>
-          <button @click="addExtractEntry" class="bg-[#1a1814] border border-[rgba(250,250,245,0.06)] text-[rgba(250,250,245,0.7)] px-4 py-2 rounded text-sm font-medium hover:bg-[#1f1d17]" style="display:inline-flex;align-items:center;gap:4px;color:#059669;font-size:0.82rem;align-self:flex-start;">
+          <button @click="addExtractEntry" class="sn-btn sn-btn-ghost" style="display:inline-flex;align-items:center;gap:4px;color:#059669;font-size:0.82rem;align-self:flex-start;">
             <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
             원자재 추가
           </button>
         </div>
-        <div style="padding:14px 24px;border-top:1px solid #f1f5f9;background:#ffffff;display:flex;justify-content:flex-end;gap:10px;">
-          <button @click="closeModals" class="bg-[#1a1814] border border-[rgba(250,250,245,0.06)] text-[rgba(250,250,245,0.7)] px-4 py-2 rounded text-sm font-medium hover:bg-[#1f1d17]">취소</button>
+        <div style="padding:14px 24px;border-top:1px solid rgba(0,0,0,0.06);display:flex;justify-content:flex-end;gap:10px;">
+          <button @click="closeModals" class="sn-btn sn-btn-ghost">취소</button>
           <button @click="submitExtract" :disabled="submitting"
-            class="bg-[#c8ff00] text-[#1a1814] px-4 py-2 rounded text-sm font-medium hover:bg-[#d4ff33]" style="display:inline-flex;align-items:center;gap:6px;"
+            class="sn-btn sn-btn-primary" style="display:inline-flex;align-items:center;gap:6px;"
             :style="submitting ? 'opacity:0.4;cursor:not-allowed;' : ''">
             <svg v-if="submitting" style="animation:spin 0.8s linear infinite;" width="16" height="16" fill="none" viewBox="0 0 24 24">
               <circle opacity="0.25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -648,39 +627,38 @@ app.component('recycling-page', {
     </div>
 
     <!-- ====== DISPOSE CONFIRMATION MODAL ====== -->
-    <div v-if="showDisposeConfirm" style="position:fixed;inset:0;z-index:50;display:flex;align-items:center;justify-content:center;padding:16px;">
-      <div style="position:fixed;inset:0;background:rgba(0,0,0,0.65);backdrop-filter:blur(6px);" @click="closeModals"></div>
-      <div class="bg-[#1a1814]  border border-[rgba(250,250,245,0.06)] shadow-none bg-[#1a1814]  border border-[rgba(250,250,245,0.06)] shadow-none " style="position:relative;z-index:1;max-width:400px;width:100%;overflow:hidden;">
-        <div style="padding:18px 24px;border-bottom:1px solid #f1f5f9;display:flex;align-items:center;justify-content:space-between;">
+    <div v-if="showDisposeConfirm" class="sn-overlay" @click.self="closeModals">
+      <div class="sn-modal" style="max-width:400px;width:100%;">
+        <div style="padding:18px 24px;border-bottom:1px solid rgba(0,0,0,0.06);display:flex;align-items:center;justify-content:space-between;">
           <div style="display:flex;align-items:center;gap:12px;">
-            <div style="width:34px;height:34px;border-radius:10px;background:#f1f5f9;display:flex;align-items:center;justify-content:center;">
+            <div style="width:34px;height:34px;border-radius:10px;background:#fef2f2;display:flex;align-items:center;justify-content:center;">
               <svg width="16" height="16" fill="none" stroke="#dc2626" stroke-width="2" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
               </svg>
             </div>
-            <h3 style="font-family:'Pretendard Variable', sans-serif;font-size:1.1rem;font-weight:700;color:#111827;margin:0;">폐기 처리 확인</h3>
+            <h3 style="font-size:1.1rem;font-weight:700;color:#171717;margin:0;">폐기 처리 확인</h3>
           </div>
-          <button @click="closeModals" class="bg-[#1a1814] border border-[rgba(250,250,245,0.06)] text-[rgba(250,250,245,0.7)] px-4 py-2 rounded text-sm font-medium hover:bg-[#1f1d17]" style="padding:6px;">
+          <button @click="closeModals" class="sn-btn sn-btn-ghost" style="padding:6px;">
             <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
           </button>
         </div>
         <div style="padding:20px 24px;">
-          <div style="padding:16px;background:#ffffff;border:1px solid #dc2626;border-radius:10px;display:flex;align-items:flex-start;gap:12px;">
+          <div style="padding:16px;background:#fef2f2;box-shadow:inset 0 0 0 1px rgba(220,38,38,0.15);border-radius:10px;display:flex;align-items:flex-start;gap:12px;">
             <svg width="20" height="20" fill="none" stroke="#dc2626" stroke-width="2" viewBox="0 0 24 24" style="flex-shrink:0;margin-top:2px;">
               <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
             </svg>
             <div>
               <p style="font-size:0.85rem;font-weight:600;color:#dc2626;margin:0 0 4px;">이 작업은 되돌릴 수 없습니다</p>
-              <p style="font-size:0.78rem;color:#374151;margin:0;">
+              <p style="font-size:0.78rem;color:#525252;margin:0;">
                 여권 <span class="font-mono" style="font-weight:700;">{{ selectedPassport?.passportId }}</span>을(를) 영구적으로 폐기 처리합니다.
               </p>
             </div>
           </div>
         </div>
-        <div style="padding:14px 24px;border-top:1px solid #f1f5f9;background:#ffffff;display:flex;justify-content:flex-end;gap:10px;">
-          <button @click="closeModals" class="bg-[#1a1814] border border-[rgba(250,250,245,0.06)] text-[rgba(250,250,245,0.7)] px-4 py-2 rounded text-sm font-medium hover:bg-[#1f1d17]">취소</button>
+        <div style="padding:14px 24px;border-top:1px solid rgba(0,0,0,0.06);display:flex;justify-content:flex-end;gap:10px;">
+          <button @click="closeModals" class="sn-btn sn-btn-ghost">취소</button>
           <button @click="submitDispose" :disabled="submitting"
-            class="bg-[rgba(239,68,68,0.1)] text-[#ff6b6b] border border-red-200 px-4 py-2 rounded text-sm font-medium hover:bg-red-100" style="display:inline-flex;align-items:center;gap:6px;"
+            style="display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:8px;font-size:0.875rem;font-weight:600;background:#fef2f2;color:#dc2626;box-shadow:inset 0 0 0 1px rgba(220,38,38,0.2);border:none;cursor:pointer;transition:all 0.5s cubic-bezier(0.16,1,0.3,1);"
             :style="submitting ? 'opacity:0.4;cursor:not-allowed;' : ''">
             <svg v-if="submitting" style="animation:spin 0.8s linear infinite;" width="16" height="16" fill="none" viewBox="0 0 24 24">
               <circle opacity="0.25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>

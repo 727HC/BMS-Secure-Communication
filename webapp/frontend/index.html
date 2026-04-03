@@ -13,489 +13,121 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-  <style>
-    /* ═══════════════════════════════════════════════════════
-       BATTERY PASSPORT DESIGN SYSTEM
-       Aesthetic: Industrial Precision Control
-       ═══════════════════════════════════════════════════════ */
-
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+    /* ═══ SUPANOVA DESIGN SYSTEM — Clean Structural ═══ */
     :root {
-      /* ── Surface Palette (Light) ── */
-      --bp-void:        #f8fafc;
-      --bp-surface-1:   #ffffff;
-      --bp-surface-2:   #ffffff;
-      --bp-surface-3:   #f1f5f9;
-      --bp-surface-4:   #e2e8f0;
-      --bp-border:      #e5e7eb;
-      --bp-border-hover:#d1d5db;
-      --bp-border-active:#10b981;
-
-      /* ── Signal Colors ── */
-      --bp-signal:      #059669;
-      --bp-signal-dim:  rgba(16, 185, 129, 0.1);
-      --bp-signal-glow: rgba(16, 185, 129, 0.05);
-      --bp-warn:        #d97706;
-      --bp-warn-dim:    rgba(245, 158, 11, 0.1);
-      --bp-danger:      #dc2626;
-      --bp-danger-dim:  rgba(239, 68, 68, 0.08);
-      --bp-info:        #2563eb;
-      --bp-info-dim:    rgba(59, 130, 246, 0.08);
-      --bp-purple:      #7c3aed;
-      --bp-purple-dim:  rgba(139, 92, 246, 0.08);
-
-      /* ── Text ── */
-      --bp-text-1:      #111827;
-      --bp-text-2:      #374151;
-      --bp-text-3:      #6b7280;
-      --bp-text-muted:  #9ca3af;
-
-      /* ── Typography ── */
-      --font-display:   'Pretendard Variable', 'Pretendard', -apple-system, sans-serif;
-      --font-body:      'Pretendard Variable', 'Pretendard', -apple-system, sans-serif;
-      --font-mono:      'JetBrains Mono', monospace;
-
-      /* ── Spacing Scale ── */
-      --space-xs:   0.25rem;
-      --space-sm:   0.5rem;
-      --space-md:   1rem;
-      --space-lg:   1.5rem;
-      --space-xl:   2rem;
-      --space-2xl:  3rem;
-
-      /* ── Radii ── */
-      --radius-sm:  0.375rem;
-      --radius-md:  0.625rem;
-      --radius-lg:  0.875rem;
-      --radius-xl:  1.125rem;
-      --radius-full:9999px;
-
-      /* ── Shadows ── */
-      --shadow-card:    0 1px 3px rgba(0,0,0,0.06), 0 0 0 1px var(--bp-border);
-      --shadow-elevated:0 4px 20px rgba(0,0,0,0.08), 0 0 0 1px var(--bp-border);
-      --shadow-glow:    0 0 0 3px var(--bp-signal-dim);
+      --font-display: 'Outfit', 'Pretendard Variable', sans-serif;
+      --font-body: 'Pretendard Variable', -apple-system, sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+      --color-primary: #171717;
+      --color-accent: #16a34a;
+      --color-bg: #ffffff;
+      --color-surface: #fafafa;
+      --color-text-1: #171717;
+      --color-text-2: #525252;
+      --color-text-3: #a3a3a3;
+      --color-border: rgba(0,0,0,0.06);
+      --ease-spring: cubic-bezier(0.16, 1, 0.3, 1);
+      --shadow-card: 0 0 0 1px rgba(0,0,0,0.04), 0 2px 8px rgba(0,0,0,0.04);
+      --shadow-elevated: 0 0 0 1px rgba(0,0,0,0.04), 0 8px 32px rgba(0,0,0,0.08);
+      --shadow-float: 0 20px 60px -15px rgba(0,0,0,0.08);
     }
-
-    /* ── Base Reset ── */
     * { box-sizing: border-box; }
     [v-cloak] { display: none; }
+    body { font-family: var(--font-body); background: var(--color-bg); color: var(--color-text-1); -webkit-font-smoothing: antialiased; word-break: keep-all; }
+    button, a, input, select, textarea { transition: all 0.5s var(--ease-spring); }
 
-    body {
-      font-family: var(--font-body);
-      background: var(--bp-void);
-      color: var(--bp-text-1);
-      -webkit-font-smoothing: antialiased;
-      -moz-osx-font-smoothing: grayscale;
-    }
+    /* Typography */
+    .sn-display { font-family: var(--font-display); font-weight: 600; letter-spacing: -0.04em; line-height: 1.1; color: var(--color-text-1); }
+    .sn-heading { font-family: var(--font-display); font-weight: 600; letter-spacing: -0.02em; line-height: 1.2; color: var(--color-text-1); }
+    .sn-body { font-family: var(--font-body); font-weight: 400; line-height: 1.6; color: var(--color-text-2); }
+    .sn-caption { font-family: var(--font-body); font-size: 0.8125rem; color: var(--color-text-3); }
+    .sn-mono { font-family: var(--font-mono); font-size: 0.8125rem; letter-spacing: -0.02em; }
+    .sn-eyebrow { font-size: 0.6875rem; font-weight: 500; text-transform: uppercase; letter-spacing: 0.15em; color: var(--color-text-3); }
 
-    /* ── Transitions ── */
-    .fade-enter-active, .fade-leave-active { transition: opacity 0.25s ease; }
-    .fade-enter-from, .fade-leave-to { opacity: 0; }
+    /* Double-Bezel Card */
+    .sn-card { background: rgba(0,0,0,0.02); padding: 6px; border-radius: 1.25rem; box-shadow: inset 0 0 0 1px rgba(0,0,0,0.04); }
+    .sn-card-inner { background: #fff; border-radius: calc(1.25rem - 6px); padding: 1.5rem; box-shadow: inset 0 1px 1px rgba(255,255,255,0.8), var(--shadow-card); }
 
-    /* ── Scrollbars ── */
-    .sidebar-scroll::-webkit-scrollbar { width: 3px; }
-    .sidebar-scroll::-webkit-scrollbar-track { background: transparent; }
-    .sidebar-scroll::-webkit-scrollbar-thumb { background: rgba(52,211,153,0.15); border-radius: 3px; }
-    .sidebar-scroll::-webkit-scrollbar-thumb:hover { background: rgba(52,211,153,0.3); }
+    /* Panel */
+    .sn-panel { background: #fff; border-radius: 0.75rem; box-shadow: var(--shadow-card); }
 
+    /* Buttons */
+    .sn-btn { display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; font-family: var(--font-body); font-size: 0.875rem; font-weight: 500; padding: 0.625rem 1.25rem; border-radius: 9999px; border: none; cursor: pointer; transition: all 0.5s var(--ease-spring); }
+    .sn-btn:active { transform: scale(0.98); }
+    .sn-btn-primary { background: var(--color-primary); color: #fff; }
+    .sn-btn-primary:hover { background: #333; transform: scale(1.02); }
+    .sn-btn-ghost { background: transparent; color: var(--color-text-2); box-shadow: inset 0 0 0 1px var(--color-border); }
+    .sn-btn-ghost:hover { background: var(--color-surface); transform: scale(1.02); }
+    .sn-btn-accent { background: var(--color-accent); color: #fff; }
+    .sn-btn-accent:hover { background: #15803d; transform: scale(1.02); }
+    .sn-btn-danger { background: #dc2626; color: #fff; }
+    .sn-btn-danger:hover { background: #b91c1c; }
+
+    /* Inputs */
+    .sn-input { width: 100%; padding: 0.625rem 0.875rem; background: #fff; border: none; border-radius: 0.625rem; box-shadow: inset 0 0 0 1px var(--color-border); font-family: var(--font-body); font-size: 0.875rem; color: var(--color-text-1); outline: none; transition: box-shadow 0.3s var(--ease-spring); }
+    .sn-input:focus { box-shadow: 0 0 0 2px var(--color-accent), 0 0 0 4px rgba(22,163,74,0.1); }
+    .sn-input::placeholder { color: var(--color-text-3); }
+    select.sn-input { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%23525252' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 0.75rem center; padding-right: 2.25rem; }
+
+    /* Badges */
+    .sn-badge { display: inline-flex; align-items: center; gap: 0.25rem; padding: 0.1875rem 0.625rem; border-radius: 9999px; font-size: 0.6875rem; font-weight: 600; }
+
+    /* Table */
+    .sn-table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; }
+    .sn-table thead th { text-align: left; padding: 0.75rem 1rem; font-weight: 500; font-size: 0.6875rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--color-text-3); border-bottom: 1px solid rgba(0,0,0,0.06); }
+    .sn-table tbody td { padding: 0.75rem 1rem; border-bottom: 1px solid rgba(0,0,0,0.03); color: var(--color-text-1); }
+    .sn-table tbody tr { transition: background 0.3s var(--ease-spring); }
+    .sn-table tbody tr:hover { background: var(--color-surface); }
+
+    /* Animations */
+    @keyframes sn-fadeInUp { from { opacity: 0; transform: translateY(2rem); filter: blur(4px); } to { opacity: 1; transform: translateY(0); filter: blur(0); } }
+    .sn-reveal { opacity: 0; animation: sn-fadeInUp 0.6s var(--ease-spring) forwards; }
+    .sn-reveal-d1 { animation-delay: 0.08s; }
+    .sn-reveal-d2 { animation-delay: 0.16s; }
+    .sn-reveal-d3 { animation-delay: 0.24s; }
+    .sn-reveal-d4 { animation-delay: 0.32s; }
+
+    /* Nav */
+    .sn-nav { position: sticky; top: 0; z-index: 40; backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); background: rgba(255,255,255,0.85); border-bottom: 1px solid rgba(0,0,0,0.04); }
+
+    /* Hover Lift */
+    .sn-lift { transition: all 0.5s var(--ease-spring); }
+    .sn-lift:hover { transform: translateY(-2px); box-shadow: var(--shadow-float); }
+
+    /* Modal */
+    .sn-overlay { background: rgba(0,0,0,0.4); backdrop-filter: blur(8px); }
+    @keyframes sn-modalIn { from { opacity: 0; transform: scale(0.95) translateY(10px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+    .sn-modal { animation: sn-modalIn 0.4s var(--ease-spring) forwards; }
+
+    /* Scrollbar */
     ::-webkit-scrollbar { width: 6px; height: 6px; }
-    ::-webkit-scrollbar-track { background: #1a1814; }
-    ::-webkit-scrollbar-thumb { background: rgba(200,255,0,0.1); border-radius: 3px; }
-    ::-webkit-scrollbar-thumb:hover { background: rgba(200,255,0,0.2); }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.08); border-radius: 3px; }
+    * { scrollbar-width: thin; scrollbar-color: rgba(0,0,0,0.08) transparent; }
 
-    /* ── Mobile Overlay ── */
-    .sidebar-overlay {
-      background: rgba(0,0,0,0.7); backdrop-filter: blur(6px);
-      backdrop-filter: blur(8px);
-    }
+    /* Responsive */
+    @media (max-width: 768px) { .sn-mobile-hide { display: none !important; } }
+    @media print { body { background: white !important; } .sn-nav { display: none; } }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; } }
+    @keyframes spin { to { transform: rotate(360deg); } }
 
-    /* ═══════ COMPONENT STYLES ═══════ */
-
-    /* ── Cards ── */
-    .bp-card {
-      background: var(--bp-surface-2);
-      border: 1px solid var(--bp-border);
-      border-radius: var(--radius-lg);
-      box-shadow: var(--shadow-card);
-      transition: border-color 0.2s ease, box-shadow 0.2s ease;
-    }
-    .bp-card:hover {
-      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-      transform: translateY(-1px);
-      border-color: var(--bp-border-hover);
-      box-shadow: 0 4px 16px rgba(0,0,0,0.3), 0 0 0 1px var(--bp-border-hover);
-    }
-    .bp-card-glow {
-      background: var(--bp-surface-2);
-      border: 1px solid var(--bp-border);
-      border-radius: var(--radius-lg);
-      box-shadow: var(--shadow-card);
-      position: relative;
-    }
-    .bp-card-glow::before {
-      content: '';
-      position: absolute;
-      inset: -1px;
-      border-radius: inherit;
-      background: linear-gradient(135deg, rgba(52,211,153,0.1), transparent 60%);
-      z-index: -1;
-      opacity: 0;
-      transition: opacity 0.3s ease;
-    }
-    .bp-card-glow:hover::before { opacity: 1; }
-
-    /* ── Buttons ── */
-    .bp-btn {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 0.5rem;
-      padding: 0.5rem 1rem;
-      font-family: var(--font-body);
-      font-size: 0.8125rem;
-      font-weight: 500;
-      border-radius: var(--radius-md);
-      transition: all 0.15s ease;
-      cursor: pointer;
-      border: none;
-      outline: none;
-    }
-    .bp-btn-primary {
-      background: linear-gradient(135deg, #10b981, #059669);
-      color: white;
-      box-shadow: 0 1px 2px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.1);
-    }
-    .bp-btn-primary:hover {
-      box-shadow: 0 4px 12px rgba(5,150,105,0.25);
-      background: linear-gradient(135deg, #059669, #047857);
-      box-shadow: 0 2px 8px rgba(16,185,129,0.25), inset 0 1px 0 rgba(255,255,255,0.1);
-      transform: translateY(-1px);
-    }
-    .bp-btn-primary:active { transform: translateY(0); }
-    .bp-btn-ghost {
-      background: transparent;
-      color: var(--bp-text-2);
-      border: 1px solid var(--bp-border);
-    }
-    .bp-btn-ghost:hover {
-      background: var(--bp-surface-3);
-      border-color: var(--bp-border-hover);
-      box-shadow: 0 4px 16px rgba(0,0,0,0.3), 0 0 0 1px var(--bp-border-hover);
-      color: var(--bp-text-1);
-    }
-    .bp-btn-danger {
-      background: var(--bp-danger-dim);
-      color: var(--bp-danger);
-      border: 1px solid rgba(248,113,113,0.2);
-    }
-    .bp-btn-danger:hover {
-      background: rgba(248,113,113,0.2);
-    }
-
-    /* ── Inputs ── */
-    .bp-input {
-      width: 100%;
-      padding: 0.625rem 0.875rem;
-      background: var(--bp-surface-1);
-      border: 1px solid var(--bp-border);
-      border-radius: var(--radius-md);
-      color: var(--bp-text-1);
-      font-family: var(--font-body);
-      font-size: 0.875rem;
-      outline: none;
-      transition: border-color 0.15s ease, box-shadow 0.15s ease;
-    }
-    .bp-input::placeholder { color: var(--bp-text-3); }
-    .bp-input:focus {
-      background: #ffffff;
-      background: var(--bp-surface-2);
-      border-color: var(--bp-border-active);
-      box-shadow: 0 0 0 3px rgba(200,255,0,0.15);
-    }
-    .bp-input-icon {
-      padding-left: 2.5rem;
-    }
-    select.bp-input {
-      appearance: none;
-      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%23475569' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
-      background-repeat: no-repeat;
-      background-position: right 0.75rem center;
-      padding-right: 2.25rem;
-    }
-    select.bp-input option { background: var(--bp-surface-2); color: var(--bp-text-1); }
-
-    /* ── Tables ── */
-    .bp-table {
-      width: 100%;
-      border-collapse: separate;
-      border-spacing: 0;
-      font-size: 0.8125rem;
-    }
-    .bp-table thead th {
-      padding: 0.625rem 1rem;
-      text-align: left;
-      font-weight: 600;
-      font-size: 0.6875rem;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      color: var(--bp-text-3);
-      border-bottom: 1px solid var(--bp-border);
-      white-space: nowrap;
-    }
-    .bp-table tbody td {
-      padding: 0.75rem 1rem;
-      border-bottom: 1px solid var(--bp-border);
-      color: var(--bp-text-2);
-    }
-    .bp-table tbody tr {
-      transition: background 0.1s ease;
-    }
-    .bp-table tbody tr:hover {
-      background: #f9fafb;
-      box-shadow: inset 3px 0 0 var(--bp-signal);
-      background: var(--bp-surface-3);
-    }
-
-    /* ── Badges ── */
-    .bp-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.25rem;
-      padding: 0.125rem 0.5rem;
-      border-radius: var(--radius-full);
-      font-size: 0.6875rem;
-      font-weight: 600;
-      letter-spacing: 0.01em;
-    }
+    /* Legacy compat for existing components */
+    .bp-badge { display: inline-flex; align-items: center; gap: 0.25rem; padding: 0.125rem 0.5rem; border-radius: 9999px; font-size: 0.6875rem; font-weight: 600; }
     .bp-badge-signal { background: #ecfdf5; color: #059669; border: 1px solid #a7f3d0; }
-    .bp-badge-warn   { background: #fffbeb; color: #d97706; border: 1px solid #fde68a; }
-    .bp-badge-danger  { background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; }
-    .bp-badge-info    { background: #eff6ff; color: #2563eb; border: 1px solid #bfdbfe; }
-    .bp-badge-purple  { background: #f5f3ff; color: #7c3aed; border: 1px solid #ddd6fe; }
-    .bp-badge-muted   { background: var(--bp-surface-4); color: var(--bp-text-2); border: 1px solid var(--bp-border); }
-
-    /* ── Stat Cards ── */
-    .bp-stat {
-      position: relative;
-      overflow: hidden;
-    }
-    .bp-stat::after {
-      content: '';
-      position: absolute;
-      top: 0; right: 0;
-      width: 120px; height: 120px;
-      background: radial-gradient(circle at top right, var(--bp-signal-glow), transparent 70%);
-      pointer-events: none;
-    }
-    .bp-stat-value {
-      font-family: var(--font-display);
-      font-weight: 700;
-      font-size: 1.75rem;
-      line-height: 1;
-      color: var(--bp-text-1);
-      letter-spacing: -0.02em;
-    }
-    .bp-stat-label {
-      font-size: 0.75rem;
-      font-weight: 500;
-      color: var(--bp-text-3);
-      text-transform: uppercase;
-      letter-spacing: 0.04em;
-    }
-
-    /* ── Tab Navigation ── */
-    .bp-tabs {
-      display: flex;
-      gap: 0.125rem;
-      padding: 0.25rem;
-      background: var(--bp-surface-1);
-      border-radius: var(--radius-lg);
-      border: 1px solid var(--bp-border);
-    }
-    .bp-tab {
-      flex: 1;
-      padding: 0.5rem 0.75rem;
-      font-size: 0.8125rem;
-      font-weight: 500;
-      color: var(--bp-text-3);
-      border-radius: var(--radius-md);
-      transition: all 0.15s ease;
-      cursor: pointer;
-      text-align: center;
-      border: none;
-      background: none;
-    }
-    .bp-tab:hover { color: var(--bp-text-2); background: var(--bp-surface-3); }
-    .bp-tab-active {
-      background: var(--bp-surface-3) !important;
-      color: var(--bp-signal) !important;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.3);
-    }
-
-    /* ── Progress Bars ── */
-    .bp-progress {
-      height: 6px;
-      background: var(--bp-surface-1);
-      border-radius: 3px;
-      overflow: hidden;
-    }
-    .bp-progress-bar {
-      background: linear-gradient(90deg, #10b981, #34d399) !important;
-    }
-    .bp-progress-bar::after {
-      content: '';
-      position: absolute;
-      top: 0; left: -100%; width: 100%; height: 100%;
-      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
-      animation: bp-shimmer 2s ease-in-out infinite;
-    }
-    @keyframes bp-shimmer {
-      0% { left: -100%; }
-      100% { left: 100%; }
-      position: relative;
-      overflow: hidden;
-      height: 100%;
-      border-radius: 3px;
-      background: linear-gradient(90deg, var(--bp-signal), #6ee7b7);
-      transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-
-    /* ── Display Typography ── */
-    .bp-heading {
-      font-family: var(--font-display);
-      font-weight: 700;
-      letter-spacing: -0.02em;
-      color: var(--bp-text-1);
-    }
-    .bp-mono {
-      font-family: var(--font-mono);
-      font-size: 0.8125rem;
-      letter-spacing: -0.01em;
-    }
-
-    /* ── Glow Dot (status indicator) ── */
-    .bp-dot {
-      width: 8px; height: 8px;
-      border-radius: 50%;
-      position: relative;
-    }
-    .bp-dot::before {
-      content: '';
-      position: absolute;
-      inset: -3px;
-      border-radius: 50%;
-      animation: bp-pulse 2s ease-in-out infinite;
-    }
-    .bp-dot-signal { background: var(--bp-signal); }
-    .bp-dot-signal::before { background: var(--bp-signal-dim); }
-    .bp-dot-warn { background: var(--bp-warn); }
-    .bp-dot-warn::before { background: var(--bp-warn-dim); }
-    .bp-dot-danger { background: var(--bp-danger); }
-    .bp-dot-danger::before { background: var(--bp-danger-dim); }
-
-    @keyframes bp-pulse {
-      0%, 100% { opacity: 1; transform: scale(1); }
-      50% { opacity: 0.5; transform: scale(1.5); }
-    }
-
-    /* ── Utility Animations ── */
-    @keyframes bp-fadeUp {
-      from { opacity: 0; transform: translateY(8px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-    .bp-animate-in {
-      animation: bp-fadeUp 0.35s ease-out both;
-    }
-    .bp-delay-1 { animation-delay: 0.05s; }
-    .bp-delay-2 { animation-delay: 0.1s; }
-    .bp-delay-3 { animation-delay: 0.15s; }
-    .bp-delay-4 { animation-delay: 0.2s; }
-
-    /* ── Noise Texture Overlay ── */
-      content: '';
-      position: fixed;
-      inset: 0;
-      opacity: 0.015;
-      pointer-events: none;
-      z-index: 9999;
-      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
-    }
-    /* ── Keyboard Focus ── */
-    :focus-visible {
-      outline: 2px solid #c8ff00;
-      outline-offset: 2px;
-      border-radius: var(--radius-sm);
-    }
-    .bp-btn:focus-visible {
-      box-shadow: 0 0 0 3px rgba(200,255,0,0.15);
-    }
-    .bp-input:focus-visible {
-      outline: none; /* already has ring style */
-    }
-    /* ── Page Content Transition ── */
-    .bp-page-enter {
-      animation: bp-pageIn 0.3s ease-out both;
-    }
-    @keyframes bp-pageIn {
-      from { opacity: 0; transform: translateY(6px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-    @media (max-width: 640px) {
-      .bp-table thead th { font-size: 0.6rem; padding: 0.5rem 0.625rem; }
-      .bp-table tbody td { padding: 0.5rem 0.625rem; font-size: 0.75rem; }
-      .bp-stat-value { font-size: 1.5rem !important; }
-    }
-    /* ── Compact Table Mode ── */
-    .bp-table-compact thead th { padding: 0.5rem 0.75rem; }
-    .bp-table-compact tbody td { padding: 0.5rem 0.75rem; }
-    /* ── Section Divider ── */
-    .bp-divider { height: 1px; background: linear-gradient(90deg, var(--bp-border), transparent); }
-    /* ── Shadow Depth Levels ── */
-    .bp-shadow-1 { box-shadow: 0 1px 2px rgba(0,0,0,0.3); }
-    .bp-shadow-2 { box-shadow: 0 2px 8px rgba(0,0,0,0.35); }
-    .bp-shadow-3 { box-shadow: 0 4px 16px rgba(0,0,0,0.4); }
-    .bp-shadow-glow { box-shadow: 0 0 20px var(--bp-signal-glow); }
-    /* ── Global Transitions ── */
-    button, a, input, select { transition: all 0.15s ease; }
-    .bp-card, .bp-card-glow { transition: all 0.2s ease; }
-    /* ── Empty State Enhancement ── */
-    .bp-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 3rem 1rem; }
-    .bp-empty-icon { width: 3rem; height: 3rem; border-radius: 0.75rem; display: flex; align-items: center; justify-content: center; background: var(--bp-surface-3); margin-bottom: 0.75rem; }
-    .bp-empty-title { font-size: 0.875rem; font-weight: 500; color: var(--bp-text-2); }
-    .bp-empty-desc { font-size: 0.75rem; color: var(--bp-text-muted); margin-top: 0.25rem; }
-    /* ── Skeleton Loading ── */
-    .bp-skeleton { background: linear-gradient(90deg, var(--bp-surface-3), var(--bp-surface-4), var(--bp-surface-3)); background-size: 200% 100%; animation: bp-skeleton 1.5s ease-in-out infinite; border-radius: 0.375rem; }
-    @keyframes bp-skeleton { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
-    @keyframes shimmer { 0% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }
-    /* ── Tooltips ── */
-    .bp-tooltip { position: relative; }
-    .bp-tooltip::after { content: attr(data-tip); position: absolute; bottom: calc(100% + 6px); left: 50%; transform: translateX(-50%); padding: 0.25rem 0.5rem; background: var(--bp-surface-4); color: var(--bp-text-1); font-size: 0.6875rem; border-radius: 0.375rem; white-space: nowrap; pointer-events: none; opacity: 0; transition: opacity 0.15s; z-index: 50; border: 1px solid var(--bp-border); }
-    .bp-tooltip:hover::after { opacity: 1; }
-    /* ── Selection States ── */
-    ::selection { background: rgba(200,255,0,0.25); color: #fafaf5; }
-    ::-moz-selection { background: rgba(200,255,0,0.25); color: #fafaf5; }
-    /* ── Print ── */
-    @media print {
-      .bp-card, .bg-white { box-shadow: none !important; border: 1px solid #e5e7eb !important; }
-      body { background: white !important; color: #1a1814 !important; }
-      .bp-card { border: 1px solid #ddd !important; background: white !important; box-shadow: none !important; }
-      aside, header, .bp-dot::before { display: none !important; }
-    }
-    /* ── High Contrast ── */
-    @media (prefers-contrast: high) {
-      :root { --bp-border: rgba(148,163,184,0.2); --bp-text-3: #94a3b8; }
-      .bp-card { border-width: 2px; }
-    }
-    /* ── Reduced Motion ── */
-    @media (prefers-reduced-motion: reduce) {
-      *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
-      .bp-dot::before { animation: none !important; }
-    }
-    /* ── Firefox Scrollbar ── */
-    * { scrollbar-width: thin; scrollbar-color: rgba(200,255,0,0.1) #1a1814; }
-    /* ── Performance Hints ── */
-    .bp-animate-in, .bp-dot, .bp-progress-bar {
-      background: linear-gradient(90deg, #10b981, #34d399) !important; will-change: transform, opacity; }
-    .bp-card-glow::before { will-change: opacity; }
+    .bp-badge-warn { background: #fffbeb; color: #d97706; border: 1px solid #fde68a; }
+    .bp-badge-danger { background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; }
+    .bp-badge-info { background: #eff6ff; color: #2563eb; border: 1px solid #bfdbfe; }
+    .bp-badge-purple { background: #f5f3ff; color: #7c3aed; border: 1px solid #ddd6fe; }
+    .bp-badge-muted { background: #f5f5f4; color: #525252; border: 1px solid rgba(0,0,0,0.06); }
+    .bp-status-active { color: #059669; border-color: #059669; background: #f0fdf4; }
+    .bp-status-manufactured { color: #1e40af; border-color: #1e40af; background: #eff6ff; }
+    .bp-status-maintenance { color: #b45309; border-color: #b45309; background: #fffbeb; }
+    .bp-status-analysis { color: #7c3aed; border-color: #7c3aed; background: #faf5ff; }
+    .bp-status-recycling { color: #0e7490; border-color: #0e7490; background: #ecfeff; }
+    .bp-status-disposed { color: #6b7280; border-color: #6b7280; background: #f9fafb; }
+    .bp-stamp { display: inline-flex; align-items: center; gap: 0.25rem; padding: 0.1875rem 0.625rem; font-size: 0.6875rem; font-weight: 600; border: 1px solid; border-radius: 9999px; }
   </style>
   <script>
     tailwind.config = {
@@ -521,7 +153,7 @@
     }
   </script>
 </head>
-<body class="min-h-screen" style="background: #1a1814;">
+<body class="min-h-screen" style="background: #fafafa;">
   <div id="app" v-cloak>
 
     <!-- ===== LOGIN: Full-screen, no sidebar ===== -->
@@ -536,200 +168,77 @@
       </main>
     </template>
 
-    <!-- ===== AUTHENTICATED: Sidebar + Top Bar + Content ===== -->
+    <!-- ===== AUTHENTICATED: Floating Glass Nav + Content ===== -->
     <template v-else>
-      <div class="flex h-screen overflow-hidden">
+      <div class="min-h-screen" style="background: #fafafa;">
 
-        <!-- Mobile sidebar overlay -->
-        <div v-if="mobileMenuOpen"
-          class="fixed inset-0 z-40 sidebar-overlay lg:hidden"
-          @click="mobileMenuOpen = false"></div>
-
-        <!-- ===== SIDEBAR ===== -->
-        <aside :class="[
-          'fixed inset-y-0 left-0 z-50 w-60 flex flex-col transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:z-auto',
-          mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
-        ]" style="background: #1a1814; border-right: 1px solid rgba(250,250,245,0.06);">
-
-          <!-- Logo Area -->
-          <div class="flex items-center px-5 h-16 flex-shrink-0" style="border-bottom: 1px solid var(--bp-border);">
-            <div class="flex items-center space-x-3 cursor-pointer" @click="navigate('dashboard')">
-              <div class="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style="background: linear-gradient(135deg, #10b981, #059669);">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <rect x="6" y="2" width="12" height="20" rx="2" ry="2"/>
-                  <line x1="6" y1="6" x2="18" y2="6"/>
-                  <line x1="6" y1="18" x2="18" y2="18"/>
-                  <path d="M12 9v6"/>
-                  <path d="M9 12h6"/>
-                </svg>
+        <!-- Floating Glass Navigation -->
+        <nav class="sn-nav">
+          <div style="max-width: 1200px; margin: 0 auto; padding: 0 1.5rem;">
+            <div style="display: flex; align-items: center; justify-content: space-between; height: 3.5rem;">
+              <div style="display: flex; align-items: center; gap: 0.75rem; cursor: pointer;" @click="navigate('dashboard')">
+                <div style="width: 1.75rem; height: 1.75rem; background: var(--color-accent); border-radius: 0.5rem; display: flex; align-items: center; justify-content: center;">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><rect x="6" y="2" width="12" height="20" rx="2"/><line x1="6" y1="7" x2="18" y2="7"/><line x1="6" y1="17" x2="18" y2="17"/></svg>
+                </div>
+                <span class="sn-heading" style="font-size: 0.9375rem;">BatteryPass</span>
               </div>
-              <div class="min-w-0">
-                <div class="font-semibold text-sm leading-tight truncate" style="color: var(--bp-text-1); font-family: var(--font-display);">Battery Passport</div>
-                <div class="text-xs leading-tight" style="color: rgba(250,250,245,0.3);">GBA 21 Platform</div>
+              <div style="display: flex; align-items: center; gap: 1rem;">
+                <div style="display: flex; align-items: center; gap: 0.375rem;"
+                  :style="fabricStatus === 'connected' ? 'color: var(--color-accent);' : fabricStatus === 'checking' ? 'color: #d97706;' : 'color: #dc2626;'">
+                  <span style="width: 6px; height: 6px; border-radius: 50%;" :style="fabricStatus === 'connected' ? 'background: var(--color-accent);' : fabricStatus === 'checking' ? 'background: #d97706;' : 'background: #dc2626;'"></span>
+                  <span class="sn-caption sn-mobile-hide">{{ fabricStatus === 'connected' ? 'Fabric' : fabricStatus === 'checking' ? '확인중' : '끊김' }}</span>
+                </div>
+                <span class="sn-caption sn-mobile-hide">{{ auth.userId }} · {{ orgLabel }}</span>
+                <button @click="logout" title="로그아웃" style="color: var(--color-text-3); padding: 0.25rem;">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                </button>
+              </div>
+            </div>
+            <div style="display: flex; align-items: center; gap: 0.25rem; overflow-x: auto;">
+              <button @click="mobileMenuOpen = !mobileMenuOpen" class="lg:hidden" style="padding: 0.5rem; color: var(--color-text-3); background: none; border: none;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+              </button>
+              <div class="hidden lg:flex items-center" style="gap: 0.125rem;">
+                <template v-for="(group, gi) in groupedNavItems" :key="gi">
+                  <button v-for="item in group.items" :key="item.route"
+                    @click="navigate(item.route)"
+                    style="position: relative; padding: 0.625rem 0.875rem; font-size: 0.8125rem; font-weight: 500; background: none; border: none; cursor: pointer; border-radius: 0.5rem; white-space: nowrap;"
+                    :style="currentPage === item.route ? 'color: var(--color-text-1); background: rgba(0,0,0,0.04);' : 'color: var(--color-text-3);'">
+                    {{ item.label }}
+                    <span v-if="navBadges[item.route]" style="margin-left: 0.25rem; display: inline-flex; align-items: center; justify-content: center; min-width: 1rem; height: 1rem; padding: 0 0.25rem; border-radius: 9999px; font-size: 0.625rem; font-weight: 700; background: #ef4444; color: white;">{{ navBadges[item.route] }}</span>
+                  </button>
+                </template>
               </div>
             </div>
           </div>
-
-          <!-- Navigation -->
-          <nav class="flex-1 overflow-y-auto sidebar-scroll px-3 py-4 space-y-1">
+          <div v-if="mobileMenuOpen" class="lg:hidden" style="border-top: 1px solid rgba(0,0,0,0.04); padding: 0.5rem 1.5rem;">
             <template v-for="(group, gi) in groupedNavItems" :key="gi">
-              <!-- Section label -->
-              <div v-if="group.section" class="px-3 pt-4 pb-1.5 first:pt-0">
-                <span class="text-[10px] font-semibold uppercase tracking-wider" style="color: #c8ff00; letter-spacing: 0.15em; font-family: 'JetBrains Mono', monospace;">{{ group.section }}</span>
-              </div>
-
-              <!-- Nav items -->
               <button v-for="item in group.items" :key="item.route"
                 @click="navigate(item.route)"
-                :class="[
-                  'group w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-150',
-                  currentPage === item.route
-                    ? 'pl-[10px]'
-                    : 'pl-[10px]'
-                ]"
-                :style="currentPage === item.route
-                  ? 'background: rgba(200,255,0,0.06); color: #c8ff00; border-left: 2px solid #c8ff00;'
-                  : 'color: rgba(250,250,245,0.4); border-left: 2px solid transparent;'"
-                @mouseenter="$event.target.style.background = currentPage !== item.route ? 'rgba(250,250,245,0.03)' : 'rgba(200,255,0,0.06)'"
-                @mouseleave="$event.target.style.background = currentPage !== item.route ? 'transparent' : 'rgba(200,255,0,0.06)'"
-                >
-                <!-- Dashboard icon -->
-                <svg v-if="item.icon === 'dashboard'" class="w-[18px] h-[18px] flex-shrink-0" :style="currentPage === item.route ? 'color: #c8ff00;' : 'color: rgba(250,250,245,0.3);'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
-                  <rect x="3" y="3" width="7" height="7" rx="1"/>
-                  <rect x="14" y="3" width="7" height="7" rx="1"/>
-                  <rect x="3" y="14" width="7" height="7" rx="1"/>
-                  <rect x="14" y="14" width="7" height="7" rx="1"/>
-                </svg>
-                <!-- Passport icon -->
-                <svg v-else-if="item.icon === 'passport'" class="w-[18px] h-[18px] flex-shrink-0" :style="currentPage === item.route ? 'color: #c8ff00;' : 'color: rgba(250,250,245,0.3);'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
-                  <polyline points="14 2 14 8 20 8"/>
-                  <line x1="16" y1="13" x2="8" y2="13"/>
-                  <line x1="16" y1="17" x2="8" y2="17"/>
-                  <polyline points="10 9 9 9 8 9"/>
-                </svg>
-                <!-- Chain / traceability icon -->
-                <svg v-else-if="item.icon === 'chain'" class="w-[18px] h-[18px] flex-shrink-0" :style="currentPage === item.route ? 'color: #c8ff00;' : 'color: rgba(250,250,245,0.3);'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/>
-                  <path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/>
-                </svg>
-                <!-- Pulse / data icon -->
-                <svg v-else-if="item.icon === 'pulse'" class="w-[18px] h-[18px] flex-shrink-0" :style="currentPage === item.route ? 'color: #c8ff00;' : 'color: rgba(250,250,245,0.3);'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
-                  <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
-                </svg>
-                <!-- Wrench / service icon -->
-                <svg v-else-if="item.icon === 'wrench'" class="w-[18px] h-[18px] flex-shrink-0" :style="currentPage === item.route ? 'color: #c8ff00;' : 'color: rgba(250,250,245,0.3);'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/>
-                </svg>
-                <!-- Recycle icon -->
-                <svg v-else-if="item.icon === 'recycle'" class="w-[18px] h-[18px] flex-shrink-0" :style="currentPage === item.route ? 'color: #c8ff00;' : 'color: rgba(250,250,245,0.3);'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
-                  <polyline points="7 2 12 7 7 12"/>
-                  <path d="M12 7H3a1 1 0 00-1 1v4"/>
-                  <polyline points="17 22 12 17 17 12"/>
-                  <path d="M12 17h9a1 1 0 001-1v-4"/>
-                  <polyline points="2 17 7 12"/>
-                  <polyline points="22 7 17 12"/>
-                </svg>
-                <!-- Audit icon -->
-                <svg v-else-if="item.icon === 'audit'" class="w-[18px] h-[18px] flex-shrink-0" :style="currentPage === item.route ? 'color: #c8ff00;' : 'color: rgba(250,250,245,0.3);'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/>
-                </svg>
-                <!-- QR icon -->
-                <svg v-else-if="item.icon === 'qr'" class="w-[18px] h-[18px] flex-shrink-0" :style="currentPage === item.route ? 'color: #c8ff00;' : 'color: rgba(250,250,245,0.3);'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
-                  <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>
-                  <line x1="14" y1="14" x2="14" y2="14.01"/><line x1="21" y1="14" x2="21" y2="14.01"/><line x1="14" y1="21" x2="14" y2="21.01"/><line x1="21" y1="21" x2="21" y2="21.01"/><line x1="17.5" y1="17.5" x2="17.5" y2="17.51"/>
-                </svg>
-                <span class="truncate">{{ item.label }}</span>
-                <span v-if="navBadges[item.route]"
-                  class="ml-auto inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full text-[10px] font-bold text-white bg-red-500 leading-none">
-                  {{ navBadges[item.route] }}
-                </span>
+                style="display: block; width: 100%; text-align: left; padding: 0.625rem 0.5rem; font-size: 0.875rem; background: none; border: none; cursor: pointer; border-radius: 0.375rem;"
+                :style="currentPage === item.route ? 'color: var(--color-text-1); background: rgba(0,0,0,0.04);' : 'color: var(--color-text-3);'">
+                {{ item.label }}
               </button>
             </template>
-          </nav>
-
-          <!-- User section at bottom -->
-          <div class="flex-shrink-0 p-4" style="border-top: 1px solid rgba(250,250,245,0.06);">
-            <div class="flex items-center space-x-3">
-              <div :class="['w-9 h-9 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0', orgAvatarColor]">
-                {{ userInitials }}
-              </div>
-              <div class="min-w-0 flex-1">
-                <div class="text-sm font-medium truncate" style="color: #fafaf5;">{{ auth.userId }}</div>
-                <span class="inline-block mt-0.5 px-1.5 py-0.5 rounded text-[10px] font-semibold" style="background: rgba(200,255,0,0.1); color: #c8ff00;">
-                  {{ orgLabel }}
-                </span>
-              </div>
-              <button @click="logout" title="로그아웃"
-                class="p-1.5 rounded-lg transition-colors flex-shrink-0" style="color: rgba(250,250,245,0.2);">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/>
-                  <polyline points="16 17 21 12 16 7"/>
-                  <line x1="21" y1="12" x2="9" y2="12"/>
-                </svg>
-              </button>
-            </div>
           </div>
-        </aside>
+        </nav>
 
-        <!-- ===== MAIN AREA ===== -->
-        <div class="flex-1 flex flex-col min-w-0 overflow-hidden">
-
-          <!-- Top Bar -->
-          <header class="h-14 flex items-center justify-between px-4 lg:px-6 flex-shrink-0" style="background: #1a1814; border-bottom: 1px solid rgba(250,250,245,0.06);">
-            <div class="flex items-center space-x-3">
-              <button @click="mobileMenuOpen = !mobileMenuOpen"
-                class="lg:hidden p-1.5 -ml-1.5 rounded-lg transition-colors" style="color: var(--bp-text-2);">
-                <svg v-if="!mobileMenuOpen" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
-                </svg>
-                <svg v-else width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-                </svg>
-              </button>
-              <nav class="flex items-center space-x-1.5 text-sm">
-                <span class="hidden sm:inline" style="color: rgba(250,250,245,0.25);">Battery Passport</span>
-                <svg class="w-3.5 h-3.5 hidden sm:block" style="color: rgba(250,250,245,0.15);" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <polyline points="9 18 15 12 9 6"/>
-                </svg>
-                <span class="font-semibold" style="color: #fafaf5;">{{ currentPageTitle }}</span>
-              </nav>
-            </div>
-            <div class="flex items-center space-x-2">
-              <div class="flex items-center space-x-1.5 px-2.5 py-1 rounded-full"
-                :class="fabricStatus === 'connected' ? 'border' + ' ' + 'border-emerald-800/30 bg-emerald-900/20' :
-                  fabricStatus === 'checking' ? 'bg-amber-50 border border-amber-200' :
-                  'bg-red-50 border border-red-200'">
-                <span class="bp-dot" :class="fabricStatus === 'connected' ? 'bp-dot-signal' : fabricStatus === 'checking' ? 'bp-dot-warn' : 'bp-dot-danger'"></span>
-                <span class="text-xs font-medium hidden sm:inline"
-                  :class="fabricStatus === 'connected' ? 'text-emerald-400' :
-                    fabricStatus === 'checking' ? 'text-amber-700' : 'text-red-700'">
-                  {{ fabricStatus === 'connected' ? 'Fabric 연결됨' : fabricStatus === 'checking' ? '확인 중...' : 'Fabric 연결 끊김' }}
-                </span>
-              </div>
-            </div>
-          </header>
-
-          <!-- Content Area (smooth transition) -->
-          <main class="flex-1 overflow-y-auto" style="background: #1a1814;">
-            <div class="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-              <component :is="currentPageComponent"
-                :auth="auth"
-                :api="api"
-                @navigate="navigate"
-                @login="onLogin">
-              </component>
-            </div>
-          </main>
-        </div>
+        <!-- Content -->
+        <main style="max-width: 1200px; margin: 0 auto; padding: 2rem 1.5rem;">
+          <component :is="currentPageComponent"
+            :auth="auth" :api="api"
+            @navigate="navigate" @login="onLogin">
+          </component>
+        </main>
       </div>
     </template>
+
 
     <!-- Toast Notifications -->
     <div class="fixed top-4 right-4 z-[100] space-y-2">
       <div v-for="(toast, i) in toasts" :key="i"
         :class="['px-4 py-3 rounded-xl text-sm flex items-center space-x-2 shadow-lg border',
-          toast.type === 'error' ? 'bg-red-900/30 text-red-400 border-red-800/30' : 'bg-emerald-900/20 text-[#c8ff00] border-emerald-800/30']">
+          toast.type === 'error' ? 'bg-white text-red-600 border-red-200' : 'bg-white text-emerald-700 border-emerald-200']">
         <svg v-if="toast.type === 'success'" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
           <polyline points="20 6 9 17 4 12"/>
         </svg>

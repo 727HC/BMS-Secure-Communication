@@ -199,33 +199,22 @@ app.component('maintenance-page', {
 
     <!-- LOADING -->
     <div v-if="loading" style="display:flex;flex-direction:column;justify-content:center;align-items:center;padding:128px 0;">
-      <div style="position:relative;width:56px;height:56px;margin-bottom:16px;">
-        <div style="position:absolute;inset:0;border-radius:50%;border:2px solid transparent;border-top-color:#d97706;animation:spin 0.8s linear infinite;"></div>
-        <div style="position:absolute;inset:8px;border-radius:50%;border:2px solid transparent;border-bottom-color:#d97706;opacity:0.3;animation:spin 1.2s linear infinite reverse;"></div>
+      <div style="position:relative;width:40px;height:40px;margin-bottom:16px;">
+        <div style="position:absolute;inset:0;border-radius:50%;border:3px solid #e5e5e5;"></div>
+        <div style="position:absolute;inset:0;border-radius:50%;border:3px solid #171717;border-top-color:transparent;animation:spin 0.8s linear infinite;"></div>
       </div>
-      <p style="font-size:0.82rem;color:#6b7280;font-family:'JetBrains Mono', monospace;">LOADING SERVICE DATA...</p>
+      <p style="font-size:0.82rem;color:#a3a3a3;">로딩 중...</p>
     </div>
 
     <template v-else>
 
       <!-- HEADER -->
-      <div class="" style="display:flex;align-items:center;justify-content:space-between;">
-        <div style="display:flex;align-items:center;gap:14px;">
-          <div style="width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;background:rgba(217,119,6,0.08);">
-            <svg width="22" height="22" style="color:#d97706;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
-              <circle cx="12" cy="12" r="3"/>
-            </svg>
-          </div>
-          <div>
-            <div style="display:flex;align-items:center;gap:8px;">
-              <h1 class="text-[#fafaf5] font-bold" style="font-family:'Pretendard Variable', sans-serif;font-size:1.35rem;color:#111827;margin:0;">정비 / 서비스</h1>
-              <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-[rgba(255,184,0,0.1)] text-[#ffb800]" style="font-family:'JetBrains Mono', monospace;">{{ filteredPassports.length }}</span>
-            </div>
-            <p style="font-size:0.72rem;color:#6b7280;margin-top:2px;">배터리 정비 요청, 완료 기록 및 사고 이력 관리</p>
-          </div>
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px;">
+        <div>
+          <h1 class="sn-display" style="font-size:1.75rem;">정비 / 서비스</h1>
+          <p class="sn-caption" style="margin-top:0.25rem;">배터리 정비 요청, 완료 기록 및 사고 이력 관리</p>
         </div>
-        <button @click="fetchPassports" class="bg-[#1a1814] border border-[rgba(250,250,245,0.06)] text-[rgba(250,250,245,0.7)] px-4 py-2 rounded text-sm font-medium hover:bg-[#1f1d17]" style="display:inline-flex;align-items:center;gap:6px;">
+        <button @click="fetchPassports" class="sn-btn sn-btn-ghost" style="display:inline-flex;align-items:center;gap:6px;">
           <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
             <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
           </svg>
@@ -234,41 +223,42 @@ app.component('maintenance-page', {
       </div>
 
       <!-- FILTER TABS -->
-      <div class="flex bg-[#2a2720]  p-1  ">
+      <div style="display:flex;gap:4px;border-bottom:1px solid rgba(0,0,0,0.06);padding-bottom:0;">
         <button v-for="tab in tabs" :key="tab.key" @click="activeTab = tab.key"
-          :class="['flex-1 py-2 text-sm font-medium text-[rgba(250,250,245,0.35)] rounded text-center cursor-pointer hover:text-[rgba(250,250,245,0.7)]', activeTab === tab.key ? 'bg-[#1a1814] text-[#c8ff00] shadow-none' : '']">
-          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          style="display:inline-flex;align-items:center;gap:6px;padding:8px 14px;font-size:0.85rem;font-weight:500;cursor:pointer;border:none;background:none;border-bottom:2px solid transparent;margin-bottom:-1px;transition:all 0.2s;"
+          :style="activeTab === tab.key ? 'color:#171717;border-bottom-color:#171717;' : 'color:#a3a3a3;'">
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" :d="tab.icon"/>
           </svg>
           {{ tab.label }}
-          <span :class="['inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold', activeTab === tab.key ? 'bg-[rgba(255,184,0,0.1)] text-[#ffb800]' : '']"
-            style="margin-left:4px;font-size:0.68rem;font-family:'JetBrains Mono', monospace;padding:1px 7px;">
+          <span style="font-size:0.68rem;font-family:'JetBrains Mono',monospace;padding:1px 7px;border-radius:12px;"
+            :style="activeTab === tab.key ? 'background:#f5f5f5;color:#171717;' : 'background:#f5f5f5;color:#a3a3a3;'">
             {{ tabCounts[tab.key] }}
           </span>
         </button>
       </div>
 
       <!-- EMPTY STATE -->
-      <div v-if="filteredPassports.length === 0" class="bg-[#1a1814]  border border-[rgba(250,250,245,0.06)] shadow-none  ">
+      <div v-if="filteredPassports.length === 0" class="sn-panel">
         <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:80px 24px;">
-          <div style="width:64px;height:64px;border-radius:16px;display:flex;align-items:center;justify-content:center;margin-bottom:20px;background:#ffffff;">
-            <svg width="32" height="32" style="color:#6b7280;" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+          <div style="width:56px;height:56px;border-radius:12px;background:#f5f5f5;display:flex;align-items:center;justify-content:center;margin-bottom:20px;">
+            <svg width="28" height="28" fill="none" stroke="#a3a3a3" stroke-width="1.5" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
             </svg>
           </div>
-          <h3 class="text-[#fafaf5] font-bold" style="font-family:'Pretendard Variable', sans-serif;font-size:1rem;color:#111827;margin:0 0 6px;">현재 정비 이력이 없습니다</h3>
-          <p style="font-size:0.82rem;color:#6b7280;text-align:center;max-width:24rem;">배터리 여권이 등록되면 정비 이력을 관리할 수 있습니다.</p>
+          <h3 style="font-size:1rem;font-weight:600;color:#171717;margin:0 0 6px;">현재 정비 이력이 없습니다</h3>
+          <p style="font-size:0.82rem;color:#a3a3a3;text-align:center;max-width:24rem;">배터리 여권이 등록되면 정비 이력을 관리할 수 있습니다.</p>
         </div>
       </div>
 
-      <!-- PASSPORT CARDS (card layout with timeline dots) -->
-      <div v-else style="display:flex;flex-direction:column;gap:16px;" class=" ">
+      <!-- PASSPORT CARDS -->
+      <div v-else style="display:flex;flex-direction:column;gap:16px;">
         <div v-for="(p, idx) in filteredPassports" :key="p.passportId"
-             class="bg-[#1a1814]  border border-[rgba(250,250,245,0.06)] shadow-none " :style="'animation-delay:' + (idx * 50) + 'ms'"
-             style="overflow:hidden;cursor:pointer;transition:border-color 0.2s;"
+             class="sn-panel"
+             style="overflow:hidden;cursor:pointer;transition:all 0.5s cubic-bezier(0.16,1,0.3,1);"
              @click="navigateToDetail(p)"
-             @mouseenter="$event.currentTarget.style.borderColor='#d97706'"
-             @mouseleave="$event.currentTarget.style.borderColor=''">
+             @mouseenter="$event.currentTarget.style.boxShadow='0 4px 20px rgba(0,0,0,0.08),inset 0 0 0 1px rgba(0,0,0,0.08)'"
+             @mouseleave="$event.currentTarget.style.boxShadow=''">
           <div style="display:flex;gap:16px;padding:16px 20px;">
 
             <!-- Timeline dot column -->
@@ -321,7 +311,7 @@ app.component('maintenance-page', {
               <div style="display:flex;align-items:center;gap:8px;" @click.stop>
                 <button v-if="canRequestMaintenance && p.status === 'ACTIVE'"
                   @click="openMaintenanceRequest(p)"
-                  class="bg-[#1a1814] border border-[rgba(250,250,245,0.06)] text-[rgba(250,250,245,0.7)] px-4 py-2 rounded text-sm font-medium hover:bg-[#1f1d17]" style="font-size:0.75rem;padding:4px 10px;color:#d97706;display:inline-flex;align-items:center;gap:4px;">
+                  class="sn-btn sn-btn-ghost" style="font-size:0.75rem;padding:4px 10px;display:inline-flex;align-items:center;gap:4px;">
                   <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
                   </svg>
@@ -329,7 +319,7 @@ app.component('maintenance-page', {
                 </button>
                 <button v-if="canLogMaintenance && p.status === 'MAINTENANCE'"
                   @click="openMaintenanceLog(p)"
-                  class="bg-[#c8ff00] text-[#1a1814] px-4 py-2 rounded text-sm font-medium hover:bg-[#d4ff33]" style="font-size:0.75rem;padding:4px 10px;display:inline-flex;align-items:center;gap:4px;">
+                  class="sn-btn sn-btn-primary" style="font-size:0.75rem;padding:4px 10px;display:inline-flex;align-items:center;gap:4px;">
                   <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
                   </svg>
@@ -337,14 +327,14 @@ app.component('maintenance-page', {
                 </button>
                 <button v-if="canLogAccident"
                   @click="openAccident(p)"
-                  class="bg-[rgba(239,68,68,0.1)] text-[#ff6b6b] border border-red-200 px-4 py-2 rounded text-sm font-medium hover:bg-red-100" style="font-size:0.75rem;padding:4px 10px;display:inline-flex;align-items:center;gap:4px;">
+                  style="font-size:0.75rem;padding:4px 10px;display:inline-flex;align-items:center;gap:4px;background:#fef2f2;color:#dc2626;border:none;border-radius:6px;cursor:pointer;box-shadow:inset 0 0 0 1px rgba(220,38,38,0.2);">
                   <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
                   </svg>
                   사고기록
                 </button>
                 <span v-if="!canRequestMaintenance && !canLogMaintenance && !canLogAccident"
-                  style="font-size:0.72rem;color:#6b7280;">-</span>
+                  style="font-size:0.72rem;color:#a3a3a3;">-</span>
               </div>
             </div>
           </div>
@@ -353,274 +343,159 @@ app.component('maintenance-page', {
 
     </template>
 
-    <!-- =============================================
-         MODAL: Maintenance Request
-         ============================================= -->
-    <div v-if="showMaintenanceRequestModal" style="position:fixed;inset:0;z-index:50;overflow-y:auto;">
-      <div style="display:flex;align-items:center;justify-content:center;min-height:100vh;padding:16px 16px 32px;">
-        <div style="position:fixed;inset:0;background:rgba(0,0,0,0.6);backdrop-filter:blur(6px);" @click="closeModals"></div>
-        <div class="bg-[#1a1814]  border border-[rgba(250,250,245,0.06)] shadow-none " style="position:relative;z-index:1;max-width:28rem;width:100%;overflow:hidden;border-color:#d97706;">
-
-          <!-- Modal Header -->
-          <div style="padding:16px 24px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #f1f5f9;">
-            <div style="display:flex;align-items:center;gap:12px;">
-              <div style="width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:rgba(217,119,6,0.08);">
-                <svg width="18" height="18" style="color:#d97706;" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
+    <!-- MODAL: Maintenance Request -->
+    <div v-if="showMaintenanceRequestModal" class="sn-overlay" @click.self="closeModals">
+      <div class="sn-modal" style="max-width:28rem;">
+        <div style="padding:16px 24px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid rgba(0,0,0,0.06);">
+          <h3 style="font-size:1.05rem;font-weight:700;color:#171717;margin:0;">정비 요청</h3>
+          <button @click="closeModals" class="sn-btn sn-btn-ghost" style="padding:6px 10px;">
+            <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+          </button>
+        </div>
+        <div style="padding:20px 24px;display:flex;flex-direction:column;gap:20px;">
+          <div style="padding:12px;border-radius:8px;background:#fafafa;box-shadow:inset 0 0 0 1px rgba(0,0,0,0.06);">
+            <p class="sn-eyebrow" style="margin:0 0 2px;">TARGET PASSPORT</p>
+            <p style="font-size:0.85rem;font-weight:600;color:#171717;font-family:'JetBrains Mono',monospace;margin:0;">{{ selectedPassport?.passportId }}</p>
+          </div>
+          <div>
+            <label style="display:block;font-size:0.85rem;font-weight:600;color:#171717;margin-bottom:8px;">정비 유형 <span style="color:#dc2626;">*</span></label>
+            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;">
+              <button v-for="t in maintenanceTypes.slice(0,3)" :key="t.value"
+                @click="requestForm.maintenanceType = t.value" type="button"
+                style="display:flex;flex-direction:column;align-items:center;padding:12px;border-radius:8px;cursor:pointer;transition:all 0.2s;"
+                :style="requestForm.maintenanceType===t.value ? 'box-shadow:inset 0 0 0 2px #171717;background:#f5f5f5;' : 'box-shadow:inset 0 0 0 1px rgba(0,0,0,0.08);background:#fff;'">
+                <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="margin-bottom:6px;"
+                  :style="requestForm.maintenanceType===t.value ? 'color:#171717;' : 'color:#a3a3a3;'">
+                  <path stroke-linecap="round" stroke-linejoin="round" :d="t.icon"/>
                 </svg>
-              </div>
-              <h3 style="font-family:'Pretendard Variable', sans-serif;font-size:1.1rem;font-weight:700;color:#111827;margin:0;">정비 요청</h3>
+                <span style="font-size:0.75rem;font-weight:600;"
+                  :style="requestForm.maintenanceType===t.value ? 'color:#171717;' : 'color:#525252;'">{{ t.label }}</span>
+              </button>
             </div>
-            <button @click="closeModals" class="bg-[#1a1814] border border-[rgba(250,250,245,0.06)] text-[rgba(250,250,245,0.7)] px-4 py-2 rounded text-sm font-medium hover:bg-[#1f1d17]" style="padding:6px;color:#6b7280;">
-              <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
-              </svg>
-            </button>
           </div>
-
-          <!-- Modal Body -->
-          <div style="padding:20px 24px;display:flex;flex-direction:column;gap:20px;">
-            <!-- Target passport -->
-            <div style="padding:12px;border-radius:8px;background:#ffffff;border:1px solid #f1f5f9;">
-              <p style="font-size:0.6rem;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;color:#6b7280;font-family:'JetBrains Mono', monospace;margin:0 0 2px;">TARGET PASSPORT</p>
-              <p style="font-size:0.85rem;font-weight:600;color:#111827;font-family:'JetBrains Mono', monospace;margin:0;">{{ selectedPassport?.passportId }}</p>
-            </div>
-
-            <!-- Maintenance type -->
-            <div>
-              <label style="display:block;font-size:0.85rem;font-weight:600;color:#374151;margin-bottom:8px;">정비 유형 <span style="color:#ef4444;">*</span></label>
-              <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;">
-                <button v-for="t in maintenanceTypes.slice(0,3)" :key="t.value"
-                  @click="requestForm.maintenanceType = t.value" type="button"
-                  style="display:flex;flex-direction:column;align-items:center;padding:12px;border-radius:8px;border:2px solid;cursor:pointer;transition:all 0.2s;"
-                  :style="requestForm.maintenanceType === t.value
-                    ? 'border-color:#d97706;background:rgba(217,119,6,0.08);'
-                    : 'border-color:#f1f5f9;background:transparent;'">
-                  <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="margin-bottom:6px;"
-                    :style="requestForm.maintenanceType === t.value ? 'color:#d97706;' : 'color:#6b7280;'">
-                    <path stroke-linecap="round" stroke-linejoin="round" :d="t.icon"/>
-                  </svg>
-                  <span style="font-size:0.75rem;font-weight:600;"
-                    :style="requestForm.maintenanceType === t.value ? 'color:#d97706;' : 'color:#374151;'">{{ t.label }}</span>
-                </button>
-              </div>
-            </div>
-
-            <!-- Description -->
-            <div>
-              <label style="display:block;font-size:0.85rem;font-weight:600;color:#374151;margin-bottom:4px;">설명 <span style="color:#ef4444;">*</span></label>
-              <textarea v-model="requestForm.description" rows="3" placeholder="정비 요청 사유를 입력하세요"
-                class="w-full px-4 py-2.5 bg-[#1f1d17] border border-[rgba(250,250,245,0.06)]  text-[#fafaf5] outline-none focus:border-[#c8ff00]" style="width:100%;resize:none;font-family:'Pretendard Variable', sans-serif;"></textarea>
-            </div>
-
-            <!-- Confirmation checkbox -->
-            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none;padding:10px 12px;border-radius:8px;background:#ffffff;border:1px solid #f1f5f9;">
-              <input type="checkbox" v-model="requestConfirmed" style="width:16px;height:16px;accent-color:#d97706;border-radius:4px;flex-shrink:0;" />
-              <span style="font-size:0.78rem;color:#374151;">입력한 정비 요청 내용이 정확함을 확인합니다</span>
-            </label>
+          <div>
+            <label style="display:block;font-size:0.85rem;font-weight:600;color:#171717;margin-bottom:4px;">설명 <span style="color:#dc2626;">*</span></label>
+            <textarea v-model="requestForm.description" rows="3" placeholder="정비 요청 사유를 입력하세요" class="sn-input" style="width:100%;resize:none;"></textarea>
           </div>
-
-          <!-- Modal Footer -->
-          <div style="padding:12px 24px;display:flex;justify-content:flex-end;gap:10px;border-top:1px solid #f1f5f9;background:#ffffff;">
-            <button @click="closeModals" class="bg-[#1a1814] border border-[rgba(250,250,245,0.06)] text-[rgba(250,250,245,0.7)] px-4 py-2 rounded text-sm font-medium hover:bg-[#1f1d17]">취소</button>
-            <button @click="submitMaintenanceRequest"
-              :disabled="!requestForm.description || !requestConfirmed || submitting"
-              class="inline-flex items-center gap-1.5 px-4 py-2 rounded text-sm font-medium"
-              :style="(!requestForm.description || !requestConfirmed || submitting)
-                ? 'background:#f1f5f9;color:#6b7280;cursor:not-allowed;'
-                : 'background:#d97706;color:#f8fafc;'"
-              style="display:inline-flex;align-items:center;gap:6px;">
-              <svg v-if="submitting" style="width:16px;height:16px;animation:spin 0.8s linear infinite;" fill="none" viewBox="0 0 24 24">
-                <circle opacity="0.25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                <path opacity="0.75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
-              </svg>
-              {{ submitting ? '등록 중...' : '요청 등록' }}
-            </button>
-          </div>
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none;padding:10px 12px;border-radius:8px;background:#fafafa;box-shadow:inset 0 0 0 1px rgba(0,0,0,0.06);">
+            <input type="checkbox" v-model="requestConfirmed" style="width:16px;height:16px;accent-color:#171717;border-radius:4px;flex-shrink:0;" />
+            <span style="font-size:0.78rem;color:#525252;">입력한 정비 요청 내용이 정확함을 확인합니다</span>
+          </label>
+        </div>
+        <div style="padding:12px 24px;display:flex;justify-content:flex-end;gap:10px;border-top:1px solid rgba(0,0,0,0.06);">
+          <button @click="closeModals" class="sn-btn sn-btn-ghost">취소</button>
+          <button @click="submitMaintenanceRequest" :disabled="!requestForm.description||!requestConfirmed||submitting" class="sn-btn sn-btn-primary"
+            :style="(!requestForm.description||!requestConfirmed||submitting)?'opacity:0.4;cursor:not-allowed;':''"
+            style="display:inline-flex;align-items:center;gap:6px;">
+            <svg v-if="submitting" style="width:14px;height:14px;animation:spin 0.8s linear infinite;" fill="none" viewBox="0 0 24 24"><circle opacity="0.25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path opacity="0.75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+            {{ submitting ? '등록 중...' : '요청 등록' }}
+          </button>
         </div>
       </div>
     </div>
 
-    <!-- =============================================
-         MODAL: Maintenance Log
-         ============================================= -->
-    <div v-if="showMaintenanceLogModal" style="position:fixed;inset:0;z-index:50;overflow-y:auto;">
-      <div style="display:flex;align-items:center;justify-content:center;min-height:100vh;padding:16px 16px 32px;">
-        <div style="position:fixed;inset:0;background:rgba(0,0,0,0.6);backdrop-filter:blur(6px);" @click="closeModals"></div>
-        <div class="bg-[#1a1814]  border border-[rgba(250,250,245,0.06)] shadow-none " style="position:relative;z-index:1;max-width:28rem;width:100%;overflow:hidden;border-color:#059669;">
-
-          <!-- Modal Header -->
-          <div style="padding:16px 24px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #f1f5f9;">
-            <div style="display:flex;align-items:center;gap:12px;">
-              <div style="width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:rgba(16,185,129,0.08);">
-                <svg width="18" height="18" style="color:#059669;" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+    <!-- MODAL: Maintenance Log -->
+    <div v-if="showMaintenanceLogModal" class="sn-overlay" @click.self="closeModals">
+      <div class="sn-modal" style="max-width:28rem;">
+        <div style="padding:16px 24px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid rgba(0,0,0,0.06);">
+          <h3 style="font-size:1.05rem;font-weight:700;color:#171717;margin:0;">정비 완료 기록</h3>
+          <button @click="closeModals" class="sn-btn sn-btn-ghost" style="padding:6px 10px;">
+            <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+          </button>
+        </div>
+        <div style="padding:20px 24px;display:flex;flex-direction:column;gap:20px;">
+          <div style="padding:12px;border-radius:8px;background:#fafafa;box-shadow:inset 0 0 0 1px rgba(0,0,0,0.06);">
+            <p class="sn-eyebrow" style="margin:0 0 2px;">TARGET PASSPORT</p>
+            <p style="font-size:0.85rem;font-weight:600;color:#171717;font-family:'JetBrains Mono',monospace;margin:0;">{{ selectedPassport?.passportId }}</p>
+          </div>
+          <div>
+            <label style="display:block;font-size:0.85rem;font-weight:600;color:#171717;margin-bottom:8px;">정비 유형 <span style="color:#dc2626;">*</span></label>
+            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;">
+              <button v-for="t in maintenanceTypes.slice(0,3)" :key="t.value"
+                @click="logForm.maintenanceType = t.value" type="button"
+                style="display:flex;flex-direction:column;align-items:center;padding:12px;border-radius:8px;cursor:pointer;transition:all 0.2s;"
+                :style="logForm.maintenanceType===t.value ? 'box-shadow:inset 0 0 0 2px #171717;background:#f5f5f5;' : 'box-shadow:inset 0 0 0 1px rgba(0,0,0,0.08);background:#fff;'">
+                <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="margin-bottom:6px;"
+                  :style="logForm.maintenanceType===t.value ? 'color:#171717;' : 'color:#a3a3a3;'">
+                  <path stroke-linecap="round" stroke-linejoin="round" :d="t.icon"/>
                 </svg>
-              </div>
-              <h3 style="font-family:'Pretendard Variable', sans-serif;font-size:1.1rem;font-weight:700;color:#111827;margin:0;">정비 완료 기록</h3>
+                <span style="font-size:0.75rem;font-weight:600;" :style="logForm.maintenanceType===t.value ? 'color:#171717;' : 'color:#525252;'">{{ t.label }}</span>
+              </button>
             </div>
-            <button @click="closeModals" class="bg-[#1a1814] border border-[rgba(250,250,245,0.06)] text-[rgba(250,250,245,0.7)] px-4 py-2 rounded text-sm font-medium hover:bg-[#1f1d17]" style="padding:6px;color:#6b7280;">
-              <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
-              </svg>
-            </button>
           </div>
-
-          <!-- Modal Body -->
-          <div style="padding:20px 24px;display:flex;flex-direction:column;gap:20px;">
-            <!-- Target passport -->
-            <div style="padding:12px;border-radius:8px;background:#ffffff;border:1px solid #f1f5f9;">
-              <p style="font-size:0.6rem;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;color:#6b7280;font-family:'JetBrains Mono', monospace;margin:0 0 2px;">TARGET PASSPORT</p>
-              <p style="font-size:0.85rem;font-weight:600;color:#111827;font-family:'JetBrains Mono', monospace;margin:0;">{{ selectedPassport?.passportId }}</p>
-            </div>
-
-            <!-- Maintenance type -->
-            <div>
-              <label style="display:block;font-size:0.85rem;font-weight:600;color:#374151;margin-bottom:8px;">정비 유형 <span style="color:#ef4444;">*</span></label>
-              <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;">
-                <button v-for="t in maintenanceTypes.slice(0,3)" :key="t.value"
-                  @click="logForm.maintenanceType = t.value" type="button"
-                  style="display:flex;flex-direction:column;align-items:center;padding:12px;border-radius:8px;border:2px solid;cursor:pointer;transition:all 0.2s;"
-                  :style="logForm.maintenanceType === t.value
-                    ? 'border-color:#059669;background:rgba(16,185,129,0.08);'
-                    : 'border-color:#f1f5f9;background:transparent;'">
-                  <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="margin-bottom:6px;"
-                    :style="logForm.maintenanceType === t.value ? 'color:#059669;' : 'color:#6b7280;'">
-                    <path stroke-linecap="round" stroke-linejoin="round" :d="t.icon"/>
-                  </svg>
-                  <span style="font-size:0.75rem;font-weight:600;"
-                    :style="logForm.maintenanceType === t.value ? 'color:#059669;' : 'color:#374151;'">{{ t.label }}</span>
-                </button>
-              </div>
-            </div>
-
-            <!-- Description -->
-            <div>
-              <label style="display:block;font-size:0.85rem;font-weight:600;color:#374151;margin-bottom:4px;">설명 <span style="color:#ef4444;">*</span></label>
-              <textarea v-model="logForm.description" rows="3" placeholder="수행한 정비 내용을 입력하세요"
-                class="w-full px-4 py-2.5 bg-[#1f1d17] border border-[rgba(250,250,245,0.06)]  text-[#fafaf5] outline-none focus:border-[#c8ff00]" style="width:100%;resize:none;font-family:'Pretendard Variable', sans-serif;"></textarea>
-            </div>
-
-            <!-- Technician -->
-            <div>
-              <label style="display:block;font-size:0.85rem;font-weight:600;color:#374151;margin-bottom:4px;">담당 기술자 <span style="color:#ef4444;">*</span></label>
-              <input v-model="logForm.technician" type="text" placeholder="기술자 이름"
-                class="w-full px-4 py-2.5 bg-[#1f1d17] border border-[rgba(250,250,245,0.06)]  text-[#fafaf5] outline-none focus:border-[#c8ff00]" style="width:100%;font-family:'Pretendard Variable', sans-serif;"/>
-            </div>
-
-            <!-- Confirmation checkbox -->
-            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none;padding:10px 12px;border-radius:8px;background:#ffffff;border:1px solid #f1f5f9;">
-              <input type="checkbox" v-model="logConfirmed" style="width:16px;height:16px;accent-color:#059669;border-radius:4px;flex-shrink:0;" />
-              <span style="font-size:0.78rem;color:#374151;">정비 완료 내용이 정확함을 확인합니다</span>
-            </label>
+          <div>
+            <label style="display:block;font-size:0.85rem;font-weight:600;color:#171717;margin-bottom:4px;">설명 <span style="color:#dc2626;">*</span></label>
+            <textarea v-model="logForm.description" rows="3" placeholder="수행한 정비 내용을 입력하세요" class="sn-input" style="width:100%;resize:none;"></textarea>
           </div>
-
-          <!-- Modal Footer -->
-          <div style="padding:12px 24px;display:flex;justify-content:flex-end;gap:10px;border-top:1px solid #f1f5f9;background:#ffffff;">
-            <button @click="closeModals" class="bg-[#1a1814] border border-[rgba(250,250,245,0.06)] text-[rgba(250,250,245,0.7)] px-4 py-2 rounded text-sm font-medium hover:bg-[#1f1d17]">취소</button>
-            <button @click="submitMaintenanceLog"
-              :disabled="!logForm.description || !logForm.technician || !logConfirmed || submitting"
-              class="bg-[#c8ff00] text-[#1a1814] px-4 py-2 rounded text-sm font-medium hover:bg-[#d4ff33]"
-              :style="(!logForm.description || !logForm.technician || !logConfirmed || submitting)
-                ? 'opacity:0.4;cursor:not-allowed;'
-                : ''"
-              style="display:inline-flex;align-items:center;gap:6px;">
-              <svg v-if="submitting" style="width:16px;height:16px;animation:spin 0.8s linear infinite;" fill="none" viewBox="0 0 24 24">
-                <circle opacity="0.25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                <path opacity="0.75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
-              </svg>
-              {{ submitting ? '기록 중...' : '완료 기록' }}
-            </button>
+          <div>
+            <label style="display:block;font-size:0.85rem;font-weight:600;color:#171717;margin-bottom:4px;">담당 기술자 <span style="color:#dc2626;">*</span></label>
+            <input v-model="logForm.technician" type="text" placeholder="기술자 이름" class="sn-input" style="width:100%;" />
           </div>
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none;padding:10px 12px;border-radius:8px;background:#fafafa;box-shadow:inset 0 0 0 1px rgba(0,0,0,0.06);">
+            <input type="checkbox" v-model="logConfirmed" style="width:16px;height:16px;accent-color:#171717;border-radius:4px;flex-shrink:0;" />
+            <span style="font-size:0.78rem;color:#525252;">정비 완료 내용이 정확함을 확인합니다</span>
+          </label>
+        </div>
+        <div style="padding:12px 24px;display:flex;justify-content:flex-end;gap:10px;border-top:1px solid rgba(0,0,0,0.06);">
+          <button @click="closeModals" class="sn-btn sn-btn-ghost">취소</button>
+          <button @click="submitMaintenanceLog" :disabled="!logForm.description||!logForm.technician||!logConfirmed||submitting" class="sn-btn sn-btn-primary"
+            :style="(!logForm.description||!logForm.technician||!logConfirmed||submitting)?'opacity:0.4;cursor:not-allowed;':''"
+            style="display:inline-flex;align-items:center;gap:6px;">
+            <svg v-if="submitting" style="width:14px;height:14px;animation:spin 0.8s linear infinite;" fill="none" viewBox="0 0 24 24"><circle opacity="0.25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path opacity="0.75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+            {{ submitting ? '기록 중...' : '완료 기록' }}
+          </button>
         </div>
       </div>
     </div>
 
-    <!-- =============================================
-         MODAL: Accident Log
-         ============================================= -->
-    <div v-if="showAccidentModal" style="position:fixed;inset:0;z-index:50;overflow-y:auto;">
-      <div style="display:flex;align-items:center;justify-content:center;min-height:100vh;padding:16px 16px 32px;">
-        <div style="position:fixed;inset:0;background:rgba(0,0,0,0.6);backdrop-filter:blur(6px);" @click="closeModals"></div>
-        <div class="bg-[#1a1814]  border border-[rgba(250,250,245,0.06)] shadow-none " style="position:relative;z-index:1;max-width:28rem;width:100%;overflow:hidden;border-color:#ef4444;">
-
-          <!-- Modal Header -->
-          <div style="padding:16px 24px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #f1f5f9;">
-            <div style="display:flex;align-items:center;gap:12px;">
-              <div style="width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:rgba(220,38,38,0.08);">
-                <svg width="18" height="18" style="color:#ef4444;" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
-                </svg>
-              </div>
-              <h3 style="font-family:'Pretendard Variable', sans-serif;font-size:1.1rem;font-weight:700;color:#111827;margin:0;">사고 기록</h3>
-            </div>
-            <button @click="closeModals" class="bg-[#1a1814] border border-[rgba(250,250,245,0.06)] text-[rgba(250,250,245,0.7)] px-4 py-2 rounded text-sm font-medium hover:bg-[#1f1d17]" style="padding:6px;color:#6b7280;">
-              <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
-              </svg>
-            </button>
+    <!-- MODAL: Accident Log -->
+    <div v-if="showAccidentModal" class="sn-overlay" @click.self="closeModals">
+      <div class="sn-modal" style="max-width:28rem;">
+        <div style="padding:16px 24px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid rgba(0,0,0,0.06);">
+          <h3 style="font-size:1.05rem;font-weight:700;color:#171717;margin:0;">사고 기록</h3>
+          <button @click="closeModals" class="sn-btn sn-btn-ghost" style="padding:6px 10px;">
+            <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+          </button>
+        </div>
+        <div style="padding:20px 24px;display:flex;flex-direction:column;gap:20px;">
+          <div style="padding:12px;border-radius:8px;background:#fafafa;box-shadow:inset 0 0 0 1px rgba(0,0,0,0.06);">
+            <p class="sn-eyebrow" style="margin:0 0 2px;">TARGET PASSPORT</p>
+            <p style="font-size:0.85rem;font-weight:600;color:#171717;font-family:'JetBrains Mono',monospace;margin:0;">{{ selectedPassport?.passportId }}</p>
           </div>
-
-          <!-- Modal Body -->
-          <div style="padding:20px 24px;display:flex;flex-direction:column;gap:20px;">
-            <!-- Target passport -->
-            <div style="padding:12px;border-radius:8px;background:#ffffff;border:1px solid #f1f5f9;">
-              <p style="font-size:0.6rem;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;color:#6b7280;font-family:'JetBrains Mono', monospace;margin:0 0 2px;">TARGET PASSPORT</p>
-              <p style="font-size:0.85rem;font-weight:600;color:#111827;font-family:'JetBrains Mono', monospace;margin:0;">{{ selectedPassport?.passportId }}</p>
+          <div>
+            <label style="display:block;font-size:0.85rem;font-weight:600;color:#171717;margin-bottom:8px;">심각도 <span style="color:#dc2626;">*</span></label>
+            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;">
+              <button v-for="s in severityOptions" :key="s.value"
+                @click="accidentForm.severity = s.value" type="button"
+                style="display:flex;flex-direction:column;align-items:center;padding:12px;border-radius:8px;cursor:pointer;transition:all 0.2s;"
+                :style="accidentForm.severity===s.value ? 'box-shadow:inset 0 0 0 2px #171717;background:#f5f5f5;' : 'box-shadow:inset 0 0 0 1px rgba(0,0,0,0.08);background:#fff;'">
+                <span style="width:14px;height:14px;border-radius:50%;margin-bottom:6px;"
+                  :class="s.dotClass"></span>
+                <span style="font-size:0.75rem;font-weight:600;color:#525252;">{{ s.label }}</span>
+              </button>
             </div>
-
-            <!-- Severity -->
-            <div>
-              <label style="display:block;font-size:0.85rem;font-weight:600;color:#374151;margin-bottom:8px;">심각도 <span style="color:#ef4444;">*</span></label>
-              <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;">
-                <button v-for="s in severityOptions" :key="s.value"
-                  @click="accidentForm.severity = s.value" type="button"
-                  :class="['flex flex-col items-center p-3 rounded border-2 transition-all cursor-pointer',
-                    accidentForm.severity === s.value ? s.bgClass + ' border-current' : 'border-gray-100']">
-                  <span :class="['w-3.5 h-3.5 rounded-full mb-1.5', s.dotClass]"></span>
-                  <span style="font-size:0.75rem;font-weight:600;">{{ s.label }}</span>
-                </button>
-              </div>
-            </div>
-
-            <!-- Description -->
-            <div>
-              <label style="display:block;font-size:0.85rem;font-weight:600;color:#374151;margin-bottom:4px;">사고 설명 <span style="color:#ef4444;">*</span></label>
-              <textarea v-model="accidentForm.description" rows="3" placeholder="사고 상황을 상세히 기술하세요"
-                class="w-full px-4 py-2.5 bg-[#1f1d17] border border-[rgba(250,250,245,0.06)]  text-[#fafaf5] outline-none focus:border-[#c8ff00]" style="width:100%;resize:none;font-family:'Pretendard Variable', sans-serif;"></textarea>
-            </div>
-
-            <!-- Reporter -->
-            <div>
-              <label style="display:block;font-size:0.85rem;font-weight:600;color:#374151;margin-bottom:4px;">보고자 <span style="color:#ef4444;">*</span></label>
-              <input v-model="accidentForm.reporter" type="text" placeholder="보고자 이름"
-                class="w-full px-4 py-2.5 bg-[#1f1d17] border border-[rgba(250,250,245,0.06)]  text-[#fafaf5] outline-none focus:border-[#c8ff00]" style="width:100%;font-family:'Pretendard Variable', sans-serif;"/>
-            </div>
-
-            <!-- Confirmation checkbox -->
-            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none;padding:10px 12px;border-radius:8px;background:rgba(220,38,38,0.08);border:1px solid #f1f5f9;">
-              <input type="checkbox" v-model="accidentConfirmed" style="width:16px;height:16px;accent-color:#ef4444;border-radius:4px;flex-shrink:0;" />
-              <span style="font-size:0.78rem;color:#374151;">사고 기록 내용이 정확함을 확인합니다</span>
-            </label>
           </div>
-
-          <!-- Modal Footer -->
-          <div style="padding:12px 24px;display:flex;justify-content:flex-end;gap:10px;border-top:1px solid #f1f5f9;background:#ffffff;">
-            <button @click="closeModals" class="bg-[#1a1814] border border-[rgba(250,250,245,0.06)] text-[rgba(250,250,245,0.7)] px-4 py-2 rounded text-sm font-medium hover:bg-[#1f1d17]">취소</button>
-            <button @click="submitAccident"
-              :disabled="!accidentForm.description || !accidentForm.reporter || !accidentConfirmed || submitting"
-              class="bg-[rgba(239,68,68,0.1)] text-[#ff6b6b] border border-red-200 px-4 py-2 rounded text-sm font-medium hover:bg-red-100"
-              :style="(!accidentForm.description || !accidentForm.reporter || !accidentConfirmed || submitting)
-                ? 'opacity:0.4;cursor:not-allowed;'
-                : ''"
-              style="display:inline-flex;align-items:center;gap:6px;">
-              <svg v-if="submitting" style="width:16px;height:16px;animation:spin 0.8s linear infinite;" fill="none" viewBox="0 0 24 24">
-                <circle opacity="0.25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                <path opacity="0.75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
-              </svg>
-              {{ submitting ? '기록 중...' : '사고 기록' }}
-            </button>
+          <div>
+            <label style="display:block;font-size:0.85rem;font-weight:600;color:#171717;margin-bottom:4px;">사고 설명 <span style="color:#dc2626;">*</span></label>
+            <textarea v-model="accidentForm.description" rows="3" placeholder="사고 상황을 상세히 기술하세요" class="sn-input" style="width:100%;resize:none;"></textarea>
           </div>
+          <div>
+            <label style="display:block;font-size:0.85rem;font-weight:600;color:#171717;margin-bottom:4px;">보고자 <span style="color:#dc2626;">*</span></label>
+            <input v-model="accidentForm.reporter" type="text" placeholder="보고자 이름" class="sn-input" style="width:100%;" />
+          </div>
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none;padding:10px 12px;border-radius:8px;background:#fff5f5;box-shadow:inset 0 0 0 1px rgba(220,38,38,0.15);">
+            <input type="checkbox" v-model="accidentConfirmed" style="width:16px;height:16px;accent-color:#dc2626;border-radius:4px;flex-shrink:0;" />
+            <span style="font-size:0.78rem;color:#525252;">사고 기록 내용이 정확함을 확인합니다</span>
+          </label>
+        </div>
+        <div style="padding:12px 24px;display:flex;justify-content:flex-end;gap:10px;border-top:1px solid rgba(0,0,0,0.06);">
+          <button @click="closeModals" class="sn-btn sn-btn-ghost">취소</button>
+          <button @click="submitAccident" :disabled="!accidentForm.description||!accidentForm.reporter||!accidentConfirmed||submitting"
+            style="display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:9999px;font-size:0.875rem;font-weight:600;cursor:pointer;border:none;background:#dc2626;color:#fff;"
+            :style="(!accidentForm.description||!accidentForm.reporter||!accidentConfirmed||submitting)?'opacity:0.4;cursor:not-allowed;':''">
+            <svg v-if="submitting" style="width:14px;height:14px;animation:spin 0.8s linear infinite;" fill="none" viewBox="0 0 24 24"><circle opacity="0.25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path opacity="0.75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+            {{ submitting ? '기록 중...' : '사고 기록' }}
+          </button>
         </div>
       </div>
     </div>
