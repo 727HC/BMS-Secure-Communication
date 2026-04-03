@@ -277,6 +277,12 @@ app.component('passport-detail-page', {
         passport.value = await props.api.get('/passports/' + passportId.value);
         checkVehicleImage();
         fetchLinkedMaterials();
+        // All sections always visible — fetch all data on load
+        fetchBmuData();
+        fetchHistory();
+        fetchVcList();
+        fetchCorrectionHistory();
+        setTimeout(generateQr, 300);
       } catch (e) {
         window.$toast('error', '여권 정보를 불러오지 못했습니다: ' + e.message);
       } finally {
@@ -996,35 +1002,26 @@ app.component('passport-detail-page', {
       <!-- ===== MAIN CONTENT ===== -->
       <div v-else>
 
-        <!-- Tab Navigation -->
-        <div class="bg-white  border border-gray-200 shadow-none mb-6 overflow-hidden">
+        <!-- Tab Navigation (scroll-to-section) -->
+        <div class="bg-white  border border-gray-200 shadow-none mb-6 overflow-hidden" style="position: sticky; top: 0; z-index: 10;">
           <div class="relative">
             <!-- Bottom border line (full width) -->
             <div class="absolute bottom-0 left-0 right-0 h-[2px]" style="background: #e5e7eb;"></div>
             <div class="flex overflow-x-auto">
               <button v-for="tab in tabs" :key="tab.key"
-                @click="switchTab(tab.key)"
-                :class="[
-                  'sn-tab relative flex items-center gap-2 px-5 py-3.5 text-sm font-medium transition-all whitespace-nowrap min-w-0',
-                  activeTab === tab.key
-                    ? 'sn-tab-active text-emerald-600'
-                    : 'sn-tab-inactive text-gray-400 hover:text-gray-600 hover:bg-[#fafafa]'
-                ]">
+                @click="document.getElementById('section-' + tab.key)?.scrollIntoView({behavior:'smooth'})"
+                class="sn-tab sn-tab-inactive relative flex items-center gap-2 px-5 py-3.5 text-sm font-medium transition-all whitespace-nowrap min-w-0 text-gray-400 hover:text-gray-600 hover:bg-[#fafafa]">
                 <svg class="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                   <path stroke-linecap="round" stroke-linejoin="round" :d="tab.icon"/>
                 </svg>
                 {{ tab.label }}
-                <!-- Active indicator bar -->
-                <span v-if="activeTab === tab.key"
-                  class="absolute bottom-0 left-2 right-2 h-[2px] rounded-full"
-                  style="background: #059669; z-index: 1;"></span>
               </button>
             </div>
           </div>
         </div>
 
         <!-- ==================== TAB 1: IDENTITY ==================== -->
-        <div v-if="activeTab === 'identity'" class="space-y-5">
+        <div id="section-identity" class="space-y-5">
 
           <!-- Action Buttons (Manufacturer/Regulator only) -->
           <div v-if="isManufacturer || isEV || isRegulator"
@@ -1292,7 +1289,7 @@ app.component('passport-detail-page', {
         </div>
 
         <!-- ==================== TAB 2: COMPLIANCE ==================== -->
-        <div v-if="activeTab === 'compliance'" class="space-y-5">
+        <div id="section-compliance" class="space-y-5" style="margin-top: 2rem;">
 
           <!-- Large Circular Gauge — OpenBattery style -->
           <div class="bg-white  border border-gray-200 shadow-none overflow-hidden" style="background: #ffffff;">
@@ -1440,7 +1437,7 @@ app.component('passport-detail-page', {
         </div>
 
         <!-- ==================== TAB 3: TRACEABILITY ==================== -->
-        <div v-if="activeTab === 'traceability'" class="space-y-5">
+        <div id="section-traceability" class="space-y-5" style="margin-top: 2rem;">
 
           <!-- Pending Request Alert Banner -->
           <div v-if="passport.status === 'MAINTENANCE'"
@@ -1722,7 +1719,7 @@ app.component('passport-detail-page', {
         </div>
 
         <!-- ==================== TAB 4: DATA ==================== -->
-        <div v-if="activeTab === 'data'">
+        <div id="section-data" style="margin-top: 2rem;">
           <div v-if="bmuLoading" class="flex flex-col items-center justify-center py-20">
             <div class="relative">
               <div class="w-10 h-10 border-4 border-emerald-100 rounded-full"></div>
@@ -1802,7 +1799,7 @@ app.component('passport-detail-page', {
         </div>
 
         <!-- ==================== TAB 5: TRUST ==================== -->
-        <div v-if="activeTab === 'trust'" class="space-y-5">
+        <div id="section-trust" class="space-y-5" style="margin-top: 2rem;">
 
           <!-- Blockchain Verification Card -->
           <div class="bg-white  border border-gray-200 shadow-none overflow-hidden" style="background: #ffffff;">
