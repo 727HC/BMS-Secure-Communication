@@ -193,7 +193,7 @@ app.component('passports-page', {
       passports, loading, searchQuery, filterStatus, showCreateModal, creating, createStep,
       form, statusOptions, isManufacturer, filteredPassports, scaleSOC, completionPct,
       openCreateModal, closeCreateModal, submitCreate, viewDetail, getStatusBadge, getSocColor,
-      nextStep, prevStep,
+      nextStep, prevStep, getGbaPct,
     };
   },
   template: `
@@ -243,6 +243,7 @@ app.component('passports-page', {
                   <th>SOC</th>
                   <th>SOH</th>
                   <th>VIN</th>
+                  <th>GBA</th>
                 </tr>
               </thead>
               <tbody>
@@ -293,6 +294,15 @@ app.component('passports-page', {
                   <td>
                     <span v-if="p.vin" style="font-family:'JetBrains Mono',monospace;font-size:0.75rem;color:#525252;">{{ p.vin }}</span>
                     <span v-else style="color:#a3a3a3;font-size:0.8rem;">—</span>
+                  </td>
+                  <td style="text-align: center;">
+                    <div style="display: flex; align-items: center; gap: 0.375rem; justify-content: center;">
+                      <div style="width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.625rem; font-weight: 700; font-family: var(--font-mono);"
+                        :style="{
+                          background: getGbaPct(p) >= 90 ? '#f0fdf4' : getGbaPct(p) >= 50 ? '#fffbeb' : '#fef2f2',
+                          color: getGbaPct(p) >= 90 ? '#16a34a' : getGbaPct(p) >= 50 ? '#d97706' : '#dc2626'
+                        }">{{ getGbaPct(p) }}</div>
+                    </div>
                   </td>
                 </tr>
               </tbody>
