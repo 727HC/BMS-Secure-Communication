@@ -144,29 +144,21 @@ app.component('audit-log-page', {
   <div style="display:flex;flex-direction:column;gap:24px;">
 
     <!-- ====== PAGE HEADER ====== -->
-    <div class="" style="display:flex;align-items:center;justify-content:space-between;">
-      <div style="display:flex;align-items:center;gap:14px;">
-        <div style="width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,#64748b,#475569);display:flex;align-items:center;justify-content:center;">
-          <svg width="22" height="22" fill="none" stroke="#fff" stroke-width="2" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
-          </svg>
-        </div>
-        <div>
-          <h1 class="text-[#fafaf5] font-bold" style="font-family:'Pretendard Variable', sans-serif;font-size:1.35rem;color:#111827;margin:0;">감사 로그</h1>
-          <p style="font-family:'Pretendard Variable', sans-serif;font-size:0.72rem;color:#6b7280;margin-top:2px;">플랫폼 내 모든 활동을 추적하고 모니터링합니다</p>
-        </div>
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px;">
+      <div>
+        <h1 class="sn-display" style="font-size:1.75rem;">감사 로그</h1>
+        <p class="sn-caption" style="margin-top:0.25rem;">플랫폼 내 모든 활동을 추적하고 모니터링합니다</p>
       </div>
-      <!-- Auto-refresh + Refresh button -->
       <div style="display:flex;align-items:center;gap:12px;">
         <label style="display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none;">
           <div style="position:relative;">
             <input type="checkbox" v-model="autoRefresh" style="position:absolute;opacity:0;width:0;height:0;" />
-            <div :style="{ width:'36px',height:'20px',borderRadius:'10px',background: autoRefresh ? '#059669' : '#e2e8f0',transition:'background 0.2s' }"></div>
-            <div :style="{ position:'absolute',top:'2px',left: autoRefresh ? '18px' : '2px',width:'16px',height:'16px',borderRadius:'50%',background:'#ffffff',boxShadow:'0 1px 3px rgba(0,0,0,0.2)',transition:'left 0.2s' }"></div>
+            <div :style="{ width:'36px',height:'20px',borderRadius:'10px',background:autoRefresh?'#171717':'#e5e5e5',transition:'background 0.2s' }"></div>
+            <div :style="{ position:'absolute',top:'2px',left:autoRefresh?'18px':'2px',width:'16px',height:'16px',borderRadius:'50%',background:'#fff',boxShadow:'0 1px 3px rgba(0,0,0,0.2)',transition:'left 0.2s' }"></div>
           </div>
-          <span style="font-size:0.75rem;font-weight:500;color:#374151;">실시간</span>
+          <span style="font-size:0.75rem;font-weight:500;color:#525252;">실시간</span>
         </label>
-        <button @click="fetchLogs" class="bg-[#1a1814] border border-[rgba(250,250,245,0.06)] text-[rgba(250,250,245,0.7)] px-4 py-2 rounded text-sm font-medium hover:bg-[#1f1d17]" style="display:inline-flex;align-items:center;gap:6px;font-size:0.78rem;">
+        <button @click="fetchLogs" class="sn-btn sn-btn-ghost" style="display:inline-flex;align-items:center;gap:6px;font-size:0.78rem;">
           <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
           </svg>
@@ -176,37 +168,37 @@ app.component('audit-log-page', {
     </div>
 
     <!-- ====== FILTERS ====== -->
-    <div class="bg-[#1a1814]  border border-[rgba(250,250,245,0.06)] shadow-none  " style="padding:12px 16px;display:flex;flex-wrap:wrap;align-items:center;gap:12px;">
-      <select v-model="filterAction" class="w-full px-4 py-2.5 bg-[#1f1d17] border border-[rgba(250,250,245,0.06)]  text-[#fafaf5] outline-none focus:border-[#c8ff00]" style="padding:8px 12px;font-size:0.82rem;background:#ffffff;min-width:140px;">
+    <div class="sn-panel" style="padding:12px 16px;display:flex;flex-wrap:wrap;align-items:center;gap:12px;">
+      <select v-model="filterAction" class="sn-input" style="min-width:140px;font-size:0.82rem;">
         <option v-for="opt in actionOptions" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
       </select>
       <label style="display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none;">
-        <input type="checkbox" v-model="filterWriteOnly" style="width:16px;height:16px;accent-color:#059669;border-radius:4px;" />
-        <span style="font-size:0.82rem;color:#374151;">쓰기 작업만</span>
+        <input type="checkbox" v-model="filterWriteOnly" style="width:16px;height:16px;accent-color:#171717;border-radius:4px;" />
+        <span style="font-size:0.82rem;color:#525252;">쓰기 작업만</span>
       </label>
-      <span style="margin-left:auto;font-family:'JetBrains Mono', monospace;font-size:0.72rem;color:#6b7280;">총 {{ total }}건</span>
+      <span style="margin-left:auto;font-family:'JetBrains Mono',monospace;font-size:0.72rem;color:#a3a3a3;">총 {{ total }}건</span>
     </div>
 
     <!-- ====== LOADING STATE ====== -->
-    <div v-if="loading && logs.length === 0" class="bg-[#1a1814]  border border-[rgba(250,250,245,0.06)] shadow-none  " style="padding:48px;display:flex;flex-direction:column;align-items:center;justify-content:center;">
-      <div style="width:40px;height:40px;border:3px solid #f1f5f9;border-top-color:#64748b;border-radius:50%;animation:spin 0.8s linear infinite;margin-bottom:12px;"></div>
-      <p style="font-size:0.85rem;color:#6b7280;">감사 로그를 불러오고 있습니다...</p>
+    <div v-if="loading && logs.length === 0" class="sn-panel" style="padding:48px;display:flex;flex-direction:column;align-items:center;justify-content:center;">
+      <div style="width:40px;height:40px;border:3px solid #e5e5e5;border-top-color:#171717;border-radius:50%;animation:spin 0.8s linear infinite;margin-bottom:12px;"></div>
+      <p style="font-size:0.85rem;color:#a3a3a3;">감사 로그를 불러오고 있습니다...</p>
     </div>
 
     <!-- ====== EMPTY STATE ====== -->
-    <div v-else-if="logs.length === 0" class="bg-[#1a1814]  border border-[rgba(250,250,245,0.06)] shadow-none  " style="padding:48px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;">
-      <div style="width:64px;height:64px;border-radius:16px;background:#f1f5f9;display:flex;align-items:center;justify-content:center;margin-bottom:16px;">
-        <svg width="32" height="32" fill="none" stroke="#6b7280" stroke-width="1.5" viewBox="0 0 24 24" style="opacity:0.5;">
+    <div v-else-if="logs.length === 0" class="sn-panel" style="padding:48px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;">
+      <div style="width:56px;height:56px;border-radius:12px;background:#f5f5f5;display:flex;align-items:center;justify-content:center;margin-bottom:16px;">
+        <svg width="28" height="28" fill="none" stroke="#a3a3a3" stroke-width="1.5" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
         </svg>
       </div>
-      <p style="font-size:0.85rem;color:#6b7280;">기록된 감사 로그가 없습니다</p>
+      <p style="font-size:0.85rem;color:#a3a3a3;">기록된 감사 로그가 없습니다</p>
     </div>
 
     <!-- ====== LOG TABLE ====== -->
-    <div v-else class="bg-[#1a1814]  border border-[rgba(250,250,245,0.06)] shadow-none bg-[#1a1814]  border border-[rgba(250,250,245,0.06)] shadow-none  " style="overflow:hidden;">
+    <div v-else class="sn-panel" style="overflow:hidden;">
       <div style="overflow-x:auto;">
-        <table class="w-full text-sm" style="width:100%;">
+        <table class="sn-table">
           <thead>
             <tr>
               <th>시간</th>
@@ -220,7 +212,7 @@ app.component('audit-log-page', {
           <tbody>
             <template v-for="(log, idx) in logs" :key="log.id">
               <tr @click="toggleDetail(log.id)" style="cursor:pointer;"
-                :style="expandedId === log.id ? 'background:#ffffff;' : ''">
+                :style="expandedId === log.id ? 'background:#fafafa;' : ''">
                 <!-- Timestamp with relative time -->
                 <td>
                   <span style="display:flex;flex-direction:column;gap:2px;">
@@ -283,7 +275,7 @@ app.component('audit-log-page', {
               <!-- Expanded detail row -->
               <tr v-if="expandedId === log.id">
                 <td colspan="6" style="padding:0 16px;">
-                  <div class="" style="background:#ffffff;border:1px solid #f1f5f9;border-radius:10px;padding:16px;margin:8px 0;display:flex;flex-direction:column;gap:14px;">
+                  <div style="background:#fafafa;box-shadow:inset 0 0 0 1px rgba(0,0,0,0.06);border-radius:10px;padding:16px;margin:8px 0;display:flex;flex-direction:column;gap:14px;">
                     <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;">
                       <div>
                         <p style="font-size:0.6rem;font-weight:600;color:#6b7280;text-transform:uppercase;margin:0 0 2px;">로그 ID</p>
@@ -320,8 +312,8 @@ app.component('audit-log-page', {
                       </div>
                     </div>
                     <div v-if="log.requestBody">
-                      <p style="font-size:0.6rem;font-weight:600;color:#6b7280;text-transform:uppercase;margin:0 0 6px;">요청 데이터</p>
-                      <pre class="font-mono" style="font-size:0.72rem;color:#374151;background:#ffffff;border:1px solid #f1f5f9;border-radius:8px;padding:12px;overflow-x:auto;max-height:160px;margin:0;">{{ JSON.stringify(log.requestBody, null, 2) }}</pre>
+                      <p class="sn-eyebrow" style="margin:0 0 6px;">요청 데이터</p>
+                      <pre style="font-family:'JetBrains Mono',monospace;font-size:0.72rem;color:#525252;background:#fff;box-shadow:inset 0 0 0 1px rgba(0,0,0,0.06);border-radius:8px;padding:12px;overflow-x:auto;max-height:160px;margin:0;">{{ JSON.stringify(log.requestBody, null, 2) }}</pre>
                     </div>
                   </div>
                 </td>
@@ -332,20 +324,14 @@ app.component('audit-log-page', {
       </div>
 
       <!-- Pagination -->
-      <div style="padding:12px 20px;border-top:1px solid #f1f5f9;background:#ffffff;display:flex;align-items:center;justify-content:space-between;">
-        <span class="font-mono" style="font-size:0.72rem;color:#6b7280;">{{ total }}건 중 {{ (page - 1) * 50 + 1 }}~{{ Math.min(page * 50, total) }}</span>
+      <div style="padding:12px 20px;border-top:1px solid rgba(0,0,0,0.06);display:flex;align-items:center;justify-content:space-between;">
+        <span style="font-family:'JetBrains Mono',monospace;font-size:0.72rem;color:#a3a3a3;">{{ total }}건 중 {{ (page - 1) * 50 + 1 }}~{{ Math.min(page * 50, total) }}</span>
         <div style="display:flex;align-items:center;gap:8px;">
-          <button @click="prevPage" :disabled="page <= 1"
-            class="bg-[#1a1814] border border-[rgba(250,250,245,0.06)] text-[rgba(250,250,245,0.7)] px-4 py-2 rounded text-sm font-medium hover:bg-[#1f1d17]" style="font-size:0.75rem;padding:6px 12px;"
-            :style="page <= 1 ? 'opacity:0.3;cursor:not-allowed;' : ''">
-            이전
-          </button>
-          <span class="font-mono" style="font-size:0.72rem;color:#6b7280;font-variant-numeric:tabular-nums;">{{ page }} / {{ totalPages }}</span>
-          <button @click="nextPage" :disabled="page >= totalPages"
-            class="bg-[#1a1814] border border-[rgba(250,250,245,0.06)] text-[rgba(250,250,245,0.7)] px-4 py-2 rounded text-sm font-medium hover:bg-[#1f1d17]" style="font-size:0.75rem;padding:6px 12px;"
-            :style="page >= totalPages ? 'opacity:0.3;cursor:not-allowed;' : ''">
-            다음
-          </button>
+          <button @click="prevPage" :disabled="page <= 1" class="sn-btn sn-btn-ghost" style="font-size:0.75rem;padding:6px 12px;"
+            :style="page <= 1 ? 'opacity:0.3;cursor:not-allowed;' : ''">이전</button>
+          <span style="font-family:'JetBrains Mono',monospace;font-size:0.72rem;color:#a3a3a3;font-variant-numeric:tabular-nums;">{{ page }} / {{ totalPages }}</span>
+          <button @click="nextPage" :disabled="page >= totalPages" class="sn-btn sn-btn-ghost" style="font-size:0.75rem;padding:6px 12px;"
+            :style="page >= totalPages ? 'opacity:0.3;cursor:not-allowed;' : ''">다음</button>
         </div>
       </div>
     </div>

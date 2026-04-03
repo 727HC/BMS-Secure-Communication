@@ -83,10 +83,10 @@ app.component('passport-detail-page', {
     // Use global STATUS_LABELS, STATUS_CONFIG, getStatusBadge from app.js
     const statusLabels = STATUS_LABELS;
     function getSocColor(soc) {
-      if (soc == null) return 'bg-gray-200';
+      if (soc == null) return 'bg-gray-100';
       if (soc >= 60) return 'bg-[#34d399]';
       if (soc >= 30) return 'bg-[#fbbf24]';
-      return 'bg-red-500';
+      return 'bg-[rgba(239,68,68,0.1)]0';
     }
     function getSocHex(soc) {
       if (soc == null) return '#94a3b8';
@@ -104,9 +104,9 @@ app.component('passport-detail-page', {
       const num = typeof flags === 'number' ? flags : parseInt(flags, 10);
       if (isNaN(num)) return [];
       const badges = [];
-      if (num & 0x01) badges.push({ label: '충전중', color: 'bg-emerald-50 text-emerald-600 border-emerald-500' });
-      if (num & 0x02) badges.push({ label: '밸런싱', color: 'bg-emerald-50 text-emerald-600 border-emerald-500' });
-      if (num & 0x04) badges.push({ label: '결함', color: 'bg-red-50 text-red-600 border-gray-200' });
+      if (num & 0x01) badges.push({ label: '충전중', color: 'bg-[rgba(200,255,0,0.08)] text-emerald-600 border-emerald-500' });
+      if (num & 0x02) badges.push({ label: '밸런싱', color: 'bg-[rgba(200,255,0,0.08)] text-emerald-600 border-emerald-500' });
+      if (num & 0x04) badges.push({ label: '결함', color: 'bg-[rgba(239,68,68,0.1)] text-[#ff6b6b] border-gray-200' });
       return badges;
     }
 
@@ -442,10 +442,10 @@ app.component('passport-detail-page', {
       if (cf == null) return null;
       const perKwh = passport.value?.totalEnergy > 0 ? cf / passport.value.totalEnergy * 1000 : null;
       if (perKwh == null) return null;
-      if (perKwh <= 50) return { grade: 'A', color: 'text-emerald-600', bg: 'bg-emerald-50', label: '매우 우수' };
-      if (perKwh <= 75) return { grade: 'B', color: 'text-blue-600', bg: 'bg-blue-50', label: '우수' };
-      if (perKwh <= 100) return { grade: 'C', color: 'text-amber-600', bg: 'bg-amber-50', label: '보통' };
-      return { grade: 'D', color: 'text-red-600', bg: 'bg-red-50', label: '개선 필요' };
+      if (perKwh <= 50) return { grade: 'A', color: 'text-emerald-600', bg: 'bg-[rgba(200,255,0,0.08)]', label: '매우 우수' };
+      if (perKwh <= 75) return { grade: 'B', color: 'text-blue-600', bg: 'bg-[rgba(107,163,255,0.1)]', label: '우수' };
+      if (perKwh <= 100) return { grade: 'C', color: 'text-amber-600', bg: 'bg-[rgba(255,184,0,0.1)]', label: '보통' };
+      return { grade: 'D', color: 'text-[#ff6b6b]', bg: 'bg-[rgba(239,68,68,0.1)]', label: '개선 필요' };
     });
 
     // QR Code
@@ -791,444 +791,1834 @@ app.component('passport-detail-page', {
     };
   },
   template: `
-    <div style="max-width: 900px; margin: 0 auto;">
+    <div class="min-h-full">
 
-      <!-- ═══ LOADING ═══ -->
-      <div v-if="loading" class="flex items-center justify-center py-32">
-        <div class="text-center">
-          <div class="w-8 h-8 border-2 border-gray-300 border-t-gray-900 rounded-full mx-auto mb-4" style="animation: spin 0.8s linear infinite;"></div>
-          <p class="text-sm text-gray-500" style="font-family: 'JetBrains Mono', monospace; letter-spacing: 0.05em;">LOADING PASSPORT...</p>
+      <!-- ===== HEADER ===== -->
+      <div class="mb-6">
+        <button @click="goBack"
+          class="group inline-flex items-center gap-1.5 text-sm font-medium text-gray-400 hover:text-emerald-600 transition-colors mb-4">
+          <svg class="w-4 h-4 transition-transform group-hover:-translate-x-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+          </svg>
+          배터리 여권 목록
+        </button>
+
+        <div v-if="passport" class="flex flex-col lg:flex-row lg:items-start gap-6">
+          <!-- Left: Title + Key Specs -->
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center gap-3 flex-wrap mb-1.5">
+              <h1 class="text-2xl font-bold text-gray-900">{{ passport.model || '배터리 여권 상세' }}</h1>
+              <span :class="[
+                'inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-semibold border',
+                getStatusBadge(passport.status).bg,
+                getStatusBadge(passport.status).text,
+                getStatusBadge(passport.status).border
+              ]">
+                <span :class="['w-2 h-2 rounded-full', getStatusBadge(passport.status).dot]"></span>
+                {{ getStatusBadge(passport.status).label }}
+              </span>
+            </div>
+            <div class="flex items-center gap-4 flex-wrap mb-4">
+              <span class="text-sm text-gray-400 font-mono">{{ passport.passportId }}</span>
+              <span v-if="passport.serialNumber" class="text-sm text-gray-400">S/N: {{ passport.serialNumber }}</span>
+            </div>
+
+            <!-- Key specs grid -->
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <div class="bg-[#fafafa] rounded px-3 py-2.5 border border-gray-200">
+                <p class="text-[10px] font-medium text-gray-400 uppercase tracking-wider mb-0.5">제조사</p>
+                <p class="text-sm font-semibold text-gray-600 truncate">{{ passport.manufacturerName || '-' }}</p>
+              </div>
+              <div class="bg-[#fafafa] rounded px-3 py-2.5 border border-gray-200">
+                <p class="text-[10px] font-medium text-gray-400 uppercase tracking-wider mb-0.5">화학물질</p>
+                <p class="text-sm font-semibold text-gray-600 truncate">{{ passport.chemistry || '-' }}</p>
+              </div>
+              <div class="bg-[#fafafa] rounded px-3 py-2.5 border border-gray-200">
+                <p class="text-[10px] font-medium text-gray-400 uppercase tracking-wider mb-0.5">총 에너지</p>
+                <p class="text-sm font-semibold text-gray-600">{{ passport.totalEnergy ? passport.totalEnergy + ' kWh' : '-' }}</p>
+              </div>
+              <div class="bg-[#fafafa] rounded px-3 py-2.5 border border-gray-200">
+                <p class="text-[10px] font-medium text-gray-400 uppercase tracking-wider mb-0.5">무게</p>
+                <p class="text-sm font-semibold text-gray-600">{{ passport.weight ? passport.weight + ' kg' : '-' }}</p>
+              </div>
+              <div v-if="passport.vin" class="bg-[#fafafa] rounded px-3 py-2.5 border border-gray-200">
+                <p class="text-[10px] font-medium text-gray-400 uppercase tracking-wider mb-0.5">VIN</p>
+                <p class="text-sm font-semibold text-gray-600 font-mono truncate">{{ passport.vin }}</p>
+              </div>
+              <div class="bg-[#fafafa] rounded px-3 py-2.5 border border-gray-200">
+                <p class="text-[10px] font-medium text-gray-400 uppercase tracking-wider mb-0.5">셀 수</p>
+                <p class="text-sm font-semibold text-gray-600">{{ passport.cellCount || '-' }}</p>
+              </div>
+              <div class="bg-[#fafafa] rounded px-3 py-2.5 border border-gray-200">
+                <p class="text-[10px] font-medium text-gray-400 uppercase tracking-wider mb-0.5">셀 유형</p>
+                <p class="text-sm font-semibold text-gray-600 truncate">{{ passport.cellType || '-' }}</p>
+              </div>
+              <div class="bg-[#fafafa] rounded px-3 py-2.5 border border-gray-200">
+                <p class="text-[10px] font-medium text-gray-400 uppercase tracking-wider mb-0.5">정격용량</p>
+                <p class="text-sm font-semibold text-gray-600">{{ passport.ratedCapacity ? passport.ratedCapacity + ' Ah' : '-' }}</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Right: Vehicle/Battery image + SOC -->
+          <div class="flex-shrink-0 hidden md:block">
+            <div class="bg-[#fafafa]  border border-gray-200 p-4 flex flex-col items-center gap-3" :class="vehicleImagePath ? 'w-72' : 'w-56'">
+              <!-- Vehicle + Battery side by side -->
+              <div v-if="vehicleImagePath" class="w-full flex items-center gap-3">
+                <!-- Vehicle image (left) -->
+                <div class="flex-1 relative group">
+                  <img :src="vehicleImagePath" alt="차량 이미지" class="w-full h-28 object-contain rounded" />
+                  <label class="absolute inset-0 bg-black/40 rounded opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer">
+                    <span class="text-white text-xs font-medium">사진 변경</span>
+                    <input type="file" accept="image/*" class="hidden" @change="uploadVehicleImage($event.target.files[0])" />
+                  </label>
+                </div>
+                <!-- Battery icon (right) -->
+                <div class="relative w-14 h-28 flex-shrink-0 flex items-center justify-center">
+                <svg viewBox="0 0 80 140" class="w-full h-full">
+                  <!-- Battery terminal -->
+                  <rect x="25" y="0" width="30" height="8" rx="2" fill="#94a3b8"/>
+                  <!-- Battery body -->
+                  <rect x="10" y="8" width="60" height="126" rx="6" fill="none" stroke="#cbd5e1" stroke-width="3"/>
+                  <!-- Battery fill -->
+                  <rect x="14" y="12" :width="52" :height="118"
+                    rx="4" fill="#f1f5f9"/>
+                  <rect x="14" :y="12 + 118 * (1 - batteryFillAnimated / 100)" width="52"
+                    :height="118 * batteryFillAnimated / 100"
+                    rx="4"
+                    :fill="getSocHex(scaleSOC(passport.currentSoc))"
+                    class="transition-all duration-1000"
+                    opacity="0.7"/>
+                  <!-- Percentage text -->
+                  <text x="40" y="78" text-anchor="middle" dominant-baseline="middle"
+                    :fill="batteryFillAnimated > 50 ? '#fff' : '#334155'"
+                    font-size="18" font-weight="bold">
+                    {{ passport.currentSoc != null ? scaleSOC(passport.currentSoc) + '%' : '--' }}
+                  </text>
+                </svg>
+                </div>
+              </div>
+              <!-- Upload button (no image yet, VIN exists) -->
+              <label v-else-if="passport.vin" class="w-full h-28 border-2 border-dashed border-gray-200 rounded flex flex-col items-center justify-center gap-2 cursor-pointer hover:border-emerald-400 hover:bg-[rgba(200,255,0,0.08)]/30 transition-colors">
+                <svg class="w-7 h-7 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                </svg>
+                <span class="text-[10px] text-gray-400">차량 사진 등록</span>
+                <input type="file" accept="image/*" class="hidden" @change="uploadVehicleImage($event.target.files[0])" />
+              </label>
+              <!-- Battery icon only (no vehicle image, no VIN) -->
+              <div v-else class="relative w-20 h-32 flex items-center justify-center">
+                <svg viewBox="0 0 80 140" class="w-full h-full">
+                  <rect x="25" y="0" width="30" height="8" rx="2" fill="#94a3b8"/>
+                  <rect x="10" y="8" width="60" height="126" rx="6" fill="none" stroke="#cbd5e1" stroke-width="3"/>
+                  <rect x="14" y="12" :width="52" :height="118" rx="4" fill="#f1f5f9"/>
+                  <rect x="14" :y="12 + 118 * (1 - batteryFillAnimated / 100)" width="52"
+                    :height="118 * batteryFillAnimated / 100" rx="4"
+                    :fill="getSocHex(scaleSOC(passport.currentSoc))"
+                    class="transition-all duration-1000" opacity="0.7"/>
+                  <text x="40" y="78" text-anchor="middle" dominant-baseline="middle"
+                    :fill="batteryFillAnimated > 50 ? '#fff' : '#334155'"
+                    font-size="18" font-weight="bold">
+                    {{ passport.currentSoc != null ? scaleSOC(passport.currentSoc) + '%' : '--' }}
+                  </text>
+                </svg>
+              </div>
+              <!-- SOC bar -->
+              <div class="w-full">
+                <div class="flex items-center justify-between mb-1">
+                  <span class="text-xs font-medium text-gray-400">SOC</span>
+                  <span class="text-xs font-bold text-gray-600">{{ passport.currentSoc != null ? scaleSOC(passport.currentSoc) + '%' : '--' }}</span>
+                </div>
+                <div class="w-full h-2.5 bg-gray-100 rounded-full overflow-hidden">
+                  <div class="h-full rounded-full transition-all duration-1000"
+                    :style="{ width: Math.min(Math.max(scaleSOC(passport.currentSoc) || 0, 0), 100) + '%' }"
+                    :class="scaleSOC(passport.currentSoc) > 60 ? 'bg-[#34d399]' : scaleSOC(passport.currentSoc) > 25 ? 'bg-[#fbbf24]' : 'bg-[rgba(239,68,68,0.1)]0'"></div>
+                </div>
+              </div>
+              <!-- SOH if available -->
+              <div v-if="passport.currentSoh != null" class="w-full">
+                <div class="flex items-center justify-between mb-1">
+                  <span class="text-xs font-medium text-gray-400">SOH</span>
+                  <span class="text-xs font-bold text-gray-600">{{ passport.currentSoh }}%</span>
+                </div>
+                <div class="w-full h-2.5 bg-gray-100 rounded-full overflow-hidden">
+                  <div class="h-full rounded-full transition-all duration-1000 bg-[#60a5fa]"
+                    :style="{ width: Math.min(passport.currentSoh, 100) + '%' }"></div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
-      <div v-else-if="!passport" class="py-32 text-center">
-        <p class="text-lg text-gray-400">여권 데이터를 불러올 수 없습니다.</p>
-        <button @click="goBack" class="mt-4 text-sm text-emerald-700 hover:underline">목록으로 돌아가기</button>
+      <!-- ===== LOADING ===== -->
+      <div v-if="loading" class="flex flex-col items-center justify-center py-24">
+        <div class="relative">
+          <div class="w-12 h-12 border-4 border-emerald-100 rounded-full"></div>
+          <div class="absolute top-0 left-0 w-12 h-12 border-4 border-emerald-600 rounded-full animate-spin border-t-transparent"></div>
+        </div>
+        <p class="mt-4 text-sm text-gray-400">데이터를 불러오는 중...</p>
       </div>
 
+      <!-- ===== NO PASSPORT ===== -->
+      <div v-else-if="!passport" class="bg-white  border border-gray-200 shadow-none py-20 px-8 text-center">
+        <div class="mx-auto w-16 h-16 bg-gray-100  flex items-center justify-center mb-4">
+          <svg class="w-8 h-8 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+          </svg>
+        </div>
+        <h3 class="text-lg font-semibold text-gray-600 mb-1">여권 정보를 찾을 수 없습니다</h3>
+        <p class="text-sm text-gray-400 mb-6">요청한 여권 ID에 해당하는 데이터가 없습니다.</p>
+        <button @click="goBack" class="inline-flex items-center gap-2 px-5 py-2.5 bg-[#16a34a] hover:bg-[#15803d] text-white font-medium text-sm  transition-colors">
+          목록으로 돌아가기
+        </button>
+      </div>
+
+      <!-- ===== MAIN CONTENT ===== -->
       <div v-else>
 
-        <!-- ═══════════════════════════════════════════════════════
-             DOCUMENT HEADER — like the cover of a technical certificate
-             ═══════════════════════════════════════════════════════ -->
-        <div class="mb-10">
-          <!-- Back link -->
-          <button @click="goBack" class="text-xs text-gray-400 hover:text-gray-700 mb-6 inline-block" style="font-family: 'JetBrains Mono', monospace;">
-            ← 여권 목록
-          </button>
+        <!-- Tab Navigation -->
+        <div class="bg-white  border border-gray-200 shadow-none mb-6 overflow-hidden">
+          <div class="relative">
+            <!-- Bottom border line (full width) -->
+            <div class="absolute bottom-0 left-0 right-0 h-[2px]" style="background: #e5e7eb;"></div>
+            <div class="flex overflow-x-auto">
+              <button v-for="tab in tabs" :key="tab.key"
+                @click="switchTab(tab.key)"
+                :class="[
+                  'relative flex items-center gap-2 px-5 py-3.5 text-sm font-medium transition-all whitespace-nowrap min-w-0',
+                  activeTab === tab.key
+                    ? 'text-emerald-600'
+                    : 'text-gray-400 hover:text-gray-600 hover:bg-[#fafafa]'
+                ]">
+                <svg class="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" :d="tab.icon"/>
+                </svg>
+                {{ tab.label }}
+                <!-- Active indicator bar -->
+                <span v-if="activeTab === tab.key"
+                  class="absolute bottom-0 left-2 right-2 h-[2px] rounded-full"
+                  style="background: #059669; z-index: 1;"></span>
+              </button>
+            </div>
+          </div>
+        </div>
 
-          <!-- Document title block -->
-          <div style="border-bottom: 3px solid #111827; padding-bottom: 1.5rem;">
-            <div class="flex items-start justify-between">
+        <!-- ==================== TAB 1: IDENTITY ==================== -->
+        <div v-if="activeTab === 'identity'" class="space-y-5">
+
+          <!-- Action Buttons (Manufacturer/Regulator only) -->
+          <div v-if="isManufacturer || isEV || isRegulator"
+            class="flex justify-end gap-2">
+            <button v-if="isManufacturer" @click="openLinkMaterialsModal"
+              class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-emerald-600 bg-[rgba(200,255,0,0.08)] border border-emerald-500 rounded hover:bg-[rgba(200,255,0,0.08)] transition-colors">
+              <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
+              </svg>
+              원자재 연결
+            </button>
+            <button @click="showCorrectModal = true"
+              class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-[#ffb800] bg-[rgba(255,184,0,0.1)] border border-amber-200 rounded hover:bg-[rgba(255,184,0,0.1)] transition-colors">
+              <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+              </svg>
+              데이터 정정
+            </button>
+          </div>
+
+          <!-- Identity Spec Grid — OpenBattery style: large label + big value, 3-column -->
+          <div class="bg-white  border border-gray-200 shadow-none overflow-hidden" style="background: #ffffff;">
+            <div class="px-6 py-4 border-b border-gray-200 flex items-center gap-2.5">
+              <div class="w-8 h-8 bg-[rgba(200,255,0,0.08)] rounded flex items-center justify-center">
+                <svg class="w-4 h-4 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0"/>
+                </svg>
+              </div>
+              <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wider">배터리 식별정보</h3>
+            </div>
+            <div class="p-6">
+              <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-10 gap-y-6">
+                <div>
+                  <p class="text-xs font-medium text-gray-400 uppercase tracking-wider mb-1">여권 ID</p>
+                  <p class="text-lg font-bold text-gray-900 font-mono break-all">{{ passport.passportId || '-' }}</p>
+                </div>
+                <div>
+                  <p class="text-xs font-medium text-gray-400 uppercase tracking-wider mb-1">배터리 ID</p>
+                  <p class="text-lg font-bold text-gray-900 font-mono break-all">{{ passport.batteryId || '-' }}</p>
+                </div>
+                <div>
+                  <p class="text-xs font-medium text-gray-400 uppercase tracking-wider mb-1">시리얼번호</p>
+                  <p class="text-lg font-bold text-gray-900">{{ passport.serialNumber || '-' }}</p>
+                </div>
+                <div>
+                  <p class="text-xs font-medium text-gray-400 uppercase tracking-wider mb-1">모델</p>
+                  <p class="text-lg font-bold text-gray-900">{{ passport.model || '-' }}</p>
+                </div>
+                <div>
+                  <p class="text-xs font-medium text-gray-400 uppercase tracking-wider mb-1">제조사</p>
+                  <p class="text-lg font-bold text-gray-900">{{ passport.manufacturerName || '-' }}</p>
+                </div>
+                <div>
+                  <p class="text-xs font-medium text-gray-400 uppercase tracking-wider mb-1">제조국가</p>
+                  <p class="text-lg font-bold text-gray-900">{{ passport.manufactureCountry || '-' }}</p>
+                </div>
+                <div>
+                  <p class="text-xs font-medium text-gray-400 uppercase tracking-wider mb-1">셀 제조사</p>
+                  <p class="text-lg font-bold text-gray-900">{{ passport.cellManufacturer || '-' }}</p>
+                </div>
+                <div>
+                  <p class="text-xs font-medium text-gray-400 uppercase tracking-wider mb-1">셀 제조국가</p>
+                  <p class="text-lg font-bold text-gray-900">{{ passport.cellManufactureCountry || '-' }}</p>
+                </div>
+                <div>
+                  <p class="text-xs font-medium text-gray-400 uppercase tracking-wider mb-1">제조일자</p>
+                  <p class="text-lg font-bold text-gray-900">{{ formatDate(passport.manufactureDate) }}</p>
+                </div>
+                <div>
+                  <p class="text-xs font-medium text-gray-400 uppercase tracking-wider mb-1">셀 유형</p>
+                  <p class="text-lg font-bold text-gray-900">{{ passport.cellType || '-' }}</p>
+                </div>
+                <div>
+                  <p class="text-xs font-medium text-gray-400 uppercase tracking-wider mb-1">화학물질</p>
+                  <p class="text-lg font-bold text-gray-900">
+                    <span v-if="passport.chemistry" class="inline-flex items-center px-2.5 py-0.5 bg-[rgba(200,255,0,0.08)] text-emerald-600 rounded text-sm font-bold border border-emerald-100">{{ passport.chemistry }}</span>
+                    <span v-else>-</span>
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Performance & Durability — OpenBattery hero spec grid -->
+          <div class="bg-white  border border-gray-200 shadow-none overflow-hidden" style="background: #ffffff;">
+            <div class="px-6 py-4 border-b border-gray-200 flex items-center gap-2.5">
+              <div class="w-8 h-8 bg-[rgba(200,255,0,0.08)] rounded flex items-center justify-center">
+                <svg class="w-4 h-4 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z"/>
+                </svg>
+              </div>
+              <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wider">성능 및 내구성</h3>
+            </div>
+            <div class="p-6 space-y-6">
+              <!-- 정격용량 (단독, 크게) -->
               <div>
-                <p class="text-xs text-gray-400 mb-1" style="font-family: 'JetBrains Mono', monospace; letter-spacing: 0.15em;">BATTERY PASSPORT</p>
-                <h1 class="text-3xl font-extrabold text-gray-900 tracking-tight" style="font-family: 'Pretendard Variable', sans-serif;">
-                  {{ passport.model || 'Battery Passport' }}
-                </h1>
-                <p class="mt-1 text-sm text-gray-500" style="font-family: 'JetBrains Mono', monospace;">
-                  {{ passport.passportId }}
-                </p>
+                <p class="text-xs text-gray-400 mb-1">정격용량</p>
+                <p class="text-3xl font-bold text-gray-900">{{ passport.ratedCapacity || '--' }} Ah</p>
+              </div>
+              <div class="border-t border-gray-200"></div>
+              <!-- 전압 3열 -->
+              <div class="grid grid-cols-3 gap-x-8">
+                <div>
+                  <p class="text-xs text-gray-400 mb-1">공칭 전압</p>
+                  <p class="text-2xl font-bold text-gray-900">{{ parseVoltageRange(passport.voltageRange).nom }} V</p>
+                </div>
+                <div>
+                  <p class="text-xs text-gray-400 mb-1">최소 전압</p>
+                  <p class="text-2xl font-bold text-gray-900">{{ parseVoltageRange(passport.voltageRange).min }} V</p>
+                </div>
+                <div>
+                  <p class="text-xs text-gray-400 mb-1">최대 전압</p>
+                  <p class="text-2xl font-bold text-gray-900">{{ parseVoltageRange(passport.voltageRange).max }} V</p>
+                </div>
+              </div>
+              <div class="border-t border-gray-200"></div>
+              <!-- 에너지/무게 3열 -->
+              <div class="grid grid-cols-3 gap-x-8">
+                <div>
+                  <p class="text-xs text-gray-400 mb-1">총 에너지</p>
+                  <p class="text-2xl font-bold text-gray-900">{{ passport.totalEnergy || '--' }} kWh</p>
+                </div>
+                <div>
+                  <p class="text-xs text-gray-400 mb-1">에너지밀도</p>
+                  <p class="text-2xl font-bold text-gray-900">{{ passport.energyDensity || '--' }} Wh/kg</p>
+                </div>
+                <div>
+                  <p class="text-xs text-gray-400 mb-1">무게</p>
+                  <p class="text-2xl font-bold text-gray-900">{{ passport.weight || '--' }} kg</p>
+                </div>
+              </div>
+              <div class="border-t border-gray-200"></div>
+              <!-- 수명/셀 3열 -->
+              <div class="grid grid-cols-3 gap-x-8">
+                <div>
+                  <p class="text-xs text-gray-400 mb-1">예상수명</p>
+                  <p class="text-2xl font-bold text-gray-900">{{ passport.expectedLifespan || '--' }} <span class="text-base font-medium text-gray-400">cycles</span></p>
+                  <p v-if="passport.expectedLifespan" class="text-xs text-gray-400 mt-0.5">약 {{ Math.round(passport.expectedLifespan / 365) }}년</p>
+                </div>
+                <div>
+                  <p class="text-xs text-gray-400 mb-1">셀 수</p>
+                  <p class="text-2xl font-bold text-gray-900">{{ passport.cellCount || '--' }} 개</p>
+                </div>
+                <div>
+                  <p class="text-xs text-gray-400 mb-1">화학물질</p>
+                  <p class="text-2xl font-bold text-gray-900">{{ passport.chemistry || '--' }}</p>
+                </div>
+              </div>
+              <div class="border-t border-gray-200"></div>
+              <!-- 온도/셀유형 2열 -->
+              <div class="grid grid-cols-2 gap-x-8">
+                <div>
+                  <p class="text-xs text-gray-400 mb-1">사용 온도 범위</p>
+                  <p class="text-2xl font-bold text-gray-900">{{ parseTempRange(passport.temperatureRange).min }}&deg;C ~ {{ parseTempRange(passport.temperatureRange).max }}&deg;C</p>
+                </div>
+                <div>
+                  <p class="text-xs text-gray-400 mb-1">셀 유형</p>
+                  <p class="text-2xl font-bold text-gray-900">{{ passport.cellType || '--' }}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- EV Binding -->
+          <div class="bg-white  border border-gray-200 shadow-none overflow-hidden" style="background: #ffffff;">
+            <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+              <div class="flex items-center gap-2.5">
+                <div class="w-8 h-8 bg-[rgba(200,255,0,0.08)] rounded flex items-center justify-center">
+                  <svg class="w-4 h-4 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101"/>
+                  </svg>
+                </div>
+                <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wider">EV 바인딩</h3>
+              </div>
+              <button v-if="isEV && !passport.vin" @click="showBindModal = true"
+                class="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-[#16a34a] hover:bg-[#15803d] text-white font-medium text-xs rounded transition-colors">
+                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
+                </svg>
+                VIN 바인딩
+              </button>
+            </div>
+            <div class="p-6">
+              <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-10 gap-y-6">
+                <div>
+                  <p class="text-xs font-medium text-gray-400 uppercase tracking-wider mb-1">VIN</p>
+                  <p class="text-lg font-bold font-mono">
+                    <span v-if="passport.vin" class="text-gray-900">{{ passport.vin }}</span>
+                    <span v-else class="text-gray-300">미등록</span>
+                  </p>
+                </div>
+                <div>
+                  <p class="text-xs font-medium text-gray-400 uppercase tracking-wider mb-1">EV 제조사</p>
+                  <p class="text-lg font-bold text-gray-900">{{ passport.evManufacturer || '-' }}</p>
+                </div>
+                <div>
+                  <p class="text-xs font-medium text-gray-400 uppercase tracking-wider mb-1">장착일자</p>
+                  <p class="text-lg font-bold text-gray-900">{{ formatDate(passport.installDate) }}</p>
+                </div>
+                <div>
+                  <p class="text-xs font-medium text-gray-400 uppercase tracking-wider mb-1">EV 조립국가</p>
+                  <p class="text-lg font-bold text-gray-900">{{ passport.evAssemblyCountry || '-' }}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- SOC / SOH / SOCE Gauges -->
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <!-- SOC Gauge -->
+            <div class="bg-white  border border-gray-200 shadow-none p-5 flex flex-col items-center" style="background: #ffffff;">
+              <h4 class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">SOC (충전 상태)</h4>
+              <svg viewBox="0 0 100 100" class="w-24 h-24">
+                <circle cx="50" cy="50" r="40" fill="none" stroke="#e2e8f0" stroke-width="6"/>
+                <circle cx="50" cy="50" r="40" fill="none"
+                        :stroke="getSocHex(scaleSOC(passport.currentSoc))" stroke-width="6"
+                        stroke-linecap="round"
+                        :stroke-dasharray="gaugeCircumference"
+                        :stroke-dashoffset="gaugeReady ? gaugeCircumference * (1 - Math.min(scaleSOC(passport.currentSoc) || 0, 100) / 100) : gaugeCircumference"
+                        transform="rotate(-90 50 50)"
+                        style="transition: stroke-dashoffset 1s ease;"/>
+                <text x="50" y="48" text-anchor="middle" dominant-baseline="middle" fill="#0f172a" font-size="18" font-weight="700">
+                  {{ passport.currentSoc != null ? scaleSOC(passport.currentSoc) : '--' }}
+                </text>
+                <text x="50" y="64" text-anchor="middle" fill="#94a3b8" font-size="10">%</text>
+              </svg>
+            </div>
+            <!-- SOH Gauge -->
+            <div class="bg-white  border border-gray-200 shadow-none p-5 flex flex-col items-center" style="background: #ffffff;">
+              <h4 class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">SOH (건강 상태)</h4>
+              <svg viewBox="0 0 100 100" class="w-24 h-24">
+                <circle cx="50" cy="50" r="40" fill="none" stroke="#e2e8f0" stroke-width="6"/>
+                <circle cx="50" cy="50" r="40" fill="none"
+                        :stroke="getSohColor(passport.currentSoh)" stroke-width="6"
+                        stroke-linecap="round"
+                        :stroke-dasharray="gaugeCircumference"
+                        :stroke-dashoffset="gaugeReady ? gaugeCircumference * (1 - (passport.currentSoh || 0) / 100) : gaugeCircumference"
+                        transform="rotate(-90 50 50)"
+                        style="transition: stroke-dashoffset 1s ease;"/>
+                <text x="50" y="48" text-anchor="middle" dominant-baseline="middle" fill="#0f172a" font-size="18" font-weight="700">
+                  {{ passport.currentSoh != null ? passport.currentSoh : '--' }}
+                </text>
+                <text x="50" y="64" text-anchor="middle" fill="#94a3b8" font-size="10">%</text>
+              </svg>
+            </div>
+            <!-- SOCE -->
+            <div class="bg-white  border border-gray-200 shadow-none p-5 flex flex-col items-center" style="background: #ffffff;">
+              <h4 class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">SOCE (에너지 충전)</h4>
+              <svg viewBox="0 0 100 100" class="w-24 h-24">
+                <circle cx="50" cy="50" r="40" fill="none" stroke="#e2e8f0" stroke-width="6"/>
+                <circle cx="50" cy="50" r="40" fill="none"
+                        stroke="#8b5cf6" stroke-width="6"
+                        stroke-linecap="round"
+                        :stroke-dasharray="gaugeCircumference"
+                        :stroke-dashoffset="gaugeReady ? gaugeCircumference * (1 - (passport.soce || 0) / 100) : gaugeCircumference"
+                        transform="rotate(-90 50 50)"
+                        style="transition: stroke-dashoffset 1s ease;"/>
+                <text x="50" y="48" text-anchor="middle" dominant-baseline="middle" fill="#0f172a" font-size="18" font-weight="700">
+                  {{ passport.soce != null ? passport.soce : '--' }}
+                </text>
+                <text x="50" y="64" text-anchor="middle" fill="#94a3b8" font-size="10">%</text>
+              </svg>
+            </div>
+          </div>
+        </div>
+
+        <!-- ==================== TAB 2: COMPLIANCE ==================== -->
+        <div v-if="activeTab === 'compliance'" class="space-y-5">
+
+          <!-- Large Circular Gauge — OpenBattery style -->
+          <div class="bg-white  border border-gray-200 shadow-none overflow-hidden" style="background: #ffffff;">
+            <div class="px-6 py-5 border-b border-gray-200">
+              <div class="flex items-center gap-3">
+                <div class="w-9 h-9 rounded flex items-center justify-center"
+                     :class="gbaCompliance.allFilled ? 'bg-[rgba(200,255,0,0.08)]' : 'bg-[rgba(255,184,0,0.1)]'">
+                  <svg class="w-5 h-5" :class="gbaCompliance.allFilled ? 'text-emerald-600' : 'text-amber-600'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                    <polyline points="9 12 11 14 15 10"/>
+                  </svg>
+                </div>
+                <div>
+                  <h2 class="text-base font-semibold text-gray-900">GBA 21 규제 준수</h2>
+                  <p class="text-xs text-gray-400 mt-0.5">Global Battery Alliance 21가지 데이터 항목</p>
+                </div>
+              </div>
+            </div>
+            <div class="px-6 py-8">
+              <!-- Large compliance gauge + grade -->
+              <div class="flex flex-col items-center mb-8">
+                <svg viewBox="0 0 200 200" class="w-48 h-48">
+                  <circle cx="100" cy="100" r="80" fill="none" stroke="#e5e7eb" stroke-width="10"/>
+                  <circle cx="100" cy="100" r="80" fill="none"
+                    stroke="#059669" stroke-width="10" stroke-linecap="round"
+                    :stroke-dasharray="complianceGaugeCircumference"
+                    :stroke-dashoffset="gaugeReady ? complianceGaugeCircumference * (1 - gbaCompliance.pct / 100) : complianceGaugeCircumference"
+                    transform="rotate(-90 100 100)"
+                    style="transition: stroke-dashoffset 1.2s ease;"/>
+                  <text x="100" y="78" text-anchor="middle" fill="#9ca3af" font-size="14" font-weight="500">등급</text>
+                  <text x="100" y="120" text-anchor="middle" fill="#111827" font-size="52" font-weight="800">{{ complianceGrade }}</text>
+                </svg>
               </div>
 
-              <!-- Status stamp -->
-              <div class="text-right flex-shrink-0">
-                <div class="inline-block px-5 py-2.5 border-2 text-center"
-                     :style="'border-color: ' + (passport.status === 'ACTIVE' ? '#059669' : passport.status === 'MANUFACTURED' ? '#2563eb' : passport.status === 'MAINTENANCE' ? '#d97706' : '#6b7280') + '; color: ' + (passport.status === 'ACTIVE' ? '#059669' : passport.status === 'MANUFACTURED' ? '#2563eb' : passport.status === 'MAINTENANCE' ? '#d97706' : '#6b7280') + ';'">
-                  <p class="text-xs font-bold tracking-widest uppercase" style="font-family: 'JetBrains Mono', monospace;">{{ getStatusBadge(passport.status).label }}</p>
+              <!-- Key metrics row -->
+              <div class="grid grid-cols-3 sm:grid-cols-6 gap-3 mb-8">
+                <div class="bg-[#fafafa]  p-4 text-center border border-gray-200">
+                  <p class="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-1.5">GBA 준수</p>
+                  <p class="text-xl font-bold text-emerald-600">{{ gbaCompliance.pct }}%</p>
                 </div>
-                <p class="text-xs text-gray-400 mt-2" style="font-family: 'JetBrains Mono', monospace;">
-                  발급일 {{ formatDate(passport.createdAt) }}
-                </p>
+                <div class="bg-[#fafafa]  p-4 text-center border border-gray-200">
+                  <p class="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-1.5">무게</p>
+                  <p class="text-xl font-bold text-gray-900">{{ passport.weight || 'N/A' }}<span v-if="passport.weight" class="text-xs font-normal text-gray-400 ml-0.5">kg</span></p>
+                </div>
+                <div class="bg-[#fafafa]  p-4 text-center border border-gray-200">
+                  <p class="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-1.5">용량</p>
+                  <p class="text-xl font-bold text-gray-900">{{ passport.totalEnergy || 'N/A' }}<span v-if="passport.totalEnergy" class="text-xs font-normal text-gray-400 ml-0.5">kWh</span></p>
+                </div>
+                <div class="bg-[#fafafa]  p-4 text-center border border-gray-200">
+                  <p class="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-1.5">재활용</p>
+                  <p class="text-xl font-bold text-gray-900">{{ passport.recycleAvailable != null ? (passport.recycleAvailable ? '가능' : '불가') : 'N/A' }}</p>
+                </div>
+                <div class="bg-[#fafafa]  p-4 text-center border border-gray-200">
+                  <p class="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-1.5">유해물질</p>
+                  <p class="text-xl font-bold text-gray-900">{{ passport.containsHazardous ? '포함' : '미포함' }}</p>
+                </div>
+                <div class="bg-[#fafafa]  p-4 text-center border border-gray-200">
+                  <p class="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-1.5">탄소발자국</p>
+                  <p class="text-xl font-bold text-gray-900">{{ estimatedCarbonFootprint != null ? estimatedCarbonFootprint : 'N/A' }}<span v-if="estimatedCarbonFootprint" class="text-xs font-normal text-gray-400 ml-0.5">kg</span></p>
+                </div>
+              </div>
+
+              <!-- Progress bar -->
+              <div class="mb-8">
+                <div class="flex items-center justify-between mb-2">
+                  <span class="text-sm font-medium text-gray-600">전체 준수율</span>
+                  <span class="text-sm font-bold tabular-nums" :class="gbaCompliance.pct >= 80 ? 'text-emerald-600' : gbaCompliance.pct >= 50 ? 'text-amber-600' : 'text-[#ff6b6b]'">{{ gbaCompliance.filled }}/21 ({{ gbaCompliance.pct }}%)</span>
+                </div>
+                <div class="w-full h-3 bg-gray-100 rounded-full overflow-hidden">
+                  <div class="h-full rounded-full transition-all duration-700"
+                       :class="gbaCompliance.pct >= 80 ? 'bg-[#34d399]' : gbaCompliance.pct >= 50 ? 'bg-[#fbbf24]' : 'bg-[rgba(239,68,68,0.1)]0'"
+                       :style="{ width: gbaCompliance.pct + '%' }"></div>
+                </div>
+              </div>
+
+              <!-- Grouped checklist -->
+              <div class="space-y-5">
+                <div v-for="group in gbaCompliance.groups" :key="group.name">
+                  <h4 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2.5">{{ group.name }}</h4>
+                  <div class="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-2">
+                    <div v-for="f in group.fields" :key="f.idx" class="flex items-center gap-2 py-1">
+                      <svg v-if="f.filled" class="w-4 h-4 text-emerald-600 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+                      </svg>
+                      <svg v-else class="w-4 h-4 text-red-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+                      </svg>
+                      <span class="text-xs" :class="f.filled ? 'text-gray-600' : 'text-red-500 font-medium'">{{ f.label }}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Certified badge -->
+              <div v-if="gbaCompliance.allFilled" class="mt-6 px-4 py-3 bg-[rgba(200,255,0,0.08)]/60 rounded border border-emerald-100 flex items-center gap-2.5">
+                <svg class="w-5 h-5 text-emerald-600 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                  <polyline points="9 12 11 14 15 10" stroke-width="2.5"/>
+                </svg>
+                <p class="text-xs font-semibold text-emerald-600">GBA 21 Battery Passport Certified - 모든 필수 데이터 항목 완료</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Carbon Footprint Card (GBA 21 #20) -->
+          <div class="bg-white  border border-gray-200 shadow-none overflow-hidden" style="background: #ffffff;">
+            <div class="px-6 py-4 border-b border-gray-200 flex items-center gap-2.5">
+              <div class="w-8 h-8 bg-teal-100 rounded flex items-center justify-center">
+                <svg class="w-4 h-4 text-teal-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+              </div>
+              <div>
+                <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wider">탄소 발자국</h3>
+                <p class="text-[10px] text-gray-400">GBA 21 #20 — Carbon Footprint (kg CO₂e)</p>
+              </div>
+            </div>
+            <div class="p-6">
+              <div v-if="estimatedCarbonFootprint != null" class="flex items-center gap-6">
+                <!-- Value -->
+                <div class="text-center">
+                  <p class="text-3xl font-bold text-gray-900 tabular-nums">{{ estimatedCarbonFootprint }}</p>
+                  <p class="text-xs text-gray-400 mt-1">kg CO₂e</p>
+                </div>
+                <!-- Grade badge -->
+                <div v-if="carbonGrade" :class="['flex items-center gap-3 px-4 py-3  border', carbonGrade.bg]">
+                  <span :class="['text-2xl font-black', carbonGrade.color]">{{ carbonGrade.grade }}</span>
+                  <div>
+                    <p :class="['text-sm font-semibold', carbonGrade.color]">{{ carbonGrade.label }}</p>
+                    <p class="text-[10px] text-gray-400">{{ passport.totalEnergy > 0 ? (estimatedCarbonFootprint / passport.totalEnergy * 1000).toFixed(1) + ' kg CO₂e/kWh' : '' }}</p>
+                  </div>
+                </div>
+                <!-- Info -->
+                <div class="flex-1 text-xs text-gray-400 leading-relaxed">
+                  <p v-if="passport.carbonFootprint > 0">제조사 신고값</p>
+                  <p v-else>배터리 무게/에너지 기반 추정값입니다. 정확한 값은 제조사의 LCA 결과를 참조하세요.</p>
+                </div>
+              </div>
+              <div v-else class="text-center py-4">
+                <p class="text-sm text-gray-400">탄소 발자국 데이터가 없습니다</p>
+                <p class="text-xs text-gray-300 mt-1">무게(kg)와 총 에너지(kWh) 정보가 있으면 자동 추정됩니다.</p>
               </div>
             </div>
           </div>
         </div>
 
-        <!-- ═══════════════════════════════════════════════════════
-             §1 BATTERY IDENTITY
-             ═══════════════════════════════════════════════════════ -->
-        <section class="mb-10">
-          <div class="flex items-baseline gap-3 mb-4" style="border-bottom: 1px solid #e5e7eb; padding-bottom: 0.5rem;">
-            <span class="text-xs font-bold text-gray-400" style="font-family: 'JetBrains Mono', monospace;">§1</span>
-            <h2 class="text-lg font-bold text-gray-900">배터리 식별 정보</h2>
-          </div>
+        <!-- ==================== TAB 3: TRACEABILITY ==================== -->
+        <div v-if="activeTab === 'traceability'" class="space-y-5">
 
-          <div class="grid grid-cols-3 gap-x-8 gap-y-4">
-            <div v-for="field in [
-              { label: '여권 ID', value: passport.passportId, mono: true },
-              { label: '배터리 ID', value: passport.batteryId, mono: true },
-              { label: '시리얼번호', value: passport.serialNumber, mono: true },
-              { label: 'DID', value: passport.did, mono: true },
-              { label: '모델', value: passport.model },
-              { label: '제조사', value: passport.manufacturerName },
-              { label: '제조국', value: passport.manufactureCountry },
-              { label: '셀 제조사', value: passport.cellManufacturer },
-              { label: '셀 제조국', value: passport.cellManufactureCountry },
-              { label: '제조일', value: formatDate(passport.manufactureDate) },
-              { label: '셀 유형', value: passport.cellType },
-              { label: '화학 구성', value: passport.chemistry }
-            ]" :key="field.label">
-              <div>
-                <p class="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-0.5">{{ field.label }}</p>
-                <p class="text-sm text-gray-900 font-medium" :class="field.mono ? 'font-mono' : ''" :style="field.mono ? 'font-family: JetBrains Mono, monospace; font-size: 0.8rem;' : ''">
-                  {{ field.value || '—' }}
-                </p>
-              </div>
+          <!-- Pending Request Alert Banner -->
+          <div v-if="passport.status === 'MAINTENANCE'"
+            class="flex items-center gap-3 px-5 py-4 bg-[rgba(255,184,0,0.1)] border border-amber-200 ">
+            <div class="w-10 h-10 rounded-full bg-[rgba(255,184,0,0.1)] flex items-center justify-center flex-shrink-0">
+              <svg class="w-5 h-5 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+              </svg>
             </div>
-          </div>
-        </section>
-
-        <!-- ═══════════════════════════════════════════════════════
-             §2 TECHNICAL SPECIFICATIONS
-             ═══════════════════════════════════════════════════════ -->
-        <section class="mb-10">
-          <div class="flex items-baseline gap-3 mb-4" style="border-bottom: 1px solid #e5e7eb; padding-bottom: 0.5rem;">
-            <span class="text-xs font-bold text-gray-400" style="font-family: 'JetBrains Mono', monospace;">§2</span>
-            <h2 class="text-lg font-bold text-gray-900">기술 사양</h2>
-          </div>
-
-          <div class="grid grid-cols-4 gap-x-6 gap-y-4">
-            <div v-for="spec in [
-              { label: '셀 수', value: passport.cellCount, unit: '' },
-              { label: '무게', value: passport.weight, unit: 'kg' },
-              { label: '총 에너지', value: passport.totalEnergy, unit: 'kWh' },
-              { label: '에너지 밀도', value: passport.energyDensity, unit: 'Wh/kg' },
-              { label: '정격 용량', value: passport.ratedCapacity, unit: 'Ah' },
-              { label: '예상 수명', value: passport.expectedLifespan, unit: 'cycles' },
-              { label: '전압 범위', value: passport.voltageRange, unit: '' },
-              { label: '온도 범위', value: passport.temperatureRange, unit: '' }
-            ]" :key="spec.label">
-              <div>
-                <p class="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-0.5">{{ spec.label }}</p>
-                <p class="text-sm text-gray-900 font-semibold" style="font-family: 'JetBrains Mono', monospace;">
-                  {{ spec.value != null && spec.value !== '' ? spec.value + (spec.unit ? ' ' + spec.unit : '') : '—' }}
-                </p>
-              </div>
+            <div class="flex-1">
+              <p class="text-sm font-semibold text-amber-800">정비 요청 접수됨</p>
+              <p class="text-xs text-amber-600 mt-0.5">EV 제조사로부터 정비 요청이 접수되었습니다. 정비를 수행하고 기록을 추가해주세요.</p>
             </div>
-          </div>
-        </section>
-
-        <!-- ═══════════════════════════════════════════════════════
-             §3 REAL-TIME STATUS
-             ═══════════════════════════════════════════════════════ -->
-        <section class="mb-10">
-          <div class="flex items-baseline gap-3 mb-4" style="border-bottom: 1px solid #e5e7eb; padding-bottom: 0.5rem;">
-            <span class="text-xs font-bold text-gray-400" style="font-family: 'JetBrains Mono', monospace;">§3</span>
-            <h2 class="text-lg font-bold text-gray-900">실시간 상태</h2>
-          </div>
-
-          <div class="grid grid-cols-4 gap-6">
-            <div v-for="gauge in [
-              { label: 'SOC', value: passport.currentSoc != null ? scaleSOC(passport.currentSoc) : null, unit: '%', color: getSocHex(scaleSOC(passport.currentSoc)) },
-              { label: 'SOH', value: passport.currentSoh, unit: '%', color: getSohColor(passport.currentSoh) },
-              { label: '방전 사이클', value: passport.totalDischargeCycles, unit: '', color: '#111827' },
-              { label: '잔여 수명', value: passport.remainingLifeCycle, unit: 'cycles', color: '#111827' }
-            ]" :key="gauge.label">
-              <div>
-                <p class="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-1">{{ gauge.label }}</p>
-                <p class="text-2xl font-bold" :style="'color: ' + gauge.color + '; font-family: JetBrains Mono, monospace;'">
-                  {{ gauge.value != null ? gauge.value : '—' }}<span v-if="gauge.value != null && gauge.unit" class="text-xs text-gray-400 ml-0.5">{{ gauge.unit }}</span>
-                </p>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <!-- ═══════════════════════════════════════════════════════
-             §4 VEHICLE BINDING
-             ═══════════════════════════════════════════════════════ -->
-        <section v-if="passport.vin || isEV" class="mb-10">
-          <div class="flex items-baseline gap-3 mb-4" style="border-bottom: 1px solid #e5e7eb; padding-bottom: 0.5rem;">
-            <span class="text-xs font-bold text-gray-400" style="font-family: 'JetBrains Mono', monospace;">§4</span>
-            <h2 class="text-lg font-bold text-gray-900">차량 바인딩</h2>
-          </div>
-
-          <div v-if="passport.vin" class="grid grid-cols-3 gap-x-8 gap-y-4">
-            <div>
-              <p class="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-0.5">VIN</p>
-              <p class="text-sm text-gray-900 font-semibold" style="font-family: 'JetBrains Mono', monospace;">{{ passport.vin }}</p>
-            </div>
-            <div>
-              <p class="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-0.5">장착일</p>
-              <p class="text-sm text-gray-900">{{ formatDate(passport.installDate) }}</p>
-            </div>
-            <div>
-              <p class="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-0.5">EV 제조사</p>
-              <p class="text-sm text-gray-900">{{ passport.evManufacturer || '—' }}</p>
-            </div>
-          </div>
-          <div v-else class="py-4">
-            <p class="text-sm text-gray-400">차량에 바인딩되지 않았습니다.</p>
-            <button v-if="isEV && (passport.status === 'MANUFACTURED' || passport.status === 'ACTIVE')" @click="showBindModal = true"
-              class="mt-3 text-sm font-medium text-emerald-700 hover:underline">
-              차량 바인딩 →
+            <button v-if="isService" @click="showMaintenanceLogModal = true"
+              class="flex-shrink-0 px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold rounded transition-colors">
+              정비 기록 추가
             </button>
           </div>
-        </section>
 
-        <!-- ═══════════════════════════════════════════════════════
-             §5 GBA 21 COMPLIANCE
-             ═══════════════════════════════════════════════════════ -->
-        <section class="mb-10">
-          <div class="flex items-baseline justify-between mb-4" style="border-bottom: 1px solid #e5e7eb; padding-bottom: 0.5rem;">
-            <div class="flex items-baseline gap-3">
-              <span class="text-xs font-bold text-gray-400" style="font-family: 'JetBrains Mono', monospace;">§5</span>
-              <h2 class="text-lg font-bold text-gray-900">GBA 21 규제 준수</h2>
+          <div v-if="passport.status === 'ANALYSIS'"
+            class="flex items-center gap-3 px-5 py-4 bg-[rgba(192,132,252,0.1)] border border-purple-200 ">
+            <div class="w-10 h-10 rounded-full bg-[rgba(192,132,252,0.1)] flex items-center justify-center flex-shrink-0">
+              <svg class="w-5 h-5 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
+              </svg>
             </div>
-            <div class="text-right">
-              <span class="text-2xl font-bold" :style="'color: ' + (gbaCompliance.pct >= 80 ? '#059669' : gbaCompliance.pct >= 50 ? '#d97706' : '#dc2626') + '; font-family: JetBrains Mono, monospace;'">
-                {{ gbaCompliance.filled }}/21
-              </span>
-              <span class="text-xs text-gray-400 ml-1">항목 충족 ({{ gbaCompliance.pct }}%)</span>
+            <div class="flex-1">
+              <p class="text-sm font-semibold text-purple-800">분석 요청 접수됨</p>
+              <p class="text-xs text-purple-600 mt-0.5">EV 제조사로부터 배터리 분석 요청이 접수되었습니다. SOH/SOCE 분석 후 결과를 제출해주세요.</p>
             </div>
+            <button v-if="isService" @click="showAnalysisResultModal = true"
+              class="flex-shrink-0 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-xs font-semibold rounded transition-colors">
+              분석 결과 제출
+            </button>
           </div>
 
-          <div class="grid grid-cols-3 gap-x-6 gap-y-1">
-            <div v-for="field in gba21Fields" :key="field.key"
-              class="flex items-center gap-2 py-1.5"
-              style="border-bottom: 1px solid #f3f4f6;">
-              <span class="w-4 h-4 flex items-center justify-center flex-shrink-0">
-                <span v-if="fieldFilled(passport, field.key)" class="text-emerald-600">✓</span>
-                <span v-else class="text-gray-300">○</span>
-              </span>
-              <span class="text-xs" :class="fieldFilled(passport, field.key) ? 'text-gray-700' : 'text-gray-400'">{{ field.label }}</span>
+          <div v-if="passport.status === 'RECYCLING'"
+            class="flex items-center gap-3 px-5 py-4 bg-[rgba(200,255,0,0.08)] border border-teal-200 ">
+            <div class="w-10 h-10 rounded-full bg-teal-100 flex items-center justify-center flex-shrink-0">
+              <svg class="w-5 h-5 text-teal-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+              </svg>
             </div>
-          </div>
-        </section>
-
-        <!-- ═══════════════════════════════════════════════════════
-             §6 LIFECYCLE & PROVENANCE
-             ═══════════════════════════════════════════════════════ -->
-        <section class="mb-10">
-          <div class="flex items-baseline gap-3 mb-4" style="border-bottom: 1px solid #e5e7eb; padding-bottom: 0.5rem;">
-            <span class="text-xs font-bold text-gray-400" style="font-family: 'JetBrains Mono', monospace;">§6</span>
-            <h2 class="text-lg font-bold text-gray-900">전주기 이력</h2>
+            <div class="flex-1">
+              <p class="text-sm font-semibold text-teal-800">재활용 대기 중</p>
+              <p class="text-xs text-teal-600 mt-0.5">재활용 가능 판정이 완료되었습니다. 원자재 추출 또는 폐기를 진행해주세요.</p>
+            </div>
+            <button v-if="isRegulator" @click="showExtractModal = true"
+              class="flex-shrink-0 px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white text-xs font-semibold rounded transition-colors">
+              원자재 추출
+            </button>
           </div>
 
-          <!-- Lifecycle stages as horizontal timeline -->
-          <div class="flex items-center gap-0 mb-6 py-4">
-            <div v-for="(step, i) in lifecycleSteps" :key="step.key" class="flex items-center">
-              <div class="flex flex-col items-center">
-                <div class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold border-2"
-                  :class="getLifecycleState(step.key, passport.status) === 'completed' ? 'border-emerald-600 bg-emerald-50 text-emerald-700' :
-                    getLifecycleState(step.key, passport.status) === 'current' ? 'border-blue-600 bg-blue-50 text-blue-700' :
-                    'border-gray-200 bg-white text-gray-300'">
-                  {{ i + 1 }}
+          <!-- Lifecycle Timeline -->
+          <div class="bg-white  border border-gray-200 shadow-none overflow-hidden" style="background: #ffffff;">
+            <div class="px-6 py-4 border-b border-gray-200 flex items-center gap-2.5">
+              <div class="w-8 h-8 bg-[rgba(200,255,0,0.08)] rounded flex items-center justify-center">
+                <svg class="w-4 h-4 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+                </svg>
+              </div>
+              <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wider">배터리 수명 주기</h3>
+            </div>
+            <div class="px-6 py-6">
+              <!-- Desktop horizontal timeline -->
+              <div class="hidden sm:block">
+                <div class="flex items-start justify-between relative">
+                  <div v-for="(step, i) in lifecycleSteps" :key="step.key"
+                       class="flex flex-col items-center relative" style="flex:1;">
+                    <!-- Connector line -->
+                    <div v-if="i < lifecycleSteps.length - 1"
+                         class="absolute top-5 h-0.5 transition-all duration-500"
+                         :class="getLifecycleState(step.key, passport.status) === 'completed' ? 'bg-emerald-400' : 'bg-gray-100'"
+                         :style="{ left: '50%', right: '-50%' }"></div>
+                    <!-- Step circle -->
+                    <div class="relative z-10 flex items-center justify-center w-10 h-10 rounded-full border-2 transition-all duration-500"
+                         :class="[
+                           getLifecycleState(step.key, passport.status) === 'completed' ? 'bg-[#34d399] border-emerald-500 text-white' : '',
+                           getLifecycleState(step.key, passport.status) === 'current' ? 'bg-white border-emerald-500 pd-pulse' : '',
+                           getLifecycleState(step.key, passport.status) === 'future' ? 'bg-white border-gray-200 text-gray-400' : '',
+                         ]">
+                      <svg v-if="getLifecycleState(step.key, passport.status) === 'completed'" class="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
+                        <polyline points="20 6 9 17 4 12"/>
+                      </svg>
+                      <div v-else-if="getLifecycleState(step.key, passport.status) === 'current'" class="w-3 h-3 rounded-full bg-[#34d399]"></div>
+                      <span v-else class="text-xs font-bold text-gray-400">{{ i + 1 }}</span>
+                    </div>
+                    <p class="mt-2 text-xs font-medium text-center leading-tight"
+                       :class="getLifecycleState(step.key, passport.status) === 'future' ? 'text-gray-400' : 'text-emerald-600'">
+                      {{ step.label }}
+                    </p>
+                  </div>
                 </div>
-                <span class="text-[10px] mt-1.5 text-center" :class="getLifecycleState(step.key, passport.status) !== 'future' ? 'text-gray-700 font-medium' : 'text-gray-300'">{{ step.label }}</span>
               </div>
-              <div v-if="i < lifecycleSteps.length - 1" class="w-12 h-0.5 mx-1 mb-5"
-                :class="getLifecycleState(step.key, passport.status) === 'completed' ? 'bg-emerald-400' : 'bg-gray-200'"></div>
-            </div>
-          </div>
-
-          <!-- Maintenance logs -->
-          <div v-if="maintenanceLogs.length > 0" class="mb-6">
-            <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3" style="font-family: 'JetBrains Mono', monospace;">정비 기록</h3>
-            <div v-for="(log, i) in maintenanceLogs" :key="i" class="flex gap-4 py-3" style="border-bottom: 1px solid #f3f4f6;">
-              <span class="text-xs text-gray-400 w-24 flex-shrink-0" style="font-family: 'JetBrains Mono', monospace;">{{ formatDate(log.date) }}</span>
-              <div class="flex-1">
-                <p class="text-sm text-gray-900 font-medium">{{ log.type || '정비' }}</p>
-                <p class="text-xs text-gray-500 mt-0.5">{{ log.description || '—' }}</p>
-              </div>
-              <span class="text-xs text-gray-400">{{ log.technician || '' }}</span>
-            </div>
-          </div>
-
-          <!-- Accident logs -->
-          <div v-if="accidentLogs.length > 0">
-            <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3" style="font-family: 'JetBrains Mono', monospace;">사고 기록</h3>
-            <div v-for="(log, i) in accidentLogs" :key="i" class="flex gap-4 py-3" style="border-bottom: 1px solid #f3f4f6;">
-              <span class="text-xs text-gray-400 w-24 flex-shrink-0" style="font-family: 'JetBrains Mono', monospace;">{{ formatDate(log.date) }}</span>
-              <div class="flex-1">
-                <span class="text-xs font-semibold px-1.5 py-0.5 border mr-2"
-                  :class="log.severity === 'critical' || log.severity === 'severe' ? 'border-red-300 text-red-700 bg-red-50' : 'border-amber-300 text-amber-700 bg-amber-50'">
-                  {{ {minor:'경미',moderate:'보통',severe:'심각',critical:'위험'}[log.severity] || log.severity }}
-                </span>
-                <span class="text-sm text-gray-700">{{ log.description || '—' }}</span>
+              <!-- Mobile vertical timeline -->
+              <div class="sm:hidden space-y-0">
+                <div v-for="(step, i) in lifecycleSteps" :key="step.key" class="flex items-start gap-3">
+                  <div class="flex flex-col items-center">
+                    <div class="flex items-center justify-center w-8 h-8 rounded-full border-2 transition-all"
+                         :class="[
+                           getLifecycleState(step.key, passport.status) === 'completed' ? 'bg-[#34d399] border-emerald-500' : '',
+                           getLifecycleState(step.key, passport.status) === 'current' ? 'bg-white border-emerald-500 pd-pulse' : '',
+                           getLifecycleState(step.key, passport.status) === 'future' ? 'bg-white border-gray-200' : '',
+                         ]">
+                      <svg v-if="getLifecycleState(step.key, passport.status) === 'completed'" class="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
+                        <polyline points="20 6 9 17 4 12"/>
+                      </svg>
+                      <div v-else-if="getLifecycleState(step.key, passport.status) === 'current'" class="w-2.5 h-2.5 rounded-full bg-[#34d399]"></div>
+                      <span v-else class="text-xs font-bold text-gray-400">{{ i + 1 }}</span>
+                    </div>
+                    <div v-if="i < lifecycleSteps.length - 1" class="w-0.5 h-6"
+                         :class="getLifecycleState(step.key, passport.status) === 'completed' ? 'bg-emerald-400' : 'bg-gray-100'"></div>
+                  </div>
+                  <p class="text-sm font-medium pt-1.5"
+                     :class="getLifecycleState(step.key, passport.status) === 'future' ? 'text-gray-400' : 'text-emerald-600'">
+                    {{ step.label }}
+                  </p>
+                </div>
               </div>
             </div>
           </div>
 
-          <!-- Action buttons for current user's role -->
-          <div class="flex flex-wrap gap-2 mt-4">
-            <button v-if="isEV && passport.status === 'ACTIVE'" @click="showMaintenanceRequestModal = true"
-              class="text-xs font-medium text-amber-700 border border-amber-300 px-3 py-1.5 hover:bg-amber-50 transition">정비 요청</button>
-            <button v-if="isService && passport.status === 'MAINTENANCE'" @click="showMaintenanceLogModal = true"
-              class="text-xs font-medium text-emerald-700 border border-emerald-300 px-3 py-1.5 hover:bg-emerald-50 transition">정비 완료</button>
-            <button v-if="(isService || isEV) && (passport.status === 'ACTIVE' || passport.status === 'MAINTENANCE')" @click="showAccidentLogModal = true"
-              class="text-xs font-medium text-red-700 border border-red-300 px-3 py-1.5 hover:bg-red-50 transition">사고 기록</button>
-            <button v-if="isRegulator && passport.status === 'ACTIVE'" @click="showAnalysisRequestModal = true"
-              class="text-xs font-medium text-purple-700 border border-purple-300 px-3 py-1.5 hover:bg-purple-50 transition">분석 요청</button>
-          </div>
-        </section>
-
-        <!-- ═══════════════════════════════════════════════════════
-             §7 BMU SENSOR DATA
-             ═══════════════════════════════════════════════════════ -->
-        <section class="mb-10">
-          <div class="flex items-baseline justify-between mb-4" style="border-bottom: 1px solid #e5e7eb; padding-bottom: 0.5rem;">
-            <div class="flex items-baseline gap-3">
-              <span class="text-xs font-bold text-gray-400" style="font-family: 'JetBrains Mono', monospace;">§7</span>
-              <h2 class="text-lg font-bold text-gray-900">센서 데이터 기록</h2>
+          <!-- Raw Materials -->
+          <div v-if="linkedMaterialDetails.length > 0"
+               class="bg-white  border border-gray-200 shadow-none overflow-hidden" style="background: #ffffff;">
+            <div class="px-6 py-4 border-b border-gray-200 flex items-center gap-2.5">
+              <div class="w-8 h-8 bg-[rgba(192,132,252,0.1)] rounded flex items-center justify-center">
+                <svg class="w-4 h-4 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/>
+                </svg>
+              </div>
+              <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wider">원자재 정보</h3>
+              <span class="ml-auto text-xs font-medium text-purple-600 bg-[rgba(192,132,252,0.1)] px-2 py-0.5 rounded-full">{{ linkedMaterialDetails.length }}종</span>
             </div>
-            <button @click="fetchBmuData" class="text-xs text-gray-400 hover:text-gray-700" style="font-family: 'JetBrains Mono', monospace;">새로고침</button>
-          </div>
-
-          <div v-if="bmuLoading" class="py-8 text-center text-sm text-gray-400">로딩 중...</div>
-          <div v-else-if="bmuRecords.length === 0" class="py-8 text-center text-sm text-gray-400">기록된 센서 데이터가 없습니다.</div>
-          <div v-else>
-            <table class="w-full text-xs" style="font-family: 'JetBrains Mono', monospace;">
-              <thead>
-                <tr style="border-bottom: 2px solid #111827;">
-                  <th class="text-left py-2 font-semibold text-gray-900 uppercase tracking-wider">시간</th>
-                  <th class="text-right py-2 font-semibold text-gray-900 uppercase tracking-wider">SOC %</th>
-                  <th class="text-right py-2 font-semibold text-gray-900 uppercase tracking-wider">전압 V</th>
-                  <th class="text-right py-2 font-semibold text-gray-900 uppercase tracking-wider">전류 A</th>
-                  <th class="text-right py-2 font-semibold text-gray-900 uppercase tracking-wider">온도 °C</th>
-                  <th class="text-right py-2 font-semibold text-gray-900 uppercase tracking-wider">사이클</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="r in bmuRecords.slice(0, 10)" :key="r.recordId" style="border-bottom: 1px solid #f3f4f6;" class="hover:bg-gray-50">
-                  <td class="py-2 text-gray-500">{{ formatDate(r.timestamp) }}</td>
-                  <td class="py-2 text-right font-semibold" :style="'color: ' + getSocHex(scaleSOC(r.soc))">{{ r.soc != null ? scaleSOC(r.soc) : '—' }}</td>
-                  <td class="py-2 text-right text-gray-700">{{ r.voltage != null ? r.voltage : '—' }}</td>
-                  <td class="py-2 text-right text-gray-700">{{ r.current != null ? r.current : '—' }}</td>
-                  <td class="py-2 text-right text-gray-700">{{ r.temperature != null ? scaleTemp(r.temperature) : '—' }}</td>
-                  <td class="py-2 text-right text-gray-500">{{ r.dischargeCycles != null ? r.dischargeCycles : '—' }}</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </section>
-
-        <!-- ═══════════════════════════════════════════════════════
-             §8 SUSTAINABILITY
-             ═══════════════════════════════════════════════════════ -->
-        <section class="mb-10">
-          <div class="flex items-baseline gap-3 mb-4" style="border-bottom: 1px solid #e5e7eb; padding-bottom: 0.5rem;">
-            <span class="text-xs font-bold text-gray-400" style="font-family: 'JetBrains Mono', monospace;">§8</span>
-            <h2 class="text-lg font-bold text-gray-900">지속가능성</h2>
-          </div>
-
-          <div class="grid grid-cols-3 gap-x-8 gap-y-4">
-            <div>
-              <p class="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-0.5">탄소 발자국</p>
-              <p class="text-sm text-gray-900 font-semibold" style="font-family: 'JetBrains Mono', monospace;">
-                {{ estimatedCarbonFootprint ? estimatedCarbonFootprint + ' kg CO₂' : '—' }}
-              </p>
-            </div>
-            <div>
-              <p class="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-0.5">유해물질 포함</p>
-              <p class="text-sm text-gray-900">{{ passport.containsHazardous ? '예' : '아니오' }}</p>
-            </div>
-            <div>
-              <p class="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-0.5">재활용 가능</p>
-              <p class="text-sm" :class="passport.recycleAvailable ? 'text-emerald-700 font-semibold' : 'text-gray-500'">
-                {{ passport.recycleAvailable ? '가능' : '판정 전' }}
-              </p>
-            </div>
-          </div>
-
-          <!-- Recycling rates if available -->
-          <div v-if="passport.recyclingRates && Object.keys(passport.recyclingRates).length > 0" class="mt-4">
-            <p class="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-2">원자재 재활용률</p>
-            <div class="flex gap-6">
-              <div v-for="(rate, material) in passport.recyclingRates" :key="material">
-                <span class="text-xs text-gray-500">{{ material }}</span>
-                <span class="text-sm font-bold text-gray-900 ml-1" style="font-family: 'JetBrains Mono', monospace;">{{ rate }}%</span>
+            <div class="p-4">
+              <div class="grid gap-3 sm:grid-cols-2">
+                <div v-for="m in linkedMaterialDetails" :key="m.materialId"
+                  class="flex items-start gap-3 p-3 rounded border border-gray-200 bg-[#fafafa]">
+                  <div class="w-8 h-8 bg-[rgba(192,132,252,0.1)] rounded flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <svg class="w-4 h-4 text-purple-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+                    </svg>
+                  </div>
+                  <div class="flex-1 min-w-0">
+                    <p class="text-sm font-semibold text-gray-900">{{ m.name }}</p>
+                    <p class="text-xs text-gray-400 mt-0.5">{{ m.materialId }}</p>
+                    <div class="flex flex-wrap gap-x-3 gap-y-1 mt-1.5 text-[11px] text-gray-400">
+                      <span v-if="m.origin">원산지: <b class="text-gray-600">{{ m.origin }}</b></span>
+                      <span v-if="m.supplier">공급자: <b class="text-gray-600">{{ m.supplier }}</b></span>
+                      <span v-if="m.quantity">수량: <b class="text-gray-600">{{ m.quantity }}{{ m.unit || '' }}</b></span>
+                      <span v-if="m.certificationId">인증: <b class="text-gray-600">{{ m.certificationId }}</b></span>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
-        </section>
 
-        <!-- ═══════════════════════════════════════════════════════
-             DOCUMENT FOOTER
-             ═══════════════════════════════════════════════════════ -->
-        <div class="mt-16 pt-4" style="border-top: 3px solid #111827;">
-          <div class="flex items-center justify-between text-xs text-gray-400" style="font-family: 'JetBrains Mono', monospace;">
-            <span>PASSPORT {{ passport.passportId }}</span>
-            <span>CREATED BY {{ passport.creatorMsp || 'ManufacturerMSP' }}</span>
-            <span>LAST UPDATED {{ formatDate(passport.updatedAt) }}</span>
+          <!-- Maintenance Logs -->
+          <div class="bg-white  border border-gray-200 shadow-none overflow-hidden" style="background: #ffffff;">
+            <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+              <div class="flex items-center gap-2.5">
+                <div class="w-8 h-8 bg-[rgba(255,184,0,0.1)] rounded flex items-center justify-center">
+                  <svg class="w-4 h-4 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/>
+                  </svg>
+                </div>
+                <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wider">정비 이력</h3>
+                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-gray-100 text-gray-600">{{ maintenanceLogs.length }}</span>
+              </div>
+              <div class="flex gap-2">
+                <button v-if="isEV && passport.status === 'ACTIVE'" @click="showMaintenanceRequestModal = true"
+                  class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#fbbf24] hover:bg-amber-600 text-white font-medium text-xs rounded transition-colors">
+                  정비 요청
+                </button>
+                <button v-if="isService" @click="showMaintenanceLogModal = true"
+                  class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#16a34a] hover:bg-[#15803d] text-white font-medium text-xs rounded transition-colors">
+                  기록 추가
+                </button>
+              </div>
+            </div>
+            <div v-if="maintenanceLogs.length === 0" class="p-10 text-center">
+              <p class="text-gray-400 text-sm">정비 이력이 없습니다</p>
+            </div>
+            <div v-else class="overflow-x-auto">
+              <table class="w-full text-sm">
+                <thead><tr class="bg-[#fafafa]/60 border-b border-gray-200">
+                  <th class="text-left px-5 py-3 font-semibold text-gray-400 text-xs uppercase tracking-wider">날짜</th>
+                  <th class="text-left px-5 py-3 font-semibold text-gray-400 text-xs uppercase tracking-wider">유형</th>
+                  <th class="text-left px-5 py-3 font-semibold text-gray-400 text-xs uppercase tracking-wider">내용</th>
+                  <th class="text-left px-5 py-3 font-semibold text-gray-400 text-xs uppercase tracking-wider">기술자</th>
+                </tr></thead>
+                <tbody>
+                  <tr v-for="(log, i) in maintenanceLogs" :key="i"
+                    :class="['transition-colors', i % 2 === 0 ? 'bg-white' : 'bg-[#fafafa]/40', 'hover:bg-[rgba(200,255,0,0.08)]/40']">
+                    <td class="px-5 py-3 text-gray-600 whitespace-nowrap">{{ formatDate(log.date) }}</td>
+                    <td class="px-5 py-3"><span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-[rgba(200,255,0,0.08)] text-emerald-600 border border-emerald-100">{{ {routine:'정기점검',repair:'수리',recall:'리콜',emergency:'긴급'}[log.type] || log.type || '-' }}</span></td>
+                    <td class="px-5 py-3 text-gray-600 max-w-xs truncate">{{ log.description || '-' }}</td>
+                    <td class="px-5 py-3 text-gray-600">{{ log.technician || '-' }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Accident Logs -->
+          <div class="bg-white  border border-gray-200 shadow-none overflow-hidden" style="background: #ffffff;">
+            <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+              <div class="flex items-center gap-2.5">
+                <div class="w-8 h-8 bg-[rgba(239,68,68,0.1)] rounded flex items-center justify-center">
+                  <svg class="w-4 h-4 text-[#ff6b6b]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                  </svg>
+                </div>
+                <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wider">사고 기록</h3>
+                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-gray-100 text-gray-600">{{ accidentLogs.length }}</span>
+              </div>
+              <button v-if="isEV || isService" @click="showAccidentLogModal = true"
+                class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[rgba(239,68,68,0.1)]0 hover:bg-red-600 text-white font-medium text-xs rounded transition-colors">
+                기록 추가
+              </button>
+            </div>
+            <div v-if="accidentLogs.length === 0" class="p-10 text-center">
+              <p class="text-gray-400 text-sm">사고 기록이 없습니다</p>
+            </div>
+            <div v-else class="overflow-x-auto">
+              <table class="w-full text-sm">
+                <thead><tr class="bg-[#fafafa]/60 border-b border-gray-200">
+                  <th class="text-left px-5 py-3 font-semibold text-gray-400 text-xs uppercase tracking-wider">날짜</th>
+                  <th class="text-left px-5 py-3 font-semibold text-gray-400 text-xs uppercase tracking-wider">심각도</th>
+                  <th class="text-left px-5 py-3 font-semibold text-gray-400 text-xs uppercase tracking-wider">내용</th>
+                  <th class="text-left px-5 py-3 font-semibold text-gray-400 text-xs uppercase tracking-wider">보고자</th>
+                </tr></thead>
+                <tbody>
+                  <tr v-for="(log, i) in accidentLogs" :key="i"
+                    :class="['transition-colors', i % 2 === 0 ? 'bg-white' : 'bg-[#fafafa]/40', 'hover:bg-[rgba(239,68,68,0.1)]/30']">
+                    <td class="px-5 py-3 text-gray-600 whitespace-nowrap">{{ formatDate(log.date) }}</td>
+                    <td class="px-5 py-3"><span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-[rgba(239,68,68,0.1)] text-[#ff6b6b] border border-red-100">{{ {minor:'경미',moderate:'보통',severe:'심각',critical:'위험'}[log.severity] || log.severity || '-' }}</span></td>
+                    <td class="px-5 py-3 text-gray-600 max-w-xs truncate">{{ log.description || '-' }}</td>
+                    <td class="px-5 py-3 text-gray-600">{{ log.reporter || '-' }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Action buttons for recycling/analysis -->
+          <div class="bg-white  border border-gray-200 shadow-none p-6" style="background: #ffffff;">
+            <h4 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4">가용 작업</h4>
+            <div class="flex flex-wrap gap-3">
+              <button v-if="isEV" @click="showAnalysisRequestModal = true"
+                class="inline-flex items-center gap-2 px-4 py-2.5 bg-purple-600 hover:bg-purple-700 text-white font-medium text-sm rounded transition-colors ">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+                분석 요청
+              </button>
+              <button v-if="isService" @click="showAnalysisResultModal = true"
+                class="inline-flex items-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-medium text-sm rounded transition-colors ">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                분석 결과 제출
+              </button>
+              <button v-if="isService || isRegulator" @click="showRecycleModal = true"
+                class="inline-flex items-center gap-2 px-4 py-2.5 bg-[#f97316] hover:bg-orange-600 text-white font-medium text-sm rounded transition-colors ">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                재활용 판정
+              </button>
+              <button v-if="isRegulator" @click="showExtractModal = true"
+                class="inline-flex items-center gap-2 px-4 py-2.5 bg-teal-600 hover:bg-teal-700 text-white font-medium text-sm rounded transition-colors ">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/></svg>
+                원자재 추출
+              </button>
+              <button v-if="isRegulator" @click="showDisposeConfirm = true" :disabled="submitting"
+                class="inline-flex items-center gap-2 px-4 py-2.5 bg-red-600 hover:bg-red-700 text-white font-medium text-sm rounded transition-colors  disabled:opacity-50">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                폐기 처리
+              </button>
+              <p v-if="!isEV && !isService && !isRegulator" class="text-sm text-gray-400 py-2">현재 가능한 작업이 없습니다.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- ==================== TAB 4: DATA ==================== -->
+        <div v-if="activeTab === 'data'">
+          <div v-if="bmuLoading" class="flex flex-col items-center justify-center py-20">
+            <div class="relative">
+              <div class="w-10 h-10 border-4 border-emerald-100 rounded-full"></div>
+              <div class="absolute top-0 left-0 w-10 h-10 border-4 border-emerald-600 rounded-full animate-spin border-t-transparent"></div>
+            </div>
+            <p class="mt-3 text-sm text-gray-400">BMU 데이터 로딩중...</p>
+          </div>
+          <div v-else-if="bmuRecords.length === 0" class="bg-white  border border-gray-200 shadow-none py-16 text-center">
+            <div class="mx-auto w-16 h-16 bg-gray-100  flex items-center justify-center mb-4">
+              <svg class="w-8 h-8 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+              </svg>
+            </div>
+            <p class="text-gray-400 font-medium">BMU 데이터가 없습니다</p>
+            <p class="text-xs text-gray-400 mt-1">아직 수집된 BMU 데이터가 없습니다.</p>
+          </div>
+          <div v-else class="space-y-4">
+            <div class="bg-white  border border-gray-200 shadow-none overflow-hidden" style="background: #ffffff;">
+              <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                  <thead>
+                    <tr class="bg-[#fafafa]/80 border-b border-gray-200">
+                      <th class="text-left px-5 py-3.5 font-semibold text-gray-400 text-xs uppercase tracking-wider">기록 ID</th>
+                      <th class="text-left px-5 py-3.5 font-semibold text-gray-400 text-xs uppercase tracking-wider">시각</th>
+                      <th class="text-left px-5 py-3.5 font-semibold text-gray-400 text-xs uppercase tracking-wider">SOC(%)</th>
+                      <th class="text-left px-5 py-3.5 font-semibold text-gray-400 text-xs uppercase tracking-wider">전압(V)</th>
+                      <th class="text-left px-5 py-3.5 font-semibold text-gray-400 text-xs uppercase tracking-wider">전류(A)</th>
+                      <th class="text-left px-5 py-3.5 font-semibold text-gray-400 text-xs uppercase tracking-wider">온도 (&deg;C)</th>
+                      <th class="text-left px-5 py-3.5 font-semibold text-gray-400 text-xs uppercase tracking-wider">방전주기</th>
+                      <th class="text-left px-5 py-3.5 font-semibold text-gray-400 text-xs uppercase tracking-wider">상태</th>
+                      <th v-if="isManufacturer || isRegulator" class="text-center px-5 py-3.5 font-semibold text-gray-400 text-xs uppercase tracking-wider">작업</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="(r, idx) in bmuRecords" :key="r.recordId"
+                      :class="['transition-colors', idx % 2 === 0 ? 'bg-white' : 'bg-[#fafafa]/40', 'hover:bg-[rgba(200,255,0,0.08)]/40']">
+                      <td class="px-5 py-3 font-mono text-xs text-gray-400">{{ r.recordId }}</td>
+                      <td class="px-5 py-3 text-gray-600 text-xs">{{ formatDate(r.timestamp) }}</td>
+                      <td class="px-5 py-3">
+                        <span class="font-semibold text-gray-900 tabular-nums">{{ r.soc != null ? scaleSOC(r.soc) + '%' : '-' }}</span>
+                      </td>
+                      <td class="px-5 py-3 text-gray-600 tabular-nums">{{ r.voltage != null ? r.voltage + 'V' : '-' }}</td>
+                      <td class="px-5 py-3 text-gray-600 tabular-nums">{{ r.current != null ? r.current + 'A' : '-' }}</td>
+                      <td class="px-5 py-3 text-gray-600 tabular-nums">{{ r.temperature != null ? scaleTemp(r.temperature) + '°C' : '-' }}</td>
+                      <td class="px-5 py-3 text-gray-600 tabular-nums">{{ r.dischargeCycles != null ? r.dischargeCycles : '-' }}</td>
+                      <td class="px-5 py-3">
+                        <div class="flex flex-wrap gap-1">
+                          <span v-for="badge in decodeStatusFlags(r.statusFlags)" :key="badge.label"
+                            :class="['inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold border', badge.color]">
+                            {{ badge.label }}
+                          </span>
+                          <span v-if="decodeStatusFlags(r.statusFlags).length === 0" class="text-xs text-gray-300">--</span>
+                          <span v-if="r.status === 'INVALIDATED'" class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-[rgba(239,68,68,0.1)] text-[#ff6b6b] border border-gray-200">무효</span>
+                        </div>
+                      </td>
+                      <td v-if="isManufacturer || isRegulator" class="px-5 py-3 text-center">
+                        <button v-if="r.status !== 'INVALIDATED'" @click="openInvalidateModal(r.recordId)"
+                          class="text-[10px] font-medium text-red-500 hover:text-[#ff6b6b] hover:bg-[rgba(239,68,68,0.1)] px-2 py-1 rounded transition-colors">
+                          무효화
+                        </button>
+                        <span v-else class="text-[10px] text-gray-400">처리됨</span>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+              <div class="border-t border-gray-200 bg-[#fafafa] px-5 py-3 flex items-center justify-between">
+                <span class="text-xs text-gray-400">최근 <strong class="text-gray-600">{{ bmuRecords.length }}</strong>건 표시</span>
+                <button @click="$emit('navigate', 'bmu-data')"
+                  class="text-xs text-emerald-600 hover:text-emerald-600 font-medium transition-colors flex items-center gap-1">
+                  전체 BMU 데이터
+                  <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ==================== TAB 5: TRUST ==================== -->
+        <div v-if="activeTab === 'trust'" class="space-y-5">
+
+          <!-- Blockchain Verification Card -->
+          <div class="bg-white  border border-gray-200 shadow-none overflow-hidden" style="background: #ffffff;">
+            <div class="px-6 py-4 border-b border-gray-200 flex items-center gap-2.5">
+              <div class="w-8 h-8 bg-[rgba(200,255,0,0.08)] rounded flex items-center justify-center">
+                <svg class="w-4 h-4 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                </svg>
+              </div>
+              <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wider">블록체인 검증</h3>
+            </div>
+            <div class="p-6 space-y-5">
+              <!-- DID -->
+              <div>
+                <dt class="text-xs font-medium text-gray-400 uppercase tracking-wider mb-1.5">DID (Decentralized Identifier)</dt>
+                <dd class="flex items-center gap-2">
+                  <span class="text-sm text-gray-900 font-mono bg-[#fafafa] px-3 py-1.5 rounded border border-gray-200 break-all flex-1">{{ passport.did || '-' }}</span>
+                  <button v-if="passport.did" @click="copyToClipboard(passport.did)"
+                    class="flex-shrink-0 w-8 h-8 rounded hover:bg-gray-100 flex items-center justify-center transition-colors text-gray-400 hover:text-gray-600"
+                    title="복사">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                      <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>
+                    </svg>
+                  </button>
+                </dd>
+              </div>
+
+              <!-- Verification badge -->
+              <div class="flex items-center gap-3">
+                <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[rgba(200,255,0,0.08)] border border-emerald-500">
+                  <svg class="w-4 h-4 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+                  </svg>
+                  <span class="text-xs font-semibold text-emerald-600">Ed25519 서명 검증</span>
+                </div>
+              </div>
+
+              <!-- Meta fields -->
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-4">
+                <div>
+                  <dt class="text-xs font-medium text-gray-400 uppercase tracking-wider mb-1">발급 기관</dt>
+                  <dd class="text-sm text-gray-900 font-medium">{{ passport.creatorMsp || passport.creatorOrg || '-' }}</dd>
+                </div>
+                <div>
+                  <dt class="text-xs font-medium text-gray-400 uppercase tracking-wider mb-1">생성일시</dt>
+                  <dd class="text-sm text-gray-900">{{ formatDate(passport.createdAt) }}</dd>
+                </div>
+                <div>
+                  <dt class="text-xs font-medium text-gray-400 uppercase tracking-wider mb-1">최종 수정일시</dt>
+                  <dd class="text-sm text-gray-900">{{ formatDate(passport.updatedAt) }}</dd>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ===== QR Code ===== -->
+          <div class="bg-white  border border-gray-200 shadow-none overflow-hidden" style="background: #ffffff;">
+            <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+              <div class="flex items-center gap-2.5">
+                <div class="w-8 h-8 bg-gray-100 rounded flex items-center justify-center">
+                  <svg class="w-4 h-4 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>
+                    <line x1="14" y1="14" x2="14" y2="14.01"/><line x1="21" y1="14" x2="21" y2="14.01"/>
+                  </svg>
+                </div>
+                <div>
+                  <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wider">QR 코드</h3>
+                  <p class="text-[10px] text-gray-400 mt-0.5">이 여권의 QR 코드를 스캔하여 정보를 조회할 수 있습니다</p>
+                </div>
+              </div>
+              <button @click="downloadQr"
+                class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-600 bg-gray-100 rounded hover:bg-gray-100 transition-colors">
+                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                </svg>
+                다운로드
+              </button>
+            </div>
+            <div class="p-6 flex items-center gap-6">
+              <div class="flex-shrink-0">
+                <canvas ref="qrCanvas" id="qr-canvas" class="rounded border border-gray-200"></canvas>
+              </div>
+              <div class="flex-1 space-y-2">
+                <div>
+                  <p class="text-[10px] text-gray-400 uppercase font-medium">여권 ID</p>
+                  <p class="text-sm font-mono text-gray-600">{{ passport.passportId }}</p>
+                </div>
+                <div>
+                  <p class="text-[10px] text-gray-400 uppercase font-medium">QR 내용</p>
+                  <p class="text-xs font-mono text-gray-400 break-all">{{ qrUrl }}</p>
+                </div>
+                <p class="text-[10px] text-gray-400 leading-relaxed">이 QR 코드를 스캔하면 배터리 여권 상세 페이지로 이동합니다. 인쇄하여 배터리 팩에 부착할 수 있습니다.</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- ===== VC (Verifiable Credentials) ===== -->
+          <div class="bg-white  border border-gray-200 shadow-none overflow-hidden" style="background: #ffffff;">
+            <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+              <div class="flex items-center gap-2.5">
+                <div class="w-8 h-8 bg-indigo-100 rounded flex items-center justify-center">
+                  <svg class="w-4 h-4 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+                  </svg>
+                </div>
+                <div>
+                  <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wider">검증 가능 인증서 (VC)</h3>
+                  <p class="text-[10px] text-gray-400 mt-0.5">DID 기반 Verifiable Credentials</p>
+                </div>
+              </div>
+              <button v-if="canIssueVc" @click="showVcIssueModal = true"
+                class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 text-white text-xs font-semibold rounded hover:bg-indigo-700 transition-colors">
+                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                인증서 발급
+              </button>
+            </div>
+            <div v-if="vcLoading" class="flex items-center justify-center py-12">
+              <div class="w-8 h-8 border-[3px] border-indigo-100 border-t-indigo-600 rounded-full animate-spin"></div>
+            </div>
+            <div v-else-if="vcList.length === 0" class="py-10 text-center">
+              <svg class="mx-auto w-10 h-10 text-gray-300 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+              </svg>
+              <p class="text-sm text-gray-400">발급된 인증서가 없습니다</p>
+            </div>
+            <div v-else class="divide-y divide-slate-100">
+              <div v-for="vc in vcList" :key="vc.credentialId"
+                class="px-6 py-4 hover:bg-[#fafafa] transition-colors">
+                <div class="flex items-start justify-between gap-4">
+                  <div class="min-w-0 flex-1">
+                    <div class="flex items-center gap-2 flex-wrap mb-1.5">
+                      <span class="text-sm font-semibold text-gray-900">
+                        {{ {BATTERY_PASSPORT:'배터리 여권',BATTERY_HEALTH:'배터리 건강',MAINTENANCE:'정비 인증',COMPLIANCE:'규제 적합',RECYCLING:'재활용 인증'}[vc.credType] || vc.credType }}
+                      </span>
+                      <span :class="['inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold border',
+                        vc.status === 'ACTIVE' ? 'bg-[rgba(200,255,0,0.08)] text-emerald-600 border-emerald-500' :
+                        vc.status === 'REVOKED' ? 'bg-[rgba(239,68,68,0.1)] text-[#ff6b6b] border-gray-200' :
+                        'bg-[#fafafa] text-gray-400 border-gray-200']">
+                        <span :class="['w-1.5 h-1.5 rounded-full',
+                          vc.status === 'ACTIVE' ? 'bg-[#34d399]' : vc.status === 'REVOKED' ? 'bg-[rgba(239,68,68,0.1)]0' : 'bg-gray-400']"></span>
+                        {{ vc.status === 'ACTIVE' ? '유효' : vc.status === 'REVOKED' ? '폐기' : vc.status }}
+                      </span>
+                    </div>
+                    <div class="flex items-center gap-3 text-xs text-gray-400 flex-wrap">
+                      <span class="font-mono">{{ vc.credentialId }}</span>
+                      <span>발급: {{ vc.issuerMsp || '-' }}</span>
+                      <span>{{ formatDate(vc.issuedAt) }}</span>
+                    </div>
+                  </div>
+                  <div class="flex items-center gap-1.5 flex-shrink-0">
+                    <button @click="verifyVc(vc.credentialId)"
+                      class="px-2.5 py-1.5 text-[11px] font-medium text-indigo-600 bg-indigo-50 rounded hover:bg-indigo-100 border border-indigo-100 transition-colors">
+                      검증
+                    </button>
+                    <button v-if="vc.status === 'ACTIVE' && vc.issuerMsp === auth.orgMsp"
+                      @click="revokeVc(vc.credentialId)"
+                      class="px-2.5 py-1.5 text-[11px] font-medium text-[#ff6b6b] bg-[rgba(239,68,68,0.1)] rounded hover:bg-[rgba(239,68,68,0.1)] border border-red-100 transition-colors">
+                      폐기
+                    </button>
+                  </div>
+                </div>
+                <!-- Verification result inline -->
+                <div v-if="vc._verified" class="mt-2 px-3 py-2 rounded text-xs"
+                  :class="vc._verified.valid ? 'bg-[rgba(200,255,0,0.08)] text-emerald-600 border border-emerald-500' : 'bg-[rgba(239,68,68,0.1)] text-[#ff6b6b] border border-gray-200'">
+                  {{ vc._verified.valid ? '검증 성공: 유효한 인증서입니다.' : '검증 실패: ' + (vc._verified.reason || '인증서가 유효하지 않습니다.') }}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- VC Issue Modal -->
+          <div v-if="showVcIssueModal" class="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div class="fixed inset-0 bg-black/40 backdrop-blur-sm" @click="showVcIssueModal = false"></div>
+            <div class="relative bg-white  shadow-xl border border-gray-200 w-full max-w-md">
+              <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200">
+                <h3 class="text-base font-bold text-gray-900">인증서 발급</h3>
+                <button @click="showVcIssueModal = false" class="text-gray-400 hover:text-gray-600 transition-colors">
+                  <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
+              </div>
+              <form @submit.prevent="issueVc" class="p-6 space-y-4">
+                <div>
+                  <label class="block text-xs font-medium text-gray-400 mb-1.5">인증서 유형 <span class="text-red-500">*</span></label>
+                  <div class="flex flex-wrap gap-2">
+                    <button v-for="ct in availableCredTypes" :key="ct.value"
+                      @click="vcForm.credType = ct.value" type="button"
+                      :class="['px-3 py-2 rounded text-sm font-medium border transition-all',
+                        vcForm.credType === ct.value ? 'bg-indigo-50 text-indigo-700 border-indigo-300' : 'bg-white text-gray-600 border-gray-200 hover:bg-[#fafafa]']">
+                      {{ ct.label }}
+                    </button>
+                  </div>
+                </div>
+                <div>
+                  <label class="block text-xs font-medium text-gray-400 mb-1.5">소유자 DID</label>
+                  <input v-model="vcForm.holderDid" type="text" :placeholder="passport?.did || 'did:example:...'"
+                    class="w-full px-3.5 py-2.5 border border-gray-200 rounded focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none text-sm" />
+                  <p class="text-[10px] text-gray-400 mt-1">비워두면 여권의 DID가 사용됩니다.</p>
+                </div>
+                <div>
+                  <label class="block text-xs font-medium text-gray-400 mb-1.5">만료일</label>
+                  <input v-model="vcForm.expiresAt" type="date"
+                    class="w-full px-3.5 py-2.5 border border-gray-200 rounded focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none text-sm" />
+                </div>
+                <div class="flex justify-end gap-3 pt-3 border-t border-gray-200">
+                  <button type="button" @click="showVcIssueModal = false"
+                    class="px-4 py-2.5 text-sm font-medium text-gray-600 bg-white border border-gray-200 hover:bg-[#fafafa]  transition-colors">취소</button>
+                  <button type="submit" :disabled="submitting"
+                    class="px-5 py-2.5 text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700  transition-colors disabled:opacity-50">
+                    {{ submitting ? '발급 중...' : '발급' }}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+
+          <!-- Correction History -->
+          <div v-if="correctionHistory.length > 0" class="bg-white  border border-gray-200 shadow-none overflow-hidden" style="background: #ffffff;">
+            <div class="px-6 py-4 border-b border-gray-200 flex items-center gap-2.5">
+              <div class="w-8 h-8 bg-[rgba(255,184,0,0.1)] rounded flex items-center justify-center">
+                <svg class="w-4 h-4 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                </svg>
+              </div>
+              <div>
+                <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wider">데이터 정정 이력</h3>
+                <p class="text-[10px] text-gray-400 mt-0.5">블록체인에 기록된 여권 데이터 수정 내역</p>
+              </div>
+            </div>
+            <div class="divide-y divide-slate-100">
+              <div v-for="(c, i) in correctionHistory" :key="i" class="px-6 py-3.5">
+                <div class="flex items-start justify-between gap-4">
+                  <div class="min-w-0 flex-1">
+                    <div class="flex items-center gap-2 flex-wrap mb-1">
+                      <span class="text-sm font-semibold text-gray-900">{{ (correctableFields.find(f => f.value === c.fieldName) || {}).label || c.fieldName }}</span>
+                      <span class="text-xs text-gray-400">→</span>
+                      <span class="text-sm font-mono text-[#ffb800] bg-[rgba(255,184,0,0.1)] px-1.5 py-0.5 rounded">{{ c.newValue }}</span>
+                    </div>
+                    <div class="flex items-center gap-3 text-xs text-gray-400">
+                      <span>이전: {{ c.originalValue && !isNaN(c.originalValue) ? parseFloat(c.originalValue) : (c.originalValue || '-') }}</span>
+                      <span>사유: {{ c.reason }}</span>
+                    </div>
+                  </div>
+                  <div class="text-right flex-shrink-0">
+                    <p class="text-[10px] text-gray-400">{{ formatDate(c.date) }}</p>
+                    <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-gray-100 text-gray-600">{{ c.correctedBy }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Change History -->
+          <div class="bg-white  border border-gray-200 shadow-none overflow-hidden" style="background: #ffffff;">
+            <div class="px-6 py-4 border-b border-gray-200 flex items-center gap-2.5">
+              <div class="w-8 h-8 bg-[rgba(192,132,252,0.1)] rounded flex items-center justify-center">
+                <svg class="w-4 h-4 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+                </svg>
+              </div>
+              <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wider">변경 이력</h3>
+            </div>
+            <div v-if="historyLoading" class="flex flex-col items-center justify-center py-16">
+              <div class="relative">
+                <div class="w-10 h-10 border-4 border-emerald-100 rounded-full"></div>
+                <div class="absolute top-0 left-0 w-10 h-10 border-4 border-emerald-600 rounded-full animate-spin border-t-transparent"></div>
+              </div>
+              <p class="mt-3 text-sm text-gray-400">변경 이력 로딩중...</p>
+            </div>
+            <div v-else-if="history.length === 0" class="p-10 text-center">
+              <p class="text-gray-400 text-sm">변경 이력이 없습니다</p>
+            </div>
+            <div v-else class="px-6 py-5">
+              <p class="text-xs text-gray-400 mb-4">총 <strong class="text-gray-600">{{ history.length }}</strong>건의 주요 변경 이력 (상태 전환/VIN/정비 기준)</p>
+              <div class="max-h-[500px] overflow-y-auto pr-2">
+                <div class="relative pl-7">
+                <div class="absolute left-[11px] top-0 bottom-0 w-0.5 bg-gradient-to-b from-emerald-300 via-emerald-200 to-slate-200"></div>
+                <div class="space-y-4">
+                  <div v-for="(entry, i) in history.slice(-20)" :key="i" class="relative">
+                    <div class="absolute -left-7 top-4 w-[22px] h-[22px] rounded-full border-[3px] border-white  flex items-center justify-center"
+                      :class="entry.changeDesc && entry.changeDesc.includes('사고') ? 'bg-[rgba(239,68,68,0.1)]' : (entry.value && entry.value.status ? getStatusBadge(entry.value.status).bg : 'bg-[rgba(200,255,0,0.08)]')">
+                      <div class="w-2 h-2 rounded-full"
+                        :class="entry.changeDesc && entry.changeDesc.includes('사고') ? 'bg-[rgba(239,68,68,0.1)]0' : (entry.value && entry.value.status ? getStatusBadge(entry.value.status).dot : 'bg-[#34d399]')"></div>
+                    </div>
+                    <div class="bg-[#fafafa] rounded border border-gray-200 p-4 ml-3 hover:bg-white transition-colors">
+                      <div class="flex items-start justify-between gap-3">
+                        <div class="min-w-0 flex-1">
+                          <div class="flex items-center gap-2 flex-wrap">
+                            <p class="text-sm font-semibold text-gray-900">{{ entry.changeDesc || ('변경 #' + entry.index) }}</p>
+                            <span v-if="entry.value && entry.value.status"
+                              :class="['inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold border',
+                                getStatusBadge(entry.value.status).bg, getStatusBadge(entry.value.status).text, getStatusBadge(entry.value.status).border]">
+                              <span :class="['w-1 h-1 rounded-full', getStatusBadge(entry.value.status).dot]"></span>
+                              {{ getStatusBadge(entry.value.status).label }}
+                            </span>
+                          </div>
+                          <div class="flex items-center gap-3 mt-1.5 flex-wrap">
+                            <span class="text-xs text-gray-400 flex items-center gap-1">
+                              <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+                              </svg>
+                              {{ formatDate(entry.timestamp) }}
+                            </span>
+                            <span class="inline-flex items-center gap-1 px-1.5 py-0.5 bg-[rgba(200,255,0,0.08)] text-emerald-600 rounded text-[10px] font-medium border border-emerald-100">
+                              <svg class="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                              On-Chain TX #{{ entry.index }}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
       </div>
 
-      <!-- ═══ MODALS (preserved from existing code, minimal styling) ═══ -->
+      <!-- ==================== MODALS ==================== -->
 
-      <!-- Bind to Vehicle Modal -->
-      <div v-if="showBindModal" class="fixed inset-0 z-50 flex items-center justify-center p-4" style="background: rgba(0,0,0,0.3);" @click.self="showBindModal = false">
-        <div class="bg-white w-full max-w-md p-6 shadow-lg border border-gray-200">
-          <h3 class="text-lg font-bold text-gray-900 mb-4">차량 바인딩</h3>
-          <div class="space-y-3">
-            <div><label class="text-xs font-semibold text-gray-500 uppercase">VIN *</label><input v-model="bindForm.vin" class="w-full mt-1 px-3 py-2 border border-gray-200 text-sm" placeholder="Vehicle ID" /></div>
-            <div><label class="text-xs font-semibold text-gray-500 uppercase">장착일</label><input v-model="bindForm.installDate" type="date" class="w-full mt-1 px-3 py-2 border border-gray-200 text-sm" /></div>
-            <div><label class="text-xs font-semibold text-gray-500 uppercase">EV 제조사</label><input v-model="bindForm.evManufacturer" class="w-full mt-1 px-3 py-2 border border-gray-200 text-sm" /></div>
-            <div><label class="text-xs font-semibold text-gray-500 uppercase">조립국</label><input v-model="bindForm.evAssemblyCountry" class="w-full mt-1 px-3 py-2 border border-gray-200 text-sm" /></div>
+      <!-- VIN Bind Modal -->
+      <teleport to="body">
+        <transition name="fade">
+          <div v-if="showBindModal" class="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div class="fixed inset-0 bg-white/60 backdrop-blur-sm" @click="showBindModal = false"></div>
+            <div class="relative bg-white  shadow-2xl w-full max-w-lg border border-gray-200/50 overflow-hidden">
+              <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                  <div class="w-9 h-9 bg-[rgba(200,255,0,0.08)] rounded flex items-center justify-center">
+                    <svg class="w-5 h-5 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
+                    </svg>
+                  </div>
+                  <h2 class="text-lg font-bold text-gray-900">VIN 바인딩</h2>
+                </div>
+                <button @click="showBindModal = false" class="w-8 h-8 rounded hover:bg-gray-100 flex items-center justify-center transition-colors text-gray-400 hover:text-gray-600">
+                  <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+              </div>
+              <form @submit.prevent="submitBind" class="p-6 space-y-4">
+                <div>
+                  <label class="block text-xs font-medium text-gray-400 mb-1.5">VIN</label>
+                  <input v-model="bindForm.vin" type="text" placeholder="차량 식별번호"
+                    class="w-full px-3.5 py-2.5 border border-gray-200 rounded focus:border-[#16a34a] outline-none text-sm" />
+                </div>
+                <div>
+                  <label class="block text-xs font-medium text-gray-400 mb-1.5">장착일자</label>
+                  <input v-model="bindForm.installDate" type="date"
+                    class="w-full px-3.5 py-2.5 border border-gray-200 rounded focus:border-[#16a34a] outline-none text-sm" />
+                </div>
+                <div>
+                  <label class="block text-xs font-medium text-gray-400 mb-1.5">EV 제조사</label>
+                  <input v-model="bindForm.evManufacturer" type="text" placeholder="EV 제조사명"
+                    class="w-full px-3.5 py-2.5 border border-gray-200 rounded focus:border-[#16a34a] outline-none text-sm" />
+                </div>
+                <div>
+                  <label class="block text-xs font-medium text-gray-400 mb-1.5">EV 조립국가</label>
+                  <input v-model="bindForm.evAssemblyCountry" type="text" placeholder="KR"
+                    class="w-full px-3.5 py-2.5 border border-gray-200 rounded focus:border-[#16a34a] outline-none text-sm" />
+                </div>
+                <div>
+                  <label class="block text-xs font-medium text-gray-400 mb-1.5">차량 사진 <span class="text-gray-400 text-[10px] font-normal">(선택)</span></label>
+                  <label class="flex items-center justify-center gap-2 w-full px-4 py-3 border-2 border-dashed border-gray-200 rounded hover:border-emerald-400 hover:bg-[rgba(200,255,0,0.08)]/30 transition-colors cursor-pointer">
+                    <svg class="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                    </svg>
+                    <span class="text-sm text-gray-400">{{ vehicleImageFile ? vehicleImageFile.name : '이미지 선택...' }}</span>
+                    <input type="file" accept="image/*" class="hidden" @change="vehicleImageFile = $event.target.files[0]" />
+                  </label>
+                  <div v-if="vehicleImageFile" class="mt-2 flex items-center gap-2">
+                    <span class="text-xs text-emerald-600">{{ vehicleImageFile.name }}</span>
+                    <button type="button" @click="vehicleImageFile = null" class="text-xs text-red-500 hover:text-[#ff6b6b]">삭제</button>
+                  </div>
+                </div>
+                <div class="flex justify-end gap-3 pt-3 border-t border-gray-200">
+                  <button type="button" @click="showBindModal = false"
+                    class="px-4 py-2.5 text-sm font-medium text-gray-600 bg-white border border-gray-200 hover:bg-[#fafafa]  transition-colors">취소</button>
+                  <button type="submit" :disabled="submitting"
+                    class="px-5 py-2.5 text-sm font-semibold text-white bg-[#16a34a] hover:bg-[#15803d]  transition-colors disabled:opacity-50">
+                    {{ submitting ? '처리중...' : '바인딩' }}
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
-          <div class="flex justify-end gap-2 mt-5">
-            <button @click="showBindModal = false" class="px-4 py-2 text-sm text-gray-500 border border-gray-200 hover:bg-gray-50">취소</button>
-            <button @click="submitBind" :disabled="submitting" class="px-4 py-2 text-sm font-semibold text-white bg-emerald-700 hover:bg-emerald-800">바인딩</button>
+        </transition>
+      </teleport>
+
+      <!-- Data Correction Modal -->
+      <div v-if="showCorrectModal" class="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div class="fixed inset-0 bg-black/40 backdrop-blur-sm" @click="showCorrectModal = false"></div>
+        <div class="relative bg-white  shadow-xl border border-gray-200 w-full max-w-md">
+          <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200">
+            <h3 class="text-base font-bold text-gray-900">데이터 정정</h3>
+            <button @click="showCorrectModal = false" class="text-gray-400 hover:text-gray-600">
+              <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+          </div>
+          <form @submit.prevent="submitCorrection" class="p-6 space-y-4">
+            <div>
+              <label class="block text-xs font-medium text-gray-400 mb-1.5">정정 필드 <span class="text-red-500">*</span></label>
+              <select v-model="correctForm.fieldName"
+                class="w-full px-3.5 py-2.5 border border-gray-200 rounded focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 outline-none text-sm bg-white">
+                <option value="">선택하세요</option>
+                <option v-for="f in correctableFields" :key="f.value" :value="f.value">{{ f.label }}</option>
+              </select>
+            </div>
+            <div v-if="correctForm.fieldName && passport" class="bg-[#fafafa] rounded border border-gray-200 px-4 py-3">
+              <p class="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-1">현재 값</p>
+              <p class="text-sm font-mono font-bold text-gray-900">{{ passport[correctForm.fieldName] || '(비어있음)' }}</p>
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-gray-400 mb-1.5">새 값 <span class="text-red-500">*</span></label>
+              <input v-model="correctForm.newValue" type="text" placeholder="정정할 값을 입력하세요"
+                class="w-full px-3.5 py-2.5 border border-gray-200 rounded focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 outline-none text-sm" />
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-gray-400 mb-1.5">정정 사유 <span class="text-red-500">*</span></label>
+              <textarea v-model="correctForm.reason" rows="2" placeholder="정정 사유를 입력하세요"
+                class="w-full px-3.5 py-2.5 border border-gray-200 rounded focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 outline-none text-sm resize-none"></textarea>
+            </div>
+            <div class="flex justify-end gap-3 pt-3 border-t border-gray-200">
+              <button type="button" @click="showCorrectModal = false"
+                class="px-4 py-2.5 text-sm font-medium text-gray-600 bg-white border border-gray-200 hover:bg-[#fafafa]  transition-colors">취소</button>
+              <button type="submit" :disabled="!correctForm.fieldName || !correctForm.newValue || !correctForm.reason || submitting"
+                class="px-5 py-2.5 text-sm font-semibold text-white bg-amber-600 hover:bg-amber-700  transition-colors disabled:opacity-50">
+                {{ submitting ? '처리중...' : '정정' }}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- BMU Invalidate Modal -->
+      <div v-if="showInvalidateModal" class="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div class="fixed inset-0 bg-black/40 backdrop-blur-sm" @click="showInvalidateModal = false"></div>
+        <div class="relative bg-white  shadow-xl border border-gray-200 w-full max-w-sm">
+          <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200">
+            <h3 class="text-base font-bold text-[#ff6b6b]">BMU 레코드 무효화</h3>
+            <button @click="showInvalidateModal = false" class="text-gray-400 hover:text-gray-600">
+              <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+          </div>
+          <form @submit.prevent="submitInvalidate" class="p-6 space-y-4">
+            <div class="bg-[rgba(239,68,68,0.1)] rounded border border-gray-200 p-3">
+              <p class="text-xs text-[#ff6b6b]">레코드 ID: <span class="font-mono font-bold">{{ invalidateForm.recordId }}</span></p>
+              <p class="text-[10px] text-red-500 mt-1">무효화된 레코드는 원본이 보존되지만, 유효하지 않은 것으로 표시됩니다.</p>
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-gray-400 mb-1.5">무효화 사유 <span class="text-red-500">*</span></label>
+              <textarea v-model="invalidateForm.reason" rows="2" placeholder="무효화 사유를 입력하세요"
+                class="w-full px-3.5 py-2.5 border border-gray-200 rounded focus:ring-2 focus:ring-red-500/20 focus:border-red-500 outline-none text-sm resize-none"></textarea>
+            </div>
+            <div class="flex justify-end gap-3 pt-3 border-t border-gray-200">
+              <button type="button" @click="showInvalidateModal = false"
+                class="px-4 py-2.5 text-sm font-medium text-gray-600 bg-white border border-gray-200 hover:bg-[#fafafa]  transition-colors">취소</button>
+              <button type="submit" :disabled="!invalidateForm.reason || submitting"
+                class="px-5 py-2.5 text-sm font-semibold text-white bg-red-600 hover:bg-red-700  transition-colors disabled:opacity-50">
+                {{ submitting ? '처리중...' : '무효화' }}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- Link Raw Materials Modal -->
+      <div v-if="showLinkMaterialsModal" class="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div class="fixed inset-0 bg-black/40 backdrop-blur-sm" @click="showLinkMaterialsModal = false"></div>
+        <div class="relative bg-white  shadow-xl border border-gray-200 w-full max-w-md">
+          <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200">
+            <h3 class="text-base font-bold text-gray-900">원자재 연결</h3>
+            <button @click="showLinkMaterialsModal = false" class="text-gray-400 hover:text-gray-600">
+              <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+          </div>
+          <div class="p-6">
+            <p class="text-xs text-gray-400 mb-3">이 여권에 사용된 원자재를 선택하세요.</p>
+            <div v-if="availableMaterials.length === 0" class="text-center py-6">
+              <p class="text-sm text-gray-400">등록된 원자재가 없습니다.</p>
+            </div>
+            <div v-else class="space-y-2 max-h-64 overflow-y-auto">
+              <label v-for="m in availableMaterials" :key="m.materialId"
+                class="flex items-center gap-3 px-3 py-2.5 rounded border cursor-pointer transition-colors"
+                :class="selectedMaterialIds.includes(m.materialId) ? 'bg-[rgba(200,255,0,0.08)] border-emerald-300' : 'bg-white border-gray-200 hover:bg-[#fafafa]'">
+                <input type="checkbox" :checked="selectedMaterialIds.includes(m.materialId)"
+                  @change="toggleMaterial(m.materialId)"
+                  class="w-4 h-4 text-emerald-600 border-gray-200 rounded focus:ring-emerald-500" />
+                <div class="flex-1 min-w-0">
+                  <p class="text-sm font-medium text-gray-900">{{ m.name }}</p>
+                  <p class="text-[10px] text-gray-400">{{ m.origin }} · {{ m.supplier }} · {{ m.quantity }}{{ m.unit }}</p>
+                </div>
+                <span v-if="(passport?.rawMaterials || []).includes(m.materialId)"
+                  class="text-[10px] font-medium text-emerald-600 bg-[rgba(200,255,0,0.08)] px-1.5 py-0.5 rounded">연결됨</span>
+              </label>
+            </div>
+          </div>
+          <div class="px-6 py-4 border-t border-gray-200 flex justify-end gap-3">
+            <button @click="showLinkMaterialsModal = false"
+              class="px-4 py-2.5 text-sm font-medium text-gray-600 bg-white border border-gray-200 hover:bg-[#fafafa]  transition-colors">취소</button>
+            <button @click="submitLinkMaterials" :disabled="submitting"
+              class="px-5 py-2.5 text-sm font-semibold text-white bg-[#16a34a] hover:bg-[#15803d]  transition-colors disabled:opacity-50">
+              {{ submitting ? '처리중...' : '연결' }}
+            </button>
           </div>
         </div>
       </div>
 
       <!-- Maintenance Request Modal -->
-      <div v-if="showMaintenanceRequestModal" class="fixed inset-0 z-50 flex items-center justify-center p-4" style="background: rgba(0,0,0,0.3);" @click.self="showMaintenanceRequestModal = false">
-        <div class="bg-white w-full max-w-md p-6 shadow-lg border border-gray-200">
-          <h3 class="text-lg font-bold text-gray-900 mb-4">정비 요청</h3>
-          <div class="space-y-3">
-            <div><label class="text-xs font-semibold text-gray-500 uppercase">사유</label><textarea v-model="maintenanceForm.description" rows="3" class="w-full mt-1 px-3 py-2 border border-gray-200 text-sm" placeholder="정비 요청 사유"></textarea></div>
+      <teleport to="body">
+        <transition name="fade">
+          <div v-if="showMaintenanceRequestModal" class="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div class="fixed inset-0 bg-white/60 backdrop-blur-sm" @click="showMaintenanceRequestModal = false"></div>
+            <div class="relative bg-white  shadow-2xl w-full max-w-md border border-gray-200/50 overflow-hidden">
+              <div class="px-6 py-4 border-b border-gray-200 flex items-center gap-3">
+                <div class="w-9 h-9 bg-[rgba(255,184,0,0.1)] rounded flex items-center justify-center">
+                  <svg class="w-5 h-5 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                  </svg>
+                </div>
+                <h2 class="text-lg font-bold text-gray-900">정비 요청</h2>
+              </div>
+              <div class="p-6">
+                <p class="text-sm text-gray-600 mb-5">이 배터리에 대한 정비를 요청하시겠습니까?<br><span class="text-xs text-gray-400 mt-1 block">상태가 MAINTENANCE로 변경됩니다.</span></p>
+                <div class="flex justify-end gap-3">
+                  <button @click="showMaintenanceRequestModal = false"
+                    class="px-4 py-2.5 text-sm font-medium text-gray-600 bg-white border border-gray-200 hover:bg-[#fafafa]  transition-colors">취소</button>
+                  <button @click="submitMaintenanceRequest" :disabled="submitting"
+                    class="px-5 py-2.5 text-sm font-semibold text-white bg-[#fbbf24] hover:bg-amber-600  transition-colors disabled:opacity-50">
+                    {{ submitting ? '처리중...' : '정비 요청' }}
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
-          <div class="flex justify-end gap-2 mt-5">
-            <button @click="showMaintenanceRequestModal = false" class="px-4 py-2 text-sm text-gray-500 border border-gray-200">취소</button>
-            <button @click="submitMaintenanceRequest" :disabled="submitting" class="px-4 py-2 text-sm font-semibold text-white bg-amber-600 hover:bg-amber-700">요청</button>
-          </div>
-        </div>
-      </div>
+        </transition>
+      </teleport>
 
       <!-- Maintenance Log Modal -->
-      <div v-if="showMaintenanceLogModal" class="fixed inset-0 z-50 flex items-center justify-center p-4" style="background: rgba(0,0,0,0.3);" @click.self="showMaintenanceLogModal = false">
-        <div class="bg-white w-full max-w-md p-6 shadow-lg border border-gray-200">
-          <h3 class="text-lg font-bold text-gray-900 mb-4">정비 완료 기록</h3>
-          <div class="space-y-3">
-            <div><label class="text-xs font-semibold text-gray-500 uppercase">일자</label><input v-model="maintenanceForm.date" type="date" class="w-full mt-1 px-3 py-2 border border-gray-200 text-sm" /></div>
-            <div><label class="text-xs font-semibold text-gray-500 uppercase">유형</label><input v-model="maintenanceForm.type" class="w-full mt-1 px-3 py-2 border border-gray-200 text-sm" placeholder="정기점검, 수리 등" /></div>
-            <div><label class="text-xs font-semibold text-gray-500 uppercase">내용</label><textarea v-model="maintenanceForm.description" rows="3" class="w-full mt-1 px-3 py-2 border border-gray-200 text-sm" placeholder="정비 내용"></textarea></div>
-            <div><label class="text-xs font-semibold text-gray-500 uppercase">정비사</label><input v-model="maintenanceForm.technician" class="w-full mt-1 px-3 py-2 border border-gray-200 text-sm" /></div>
+      <teleport to="body">
+        <transition name="fade">
+          <div v-if="showMaintenanceLogModal" class="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div class="fixed inset-0 bg-white/60 backdrop-blur-sm" @click="showMaintenanceLogModal = false"></div>
+            <div class="relative bg-white  shadow-2xl w-full max-w-lg border border-gray-200/50 overflow-hidden">
+              <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                  <div class="w-9 h-9 bg-[rgba(200,255,0,0.08)] rounded flex items-center justify-center">
+                    <svg class="w-5 h-5 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                    </svg>
+                  </div>
+                  <h2 class="text-lg font-bold text-gray-900">정비 기록 추가</h2>
+                </div>
+                <button @click="showMaintenanceLogModal = false" class="w-8 h-8 rounded hover:bg-gray-100 flex items-center justify-center transition-colors text-gray-400 hover:text-gray-600">
+                  <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+              </div>
+              <form @submit.prevent="submitMaintenanceLog" class="p-6 space-y-4">
+                <div>
+                  <label class="block text-xs font-medium text-gray-400 mb-1.5">날짜</label>
+                  <input v-model="maintenanceForm.date" type="date"
+                    class="w-full px-3.5 py-2.5 border border-gray-200 rounded focus:border-[#16a34a] outline-none text-sm" />
+                </div>
+                <div>
+                  <label class="block text-xs font-medium text-gray-400 mb-1.5">유형</label>
+                  <input v-model="maintenanceForm.type" type="text" placeholder="정기점검 / 부품교체 / 긴급수리"
+                    class="w-full px-3.5 py-2.5 border border-gray-200 rounded focus:border-[#16a34a] outline-none text-sm" />
+                </div>
+                <div>
+                  <label class="block text-xs font-medium text-gray-400 mb-1.5">내용</label>
+                  <textarea v-model="maintenanceForm.description" rows="3" placeholder="정비 내용을 상세히 기입하세요"
+                    class="w-full px-3.5 py-2.5 border border-gray-200 rounded focus:border-[#16a34a] outline-none text-sm resize-none"></textarea>
+                </div>
+                <div>
+                  <label class="block text-xs font-medium text-gray-400 mb-1.5">기술자</label>
+                  <input v-model="maintenanceForm.technician" type="text" placeholder="기술자명"
+                    class="w-full px-3.5 py-2.5 border border-gray-200 rounded focus:border-[#16a34a] outline-none text-sm" />
+                </div>
+                <div class="flex justify-end gap-3 pt-3 border-t border-gray-200">
+                  <button type="button" @click="showMaintenanceLogModal = false"
+                    class="px-4 py-2.5 text-sm font-medium text-gray-600 bg-white border border-gray-200 hover:bg-[#fafafa]  transition-colors">취소</button>
+                  <button type="submit" :disabled="submitting"
+                    class="px-5 py-2.5 text-sm font-semibold text-white bg-[#16a34a] hover:bg-[#15803d]  transition-colors disabled:opacity-50">
+                    {{ submitting ? '처리중...' : '추가' }}
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
-          <div class="flex justify-end gap-2 mt-5">
-            <button @click="showMaintenanceLogModal = false" class="px-4 py-2 text-sm text-gray-500 border border-gray-200">취소</button>
-            <button @click="submitMaintenanceLog" :disabled="submitting" class="px-4 py-2 text-sm font-semibold text-white bg-emerald-700 hover:bg-emerald-800">기록</button>
-          </div>
-        </div>
-      </div>
+        </transition>
+      </teleport>
 
       <!-- Accident Log Modal -->
-      <div v-if="showAccidentLogModal" class="fixed inset-0 z-50 flex items-center justify-center p-4" style="background: rgba(0,0,0,0.3);" @click.self="showAccidentLogModal = false">
-        <div class="bg-white w-full max-w-md p-6 shadow-lg border border-gray-200">
-          <h3 class="text-lg font-bold text-gray-900 mb-4">사고 기록</h3>
-          <div class="space-y-3">
-            <div><label class="text-xs font-semibold text-gray-500 uppercase">심각도</label>
-              <select v-model="accidentForm.severity" class="w-full mt-1 px-3 py-2 border border-gray-200 text-sm">
-                <option value="minor">경미</option><option value="moderate">보통</option><option value="severe">심각</option><option value="critical">위험</option>
-              </select>
+      <teleport to="body">
+        <transition name="fade">
+          <div v-if="showAccidentLogModal" class="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div class="fixed inset-0 bg-white/60 backdrop-blur-sm" @click="showAccidentLogModal = false"></div>
+            <div class="relative bg-white  shadow-2xl w-full max-w-lg border border-gray-200/50 overflow-hidden">
+              <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                  <div class="w-9 h-9 bg-[rgba(239,68,68,0.1)] rounded flex items-center justify-center">
+                    <svg class="w-5 h-5 text-[#ff6b6b]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                  </div>
+                  <h2 class="text-lg font-bold text-gray-900">사고 기록 추가</h2>
+                </div>
+                <button @click="showAccidentLogModal = false" class="w-8 h-8 rounded hover:bg-gray-100 flex items-center justify-center transition-colors text-gray-400 hover:text-gray-600">
+                  <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+              </div>
+              <form @submit.prevent="submitAccidentLog" class="p-6 space-y-4">
+                <div>
+                  <label class="block text-xs font-medium text-gray-400 mb-1.5">심각도</label>
+                  <div class="flex gap-2">
+                    <button v-for="s in [{value:'minor',label:'경미'},{value:'moderate',label:'보통'},{value:'severe',label:'심각'},{value:'critical',label:'위험'}]" :key="s.value"
+                      @click="accidentForm.severity = s.value" type="button"
+                      :class="['px-3 py-2 rounded text-sm font-medium border transition-all',
+                        accidentForm.severity === s.value ? 'bg-[rgba(239,68,68,0.1)] text-[#ff6b6b] border-red-300' : 'bg-white text-gray-600 border-gray-200 hover:bg-[#fafafa]']">
+                      {{ s.label }}
+                    </button>
+                  </div>
+                </div>
+                <div>
+                  <label class="block text-xs font-medium text-gray-400 mb-1.5">내용 <span class="text-red-500">*</span></label>
+                  <textarea v-model="accidentForm.description" rows="3" placeholder="사고 상세 내용"
+                    class="w-full px-3.5 py-2.5 border border-gray-200 rounded focus:border-[#16a34a] outline-none text-sm resize-none"></textarea>
+                </div>
+                <div>
+                  <label class="block text-xs font-medium text-gray-400 mb-1.5">보고자 <span class="text-red-500">*</span></label>
+                  <input v-model="accidentForm.reporter" type="text" placeholder="보고자명"
+                    class="w-full px-3.5 py-2.5 border border-gray-200 rounded focus:border-[#16a34a] outline-none text-sm" />
+                </div>
+                <div class="flex justify-end gap-3 pt-3 border-t border-gray-200">
+                  <button type="button" @click="showAccidentLogModal = false"
+                    class="px-4 py-2.5 text-sm font-medium text-gray-600 bg-white border border-gray-200 hover:bg-[#fafafa]  transition-colors">취소</button>
+                  <button type="submit" :disabled="submitting"
+                    class="px-5 py-2.5 text-sm font-semibold text-white bg-[rgba(239,68,68,0.1)]0 hover:bg-red-600  transition-colors disabled:opacity-50">
+                    {{ submitting ? '처리중...' : '추가' }}
+                  </button>
+                </div>
+              </form>
             </div>
-            <div><label class="text-xs font-semibold text-gray-500 uppercase">설명</label><textarea v-model="accidentForm.description" rows="3" class="w-full mt-1 px-3 py-2 border border-gray-200 text-sm"></textarea></div>
-            <div><label class="text-xs font-semibold text-gray-500 uppercase">보고자</label><input v-model="accidentForm.reporter" class="w-full mt-1 px-3 py-2 border border-gray-200 text-sm" /></div>
           </div>
-          <div class="flex justify-end gap-2 mt-5">
-            <button @click="showAccidentLogModal = false" class="px-4 py-2 text-sm text-gray-500 border border-gray-200">취소</button>
-            <button @click="submitAccidentLog" :disabled="submitting" class="px-4 py-2 text-sm font-semibold text-white bg-red-600 hover:bg-red-700">기록</button>
-          </div>
-        </div>
-      </div>
+        </transition>
+      </teleport>
 
-      <style>
-        @keyframes spin { to { transform: rotate(360deg); } }
-      </style>
+      <!-- Analysis Request Modal -->
+      <teleport to="body">
+        <transition name="fade">
+          <div v-if="showAnalysisRequestModal" class="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div class="fixed inset-0 bg-white/60 backdrop-blur-sm" @click="showAnalysisRequestModal = false"></div>
+            <div class="relative bg-white  shadow-2xl w-full max-w-md border border-gray-200/50 overflow-hidden">
+              <div class="px-6 py-4 border-b border-gray-200 flex items-center gap-3">
+                <div class="w-9 h-9 bg-[rgba(192,132,252,0.1)] rounded flex items-center justify-center">
+                  <svg class="w-5 h-5 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                  </svg>
+                </div>
+                <h2 class="text-lg font-bold text-gray-900">분석 요청</h2>
+              </div>
+              <div class="p-6">
+                <p class="text-sm text-gray-600 mb-5">이 배터리에 대한 분석을 요청하시겠습니까?<br><span class="text-xs text-gray-400 mt-1 block">상태가 ANALYSIS로 변경됩니다.</span></p>
+                <div class="flex justify-end gap-3">
+                  <button @click="showAnalysisRequestModal = false"
+                    class="px-4 py-2.5 text-sm font-medium text-gray-600 bg-white border border-gray-200 hover:bg-[#fafafa]  transition-colors">취소</button>
+                  <button @click="submitAnalysisRequest" :disabled="submitting"
+                    class="px-5 py-2.5 text-sm font-semibold text-white bg-purple-600 hover:bg-purple-700  transition-colors disabled:opacity-50">
+                    {{ submitting ? '처리중...' : '분석 요청' }}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </transition>
+      </teleport>
+
+      <!-- Analysis Result Modal -->
+      <teleport to="body">
+        <transition name="fade">
+          <div v-if="showAnalysisResultModal" class="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div class="fixed inset-0 bg-white/60 backdrop-blur-sm" @click="showAnalysisResultModal = false"></div>
+            <div class="relative bg-white  shadow-2xl w-full max-w-lg border border-gray-200/50 overflow-hidden">
+              <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                  <div class="w-9 h-9 bg-indigo-100 rounded flex items-center justify-center">
+                    <svg class="w-5 h-5 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                      <path d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                    </svg>
+                  </div>
+                  <h2 class="text-lg font-bold text-gray-900">분석 결과 제출</h2>
+                </div>
+                <button @click="showAnalysisResultModal = false" class="w-8 h-8 rounded hover:bg-gray-100 flex items-center justify-center transition-colors text-gray-400 hover:text-gray-600">
+                  <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+              </div>
+              <form @submit.prevent="submitAnalysisResult" class="p-6 space-y-4">
+                <div class="grid grid-cols-2 gap-4">
+                  <div>
+                    <label class="block text-xs font-medium text-gray-400 mb-1.5">SOH (%)</label>
+                    <input v-model="analysisForm.soh" type="number" step="0.1" placeholder="85"
+                      class="w-full px-3.5 py-2.5 border border-gray-200 rounded focus:border-[#16a34a] outline-none text-sm" />
+                  </div>
+                  <div>
+                    <label class="block text-xs font-medium text-gray-400 mb-1.5">SOCE (%)</label>
+                    <input v-model="analysisForm.soce" type="number" step="0.1" placeholder="90"
+                      class="w-full px-3.5 py-2.5 border border-gray-200 rounded focus:border-[#16a34a] outline-none text-sm" />
+                  </div>
+                </div>
+                <div>
+                  <label class="block text-xs font-medium text-gray-400 mb-1.5">잔여 수명 주기</label>
+                  <input v-model="analysisForm.remainingLifeCycle" type="number" placeholder="1500"
+                    class="w-full px-3.5 py-2.5 border border-gray-200 rounded focus:border-[#16a34a] outline-none text-sm" />
+                </div>
+                <div class="flex items-center gap-3 py-2 px-3.5 bg-[#fafafa] rounded border border-gray-200">
+                  <input v-model="analysisForm.recycleAvailable" type="checkbox" id="recycleCheckDetail2"
+                    class="w-4 h-4 text-emerald-600 border-gray-200 rounded focus:ring-emerald-500" />
+                  <label for="recycleCheckDetail2" class="text-sm text-gray-600 font-medium">재활용 가능</label>
+                </div>
+                <div class="flex justify-end gap-3 pt-3 border-t border-gray-200">
+                  <button type="button" @click="showAnalysisResultModal = false"
+                    class="px-4 py-2.5 text-sm font-medium text-gray-600 bg-white border border-gray-200 hover:bg-[#fafafa]  transition-colors">취소</button>
+                  <button type="submit" :disabled="submitting"
+                    class="px-5 py-2.5 text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700  transition-colors disabled:opacity-50">
+                    {{ submitting ? '처리중...' : '제출' }}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </transition>
+      </teleport>
+
+      <!-- Recycle Availability Modal -->
+      <teleport to="body">
+        <transition name="fade">
+          <div v-if="showRecycleModal" class="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div class="fixed inset-0 bg-white/60 backdrop-blur-sm" @click="showRecycleModal = false"></div>
+            <div class="relative bg-white  shadow-2xl w-full max-w-md border border-gray-200/50 overflow-hidden">
+              <div class="px-6 py-4 border-b border-gray-200 flex items-center gap-3">
+                <div class="w-9 h-9 bg-orange-100 rounded flex items-center justify-center">
+                  <svg class="w-5 h-5 text-orange-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                  </svg>
+                </div>
+                <h2 class="text-lg font-bold text-gray-900">재활용 판정</h2>
+              </div>
+              <div class="p-6">
+                <p class="text-sm text-gray-600 mb-6">이 배터리의 재활용 가능 여부를 판정합니다.</p>
+                <div class="flex justify-end gap-3">
+                  <button @click="showRecycleModal = false"
+                    class="px-4 py-2.5 text-sm font-medium text-gray-600 bg-white border border-gray-200 hover:bg-[#fafafa]  transition-colors">취소</button>
+                  <button @click="submitRecycleAvailability(false)" :disabled="submitting"
+                    class="px-5 py-2.5 text-sm font-semibold text-white bg-[rgba(239,68,68,0.1)]0 hover:bg-red-600  transition-colors disabled:opacity-50">
+                    재활용 불가
+                  </button>
+                  <button @click="submitRecycleAvailability(true)" :disabled="submitting"
+                    class="px-5 py-2.5 text-sm font-semibold text-white bg-[#16a34a] hover:bg-[#15803d]  transition-colors disabled:opacity-50">
+                    재활용 가능
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </transition>
+      </teleport>
+
+      <!-- Extract Materials Modal -->
+      <teleport to="body">
+        <transition name="fade">
+          <div v-if="showExtractModal" class="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div class="fixed inset-0 bg-white/60 backdrop-blur-sm" @click="showExtractModal = false"></div>
+            <div class="relative bg-white  shadow-2xl w-full max-w-lg border border-gray-200/50 overflow-hidden">
+              <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                  <div class="w-9 h-9 bg-teal-100 rounded flex items-center justify-center">
+                    <svg class="w-5 h-5 text-teal-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                      <path d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/>
+                    </svg>
+                  </div>
+                  <h2 class="text-lg font-bold text-gray-900">원자재 추출</h2>
+                </div>
+                <button @click="showExtractModal = false" class="w-8 h-8 rounded hover:bg-gray-100 flex items-center justify-center transition-colors text-gray-400 hover:text-gray-600">
+                  <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+              </div>
+              <form @submit.prevent="submitExtractMaterials" class="p-6 space-y-4">
+                <div>
+                  <label class="block text-xs font-medium text-gray-400 mb-1.5">재활용 비율 (JSON)</label>
+                  <textarea v-model="extractForm.recyclingRatesJson" rows="6"
+                    class="w-full px-3.5 py-2.5 border border-gray-200 rounded focus:border-[#16a34a] outline-none text-sm font-mono resize-none bg-[#fafafa]"></textarea>
+                  <p class="text-xs text-gray-400 mt-1.5">예: { "cobalt": 95, "nickel": 90, "lithium": 80 }</p>
+                </div>
+                <div class="flex justify-end gap-3 pt-3 border-t border-gray-200">
+                  <button type="button" @click="showExtractModal = false"
+                    class="px-4 py-2.5 text-sm font-medium text-gray-600 bg-white border border-gray-200 hover:bg-[#fafafa]  transition-colors">취소</button>
+                  <button type="submit" :disabled="submitting"
+                    class="px-5 py-2.5 text-sm font-semibold text-white bg-teal-600 hover:bg-teal-700  transition-colors disabled:opacity-50">
+                    {{ submitting ? '처리중...' : '등록' }}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </transition>
+      </teleport>
+
+      <!-- Dispose Confirmation Modal -->
+      <teleport to="body">
+        <transition name="fade">
+          <div v-if="showDisposeConfirm" class="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div class="fixed inset-0 bg-white/60 backdrop-blur-sm" @click="showDisposeConfirm = false"></div>
+            <div class="relative bg-white  shadow-2xl w-full max-w-sm border border-gray-200/50 overflow-hidden">
+              <div class="p-6 text-center">
+                <div class="mx-auto w-14 h-14 bg-[rgba(239,68,68,0.1)] rounded-full flex items-center justify-center mb-4">
+                  <svg class="w-7 h-7 text-[#ff6b6b]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                  </svg>
+                </div>
+                <h3 class="text-lg font-bold text-gray-900 mb-2">폐기 처리 확인</h3>
+                <p class="text-sm text-gray-400 mb-6">정말로 이 배터리를 폐기 처리하시겠습니까?<br>이 작업은 되돌릴 수 없습니다.</p>
+                <div class="flex gap-3">
+                  <button @click="showDisposeConfirm = false"
+                    class="flex-1 px-4 py-2.5 text-sm font-medium text-gray-600 bg-white border border-gray-200 hover:bg-[#fafafa]  transition-colors">취소</button>
+                  <button @click="disposeBattery" :disabled="submitting"
+                    class="flex-1 px-4 py-2.5 text-sm font-semibold text-white bg-red-600 hover:bg-red-700  transition-colors disabled:opacity-50">
+                    {{ submitting ? '처리중...' : '폐기 확인' }}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </transition>
+      </teleport>
     </div>
   `
 });
