@@ -198,21 +198,17 @@ app.component('maintenance-page', {
   <div style="display:flex;flex-direction:column;gap:16px;">
 
     <!-- LOADING -->
-    <div v-if="loading" style="display:flex;flex-direction:column;justify-content:center;align-items:center;padding:128px 0;">
-      <div style="position:relative;width:40px;height:40px;margin-bottom:16px;">
-        <div style="position:absolute;inset:0;border-radius:50%;border:3px solid #e5e5e5;"></div>
-        <div style="position:absolute;inset:0;border-radius:50%;border:3px solid #171717;border-top-color:transparent;animation:spin 0.8s linear infinite;"></div>
-      </div>
-      <p style="font-size:0.82rem;color:#a3a3a3;">로딩 중...</p>
+    <div v-if="loading" style="display: flex; align-items: center; justify-content: center; min-height: 40vh;">
+      <div style="width: 28px; height: 28px; border: 2px solid rgba(0,0,0,0.06); border-top-color: var(--color-accent); border-radius: 50%; animation: spin 0.8s linear infinite;"></div>
     </div>
 
     <template v-else>
 
       <!-- HEADER -->
-      <div style="padding-bottom:0.75rem;border-bottom:1px solid var(--color-border,rgba(0,0,0,0.08));display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.25rem; padding-bottom: 0.75rem; border-bottom: 1px solid var(--color-border);">
         <div>
-          <h1 class="sn-display" style="font-size:1.5rem;margin:0;">정비 / 서비스</h1>
-          <p class="sn-caption" style="margin-top:0.2rem;font-size:0.78rem;">배터리 정비 요청, 완료 기록 및 사고 이력 관리</p>
+          <h1 class="sn-display" style="font-size: 1.5rem;">정비 / 서비스</h1>
+          <p class="sn-caption" style="margin-top: 0.125rem;">배터리 정비 요청, 완료 기록 및 사고 이력 관리</p>
         </div>
         <button @click="fetchPassports" class="sn-btn sn-btn-ghost" style="display:inline-flex;align-items:center;gap:6px;">
           <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -247,16 +243,8 @@ app.component('maintenance-page', {
       </div>
 
       <!-- EMPTY STATE -->
-      <div v-if="filteredPassports.length === 0" class="sn-panel">
-        <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:80px 24px;">
-          <div style="width:56px;height:56px;border-radius:12px;background:#f5f5f5;display:flex;align-items:center;justify-content:center;margin-bottom:20px;">
-            <svg width="28" height="28" fill="none" stroke="#a3a3a3" stroke-width="1.5" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
-            </svg>
-          </div>
-          <h3 style="font-size:1rem;font-weight:600;color:#171717;margin:0 0 6px;">현재 정비 이력이 없습니다</h3>
-          <p style="font-size:0.82rem;color:#a3a3a3;text-align:center;max-width:24rem;">배터리 여권이 등록되면 정비 이력을 관리할 수 있습니다.</p>
-        </div>
+      <div v-if="filteredPassports.length === 0" style="padding: 3rem; text-align: center; border: 1px dashed var(--color-border); border-radius: 0.5rem;">
+        <p style="font-size: 0.875rem; color: var(--color-text-3); margin-bottom: 0;">현재 정비 이력이 없습니다. 배터리 여권이 등록되면 정비 이력을 관리할 수 있습니다.</p>
       </div>
 
       <!-- PASSPORT CARDS -->
@@ -327,7 +315,7 @@ app.component('maintenance-page', {
                 </button>
                 <button v-if="canLogMaintenance && p.status === 'MAINTENANCE'"
                   @click="openMaintenanceLog(p)"
-                  class="sn-btn sn-btn-primary" style="font-size:0.75rem;padding:4px 10px;display:inline-flex;align-items:center;gap:4px;">
+                  class="sn-btn sn-btn-accent" style="font-size:0.75rem;padding:4px 10px;display:inline-flex;align-items:center;gap:4px;">
                   <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
                   </svg>
@@ -392,7 +380,7 @@ app.component('maintenance-page', {
         </div>
         <div style="padding:12px 24px;display:flex;justify-content:flex-end;gap:10px;border-top:1px solid rgba(0,0,0,0.06);">
           <button @click="closeModals" class="sn-btn sn-btn-ghost">취소</button>
-          <button @click="submitMaintenanceRequest" :disabled="!requestForm.description||!requestConfirmed||submitting" class="sn-btn sn-btn-primary"
+          <button @click="submitMaintenanceRequest" :disabled="!requestForm.description||!requestConfirmed||submitting" class="sn-btn sn-btn-accent"
             :style="(!requestForm.description||!requestConfirmed||submitting)?'opacity:0.4;cursor:not-allowed;':''"
             style="display:inline-flex;align-items:center;gap:6px;">
             <svg v-if="submitting" style="width:14px;height:14px;animation:spin 0.8s linear infinite;" fill="none" viewBox="0 0 24 24"><circle opacity="0.25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path opacity="0.75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
@@ -446,7 +434,7 @@ app.component('maintenance-page', {
         </div>
         <div style="padding:12px 24px;display:flex;justify-content:flex-end;gap:10px;border-top:1px solid rgba(0,0,0,0.06);">
           <button @click="closeModals" class="sn-btn sn-btn-ghost">취소</button>
-          <button @click="submitMaintenanceLog" :disabled="!logForm.description||!logForm.technician||!logConfirmed||submitting" class="sn-btn sn-btn-primary"
+          <button @click="submitMaintenanceLog" :disabled="!logForm.description||!logForm.technician||!logConfirmed||submitting" class="sn-btn sn-btn-accent"
             :style="(!logForm.description||!logForm.technician||!logConfirmed||submitting)?'opacity:0.4;cursor:not-allowed;':''"
             style="display:inline-flex;align-items:center;gap:6px;">
             <svg v-if="submitting" style="width:14px;height:14px;animation:spin 0.8s linear infinite;" fill="none" viewBox="0 0 24 24"><circle opacity="0.25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path opacity="0.75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>

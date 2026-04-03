@@ -148,9 +148,11 @@ app.component('qr-scan-page', {
   <div style="display:flex;flex-direction:column;gap:16px;">
 
     <!-- ====== PAGE HEADER ====== -->
-    <div style="padding-bottom:0.75rem;border-bottom:1px solid var(--color-border,rgba(0,0,0,0.08));">
-      <h1 class="sn-display" style="font-size:1.5rem;margin:0;">QR / NFC 스캔</h1>
-      <p class="sn-caption" style="margin-top:0.2rem;font-size:0.78rem;">배터리 여권 QR 코드 또는 NFC 태그를 스캔하여 정보를 조회합니다</p>
+    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.25rem; padding-bottom: 0.75rem; border-bottom: 1px solid var(--color-border);">
+      <div>
+        <h1 class="sn-display" style="font-size: 1.5rem;">QR / NFC 스캔</h1>
+        <p class="sn-caption" style="margin-top: 0.125rem;">배터리 여권 QR 코드 또는 NFC 태그를 스캔하여 정보를 조회합니다</p>
+      </div>
     </div>
 
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
@@ -162,7 +164,7 @@ app.component('qr-scan-page', {
         <div class="sn-panel" style="overflow:hidden;">
           <div style="padding:14px 20px;border-bottom:1px solid rgba(0,0,0,0.06);display:flex;align-items:center;justify-content:space-between;">
             <span style="font-size:0.85rem;font-weight:600;color:#171717;">카메라 스캔</span>
-            <button v-if="!scanning" @click="startScan" class="sn-btn sn-btn-primary" style="font-size:0.75rem;padding:6px 12px;display:inline-flex;align-items:center;gap:6px;">
+            <button v-if="!scanning" @click="startScan" class="sn-btn sn-btn-accent" style="font-size:0.75rem;padding:6px 12px;display:inline-flex;align-items:center;gap:6px;">
               <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/>
               </svg>
@@ -204,7 +206,7 @@ app.component('qr-scan-page', {
               <span style="font-size:0.85rem;font-weight:600;color:#171717;">NFC 스캔</span>
               <span style="font-size:0.6rem;padding:1px 6px;border-radius:4px;background:#eff6ff;color:#2563eb;">Web NFC</span>
             </div>
-            <button v-if="!nfcScanning" @click="startNfc" class="sn-btn sn-btn-primary" style="font-size:0.75rem;padding:6px 12px;display:inline-flex;align-items:center;gap:6px;">
+            <button v-if="!nfcScanning" @click="startNfc" class="sn-btn sn-btn-accent" style="font-size:0.75rem;padding:6px 12px;display:inline-flex;align-items:center;gap:6px;">
               <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071c3.904-3.905 10.236-3.905 14.14 0M1.394 9.393c5.857-5.858 15.355-5.858 21.213 0"/>
               </svg>
@@ -239,7 +241,7 @@ app.component('qr-scan-page', {
           <div style="display:flex;gap:8px;">
             <input v-model="manualId" type="text" placeholder="여권 ID를 입력하세요 (예: BP-SDI-001)"
               @keyup.enter="handleManualSearch" class="sn-input" style="flex:1;" />
-            <button @click="handleManualSearch" :disabled="!manualId.trim()" class="sn-btn sn-btn-primary" style="padding:8px 18px;"
+            <button @click="handleManualSearch" :disabled="!manualId.trim()" class="sn-btn sn-btn-accent" style="padding:8px 18px;"
               :style="!manualId.trim() ? 'opacity:0.4;cursor:not-allowed;' : ''">조회</button>
           </div>
         </div>
@@ -248,9 +250,8 @@ app.component('qr-scan-page', {
       <!-- ====== RIGHT: RESULT AREA ====== -->
       <div>
         <!-- Loading -->
-        <div v-if="loadingPassport" class="sn-panel" style="padding:48px;display:flex;flex-direction:column;align-items:center;justify-content:center;">
-          <div style="width:40px;height:40px;border:3px solid #e5e5e5;border-top-color:#171717;border-radius:50%;animation:spin 0.8s linear infinite;margin-bottom:12px;"></div>
-          <p style="font-size:0.85rem;color:#a3a3a3;">여권 정보 조회 중...</p>
+        <div v-if="loadingPassport" style="display: flex; align-items: center; justify-content: center; min-height: 40vh;">
+          <div style="width: 28px; height: 28px; border: 2px solid rgba(0,0,0,0.06); border-top-color: var(--color-accent); border-radius: 50%; animation: spin 0.8s linear infinite;"></div>
         </div>
 
         <!-- Result Card -->
@@ -302,7 +303,7 @@ app.component('qr-scan-page', {
             </div>
 
             <!-- Action -->
-            <button @click="goToDetail" class="sn-btn sn-btn-primary" style="width:100%;padding:12px;font-size:0.85rem;display:flex;align-items:center;justify-content:center;gap:8px;">
+            <button @click="goToDetail" class="sn-btn sn-btn-accent" style="width:100%;padding:12px;font-size:0.85rem;display:flex;align-items:center;justify-content:center;gap:8px;">
               <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6"/>
               </svg>
