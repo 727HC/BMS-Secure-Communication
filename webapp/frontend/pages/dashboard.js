@@ -135,105 +135,132 @@ app.component('dashboard-page', {
 
       <!-- LOADING -->
       <div v-if="loading" class="flex flex-col items-center justify-center gap-4" style="min-height: 60vh;">
-        <div style="width: 32px; height: 32px; border: 2.5px solid rgba(0,0,0,0.06); border-top-color: var(--color-accent); border-radius: 50%; animation: spin 0.8s linear infinite;"></div>
-        <span class="sn-eyebrow">데이터를 불러오는 중입니다</span>
+        <div style="width: 28px; height: 28px; border: 2px solid rgba(0,0,0,0.06); border-top-color: var(--color-accent); border-radius: 50%; animation: spin 0.8s linear infinite;"></div>
       </div>
 
       <div v-else>
 
-        <!-- CONTROL ROOM HEADER — distinct from other pages -->
-        <div style="display: flex; align-items: flex-end; justify-content: space-between; padding-bottom: 1.5rem; margin-bottom: 1.5rem; border-bottom: 1px solid var(--color-border);">
+        <!-- ═══ HERO SECTION — dark, dense, visually rich ═══ -->
+        <div style="background: #0f172a; margin: -2rem -1.5rem 0 -1.5rem; padding: 1.75rem 2rem 1.5rem;">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem;">
+            <h1 style="font-family: var(--font-display); font-size: 1.25rem; font-weight: 600; color: #fff; letter-spacing: -0.02em;">배터리 여권 현황</h1>
+            <button @click="nav('passports')" class="sn-btn sn-btn-accent" style="font-size: 0.8125rem; padding: 0.5rem 1rem;">+ 여권 발급</button>
+          </div>
+
+          <!-- KPI row on dark bg -->
+          <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem;">
+            <div v-for="(kpi, i) in [
+              { num: totalCount,       label: '전체 등록',  color: '#fff' },
+              { num: activeCount,      label: '운행 중',    color: '#4ade80' },
+              { num: maintenanceCount, label: '정비 대기',  color: '#fbbf24' },
+              { num: materialCount,    label: '원자재',     color: '#60a5fa' }
+            ]" :key="i" style="padding: 0;">
+              <div style="font-family: var(--font-mono); font-size: 2rem; font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1;" :style="{ color: kpi.color }">{{ kpi.num }}</div>
+              <div style="font-size: 0.6875rem; color: rgba(255,255,255,0.45); margin-top: 0.25rem;">{{ kpi.label }}</div>
+            </div>
+          </div>
+
+          <!-- Status segmented bar on dark -->
+          <div v-if="statusDistribution.length" style="margin-top: 1.25rem;">
+            <div style="display: flex; height: 4px; border-radius: 2px; overflow: hidden; background: rgba(255,255,255,0.08); gap: 2px;">
+              <div v-for="item in statusDistribution" :key="item.status"
+                style="height: 100%; border-radius: 2px; min-width: 4px;"
+                :style="{ width: (item.count / statTotal * 100) + '%', background: item.color }"></div>
+            </div>
+            <div style="display: flex; gap: 1rem; margin-top: 0.5rem; flex-wrap: wrap;">
+              <span v-for="item in statusDistribution" :key="item.status" style="display: flex; align-items: center; gap: 0.375rem;">
+                <span style="width: 5px; height: 5px; border-radius: 1px;" :style="{ background: item.color }"></span>
+                <span style="font-size: 0.6875rem; color: rgba(255,255,255,0.5);">{{ item.label }} {{ item.count }}</span>
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- ═══ BODY — two columns ═══ -->
+        <div style="display: grid; grid-template-columns: 1fr 320px; gap: 1.5rem; margin-top: 1.5rem;">
+
+          <!-- LEFT: Recent passports with SOC bars -->
           <div>
-            <h1 class="sn-display" style="font-size: 1.5rem; margin-bottom: 0.25rem;">대시보드</h1>
-            <span class="sn-caption">{{ totalCount }}건 등록 · {{ activeCount }}건 운행 중</span>
-          </div>
-          <button @click="nav('passports')" class="sn-btn sn-btn-primary">+ 여권 발급</button>
-        </div>
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem;">
+              <span class="sn-eyebrow">최근 등록 여권</span>
+              <button @click="nav('passports')" style="font-size: 0.6875rem; color: var(--color-accent); background: none; border: none; cursor: pointer; font-weight: 500;">전체 보기 →</button>
+            </div>
 
-        <!-- DENSE METRICS STRIP -->
-        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; background: var(--color-border); border-radius: 0.5rem; overflow: hidden; margin-bottom: 1.5rem;">
-          <div v-for="(kpi, i) in [
-            { num: totalCount,       label: '전체 여권',  color: 'var(--color-text-1)', page: 'passports' },
-            { num: activeCount,      label: '운행 중',    color: '#16a34a',              page: 'passports' },
-            { num: maintenanceCount, label: '정비 대기',  color: '#d97706',              page: 'passports' },
-            { num: materialCount,    label: '등록 원자재', color: '#2563eb',              page: 'materials' }
-          ]" :key="i" @click="nav(kpi.page)"
-            style="cursor: pointer; background: #fff; padding: 1rem 1.25rem;">
-            <span class="sn-mono" style="font-size: 1.5rem; font-weight: 700; font-variant-numeric: tabular-nums; display: block;"
-              :style="{ color: kpi.color }">{{ kpi.num }}</span>
-            <span class="sn-caption" style="font-size: 0.6875rem;">{{ kpi.label }}</span>
-          </div>
-        </div>
+            <div v-if="recentPassports.length" style="border: 1px solid var(--color-border); border-radius: 0.5rem; overflow: hidden;">
+              <div v-for="(p, idx) in recentPassports.slice(0, 8)" :key="idx"
+                @click="$emit('navigate', 'passport-detail', { passportId: p.passportId || p.id })"
+                style="display: grid; grid-template-columns: 3fr 2fr 1fr 80px; align-items: center; padding: 0.625rem 1rem; cursor: pointer; border-bottom: 1px solid rgba(0,0,0,0.03);"
+                @mouseenter="$event.currentTarget.style.background='#fafafa'"
+                @mouseleave="$event.currentTarget.style.background='transparent'">
+                <div>
+                  <div style="font-size: 0.8125rem; font-weight: 600; color: var(--color-text-1); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{ p.model || '—' }}</div>
+                  <div style="font-size: 0.6875rem; color: var(--color-text-3); font-family: var(--font-mono);">{{ p.passportId ? p.passportId.substring(0, 24) : '' }}</div>
+                </div>
+                <div style="font-size: 0.75rem; color: var(--color-text-2);">{{ p.manufacturerName || '—' }}</div>
+                <div>
+                  <span style="display: inline-flex; align-items: center; gap: 0.25rem; font-size: 0.6875rem; padding: 0.125rem 0.5rem; border-radius: 3px;"
+                    :style="{ background: p.status==='ACTIVE'?'#f0fdf4':p.status==='MANUFACTURED'?'#eff6ff':p.status==='MAINTENANCE'?'#fffbeb':'#f5f5f5', color: p.status==='ACTIVE'?'#16a34a':p.status==='MANUFACTURED'?'#2563eb':p.status==='MAINTENANCE'?'#d97706':'#a3a3a3' }">
+                    {{ statusLabels[p.status] || '—' }}
+                  </span>
+                </div>
+                <div style="text-align: right;">
+                  <div v-if="p.currentSoc != null" style="display: flex; align-items: center; gap: 0.375rem; justify-content: flex-end;">
+                    <div style="width: 32px; height: 4px; background: rgba(0,0,0,0.06); border-radius: 2px; overflow: hidden;">
+                      <div style="height: 100%; border-radius: 2px;" :style="{ width: Math.min(scaleSOC(p.currentSoc), 100) + '%', background: scaleSOC(p.currentSoc) >= 60 ? '#16a34a' : scaleSOC(p.currentSoc) >= 30 ? '#d97706' : '#dc2626' }"></div>
+                    </div>
+                    <span style="font-family: var(--font-mono); font-size: 0.6875rem; font-weight: 600; color: var(--color-text-1);">{{ scaleSOC(p.currentSoc) }}%</span>
+                  </div>
+                  <span v-else style="font-size: 0.6875rem; color: var(--color-text-3);">—</span>
+                </div>
+              </div>
+            </div>
 
-        <!-- STATUS BAR — dense -->
-        <div style="margin-bottom: 1.25rem;">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.375rem;">
-            <span class="sn-eyebrow">상태 분포</span>
-          </div>
-          <div v-if="statusDistribution.length" style="display: flex; height: 6px; border-radius: 3px; overflow: hidden; background: rgba(0,0,0,0.03); gap: 1px; margin-bottom: 0.75rem;">
-            <div v-for="item in statusDistribution" :key="item.status"
-              style="height: 100%; min-width: 3px;"
-              :style="{ width: (item.count / statTotal * 100) + '%', background: item.color }"></div>
-          </div>
-          <div style="display: flex; flex-wrap: wrap; gap: 1rem;">
-            <span v-for="item in statusDistribution" :key="item.status" class="flex items-center gap-1.5">
-              <span style="width: 6px; height: 6px; border-radius: 2px;" :style="{ background: item.color }"></span>
-              <span class="sn-caption" style="color: var(--color-text-2);">{{ item.label }}</span>
-              <span class="sn-mono" style="color: var(--color-text-1);">{{ item.count }}</span>
-            </span>
-          </div>
-        </div>
-
-        <!-- CHEMISTRY — inline, dense -->
-        <div v-if="chemistryDistribution.length" style="display: flex; flex-wrap: wrap; gap: 0.375rem; margin-bottom: 1.25rem;">
-          <span v-for="item in chemistryDistribution" :key="item.name"
-            style="display: inline-flex; align-items: center; gap: 0.375rem; padding: 0.25rem 0.625rem; border-radius: 3px; background: rgba(0,0,0,0.03);">
-            <span style="width: 6px; height: 6px; border-radius: 2px;" :style="{ background: item.color }"></span>
-            <span style="font-size: 0.8125rem; color: var(--color-text-1);">{{ item.name }}</span>
-            <span class="sn-mono" style="color: var(--color-text-3);">{{ item.count }}</span>
-          </span>
-        </div>
-
-        <!-- RECENT PASSPORTS — compact list, NOT in a card -->
-        <div>
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
-            <span class="sn-eyebrow">최근 등록</span>
-            <button @click="nav('passports')" class="sn-btn sn-btn-ghost" style="padding: 0.375rem 0.75rem; font-size: 0.75rem;">전체 보기 →</button>
+            <div v-else style="padding: 3rem; text-align: center; border: 1px dashed var(--color-border); border-radius: 0.5rem;">
+              <p style="font-size: 0.875rem; color: var(--color-text-3); margin-bottom: 0.75rem;">등록된 여권이 없습니다</p>
+              <button @click="nav('passports')" class="sn-btn sn-btn-accent">+ 여권 발급</button>
+            </div>
           </div>
 
-          <div v-if="recentPassports.length">
-            <table class="sn-table">
-              <thead>
-                <tr>
-                  <th>모델</th>
-                  <th>제조사</th>
-                  <th>상태</th>
-                  <th style="text-align: right;">무게</th>
-                  <th style="text-align: right;">등록</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="(p, idx) in recentPassports.slice(0, 8)" :key="idx"
-                  @click="$emit('navigate', 'passport-detail', { passportId: p.passportId || p.id })" style="cursor: pointer;">
-                  <td style="font-weight: 500; color: var(--color-text-1);">{{ p.model || '—' }}</td>
-                  <td>{{ p.manufacturerName || '—' }}</td>
-                  <td>
-                    <span class="flex items-center gap-1.5">
-                      <span style="width: 6px; height: 6px; border-radius: 2px;"
-                        :style="{ background: p.status==='ACTIVE'?'#16a34a':p.status==='MANUFACTURED'?'#2563eb':p.status==='MAINTENANCE'?'#d97706':p.status==='ANALYSIS'?'#7c3aed':p.status==='RECYCLING'?'#ea580c':'#a3a3a3' }"></span>
-                      <span class="sn-caption" style="color: var(--color-text-2);">{{ statusLabels[p.status] || '—' }}</span>
-                    </span>
-                  </td>
-                  <td class="sn-mono" style="text-align: right;">{{ p.weight ? p.weight + 'kg' : '—' }}</td>
-                  <td class="sn-caption" style="text-align: right;">{{ formatDate(p.createdAt || p.manufactureDate) }}</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
+          <!-- RIGHT: Sidebar panels -->
+          <div style="display: flex; flex-direction: column; gap: 1rem;">
 
-          <div v-else class="flex flex-col items-center py-12 gap-3 text-center">
-            <p class="sn-body">등록된 배터리 여권이 없습니다.</p>
-            <button @click="nav('passports')" class="sn-btn sn-btn-accent mt-2">+ 여권 발급하기</button>
+            <!-- Chemistry breakdown with bars -->
+            <div style="border: 1px solid var(--color-border); border-radius: 0.5rem; padding: 1rem;">
+              <span class="sn-eyebrow" style="display: block; margin-bottom: 0.75rem;">화학 구성</span>
+              <div v-if="chemistryDistribution.length" style="display: flex; flex-direction: column; gap: 0.5rem;">
+                <div v-for="item in chemistryDistribution" :key="item.name" style="display: flex; align-items: center; gap: 0.5rem;">
+                  <span style="font-size: 0.75rem; color: var(--color-text-2); width: 60px; flex-shrink: 0;">{{ item.name }}</span>
+                  <div style="flex: 1; height: 6px; background: rgba(0,0,0,0.04); border-radius: 3px; overflow: hidden;">
+                    <div style="height: 100%; border-radius: 3px;" :style="{ width: (chemTotal > 0 ? item.count / chemTotal * 100 : 0) + '%', background: item.color }"></div>
+                  </div>
+                  <span style="font-family: var(--font-mono); font-size: 0.6875rem; color: var(--color-text-1); width: 24px; text-align: right;">{{ item.count }}</span>
+                </div>
+              </div>
+              <span v-else style="font-size: 0.75rem; color: var(--color-text-3);">데이터 없음</span>
+            </div>
+
+            <!-- Status detail breakdown -->
+            <div style="border: 1px solid var(--color-border); border-radius: 0.5rem; padding: 1rem;">
+              <span class="sn-eyebrow" style="display: block; margin-bottom: 0.75rem;">상태별 현황</span>
+              <div v-for="s in statusList" :key="s" @click="nav('passports')"
+                style="display: flex; align-items: center; justify-content: space-between; padding: 0.375rem 0; cursor: pointer; border-bottom: 1px solid rgba(0,0,0,0.03);">
+                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                  <span style="width: 8px; height: 8px; border-radius: 2px;"
+                    :style="{ background: countByStatus[s] > 0 ? (s==='ACTIVE'?'#16a34a':s==='MANUFACTURED'?'#2563eb':s==='MAINTENANCE'?'#d97706':s==='ANALYSIS'?'#7c3aed':s==='RECYCLING'?'#ea580c':'#a3a3a3') : 'rgba(0,0,0,0.06)' }"></span>
+                  <span style="font-size: 0.75rem;" :style="{ color: countByStatus[s] > 0 ? 'var(--color-text-1)' : 'var(--color-text-3)' }">{{ statusLabels[s] }}</span>
+                </div>
+                <span style="font-family: var(--font-mono); font-size: 0.8125rem; font-weight: 600;"
+                  :style="{ color: countByStatus[s] > 0 ? 'var(--color-text-1)' : 'var(--color-text-3)' }">{{ countByStatus[s] || 0 }}</span>
+              </div>
+            </div>
+
+            <!-- Quick actions -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem;">
+              <button @click="nav('materials')" class="sn-btn sn-btn-ghost" style="font-size: 0.75rem; padding: 0.5rem;">원자재 관리</button>
+              <button @click="nav('maintenance')" class="sn-btn sn-btn-ghost" style="font-size: 0.75rem; padding: 0.5rem;">정비 서비스</button>
+              <button @click="nav('audit-log')" class="sn-btn sn-btn-ghost" style="font-size: 0.75rem; padding: 0.5rem;">감사 로그</button>
+              <button @click="nav('qr-scan')" class="sn-btn sn-btn-ghost" style="font-size: 0.75rem; padding: 0.5rem;">QR 스캔</button>
+            </div>
           </div>
         </div>
 

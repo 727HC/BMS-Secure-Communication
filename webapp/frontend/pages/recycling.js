@@ -261,13 +261,13 @@ app.component('recycling-page', {
     };
   },
   template: `
-  <div style="display:flex;flex-direction:column;gap:24px;">
+  <div style="display:flex;flex-direction:column;gap:16px;">
 
     <!-- ====== PAGE HEADER ====== -->
-    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px;">
+    <div style="padding-bottom:0.75rem;border-bottom:1px solid var(--color-border,rgba(0,0,0,0.08));display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
       <div>
-        <h1 class="sn-display" style="font-size:1.75rem;">재활용 관리</h1>
-        <p class="sn-caption" style="margin-top:0.25rem;">배터리 분석, 재활용 판정 및 폐기 처리 관리</p>
+        <h1 class="sn-display" style="font-size:1.5rem;margin:0;">재활용 관리</h1>
+        <p class="sn-caption" style="margin-top:0.2rem;font-size:0.78rem;">배터리 분석, 재활용 판정 및 폐기 처리 관리</p>
       </div>
       <button @click="fetchPassports" class="sn-btn sn-btn-ghost" style="display:inline-flex;align-items:center;gap:6px;font-size:0.82rem;">
         <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -278,8 +278,8 @@ app.component('recycling-page', {
     </div>
 
     <!-- ====== STATUS SUMMARY CARDS ====== -->
-    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;">
-      <div class="sn-panel" style="padding:14px 16px;">
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;">
+      <div class="sn-panel" style="padding:10px 14px;">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
           <span class="sn-eyebrow">전체</span>
           <div style="width:28px;height:28px;border-radius:8px;background:#f5f5f5;display:flex;align-items:center;justify-content:center;">
@@ -288,7 +288,7 @@ app.component('recycling-page', {
         </div>
         <span style="font-family:'JetBrains Mono',monospace;font-size:1.5rem;font-weight:800;color:#171717;">{{ tabCounts.all }}</span>
       </div>
-      <div class="sn-panel" style="padding:14px 16px;">
+      <div class="sn-panel" style="padding:10px 14px;">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
           <span class="sn-eyebrow" style="color:#16a34a;">재활용가능</span>
           <div style="width:28px;height:28px;border-radius:8px;background:#f0fdf4;display:flex;align-items:center;justify-content:center;">
@@ -297,7 +297,7 @@ app.component('recycling-page', {
         </div>
         <span style="font-family:'JetBrains Mono',monospace;font-size:1.5rem;font-weight:800;color:#16a34a;">{{ tabCounts.recyclable }}</span>
       </div>
-      <div class="sn-panel" style="padding:14px 16px;">
+      <div class="sn-panel" style="padding:10px 14px;">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
           <span class="sn-eyebrow" style="color:#2563eb;">재활용중</span>
           <div style="width:28px;height:28px;border-radius:8px;background:#eff6ff;display:flex;align-items:center;justify-content:center;">
@@ -306,7 +306,7 @@ app.component('recycling-page', {
         </div>
         <span style="font-family:'JetBrains Mono',monospace;font-size:1.5rem;font-weight:800;color:#2563eb;">{{ tabCounts.recycling }}</span>
       </div>
-      <div class="sn-panel" style="padding:14px 16px;">
+      <div class="sn-panel" style="padding:10px 14px;">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
           <span class="sn-eyebrow">폐기완료</span>
           <div style="width:28px;height:28px;border-radius:8px;background:#f5f5f5;display:flex;align-items:center;justify-content:center;">
@@ -353,7 +353,7 @@ app.component('recycling-page', {
 
     <!-- ====== MAIN TABLE ====== -->
     <div v-else class="sn-panel" style="overflow:hidden;">
-      <div style="overflow-x:auto;">
+      <div style="overflow-x:auto;font-size:0.8125rem;">
         <table class="sn-table">
           <thead>
             <tr>
