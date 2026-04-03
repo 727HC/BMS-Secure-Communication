@@ -225,91 +225,68 @@ app.component('passports-page', {
           </select>
         </div>
 
-        <!-- TABLE -->
-        <div class="sn-panel" style="overflow:hidden;">
-          <div v-if="filteredPassports.length > 0" class="overflow-x-auto" style="font-size:0.8125rem;">
-            <table class="sn-table">
-              <thead>
-                <tr>
-                  <th>ID</th>
-                  <th>시리얼</th>
-                  <th>모델</th>
-                  <th>제조사</th>
-                  <th>상태</th>
-                  <th>SOC</th>
-                  <th>SOH</th>
-                  <th>VIN</th>
-                  <th>GBA</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="(p, idx) in filteredPassports" :key="p.passportId"
-                    @click="viewDetail(p.passportId)" class="cursor-pointer" style="position: relative;">
-                  <td style="position:relative;padding-left:1.25rem;">
-                    <span :style="{
-                      position:'absolute',left:0,top:'4px',bottom:'4px',width:'3px',borderRadius:'0 3px 3px 0',
-                      backgroundColor: p.status==='MANUFACTURED'?'#60a5fa':p.status==='ACTIVE'?'#34d399':p.status==='MAINTENANCE'?'#fbbf24':p.status==='ANALYSIS'?'#a78bfa':p.status==='RECYCLING'?'#f97316':p.status==='DISPOSED'?'#ef4444':'#64748b'
-                    }"></span>
-                    <span style="font-size:0.75rem;font-family:'JetBrains Mono',monospace;color:#525252;">{{ p.passportId ? p.passportId.substring(0,20) : '-' }}</span>
-                  </td>
-                  <td style="font-family:'JetBrains Mono',monospace;font-size:0.75rem;color:#525252;">{{ p.serialNumber || '-' }}</td>
-                  <td style="font-weight:600;color:#171717;">{{ p.model || '-' }}</td>
-                  <td style="color:#525252;">{{ p.manufacturerName || '-' }}</td>
-                  <td>
-                    <span class="inline-flex items-center gap-1.5">
-                      <span class="w-1.5 h-1.5 rounded-full" :style="{
-                        backgroundColor: p.status === 'MANUFACTURED' ? '#60a5fa' :
-                          p.status === 'ACTIVE' ? '#34d399' :
-                          p.status === 'MAINTENANCE' ? '#fbbf24' :
-                          p.status === 'ANALYSIS' ? '#a78bfa' :
-                          p.status === 'RECYCLING' ? '#f97316' : '#64748b'
-                      }"></span>
-                      <span :class="[
-                        'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold',
-                        p.status === 'ACTIVE' ? 'bg-[rgba(200,255,0,0.08)] text-[#c8ff00]' :
-                        p.status === 'MAINTENANCE' ? 'bg-[rgba(255,184,0,0.1)] text-[#ffb800]' :
-                        p.status === 'ANALYSIS' ? 'bg-[rgba(192,132,252,0.1)] text-[#c084fc]' :
-                        p.status === 'MANUFACTURED' ? 'bg-[rgba(107,163,255,0.1)] text-[#6ba3ff]' :
-                        p.status === 'RECYCLING' ? 'bg-[rgba(255,184,0,0.1)] text-[#ffb800]' : 'bg-[#2a2720] text-[rgba(250,250,245,0.5)]'
-                      ]">{{ STATUS_LABELS[p.status] || p.status || '-' }}</span>
-                    </span>
-                  </td>
-                  <td>
-                    <div v-if="p.currentSoc != null" style="display:flex;align-items:center;gap:8px;min-width:90px;">
-                      <div style="flex:1;height:6px;border-radius:999px;overflow:hidden;background:#e5e5e5;">
-                        <div :style="{ width:Math.min(scaleSOC(p.currentSoc),100)+'%', height:'100%', borderRadius:'999px', background: scaleSOC(p.currentSoc)>50?'#171717':scaleSOC(p.currentSoc)>20?'#f59e0b':'#ef4444' }"></div>
-                      </div>
-                      <span style="font-family:'JetBrains Mono',monospace;font-size:0.75rem;font-weight:600;color:#525252;">{{ scaleSOC(p.currentSoc) }}%</span>
-                    </div>
-                    <span v-else style="color:#a3a3a3;font-size:0.8rem;">—</span>
-                  </td>
-                  <td>
-                    <span v-if="p.currentSoh != null" style="font-family:'JetBrains Mono',monospace;font-size:0.75rem;color:#525252;">{{ p.currentSoh }}%</span>
-                    <span v-else style="color:#a3a3a3;font-size:0.8rem;">—</span>
-                  </td>
-                  <td>
-                    <span v-if="p.vin" style="font-family:'JetBrains Mono',monospace;font-size:0.75rem;color:#525252;">{{ p.vin }}</span>
-                    <span v-else style="color:#a3a3a3;font-size:0.8rem;">—</span>
-                  </td>
-                  <td style="text-align: center;">
-                    <div style="display: flex; align-items: center; gap: 0.375rem; justify-content: center;">
-                      <div style="width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.625rem; font-weight: 700; font-family: var(--font-mono);"
-                        :style="{
-                          background: getGbaPct(p) >= 90 ? '#f0fdf4' : getGbaPct(p) >= 50 ? '#fffbeb' : '#fef2f2',
-                          color: getGbaPct(p) >= 90 ? '#16a34a' : getGbaPct(p) >= 50 ? '#d97706' : '#dc2626'
-                        }">{{ getGbaPct(p) }}</div>
-                    </div>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
+        <!-- CARD GRID -->
+        <div v-if="filteredPassports.length > 0">
+          <!-- CARD GRID (structural change from table) -->
+          <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 10px;">
+            <div v-for="p in filteredPassports" :key="p.passportId"
+              @click="viewDetail(p.passportId)"
+              style="background: #fff; border: 1px solid rgba(0,0,0,0.06); border-radius: 8px; padding: 1rem; cursor: pointer; transition: all 0.2s; position: relative; overflow: hidden;"
+              @mouseenter="$event.currentTarget.style.borderColor='rgba(0,0,0,0.15)';$event.currentTarget.style.transform='translateY(-1px)'"
+              @mouseleave="$event.currentTarget.style.borderColor='rgba(0,0,0,0.06)';$event.currentTarget.style.transform='none'">
 
-          <!-- Empty state -->
-          <div v-else style="padding: 3rem; text-align: center; border: 1px dashed var(--color-border); border-radius: 0.5rem;">
-            <p style="font-size: 0.875rem; color: var(--color-text-3); margin-bottom: 0.75rem;">등록된 여권이 없습니다. 검색 조건을 변경하거나 새 여권을 발급하세요.</p>
-            <button v-if="isManufacturer" @click="openCreateModal" class="sn-btn sn-btn-accent">여권 발급</button>
+              <!-- Status top bar -->
+              <div style="position: absolute; top: 0; left: 0; right: 0; height: 3px;"
+                :style="{ background: p.status==='ACTIVE'?'#16a34a':p.status==='MANUFACTURED'?'#2563eb':p.status==='MAINTENANCE'?'#d97706':p.status==='ANALYSIS'?'#7c3aed':p.status==='RECYCLING'?'#ea580c':'#a3a3a3' }"></div>
+
+              <!-- Header: model + status -->
+              <div style="display: flex; align-items: start; justify-content: space-between; margin-bottom: 0.5rem;">
+                <div style="font-size: 0.875rem; font-weight: 600; color: var(--color-text-1); line-height: 1.3;">{{ p.model || '미등록 모델' }}</div>
+                <span style="font-size: 0.625rem; font-weight: 600; padding: 0.125rem 0.5rem; border-radius: 3px; white-space: nowrap; flex-shrink: 0; margin-left: 0.5rem;"
+                  :style="{ background: p.status==='ACTIVE'?'#f0fdf4':p.status==='MANUFACTURED'?'#eff6ff':p.status==='MAINTENANCE'?'#fffbeb':'#f5f5f5', color: p.status==='ACTIVE'?'#16a34a':p.status==='MANUFACTURED'?'#2563eb':p.status==='MAINTENANCE'?'#d97706':'#a3a3a3' }">
+                  {{ getStatusBadge(p.status).label }}
+                </span>
+              </div>
+
+              <!-- ID -->
+              <div style="font-family: var(--font-mono); font-size: 0.625rem; color: var(--color-text-3); margin-bottom: 0.75rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{ p.passportId }}</div>
+
+              <!-- Specs row -->
+              <div style="display: flex; gap: 0.75rem; font-size: 0.6875rem; color: var(--color-text-2); margin-bottom: 0.75rem;">
+                <span v-if="p.manufacturerName">{{ p.manufacturerName }}</span>
+                <span v-if="p.chemistry" style="background: rgba(0,0,0,0.04); padding: 0 0.25rem; border-radius: 2px;">{{ p.chemistry }}</span>
+                <span v-if="p.weight">{{ p.weight }}kg</span>
+              </div>
+
+              <!-- SOC/SOH gauges -->
+              <div style="display: flex; gap: 1rem; align-items: center;">
+                <div v-if="p.currentSoc != null" style="flex: 1;">
+                  <div style="display: flex; justify-content: space-between; margin-bottom: 0.25rem;">
+                    <span style="font-size: 0.5625rem; color: var(--color-text-3);">SOC</span>
+                    <span style="font-family: var(--font-mono); font-size: 0.625rem; font-weight: 600; color: var(--color-text-1);">{{ scaleSOC(p.currentSoc) }}%</span>
+                  </div>
+                  <div style="height: 4px; background: rgba(0,0,0,0.06); border-radius: 2px; overflow: hidden;">
+                    <div style="height: 100%; border-radius: 2px;" :style="{ width: Math.min(scaleSOC(p.currentSoc), 100) + '%', background: scaleSOC(p.currentSoc) >= 60 ? '#16a34a' : scaleSOC(p.currentSoc) >= 30 ? '#d97706' : '#dc2626' }"></div>
+                  </div>
+                </div>
+                <div v-if="p.currentSoh != null" style="flex: 1;">
+                  <div style="display: flex; justify-content: space-between; margin-bottom: 0.25rem;">
+                    <span style="font-size: 0.5625rem; color: var(--color-text-3);">SOH</span>
+                    <span style="font-family: var(--font-mono); font-size: 0.625rem; font-weight: 600; color: var(--color-text-1);">{{ p.currentSoh }}%</span>
+                  </div>
+                  <div style="height: 4px; background: rgba(0,0,0,0.06); border-radius: 2px; overflow: hidden;">
+                    <div style="height: 100%; border-radius: 2px;" :style="{ width: Math.min(p.currentSoh, 100) + '%', background: p.currentSoh >= 80 ? '#16a34a' : p.currentSoh >= 50 ? '#d97706' : '#dc2626' }"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
+        </div>
+
+        <!-- Empty state -->
+        <div v-else style="padding: 3rem; text-align: center; border: 1px dashed var(--color-border); border-radius: 0.5rem;">
+          <p style="font-size: 0.875rem; color: var(--color-text-3); margin-bottom: 0.75rem;">등록된 여권이 없습니다. 검색 조건을 변경하거나 새 여권을 발급하세요.</p>
+          <button v-if="isManufacturer" @click="openCreateModal" class="sn-btn sn-btn-accent">여권 발급</button>
         </div>
       </div>
 
