@@ -155,9 +155,9 @@ app.component('qr-scan-page', {
       </div>
     </div>
 
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+    <div style="display:grid;grid-template-columns:1fr;gap:16px;">
 
-      <!-- ====== LEFT: SCANNER AREA ====== -->
+      <!-- ====== SCANNER AREA ====== -->
       <div style="display:flex;flex-direction:column;gap:16px;">
 
         <!-- Camera Scanner -->
@@ -247,7 +247,7 @@ app.component('qr-scan-page', {
         </div>
       </div>
 
-      <!-- ====== RIGHT: RESULT AREA ====== -->
+      <!-- ====== RESULT AREA (below scanner in single-column flow) ====== -->
       <div>
         <!-- Loading -->
         <div v-if="loadingPassport" style="display: flex; align-items: center; justify-content: center; min-height: 40vh;">
