@@ -123,11 +123,11 @@ const SIDEBAR_NAV = [
 ];
 
 const IA_SECTION_CHIPS = [
-  { key: 'overview', label: 'Overview' },
-  { key: 'registry', label: 'Registry' },
-  { key: 'operations', label: 'Operations' },
-  { key: 'inspection', label: 'Inspection' },
-  { key: 'evidence', label: 'Evidence' },
+  { key: 'overview', label: '개요' },
+  { key: 'registry', label: '등록부' },
+  { key: 'operations', label: '운영' },
+  { key: 'inspection', label: '점검' },
+  { key: 'evidence', label: '증빙' },
 ];
 
 const ROUTE_META = {
@@ -139,27 +139,27 @@ const ROUTE_META = {
   },
   dashboard: {
     section: 'overview',
-    pageTitle: 'Overview',
+    pageTitle: '개요',
     shellTitle: '운영 현황',
     shellDescription: '상태, 병목, 최근 변화를 한 번에 읽는 lifecycle control surface입니다.',
   },
   passports: {
     section: 'registry',
     pageTitle: '배터리 여권 등록부',
-    shellTitle: 'Registry context',
-    shellDescription: '발급, 바인딩, 후속 검토가 이어지는 registry work surface입니다.',
+    shellTitle: '등록부',
+    shellDescription: '발급, 바인딩, 후속 검토를 한 흐름으로 다루는 등록 화면입니다.',
   },
   'passport-detail': {
     section: 'registry',
-    pageTitle: 'Technical Dossier',
-    shellTitle: 'Dossier context',
-    shellDescription: '식별·규제·운영 증빙을 하나의 문서 흐름으로 연결합니다.',
+    pageTitle: '기술 문서',
+    shellTitle: '기술 문서',
+    shellDescription: '식별, 규제, 운영 증빙을 한 문서 흐름으로 정리합니다.',
   },
   materials: {
     section: 'registry',
     pageTitle: '원자재 원장',
     shellTitle: '원자재 원장',
-    shellDescription: '소재 출처와 인증 근거를 registry context 안에서 추적합니다.',
+    shellDescription: '소재 출처와 인증 근거를 등록부 안에서 추적합니다.',
   },
   maintenance: {
     section: 'operations',
@@ -177,13 +177,13 @@ const ROUTE_META = {
     section: 'inspection',
     pageTitle: '현장 데이터 점검',
     shellTitle: '현장 데이터 점검',
-    shellDescription: 'BMU 원천 데이터를 inspection entry point에서 확인합니다.',
+    shellDescription: 'BMU 원천 데이터를 점검 화면에서 확인합니다.',
   },
   'qr-scan': {
     section: 'inspection',
     pageTitle: '식별 스캔',
     shellTitle: '식별 스캔',
-    shellDescription: 'QR/NFC 식별로 현장 dossier 진입점을 제공합니다.',
+    shellDescription: 'QR/NFC 식별로 현장 문서 화면으로 바로 진입합니다.',
   },
   'audit-log': {
     section: 'evidence',
@@ -295,12 +295,12 @@ const app = createApp({
     const currentNavLabel = computed(() => {
       if (currentPage.value === 'passport-detail') return '여권 상세';
       const item = SIDEBAR_NAV.find((nav) => nav.route === currentPage.value);
-      return item ? item.label : currentPageMeta.value.pageTitle || 'Overview';
+      return item ? item.label : currentPageMeta.value.pageTitle || '개요';
     });
 
     // Current page title in Korean
     const currentPageTitle = computed(() => {
-      return currentPageMeta.value.pageTitle || 'Overview';
+      return currentPageMeta.value.pageTitle || '개요';
     });
 
     // User initials (first 2 chars of userId)

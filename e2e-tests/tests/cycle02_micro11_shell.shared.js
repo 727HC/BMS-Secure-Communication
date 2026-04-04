@@ -87,7 +87,7 @@ async function bootstrap(page, hash = '#dashboard') {
 }
 
 test.describe('Cycle 02 / Micro 11 — Operations Shell Context Ribbon', () => {
-  test('dashboard shell shows current docket and pending count', async ({ page }) => {
+  test('dashboard shell shows shell ribbon and pending count', async ({ page }) => {
     const errors = [];
     page.on('pageerror', (err) => errors.push(err.message));
 

@@ -176,7 +176,7 @@ async function bootstrap(page, orgMsp, passport) {
     localStorage.setItem('bp_orgMsp', org);
   }, orgMsp);
   await page.goto(`${BASE}/#passport-detail?passportId=${passport.passportId}`, { waitUntil: 'domcontentloaded' });
-  await expect(page.getByText('Technical Dossier')).toBeVisible();
+  await expect(page.getByRole('banner').getByRole('heading', { name: '기술 문서' })).toBeVisible();
 }
 
 test.describe('Cycle 02 / Micro 09 — Passport Detail Dossier Handoff', () => {
@@ -187,9 +187,9 @@ test.describe('Cycle 02 / Micro 09 — Passport Detail Dossier Handoff', () => {
     const passport = createPassport({ rawMaterials: [] });
     await bootstrap(page, 'ManufacturerMSP', passport);
 
-    await expect(page.getByText('Dossier handoff')).toBeVisible();
-    await expect(page.locator('div').filter({ hasText: /^Current action docket$/ }).first()).toBeVisible();
-    await expect(page.getByText('Link source materials').first()).toBeVisible();
+    await expect(page.getByText('문서 인계 상태')).toBeVisible();
+    await expect(page.locator('div').filter({ hasText: /^현재 조치$/ }).first()).toBeVisible();
+    await expect(page.getByText('원자재 연결').first()).toBeVisible();
     await page.screenshot({ path: 'screenshots/c02_m09_detail_cover.png', fullPage: true });
 
     expect(errors).toEqual([]);
@@ -212,10 +212,10 @@ test.describe('Cycle 02 / Micro 09 — Passport Detail Dossier Handoff', () => {
     });
     await bootstrap(page, 'ServiceMSP', passport);
 
-    await expect(page.getByText('Service docket open').first()).toBeVisible();
-    await expect(page.getByText('File maintenance completion').first()).toBeVisible();
+    await expect(page.getByText('정비 작업 진행').first()).toBeVisible();
+    await expect(page.getByText('정비 완료 등록').first()).toBeVisible();
     await page.getByRole('button', { name: '정비/이력' }).click();
-    await expect(page.getByText('Lifecycle Service Chain')).toBeVisible();
+    await expect(page.getByText('정비 이력 흐름')).toBeVisible();
     await page.screenshot({ path: 'screenshots/c02_m09_detail_traceability.png', fullPage: true });
 
     expect(errors).toEqual([]);
@@ -238,8 +238,8 @@ test.describe('Cycle 02 / Micro 09 — Passport Detail Dossier Handoff', () => {
     });
     await bootstrap(page, 'RegulatorMSP', passport);
 
-    await expect(page.getByText('Recovery disposition open').first()).toBeVisible();
-    await expect(page.getByText('Review extraction or close disposition').first()).toBeVisible();
+    await expect(page.getByText('회수 판정 진행').first()).toBeVisible();
+    await expect(page.getByText('추출 검토 또는 종료 판정').first()).toBeVisible();
     await page.screenshot({ path: 'screenshots/c02_m09_detail_mobile.png', fullPage: true });
 
     expect(errors).toEqual([]);
