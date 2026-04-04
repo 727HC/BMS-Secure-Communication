@@ -57,13 +57,13 @@ app.component('dashboard-page', {
     const roleDescription = computed(() => {
       switch (props.auth.orgMsp) {
         case MSP.MANUFACTURER:
-          return '발급 직후의 신원 정보와 소재 근거를 빠르게 정리해 다음 인계 상태를 준비합니다.';
+          return '발급 직후의 신원 정보와 원자재 근거를 정리해 다음 인계 상태를 준비합니다.';
         case MSP.EV_MANUFACTURER:
           return '차량 바인딩과 후속 서비스 요청을 여권 흐름 안에서 이어 확인합니다.';
         case MSP.SERVICE:
-          return '정비·분석 후속을 우선 처리하고 최근 등록 dossier를 이어서 검토합니다.';
+          return '정비·분석 후속을 먼저 처리하고 최근 등록 문서를 이어서 검토합니다.';
         case MSP.REGULATOR:
-          return '회수·폐기 판단과 증빙 누락 여부를 규제 docket으로 정리합니다.';
+          return '회수·폐기 판단과 증빙 누락 여부를 규제 검토 흐름으로 정리합니다.';
         default:
           return '등록, 운영, 검증 흐름을 한 화면에서 요약합니다.';
       }
@@ -80,13 +80,13 @@ app.component('dashboard-page', {
         {
           label: '바인딩이 필요한 여권',
           count: bindingPendingCount.value,
-          note: '차량 바인딩 또는 초기 dossier 연결이 필요한 건',
+          note: '차량 바인딩 또는 초기 문서 연결이 필요한 건',
           route: 'passports',
         },
         {
           label: '정비·분석 후속',
           count: serviceOpenCount.value,
-          note: '현재 정비 또는 분석 docket에 머문 건',
+          note: '현재 정비 또는 분석 단계에 머문 건',
           route: 'maintenance',
         },
         {
@@ -98,7 +98,7 @@ app.component('dashboard-page', {
         {
           label: '등록 소재 건수',
           count: materials.value.length,
-          note: 'registry에서 연결 가능한 source material ledger 수량',
+          note: '등록부에서 연결 가능한 원자재 원장 건수',
           route: 'materials',
         },
       ];
@@ -107,7 +107,7 @@ app.component('dashboard-page', {
         base[1].note = '정비 완료 또는 분석 결과를 먼저 제출해야 하는 건';
       }
       if (props.auth.orgMsp === MSP.REGULATOR) {
-        base[2].note = 'Review extraction or close disposition';
+        base[2].note = '추출 검토 또는 종료 판정이 필요한 건';
       }
       return base;
     });
@@ -116,7 +116,7 @@ app.component('dashboard-page', {
       { label: '전체 등록', value: totalCount.value, hint: '등록 현황' },
       { label: '운행 상태', value: activeCount.value, hint: '차량 바인딩 완료' },
       { label: '후속 확인', value: serviceOpenCount.value, hint: '정비·분석 대기' },
-      { label: '소재 ledger', value: materials.value.length, hint: 'registry linkage' },
+      { label: '원자재 원장', value: materials.value.length, hint: '등록부 연결 현황' },
     ]));
 
     function formatDate(value) {
@@ -129,11 +129,11 @@ app.component('dashboard-page', {
     }
 
     function nextAction(passport) {
-      if (!passport.vin) return 'Advance to vehicle binding';
-      if (passport.status === 'MAINTENANCE') return 'File maintenance completion';
-      if (passport.status === 'ANALYSIS') return 'Submit analysis result';
-      if (passport.recycleAvailable) return 'Review extraction or close disposition';
-      return 'Open technical dossier';
+      if (!passport.vin) return '차량 바인딩 진행';
+      if (passport.status === 'MAINTENANCE') return '정비 완료 등록';
+      if (passport.status === 'ANALYSIS') return '분석 결과 등록';
+      if (passport.recycleAvailable) return '추출 검토 또는 종료 판정';
+      return '기술 문서 열기';
     }
 
     function openRoute(route) {
@@ -172,12 +172,12 @@ app.component('dashboard-page', {
           <div class="sn-card-inner" style="display:flex;flex-direction:column;gap:1rem;">
             <div style="display:flex;justify-content:space-between;gap:1rem;align-items:flex-start;flex-wrap:wrap;">
               <div>
-                <p class="sn-eyebrow" style="margin-bottom:0.35rem;">Overview</p>
+                <p class="sn-eyebrow" style="margin-bottom:0.35rem;">개요</p>
                 <p class="sn-display" style="font-size:1.5rem;margin-bottom:0.35rem;">운영 현황</p>
                 <p style="font-size:0.95rem;font-weight:600;color:var(--color-text-1);margin-bottom:0.25rem;">{{ roleBrief }}</p>
                 <p class="sn-body" style="max-width:44rem;">{{ roleDescription }}</p>
               </div>
-              <button @click="openRoute('passports')" class="sn-btn sn-btn-accent" style="font-size:0.8125rem;padding:0.625rem 1rem;">Registry 열기</button>
+              <button @click="openRoute('passports')" class="sn-btn sn-btn-accent" style="font-size:0.8125rem;padding:0.625rem 1rem;">등록부 보기</button>
             </div>
 
             <div class="sn-panel" style="padding:0.875rem 1rem;border:1px solid rgba(0,0,0,0.05);">
@@ -199,10 +199,10 @@ app.component('dashboard-page', {
           <section class="sn-panel sn-reveal sn-reveal-d1" style="padding:1.125rem;">
             <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:1rem;margin-bottom:0.875rem;">
               <div>
-                <p class="sn-eyebrow" style="margin-bottom:0.25rem;">Action docket</p>
+                <p class="sn-eyebrow" style="margin-bottom:0.25rem;">우선 확인</p>
                 <h2 class="sn-heading" style="font-size:1.05rem;">즉시 확인</h2>
               </div>
-              <span style="font-size:0.75rem;font-weight:700;color:var(--color-text-3);">{{ immediateChecks.reduce((sum, item) => sum + item.count, 0) }} items</span>
+              <span style="font-size:0.75rem;font-weight:700;color:var(--color-text-3);">{{ immediateChecks.reduce((sum, item) => sum + item.count, 0) }}건</span>
             </div>
             <div style="display:flex;flex-direction:column;gap:0.75rem;">
               <button v-for="item in immediateChecks" :key="item.label" @click="openRoute(item.route)"
@@ -218,7 +218,7 @@ app.component('dashboard-page', {
 
           <section class="sn-panel sn-reveal sn-reveal-d2" style="padding:1.125rem;">
             <div style="margin-bottom:0.875rem;">
-              <p class="sn-eyebrow" style="margin-bottom:0.25rem;">Overview register</p>
+              <p class="sn-eyebrow" style="margin-bottom:0.25rem;">등록 현황</p>
               <h2 class="sn-heading" style="font-size:1.05rem;">등록 현황</h2>
             </div>
             <div style="display:flex;flex-direction:column;gap:0.75rem;">
@@ -244,10 +244,10 @@ app.component('dashboard-page', {
         <section class="sn-panel sn-reveal sn-reveal-d3" style="padding:1.125rem;overflow:hidden;">
           <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:1rem;margin-bottom:0.875rem;flex-wrap:wrap;">
             <div>
-              <p class="sn-eyebrow" style="margin-bottom:0.25rem;">Recent docket</p>
+              <p class="sn-eyebrow" style="margin-bottom:0.25rem;">최근 등록</p>
               <h2 class="sn-heading" style="font-size:1.05rem;">최근 등록 여권</h2>
             </div>
-            <span class="sn-caption">registry · dossier handoff</span>
+            <span class="sn-caption">등록부 · 문서 인계</span>
           </div>
           <div style="overflow-x:auto;">
             <table class="sn-table">

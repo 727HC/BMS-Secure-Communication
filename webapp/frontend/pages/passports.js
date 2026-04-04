@@ -104,9 +104,9 @@ app.component('passports-page', {
     );
 
     const registerEnglishTitle = computed(() => {
-      if (isManufacturer.value) return 'Issuer filing register';
-      if (isRegulator.value) return 'Compliance review register';
-      return 'Lifecycle passport register';
+      if (isManufacturer.value) return '발급 등록부';
+      if (isRegulator.value) return '규제 검토 등록부';
+      return '배터리 여권 등록부';
     });
 
     const registerSummary = computed(() => {
@@ -120,24 +120,24 @@ app.component('passports-page', {
     });
 
     function getPrimaryActionLabel(passport) {
-      if (isManufacturer.value && !passport.vin) return 'Advance to vehicle binding';
-      if (isRegulator.value) return 'Next register check';
-      return 'Open technical dossier';
+      if (isManufacturer.value && !passport.vin) return '차량 바인딩 진행';
+      if (isRegulator.value) return '다음 검토 진행';
+      return '기술 문서 열기';
     }
 
     function getPrimaryActionNote(passport) {
-      if (isManufacturer.value && !passport.vin) return 'VIN filing pending';
-      if (getGbaPct(passport) < 100) return 'Dossier completion required';
-      if (passport.recycleAvailable) return 'Disposition review pending';
-      return 'Registry ready';
+      if (isManufacturer.value && !passport.vin) return 'VIN 등록 대기';
+      if (getGbaPct(passport) < 100) return '문서 보완 필요';
+      if (passport.recycleAvailable) return '처분 검토 대기';
+      return '등록 준비 완료';
     }
 
     function getLifecycleMemo(passport) {
-      if (passport.status === 'MAINTENANCE') return 'Service docket active';
-      if (passport.status === 'ANALYSIS') return 'Inspection findings pending';
-      if (passport.status === 'RECYCLING') return 'Recovery disposition open';
-      if (!passport.vin) return 'VIN filing pending';
-      return 'Technical dossier current';
+      if (passport.status === 'MAINTENANCE') return '정비 작업 진행 중';
+      if (passport.status === 'ANALYSIS') return '점검 결과 대기';
+      if (passport.status === 'RECYCLING') return '회수·재활용 검토 중';
+      if (!passport.vin) return 'VIN 등록 대기';
+      return '기술 문서 최신';
     }
 
     const step1Fields = ['passportId','batteryId','did','model','serialNumber','manufacturerName','manufactureCountry','cellManufacturer','cellManufactureCountry','manufactureDate','cellType','chemistry'];
@@ -257,7 +257,7 @@ app.component('passports-page', {
           <div style="padding:1.25rem 1.25rem 1rem; border-bottom:1px solid var(--color-border); background:#fafaf9;">
             <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:1rem; flex-wrap:wrap;">
               <div>
-                <p class="sn-eyebrow" style="margin-bottom:0.5rem;">Registry / Filing Surface</p>
+                <p class="sn-eyebrow" style="margin-bottom:0.5rem;">등록 작업면</p>
                 <h1 class="sn-display" style="font-size:1.75rem;">배터리 여권 등록부</h1>
                 <p style="margin-top:0.375rem; font-size:0.95rem; font-weight:600; color:var(--color-text-1);">{{ registerEnglishTitle }}</p>
                 <p class="sn-caption" style="margin-top:0.375rem; max-width:42rem;">{{ registerSummary }}</p>
@@ -277,19 +277,19 @@ app.component('passports-page', {
 
           <div style="padding:1rem 1.25rem; display:grid; grid-template-columns:repeat(auto-fit, minmax(180px, 1fr)); gap:0.75rem; border-bottom:1px solid var(--color-border);">
             <div style="border:1px solid var(--color-border); border-radius:0.5rem; padding:0.85rem; background:#fff;">
-              <p class="sn-eyebrow" style="margin-bottom:0.35rem;">Register progression</p>
+              <p class="sn-eyebrow" style="margin-bottom:0.35rem;">등록 진행</p>
               <p style="font-size:0.95rem; font-weight:600; color:var(--color-text-1);">{{ isManufacturer ? '발급 → 바인딩 → 운용 전환' : '검토 → 증빙 확인 → 판정' }}</p>
             </div>
             <div style="border:1px solid var(--color-border); border-radius:0.5rem; padding:0.85rem; background:#fff;">
-              <p class="sn-eyebrow" style="margin-bottom:0.35rem;">Binding pending</p>
+              <p class="sn-eyebrow" style="margin-bottom:0.35rem;">바인딩 대기</p>
               <p style="font-family:var(--font-mono); font-size:1rem; font-weight:700; color:var(--color-text-1);">{{ bindingPendingCount }}</p>
             </div>
             <div style="border:1px solid var(--color-border); border-radius:0.5rem; padding:0.85rem; background:#fff;">
-              <p class="sn-eyebrow" style="margin-bottom:0.35rem;">Next register check</p>
+              <p class="sn-eyebrow" style="margin-bottom:0.35rem;">다음 검토</p>
               <p style="font-size:0.95rem; font-weight:600; color:var(--color-text-1);">{{ isRegulator ? '불완전 dossier·재활용 전환 건 우선 확인' : '기술 dossier·VIN 누락 건 우선 정리' }}</p>
             </div>
             <div style="border:1px solid var(--color-border); border-radius:0.5rem; padding:0.85rem; background:#fff;">
-              <p class="sn-eyebrow" style="margin-bottom:0.35rem;">Dossiers incomplete</p>
+              <p class="sn-eyebrow" style="margin-bottom:0.35rem;">문서 보완 필요</p>
               <p style="font-family:var(--font-mono); font-size:1rem; font-weight:700; color:var(--color-text-1);">{{ reviewPendingCount }}</p>
             </div>
           </div>
@@ -314,9 +314,9 @@ app.component('passports-page', {
         <div v-if="filteredPassports.length > 0" style="border:1px solid var(--color-border); border-radius:0.75rem; overflow:hidden; background:#fff;">
           <div class="sn-mobile-hide" style="display:grid; grid-template-columns:minmax(0, 1.1fr) minmax(0, 1.3fr) minmax(0, 0.9fr) minmax(0, 0.9fr); gap:1rem; padding:0.85rem 1.1rem; border-bottom:1px solid var(--color-border); background:#fafaf9;">
             <span class="sn-eyebrow">Register ID</span>
-            <span class="sn-eyebrow">Dossier summary</span>
-            <span class="sn-eyebrow">Lifecycle note</span>
-            <span class="sn-eyebrow">Next register check</span>
+            <span class="sn-eyebrow">문서 요약</span>
+            <span class="sn-eyebrow">진행 메모</span>
+            <span class="sn-eyebrow">다음 조치</span>
           </div>
 
           <div v-for="p in filteredPassports" :key="p.passportId"
