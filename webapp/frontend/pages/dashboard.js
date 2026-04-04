@@ -173,8 +173,7 @@ app.component('dashboard-page', {
             <div style="display:flex;justify-content:space-between;gap:1rem;align-items:flex-start;flex-wrap:wrap;">
               <div>
                 <p class="sn-eyebrow" style="margin-bottom:0.35rem;">Overview</p>
-                <h1 class="sn-display" style="font-size:1.5rem;margin-bottom:0.35rem;">운영 현황</h1>
-                <p style="font-size:0.95rem;font-weight:600;color:var(--color-text-1);margin-bottom:0.25rem;">{{ roleBrief }}</p>
+                <p class="sn-display" style="font-size:1.5rem;margin-bottom:0.35rem;">{{ roleBrief }}</p>
                 <p class="sn-body" style="max-width:44rem;">{{ roleDescription }}</p>
               </div>
               <button @click="openRoute('passports')" class="sn-btn sn-btn-accent" style="font-size:0.8125rem;padding:0.625rem 1rem;">Registry 열기</button>
