@@ -148,10 +148,29 @@ app.component('qr-scan-page', {
   <div style="display:flex;flex-direction:column;gap:16px;">
 
     <!-- ====== PAGE HEADER ====== -->
-    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.25rem; padding-bottom: 0.75rem; border-bottom: 1px solid var(--color-border);">
+    <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; margin-bottom: 1.25rem; padding-bottom: 0.75rem; border-bottom: 1px solid var(--color-border);">
       <div>
-        <h1 class="sn-display" style="font-size: 1.5rem;">QR / NFC 스캔</h1>
-        <p class="sn-caption" style="margin-top: 0.125rem;">배터리 여권 QR 코드 또는 NFC 태그를 스캔하여 정보를 조회합니다</p>
+        <p class="sn-eyebrow" style="margin:0 0 0.35rem;color:#0f766e;">INSPECTION</p>
+        <h1 class="sn-display" style="font-size: 1.5rem;">식별 진입점</h1>
+        <p class="sn-caption" style="margin-top: 0.125rem;">QR·NFC·수동 입력으로 여권 식별을 시작하고 inspection 흐름으로 연결합니다.</p>
+      </div>
+    </div>
+
+    <div class="sn-panel" style="padding:14px 16px;display:grid;grid-template-columns:1.35fr 1fr 1fr;gap:12px;">
+      <div style="padding-right:8px;border-right:1px solid rgba(0,0,0,0.06);">
+        <p class="sn-eyebrow" style="margin:0 0 0.35rem;">INTAKE CHANNELS</p>
+        <p style="font-size:0.875rem;font-weight:600;color:#171717;margin:0 0 0.25rem;">카메라 · NFC · 수동 질의</p>
+        <p style="font-size:0.75rem;color:#6b7280;line-height:1.6;margin:0;">현장 식별값을 확보한 뒤 바로 dossier 상세와 inspection 데이터 조회로 넘길 수 있습니다.</p>
+      </div>
+      <div>
+        <p class="sn-eyebrow" style="margin:0 0 0.35rem;">마지막 입력</p>
+        <p style="font-family:var(--font-mono);font-size:0.82rem;font-weight:600;color:#171717;margin:0;word-break:break-all;">{{ scanResult || '대기중' }}</p>
+        <p style="font-size:0.72rem;color:#6b7280;margin:0.2rem 0 0;">식별 토큰</p>
+      </div>
+      <div>
+        <p class="sn-eyebrow" style="margin:0 0 0.35rem;color:#059669;">결과 상태</p>
+        <p style="font-size:0.82rem;font-weight:600;color:#171717;margin:0;">{{ loadingPassport ? '조회중' : (passportData ? '여권 확인' : '대기') }}</p>
+        <p style="font-size:0.72rem;color:#6b7280;margin:0.2rem 0 0;">inspection handoff</p>
       </div>
     </div>
 
@@ -258,7 +277,7 @@ app.component('qr-scan-page', {
         <div v-else-if="passportData" class="sn-panel" style="overflow:hidden;">
           <div style="padding:14px 20px;border-bottom:1px solid rgba(0,0,0,0.06);display:flex;align-items:center;gap:8px;">
             <span style="width:8px;height:8px;border-radius:50%;background:#16a34a;display:inline-block;"></span>
-            <span style="font-size:0.82rem;font-weight:600;color:#16a34a;">여권 정보 확인됨</span>
+            <span style="font-size:0.82rem;font-weight:600;color:#16a34a;">식별 결과 확인됨</span>
           </div>
           <div style="padding:20px;display:flex;flex-direction:column;gap:16px;">
             <div style="display:flex;align-items:center;justify-content:space-between;">
@@ -319,8 +338,8 @@ app.component('qr-scan-page', {
               <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
             </svg>
           </div>
-          <p style="font-size:0.85rem;font-weight:500;color:#525252;margin:0 0 4px;">QR 코드를 스캔하거나 여권 ID를 입력하세요</p>
-          <p style="font-size:0.72rem;color:#a3a3a3;">스캔 결과가 여기에 표시됩니다</p>
+          <p style="font-size:0.85rem;font-weight:500;color:#525252;margin:0 0 4px;">식별값을 입력하거나 스캔해 inspection 흐름을 시작하세요</p>
+          <p style="font-size:0.72rem;color:#a3a3a3;">여권 확인 결과가 여기에 누적됩니다</p>
         </div>
       </div>
     </div>
