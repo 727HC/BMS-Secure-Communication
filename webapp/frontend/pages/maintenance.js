@@ -205,17 +205,44 @@ app.component('maintenance-page', {
     <template v-else>
 
       <!-- HEADER -->
-      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.25rem; padding-bottom: 0.75rem; border-bottom: 1px solid var(--color-border);">
+      <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; margin-bottom: 1.25rem; padding-bottom: 0.75rem; border-bottom: 1px solid var(--color-border);">
         <div>
-          <h1 class="sn-display" style="font-size: 1.5rem;">정비 / 서비스</h1>
-          <p class="sn-caption" style="margin-top: 0.125rem;">배터리 정비 요청, 완료 기록 및 사고 이력 관리</p>
+          <p class="sn-eyebrow" style="margin:0 0 0.35rem;color:#a16207;">OPERATIONS</p>
+          <h1 class="sn-display" style="font-size: 1.5rem;">정비 운영 대장</h1>
+          <p class="sn-caption" style="margin-top: 0.125rem;">정비 요청, 현장 처리, 사고 기록을 하나의 운영 흐름으로 정리합니다.</p>
         </div>
-        <button @click="fetchPassports" class="sn-btn sn-btn-ghost" style="display:inline-flex;align-items:center;gap:6px;">
+        <button @click="fetchPassports" class="sn-btn sn-btn-ghost" style="display:inline-flex;align-items:center;gap:6px;flex-shrink:0;">
           <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
             <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
           </svg>
           새로고침
         </button>
+      </div>
+
+      <div class="sn-panel" style="padding:14px 16px;display:grid;grid-template-columns:1.5fr 1fr 1fr 1fr;gap:12px;">
+        <div style="padding-right:8px;border-right:1px solid rgba(0,0,0,0.06);">
+          <p class="sn-eyebrow" style="margin:0 0 0.35rem;">OPERATIONS BRIEF</p>
+          <p style="font-size:0.875rem;font-weight:600;color:#171717;margin:0 0 0.25rem;">배터리 후속 조치의 단일 작업면</p>
+          <p style="font-size:0.75rem;color:#6b7280;line-height:1.6;margin:0;">
+            {{ canRequestMaintenance ? 'EV 제조사는 접수와 사고 기록을 올리고,' : '' }}
+            {{ canLogMaintenance ? '정비 조직은 정비 완료와 이력 정리를 마감합니다.' : '정비 진행 상황과 사고 흔적을 동일한 대장 안에서 확인할 수 있습니다.' }}
+          </p>
+        </div>
+        <div>
+          <p class="sn-eyebrow" style="margin:0 0 0.35rem;">접수 포함</p>
+          <p style="font-family:var(--font-mono);font-size:1.1rem;font-weight:700;color:#171717;margin:0;">{{ tabCounts.all }}</p>
+          <p style="font-size:0.72rem;color:#6b7280;margin:0.2rem 0 0;">운영 검토 대상</p>
+        </div>
+        <div>
+          <p class="sn-eyebrow" style="margin:0 0 0.35rem;color:#d97706;">정비중</p>
+          <p style="font-family:var(--font-mono);font-size:1.1rem;font-weight:700;color:#d97706;margin:0;">{{ tabCounts.maintenance }}</p>
+          <p style="font-size:0.72rem;color:#6b7280;margin:0.2rem 0 0;">현장 처리중</p>
+        </div>
+        <div>
+          <p class="sn-eyebrow" style="margin:0 0 0.35rem;color:#dc2626;">사고기록</p>
+          <p style="font-family:var(--font-mono);font-size:1.1rem;font-weight:700;color:#dc2626;margin:0;">{{ tabCounts.accident }}</p>
+          <p style="font-size:0.72rem;color:#6b7280;margin:0.2rem 0 0;">예외·사건 이력</p>
+        </div>
       </div>
 
       <!-- FILTER TABS -->
@@ -238,7 +265,7 @@ app.component('maintenance-page', {
       <div v-if="filteredPassports.length > 0" style="display: flex; gap: 1.5rem; margin-bottom: 1rem;">
         <div style="display: flex; align-items: baseline; gap: 0.375rem;">
           <span style="font-family: var(--font-mono); font-size: 1.25rem; font-weight: 700; color: var(--color-text-1);">{{ filteredPassports.length }}</span>
-          <span style="font-size: 0.75rem; color: var(--color-text-3);">대상 여권</span>
+          <span style="font-size: 0.75rem; color: var(--color-text-3);">현재 작업 항목</span>
         </div>
       </div>
 
@@ -247,7 +274,7 @@ app.component('maintenance-page', {
         <div style="position: absolute; left: 0.75rem; top: 0; bottom: 0; width: 2px; background: rgba(0,0,0,0.06);"></div>
         <div style="position: absolute; left: 0.5rem; top: 50%; transform: translateY(-50%); width: 12px; height: 12px; border-radius: 50%; background: rgba(0,0,0,0.06);"></div>
         <div style="display: flex; align-items: center; justify-content: center; min-height: 200px;">
-          <p style="font-size: 0.875rem; color: var(--color-text-3);">현재 정비 이력이 없습니다</p>
+          <p style="font-size: 0.875rem; color: var(--color-text-3);">아직 운영 대장에 올라온 정비·사고 항목이 없습니다</p>
         </div>
       </div>
 

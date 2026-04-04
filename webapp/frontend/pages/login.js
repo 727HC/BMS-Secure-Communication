@@ -77,14 +77,14 @@ app.component('login-page', {
               <div style="width: 36px; height: 36px; border-radius: 10px; background: #16a34a; display: flex; align-items: center; justify-content: center;">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><rect x="2" y="7" width="16" height="11" rx="2"/><path d="M18 10h2a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1h-2"/><line x1="7" y1="11" x2="7" y2="14"/><line x1="11" y1="10" x2="11" y2="15"/></svg>
               </div>
-              <span style="font-family: var(--font-display); font-weight: 600; font-size: 1.125rem; color: #fff; letter-spacing: -0.02em;">BatteryPass</span>
+              <span style="font-family: var(--font-display); font-weight: 600; font-size: 1.125rem; color: #fff; letter-spacing: -0.02em;">BatteryPass Registry</span>
             </div>
             <h1 style="font-family: var(--font-display); font-size: 2.5rem; font-weight: 700; color: #fff; letter-spacing: -0.04em; line-height: 1.1; margin-bottom: 1.25rem;">
-              배터리 전주기<br/>추적 · 인증
+              배터리 전주기<br/>등록 · 운영 · 증빙
             </h1>
             <p style="font-size: 0.9375rem; color: rgba(255,255,255,0.45); line-height: 1.8;">
-              EU 신배터리법 GBA-21 규격 기반<br/>
-              블록체인 인증 배터리 여권 시스템
+              registry / operations / inspection / evidence 기준으로<br/>
+              재구성한 블록체인 배터리 여권 시스템
             </p>
 
             <!-- Lifecycle visual -->
@@ -104,6 +104,14 @@ app.component('login-page', {
                : orgNum === 3 ? '정비 완료 · 분석 결과 · 재활용 판정'
                : '규제 검증 · 원자재 추출 · 폐기 처리' }}
             </p>
+
+            <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:1.75rem;">
+              <div v-for="section in ['Overview','Registry','Operations','Inspection','Evidence']" :key="section"
+                style="padding:10px 12px;border-radius:10px;background:rgba(255,255,255,0.04);box-shadow:inset 0 0 0 1px rgba(255,255,255,0.06);">
+                <p style="font-size:0.62rem;letter-spacing:0.12em;text-transform:uppercase;color:rgba(255,255,255,0.35);margin:0 0 2px;">Section</p>
+                <p style="font-size:0.82rem;font-weight:600;color:#fff;margin:0;">{{ section }}</p>
+              </div>
+            </div>
           </div>
 
           <div style="display: flex; gap: 1.25rem;">

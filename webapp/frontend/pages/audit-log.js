@@ -144,10 +144,11 @@ app.component('audit-log-page', {
   <div style="display:flex;flex-direction:column;gap:16px;">
 
     <!-- ====== PAGE HEADER ====== -->
-    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.25rem; padding-bottom: 0.75rem; border-bottom: 1px solid var(--color-border);">
+    <div style="display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 1.25rem; padding-bottom: 0.75rem; border-bottom: 1px solid var(--color-border); gap: 1rem;">
       <div>
-        <h1 class="sn-display" style="font-size: 1.5rem;">감사 로그</h1>
-        <p class="sn-caption" style="margin-top: 0.125rem;">총 {{ total }}건의 감사 기록</p>
+        <p class="sn-eyebrow" style="margin:0 0 0.35rem;color:#4338ca;">EVIDENCE</p>
+        <h1 class="sn-display" style="font-size: 1.5rem;">감사 증빙 원장</h1>
+        <p class="sn-caption" style="margin-top: 0.125rem;">총 {{ total }}건의 작업·검증 흔적을 증빙 순서대로 확인합니다.</p>
       </div>
       <div style="display:flex;align-items:center;gap:12px;">
         <label style="display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none;">
@@ -164,6 +165,24 @@ app.component('audit-log-page', {
           </svg>
           새로고침
         </button>
+      </div>
+    </div>
+
+    <div class="sn-panel" style="padding:14px 16px;display:grid;grid-template-columns:1.4fr 1fr 1fr;gap:12px;">
+      <div style="padding-right:8px;border-right:1px solid rgba(0,0,0,0.06);">
+        <p class="sn-eyebrow" style="margin:0 0 0.35rem;">EVIDENCE CHAIN</p>
+        <p style="font-size:0.875rem;font-weight:600;color:#171717;margin:0 0 0.25rem;">행위 → 응답 → 요청 데이터</p>
+        <p style="font-size:0.75rem;color:#6b7280;line-height:1.6;margin:0;">필터는 증빙 묶음을 줄이는 도구이고, 상세 패널은 각 사건의 request context를 보존합니다.</p>
+      </div>
+      <div>
+        <p class="sn-eyebrow" style="margin:0 0 0.35rem;">현재 페이지</p>
+        <p style="font-family:var(--font-mono);font-size:1.1rem;font-weight:700;color:#171717;margin:0;">{{ logs.length }}</p>
+        <p style="font-size:0.72rem;color:#6b7280;margin:0.2rem 0 0;">표시 중인 기록</p>
+      </div>
+      <div>
+        <p class="sn-eyebrow" style="margin:0 0 0.35rem;color:#059669;">필터</p>
+        <p style="font-size:0.82rem;font-weight:600;color:#171717;margin:0;">{{ filterWriteOnly ? '쓰기 중심' : '전체 행위' }}</p>
+        <p style="font-size:0.72rem;color:#6b7280;margin:0.2rem 0 0;">{{ autoRefresh ? '실시간 모니터링' : '수동 새로고침' }}</p>
       </div>
     </div>
 
@@ -186,7 +205,7 @@ app.component('audit-log-page', {
 
     <!-- ====== EMPTY STATE ====== -->
     <div v-else-if="logs.length === 0" style="padding: 3rem; text-align: center; border: 1px dashed var(--color-border); border-radius: 0.5rem;">
-      <p style="font-size: 0.875rem; color: var(--color-text-3); margin-bottom: 0;">기록된 감사 로그가 없습니다.</p>
+      <p style="font-size: 0.875rem; color: var(--color-text-3); margin-bottom: 0;">표시할 증빙 항목이 없습니다.</p>
     </div>
 
     <!-- ====== ACTIVITY FEED (structural change from table) ====== -->
