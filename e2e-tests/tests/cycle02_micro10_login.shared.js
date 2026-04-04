@@ -62,7 +62,7 @@ async function openLogin(page) {
     localStorage.removeItem('bp_orgMsp');
   });
   await page.reload({ waitUntil: 'domcontentloaded' });
-  await expect(page.getByRole('heading', { name: 'Access Intake' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: '로그인' })).toBeVisible();
   return state;
 }
 
@@ -73,13 +73,13 @@ test.describe('Cycle 02 / Micro 10 — Login Checkpoint Progression', () => {
 
     const state = await openLogin(page);
 
-    await expect(page.getByText('Checkpoint progression')).toBeVisible();
-    await expect(page.getByText('Next access action')).toBeVisible();
-    await expect(page.getByText('Submit credential checkpoint')).toBeVisible();
+    await expect(page.getByText('접속 절차', { exact: true })).toBeVisible();
+    await expect(page.getByText('다음 단계', { exact: true })).toBeVisible();
+    await expect(page.getByText('로그인 후 작업 공간 진입', { exact: true }).first()).toBeVisible();
 
     await page.locator('input[placeholder=\"예: issuer.operator.01\"]').fill('issuer.operator.01');
-    await page.locator('input[placeholder=\"접속 비밀번호 입력\"]').fill('pw-issuer');
-    await page.getByRole('button', { name: '접속 승인 요청' }).click();
+    await page.locator('input[placeholder=\"비밀번호 입력\"]').fill('pw-issuer');
+    await page.locator('form').getByRole('button', { name: '로그인' }).click();
 
     expect(state.lastLogin).toMatchObject({
       userId: 'issuer.operator.01',
@@ -97,13 +97,13 @@ test.describe('Cycle 02 / Micro 10 — Login Checkpoint Progression', () => {
 
     const state = await openLogin(page);
 
-    await page.getByRole('button', { name: 'Register' }).click();
-    await expect(page.getByText('Checkpoint progression')).toBeVisible();
-    await expect(page.getByText('File enrollment request')).toBeVisible();
+    await page.getByRole('button', { name: '계정 등록' }).click();
+    await expect(page.getByText('접속 절차', { exact: true })).toBeVisible();
+    await expect(page.getByText('등록 후 승인 대기', { exact: true }).first()).toBeVisible();
     await page.getByRole('button', { name: '검증기관' }).click();
     await page.locator('input[placeholder=\"예: issuer.operator.01\"]').fill('regulator.new');
-    await page.locator('input[placeholder=\"접속 비밀번호 입력\"]').fill('pw-reg');
-    await page.getByRole('button', { name: '등록 요청 제출' }).click();
+    await page.locator('input[placeholder=\"비밀번호 입력\"]').fill('pw-reg');
+    await page.getByRole('button', { name: '등록 요청 보내기' }).click();
 
     expect(state.lastRegister).toMatchObject({
       userId: 'regulator.new',
@@ -127,8 +127,8 @@ test.describe('Cycle 02 / Micro 10 — Login Checkpoint Progression', () => {
     await openLogin(page);
     await page.getByRole('button', { name: '검증기관' }).click();
 
-    await expect(page.getByText('Next access action')).toBeVisible();
-    await expect(page.getByText('Submit credential checkpoint')).toBeVisible();
+    await expect(page.getByText('다음 단계', { exact: true })).toBeVisible();
+    await expect(page.getByText('로그인 후 작업 공간 진입', { exact: true }).first()).toBeVisible();
     await page.screenshot({ path: 'screenshots/c02_m10_login_mobile.png', fullPage: true });
 
     expect(errors).toEqual([]);

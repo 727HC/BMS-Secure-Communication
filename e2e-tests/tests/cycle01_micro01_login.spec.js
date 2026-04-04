@@ -10,13 +10,13 @@ async function openLogin(page) {
     localStorage.removeItem('bp_orgMsp');
   });
   await page.reload({ waitUntil: 'domcontentloaded' });
-  await expect(page.getByText('Access Intake')).toBeVisible();
+  await expect(page.getByText('접속 준비', { exact: true })).toBeVisible();
 }
 
 test.describe('Cycle 01 / Micro 01 — Login Access Desk', () => {
   test('desktop login intake', async ({ page }) => {
     await openLogin(page);
-    await expect(page.getByText('접속 자격 확인')).toBeVisible();
+    await expect(page.getByText('배터리 여권 작업 공간')).toBeVisible();
     await page.screenshot({
       path: 'screenshots/c01_m01_login_desktop.png',
       fullPage: true,
@@ -25,7 +25,7 @@ test.describe('Cycle 01 / Micro 01 — Login Access Desk', () => {
 
   test('desktop register intake', async ({ page }) => {
     await openLogin(page);
-    await page.getByRole('button', { name: 'Register' }).click();
+    await page.getByRole('button', { name: '계정 등록' }).click();
     await expect(page.getByText('조직 계정 등록')).toBeVisible();
     await page.screenshot({
       path: 'screenshots/c01_m01_login_register.png',
