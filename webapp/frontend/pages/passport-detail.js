@@ -676,6 +676,57 @@ app.component('passport-detail-page', {
       return [];
     });
 
+    const hasLinkedMaterials = computed(() => (passport.value?.rawMaterials || []).length > 0);
+
+    const dossierStateTitle = computed(() => {
+      if (!passport.value) return '';
+      if (passport.value.status === 'MAINTENANCE') return 'Service docket open';
+      if (passport.value.status === 'RECYCLING') return 'Recovery disposition open';
+      return 'Dossier handoff';
+    });
+
+    const dossierStateNote = computed(() => {
+      if (!passport.value) return '';
+      if (passport.value.status === 'MAINTENANCE') {
+        return '정비 요청, 처리 상태, 작업 완료 기록을 한 문서 흐름으로 정리합니다.';
+      }
+      if (passport.value.status === 'RECYCLING') {
+        return '회수 판정, 추출 진행, 폐기 종료 결정을 disposition 흐름으로 검토합니다.';
+      }
+      return '등록부에서 넘어온 식별·규제·이력 자료를 하나의 dossier narrative로 이어 읽습니다.';
+    });
+
+    const dossierActionLabel = computed(() => {
+      if (!passport.value) return '';
+      if (passport.value.status === 'MAINTENANCE') return 'File maintenance completion';
+      if (passport.value.status === 'RECYCLING') return 'Review extraction or close disposition';
+      if (isManufacturer.value && !hasLinkedMaterials.value) return 'Link source materials';
+      if (isEV.value && !passport.value.vin) return 'Advance to vehicle binding';
+      return 'Review technical dossier';
+    });
+
+    async function runPrimaryDossierAction() {
+      if (!passport.value) return;
+      if (passport.value.status === 'MAINTENANCE' && isService.value) {
+        showMaintenanceLogModal.value = true;
+        return;
+      }
+      if (passport.value.status === 'RECYCLING' && isRegulator.value) {
+        if (passport.value.recycleAvailable) showExtractModal.value = true;
+        else showRecycleModal.value = true;
+        return;
+      }
+      if (isManufacturer.value && !hasLinkedMaterials.value) {
+        await openLinkMaterialsModal();
+        return;
+      }
+      if (isEV.value && !passport.value.vin) {
+        showBindModal.value = true;
+        return;
+      }
+      document.getElementById('section-traceability')?.scrollIntoView({ behavior: 'smooth' });
+    }
+
     async function submitCorrection() {
       submitting.value = true;
       try {
@@ -794,6 +845,7 @@ app.component('passport-detail-page', {
       showInvalidateModal, invalidateForm, submitInvalidate, openInvalidateModal,
       showLinkMaterialsModal, availableMaterials, selectedMaterialIds, linkedMaterialDetails,
       openLinkMaterialsModal, toggleMaterial, submitLinkMaterials,
+      hasLinkedMaterials, dossierStateTitle, dossierStateNote, dossierActionLabel, runPrimaryDossierAction,
     };
   },
   template: `
@@ -809,8 +861,9 @@ app.component('passport-detail-page', {
           <!-- Document header bar -->
           <div style="background: var(--color-primary); padding: 1rem 1.5rem; display: flex; align-items: center; justify-content: space-between;">
             <div>
-              <p style="font-size: 0.6875rem; text-transform: uppercase; letter-spacing: 0.15em; color: rgba(255,255,255,0.5); margin-bottom: 0.25rem;">Battery Passport</p>
-              <h1 class="sn-display" style="font-size: 1.5rem; color: #ffffff;">{{ passport.model || '배터리 여권' }}</h1>
+              <p style="font-size: 0.6875rem; text-transform: uppercase; letter-spacing: 0.15em; color: rgba(255,255,255,0.5); margin-bottom: 0.25rem;">Dossier Surface</p>
+              <h1 class="sn-display" style="font-size: 1.5rem; color: #ffffff;">Technical Dossier</h1>
+              <p style="margin-top:0.35rem; font-size:0.85rem; color:rgba(255,255,255,0.78);">{{ passport.model || '배터리 여권' }}</p>
             </div>
             <div style="text-align: right;">
               <span :class="['sn-badge', getStatusBadge(passport.status).bg, getStatusBadge(passport.status).text, 'border', getStatusBadge(passport.status).border]"
@@ -818,6 +871,22 @@ app.component('passport-detail-page', {
                 {{ getStatusBadge(passport.status).label }}
               </span>
               <p class="sn-mono" style="font-size: 0.6875rem; color: rgba(255,255,255,0.4); margin-top: 0.375rem;">{{ passport.passportId }}</p>
+            </div>
+          </div>
+
+          <div style="padding:1rem 1.5rem; display:grid; grid-template-columns:repeat(auto-fit, minmax(240px, 1fr)); gap:0.9rem; border-bottom:1px solid var(--color-border); background:#fafaf9;">
+            <div style="border:1px solid var(--color-border); border-radius:0.6rem; padding:0.95rem; background:#fff;">
+              <p class="sn-eyebrow" style="margin-bottom:0.4rem;">Dossier state</p>
+              <h2 style="font-size:1.05rem; font-weight:700; color:var(--color-text-1);">{{ dossierStateTitle }}</h2>
+              <p class="sn-caption" style="margin-top:0.45rem;">{{ dossierStateNote }}</p>
+            </div>
+            <div style="border:1px solid var(--color-border); border-radius:0.6rem; padding:0.95rem; background:#fff;">
+              <div class="sn-eyebrow" style="margin-bottom:0.4rem;">Current action docket</div>
+              <p style="font-size:1rem; font-weight:700; color:var(--color-text-1);">{{ dossierActionLabel }}</p>
+              <button @click="runPrimaryDossierAction"
+                style="margin-top:0.65rem; display:inline-flex; align-items:center; gap:0.45rem; padding:0.55rem 0.8rem; border-radius:0.45rem; border:1px solid var(--color-border); background:#fff; font-size:0.78rem; font-weight:600; color:var(--color-text-1);">
+                {{ dossierActionLabel }}
+              </button>
             </div>
           </div>
 
@@ -1517,7 +1586,7 @@ app.component('passport-detail-page', {
                   <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
                 </svg>
               </div>
-              <h3 class="sn-heading text-sm font-bold text-gray-900 uppercase tracking-wider">배터리 수명 주기</h3>
+              <h3 class="sn-heading text-sm font-bold text-gray-900 uppercase tracking-wider">Lifecycle Service Chain</h3>
             </div>
             <div class="px-6 py-6">
               <!-- Lifecycle Rail -->
