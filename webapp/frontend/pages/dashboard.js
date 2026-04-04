@@ -173,7 +173,7 @@ app.component('dashboard-page', {
             <div style="display:flex;justify-content:space-between;gap:1rem;align-items:flex-start;flex-wrap:wrap;">
               <div>
                 <p class="sn-eyebrow" style="margin-bottom:0.35rem;">Overview</p>
-                <h1 class="sn-display" style="font-size:1.5rem;margin-bottom:0.35rem;">운영 현황</h1>
+                <p class="sn-display" style="font-size:1.5rem;margin-bottom:0.35rem;">운영 현황</p>
                 <p style="font-size:0.95rem;font-weight:600;color:var(--color-text-1);margin-bottom:0.25rem;">{{ roleBrief }}</p>
                 <p class="sn-body" style="max-width:44rem;">{{ roleDescription }}</p>
               </div>
@@ -208,7 +208,7 @@ app.component('dashboard-page', {
               <button v-for="item in immediateChecks" :key="item.label" @click="openRoute(item.route)"
                 style="display:flex;justify-content:space-between;gap:1rem;align-items:flex-start;padding:0.875rem 0.9rem;border-radius:0.875rem;background:rgba(0,0,0,0.02);border:1px solid rgba(0,0,0,0.05);text-align:left;cursor:pointer;">
                 <div>
-                  <div style="font-size:0.9rem;font-weight:600;color:var(--color-text-1);margin-bottom:0.2rem;">{{ item.label }}</div>
+                  <span style="display:block;font-size:0.9rem;font-weight:600;color:var(--color-text-1);margin-bottom:0.2rem;">{{ item.label }}</span>
                   <div class="sn-caption" style="max-width:22rem;">{{ item.note }}</div>
                 </div>
                 <div style="font-family:var(--font-mono);font-size:1rem;font-weight:700;color:var(--color-text-1);">{{ item.count }}</div>
