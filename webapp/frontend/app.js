@@ -122,6 +122,77 @@ const SIDEBAR_NAV = [
   { route: 'audit-log', label: '감사 로그', icon: 'audit', section: '도구' },
 ];
 
+const IA_SECTION_CHIPS = [
+  { key: 'overview', label: 'Overview' },
+  { key: 'registry', label: 'Registry' },
+  { key: 'operations', label: 'Operations' },
+  { key: 'inspection', label: 'Inspection' },
+  { key: 'evidence', label: 'Evidence' },
+];
+
+const ROUTE_META = {
+  login: {
+    section: 'overview',
+    pageTitle: '로그인',
+    shellTitle: '접속 준비',
+    shellDescription: '사용자 권한을 확인하고 BATP 작업 공간으로 진입합니다.',
+  },
+  dashboard: {
+    section: 'overview',
+    pageTitle: 'Overview',
+    shellTitle: '운영 현황',
+    shellDescription: '상태, 병목, 최근 변화를 한 번에 읽는 lifecycle control surface입니다.',
+  },
+  passports: {
+    section: 'registry',
+    pageTitle: '배터리 여권 등록부',
+    shellTitle: '배터리 여권 등록부',
+    shellDescription: '발급, 바인딩, 후속 검토가 이어지는 registry work surface입니다.',
+  },
+  'passport-detail': {
+    section: 'registry',
+    pageTitle: 'Technical Dossier',
+    shellTitle: 'Technical Dossier',
+    shellDescription: '식별·규제·운영 증빙을 하나의 문서 흐름으로 연결합니다.',
+  },
+  materials: {
+    section: 'registry',
+    pageTitle: '원자재 원장',
+    shellTitle: '원자재 원장',
+    shellDescription: '소재 출처와 인증 근거를 registry context 안에서 추적합니다.',
+  },
+  maintenance: {
+    section: 'operations',
+    pageTitle: '정비 운영',
+    shellTitle: '정비 운영',
+    shellDescription: '정비 요청, 완료 기록, 사고 대응을 운영 docket으로 묶습니다.',
+  },
+  recycling: {
+    section: 'operations',
+    pageTitle: '회수 운영',
+    shellTitle: '회수 운영',
+    shellDescription: '분석, 회수 판정, 추출·폐기 결정을 recovery flow로 정리합니다.',
+  },
+  'bmu-data': {
+    section: 'inspection',
+    pageTitle: '현장 데이터 점검',
+    shellTitle: '현장 데이터 점검',
+    shellDescription: 'BMU 원천 데이터를 inspection entry point에서 확인합니다.',
+  },
+  'qr-scan': {
+    section: 'inspection',
+    pageTitle: '식별 스캔',
+    shellTitle: '식별 스캔',
+    shellDescription: 'QR/NFC 식별로 현장 dossier 진입점을 제공합니다.',
+  },
+  'audit-log': {
+    section: 'evidence',
+    pageTitle: '감사 기록부',
+    shellTitle: '감사 기록부',
+    shellDescription: '검증 근거와 행위 이력을 evidence ledger로 확인합니다.',
+  },
+};
+
 // Page component map
 const PAGE_COMPONENTS = {
   login: 'login-page',
@@ -217,14 +288,14 @@ const app = createApp({
     });
 
     const currentPageComponent = computed(() => PAGE_COMPONENTS[currentPage.value] || 'login-page');
+    const currentPageMeta = computed(() => ROUTE_META[currentPage.value] || ROUTE_META.dashboard);
+    const totalPendingCount = computed(() => (
+      Object.values(navBadges.value || {}).reduce((sum, count) => sum + Number(count || 0), 0)
+    ));
 
     // Current page title in Korean
     const currentPageTitle = computed(() => {
-      const item = SIDEBAR_NAV.find(n => n.route === currentPage.value);
-      if (item) return item.label;
-      if (currentPage.value === 'passport-detail') return '여권 상세';
-      if (currentPage.value === 'login') return '로그인';
-      return '대시보드';
+      return currentPageMeta.value.pageTitle || 'Overview';
     });
 
     // User initials (first 2 chars of userId)
@@ -334,8 +405,10 @@ const app = createApp({
 
     return {
       auth, currentPage, pageProps, toasts, api, fabricStatus, navBadges,
+      IA_SECTION_CHIPS,
       orgLabel, groupedNavItems, currentPageComponent,
-      currentPageTitle, userInitials, orgBadgeClasses, orgAvatarColor,
+      currentPageMeta, currentPageTitle, totalPendingCount,
+      userInitials, orgBadgeClasses, orgAvatarColor,
       mobileMenuOpen,
       navigate, onLogin, logout, showToast,
     };

@@ -5,223 +5,280 @@ app.component('dashboard-page', {
     const { ref, computed, onMounted } = Vue;
 
     const passports = ref([]);
-    const loading = ref(true);
     const materials = ref([]);
+    const loading = ref(true);
 
-    onMounted(async () => {
+    async function fetchOverview() {
+      loading.value = true;
       try {
-        const [passportData, statusData, materialData] = await Promise.allSettled([
+        const [passportData, materialData] = await Promise.allSettled([
           props.api.get('/passports'),
-          props.api.get('/status'),
           props.api.get('/materials'),
         ]);
-        if (passportData.status === 'fulfilled') {
-          const d = passportData.value;
-          passports.value = d.records || d || [];
-        }
-        if (materialData.status === 'fulfilled') {
-          const m = materialData.value;
-          materials.value = Array.isArray(m) ? m : (m.records || []);
-        }
-      } catch (e) {
-        passports.value = [];
+        passports.value = passportData.status === 'fulfilled'
+          ? (passportData.value.records || passportData.value || [])
+          : [];
+        materials.value = materialData.status === 'fulfilled'
+          ? (materialData.value.records || materialData.value || [])
+          : [];
       } finally {
         loading.value = false;
       }
-    });
-
-    function truncate(str, len) {
-      if (!str) return '-';
-      return str.length > len ? str.slice(0, len) + '...' : str;
     }
 
-    function formatDate(d) {
-      if (!d) return '-';
-      try {
-        const dt = new Date(d);
-        if (isNaN(dt)) return d;
-        return dt.toLocaleDateString('ko-KR');
-      } catch { return d; }
-    }
-
-    const statusList = STATUS_LIST;
-    const statusLabels = STATUS_LABELS;
+    onMounted(fetchOverview);
 
     const totalCount = computed(() => passports.value.length);
-    const countByStatus = computed(() => {
-      const map = {};
-      statusList.forEach(s => map[s] = 0);
-      passports.value.forEach(p => {
-        const s = p.status || 'UNKNOWN';
-        if (map[s] !== undefined) map[s]++;
-      });
-      return map;
-    });
-    const activeCount = computed(() => countByStatus.value['ACTIVE'] || 0);
-    const maintenanceCount = computed(() => countByStatus.value['MAINTENANCE'] || 0);
-    const materialCount = computed(() => materials.value.length);
-
-    const chemistryDistribution = computed(() => {
-      const map = {};
-      passports.value.forEach(p => {
-        const c = p.chemistry || 'Unknown';
-        map[c] = (map[c] || 0) + 1;
-      });
-      const entries = Object.entries(map).sort((a, b) => b[1] - a[1]);
-      const colors = ['#c8ff00', '#8bff57', '#00e5a0', '#00c4d4', '#6ba3ff'];
-      return entries.map(([name, count], i) => ({
-        name, count, color: colors[i % colors.length],
-      }));
+    const activeCount = computed(() => passports.value.filter((p) => p.status === 'ACTIVE').length);
+    const serviceOpenCount = computed(() => passports.value.filter((p) => ['MAINTENANCE', 'ANALYSIS'].includes(p.status)).length);
+    const recycleReviewCount = computed(() => passports.value.filter((p) => p.recycleAvailable && p.status !== 'DISPOSED').length);
+    const bindingPendingCount = computed(() => passports.value.filter((p) => !p.vin).length);
+    const recentPassports = computed(() => {
+      return [...passports.value]
+        .sort((a, b) => String(b.createdAt || b.timestamp || '').localeCompare(String(a.createdAt || a.timestamp || '')))
+        .slice(0, 6);
     });
 
-    const statusDistribution = computed(() => {
-      const statusColors = {
-        MANUFACTURED: '#6ba3ff', ACTIVE: '#c8ff00', MAINTENANCE: '#ffb800',
-        ANALYSIS: '#c084fc', RECYCLING: '#fb923c', DISPOSED: '#6b7280',
-      };
-      const items = [];
-      statusList.forEach(s => {
-        const count = countByStatus.value[s] || 0;
-        if (count > 0) {
-          items.push({ status: s, label: statusLabels[s], count, color: statusColors[s] || '#6b7280' });
-        }
-      });
-      return items;
+    const roleBrief = computed(() => {
+      switch (props.auth.orgMsp) {
+        case MSP.MANUFACTURER:
+          return '제조 운영 현황';
+        case MSP.EV_MANUFACTURER:
+          return '차량 연계 운영 현황';
+        case MSP.SERVICE:
+          return '서비스 운영 현황';
+        case MSP.REGULATOR:
+          return '규제 운영 현황';
+        default:
+          return 'BATP 운영 현황';
+      }
     });
 
-    function donutSegments(items) {
-      const total = items.reduce((s, it) => s + it.count, 0);
-      if (total === 0) return [];
-      const circumference = 2 * Math.PI * 40;
-      let offset = 0;
-      return items.map(it => {
-        const pct = it.count / total;
-        const dash = pct * circumference;
-        const seg = { ...it, dashArray: dash + ' ' + (circumference - dash), dashOffset: -offset, pct: Math.round(pct * 100) };
-        offset += dash;
-        return seg;
-      });
+    const roleDescription = computed(() => {
+      switch (props.auth.orgMsp) {
+        case MSP.MANUFACTURER:
+          return '발급 직후의 신원 정보와 소재 근거를 빠르게 정리해 다음 인계 상태를 준비합니다.';
+        case MSP.EV_MANUFACTURER:
+          return '차량 바인딩과 후속 서비스 요청을 여권 흐름 안에서 이어 확인합니다.';
+        case MSP.SERVICE:
+          return '정비·분석 후속을 우선 처리하고 최근 등록 dossier를 이어서 검토합니다.';
+        case MSP.REGULATOR:
+          return '회수·폐기 판단과 증빙 누락 여부를 규제 docket으로 정리합니다.';
+        default:
+          return '등록, 운영, 검증 흐름을 한 화면에서 요약합니다.';
+      }
+    });
+
+    const flowLine = computed(() => {
+      if (props.auth.orgMsp === MSP.SERVICE) return '등록 현황 → 운행 상태 → 후속 확인 → 최근 등록';
+      if (props.auth.orgMsp === MSP.REGULATOR) return '등록 현황 → 후속 검토 → 회수 판정 → 최근 등록';
+      return '등록 현황 → 운행 상태 → 후속 확인 → 최근 등록';
+    });
+
+    const immediateChecks = computed(() => {
+      const base = [
+        {
+          label: '바인딩이 필요한 여권',
+          count: bindingPendingCount.value,
+          note: '차량 바인딩 또는 초기 dossier 연결이 필요한 건',
+          route: 'passports',
+        },
+        {
+          label: '정비·분석 후속',
+          count: serviceOpenCount.value,
+          note: '현재 정비 또는 분석 docket에 머문 건',
+          route: 'maintenance',
+        },
+        {
+          label: '회수 검토 대상',
+          count: recycleReviewCount.value,
+          note: '재활용 가능 또는 회수 판정 검토가 필요한 건',
+          route: 'recycling',
+        },
+        {
+          label: '등록 소재 건수',
+          count: materials.value.length,
+          note: 'registry에서 연결 가능한 source material ledger 수량',
+          route: 'materials',
+        },
+      ];
+
+      if (props.auth.orgMsp === MSP.SERVICE) {
+        base[1].note = '정비 완료 또는 분석 결과를 먼저 제출해야 하는 건';
+      }
+      if (props.auth.orgMsp === MSP.REGULATOR) {
+        base[2].note = 'Review extraction or close disposition';
+      }
+      return base;
+    });
+
+    const statusDeck = computed(() => ([
+      { label: '전체 등록', value: totalCount.value, hint: '등록 현황' },
+      { label: '운행 상태', value: activeCount.value, hint: '차량 바인딩 완료' },
+      { label: '후속 확인', value: serviceOpenCount.value, hint: '정비·분석 대기' },
+      { label: '소재 ledger', value: materials.value.length, hint: 'registry linkage' },
+    ]));
+
+    function formatDate(value) {
+      if (!value) return '-';
+      try {
+        return new Date(value).toLocaleDateString('ko-KR');
+      } catch {
+        return value;
+      }
     }
 
-    const chemistrySegments = computed(() => donutSegments(chemistryDistribution.value));
-    const statusSegments = computed(() => donutSegments(statusDistribution.value));
-    const chemTotal = computed(() => chemistryDistribution.value.reduce((s, it) => s + it.count, 0));
-    const statTotal = computed(() => statusDistribution.value.reduce((s, it) => s + it.count, 0));
+    function nextAction(passport) {
+      if (!passport.vin) return 'Advance to vehicle binding';
+      if (passport.status === 'MAINTENANCE') return 'File maintenance completion';
+      if (passport.status === 'ANALYSIS') return 'Submit analysis result';
+      if (passport.recycleAvailable) return 'Review extraction or close disposition';
+      return 'Open technical dossier';
+    }
 
-    const recentPassports = computed(() => {
-      const sorted = [...passports.value].sort((a, b) => {
-        const da = a.createdAt || a.timestamp || '';
-        const db = b.createdAt || b.timestamp || '';
-        return db.localeCompare(da);
-      });
-      return sorted.slice(0, 8);
-    });
+    function openRoute(route) {
+      emit('navigate', route);
+    }
 
-    function nav(page) { emit('navigate', page); }
+    function openPassport(passportId) {
+      emit('navigate', 'passport-detail', { passportId });
+    }
 
     return {
-      loading, passports, materials,
-      totalCount, activeCount, maintenanceCount, materialCount,
-      statusList, statusLabels,
-      countByStatus, statusDistribution,
-      chemistryDistribution, chemistrySegments, chemTotal,
-      statusSegments, statTotal,
+      loading,
+      passports,
+      materials,
+      roleBrief,
+      roleDescription,
+      flowLine,
+      immediateChecks,
+      statusDeck,
       recentPassports,
-      scaleSOC, truncate, formatDate, nav,
+      formatDate,
+      nextAction,
+      openRoute,
+      openPassport,
+      getStatusBadge,
     };
   },
   template: `
     <div>
-
-      <!-- LOADING -->
-      <div v-if="loading" style="display: flex; align-items: center; justify-content: center; min-height: 60vh;">
-        <div style="width: 28px; height: 28px; border: 2px solid rgba(0,0,0,0.06); border-top-color: var(--color-accent); border-radius: 50%; animation: spin 0.8s linear infinite;"></div>
+      <div v-if="loading" style="display:flex;align-items:center;justify-content:center;min-height:55vh;">
+        <div style="width:28px;height:28px;border:2px solid rgba(0,0,0,0.06);border-top-color:var(--color-accent);border-radius:50%;animation:spin 0.8s linear infinite;"></div>
       </div>
 
-      <div v-else>
-
-        <!-- HEADER -->
-        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem;">
-          <div style="display: flex; align-items: baseline; gap: 1rem;">
-            <h1 class="sn-display" style="font-size: 1.375rem;">여권 현황판</h1>
-            <span style="font-family: var(--font-mono); font-size: 1.25rem; font-weight: 700; color: var(--color-text-1);">{{ totalCount }}</span>
-            <span class="sn-caption">건 등록</span>
-          </div>
-          <button @click="nav('passports')" class="sn-btn sn-btn-accent" style="font-size: 0.8125rem; padding: 0.5rem 1rem;">+ 여권 발급</button>
-        </div>
-
-        <!-- ═══ KANBAN BOARD — status columns ═══ -->
-
-        <!-- Summary bar -->
-        <div style="display: flex; height: 8px; border-radius: 4px; overflow: hidden; background: rgba(0,0,0,0.03); gap: 2px; margin-bottom: 1rem;">
-          <div v-for="status in statusList" :key="status + '_bar'"
-            style="height: 100%; min-width: 2px; border-radius: 2px; transition: width 0.3s;"
-            :style="{
-              width: (totalCount > 0 ? (countByStatus[status] || 0) / totalCount * 100 : 0) + '%',
-              background: status==='ACTIVE'?'#16a34a':status==='MANUFACTURED'?'#2563eb':status==='MAINTENANCE'?'#d97706':status==='ANALYSIS'?'#7c3aed':status==='RECYCLING'?'#ea580c':'#a3a3a3'
-            }"></div>
-        </div>
-
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 8px; min-height: 60vh; align-items: start;">
-
-          <!-- One column per status -->
-          <div v-for="status in statusList" :key="status"
-            style="background: rgba(0,0,0,0.02); border-radius: 8px; padding: 0; min-height: 200px; display: flex; flex-direction: column;">
-
-            <!-- Column header -->
-            <div style="padding: 0.625rem 0.75rem; display: flex; align-items: center; justify-content: space-between; border-bottom: 2px solid;"
-              :style="{ borderColor: status==='ACTIVE'?'#16a34a':status==='MANUFACTURED'?'#2563eb':status==='MAINTENANCE'?'#d97706':status==='ANALYSIS'?'#7c3aed':status==='RECYCLING'?'#ea580c':'#a3a3a3' }">
-              <span style="font-size: 0.6875rem; font-weight: 600; color: var(--color-text-1);">{{ statusLabels[status] }}</span>
-              <span style="font-family: var(--font-mono); font-size: 0.75rem; font-weight: 700; width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; border-radius: 50%;"
-                :style="{ background: countByStatus[status] > 0 ? (status==='ACTIVE'?'#f0fdf4':status==='MANUFACTURED'?'#eff6ff':status==='MAINTENANCE'?'#fffbeb':status==='ANALYSIS'?'#faf5ff':status==='RECYCLING'?'#fff7ed':'#f5f5f5') : 'transparent', color: countByStatus[status] > 0 ? (status==='ACTIVE'?'#16a34a':status==='MANUFACTURED'?'#2563eb':status==='MAINTENANCE'?'#d97706':status==='ANALYSIS'?'#7c3aed':status==='RECYCLING'?'#ea580c':'#a3a3a3') : 'var(--color-text-3)' }">
-                {{ countByStatus[status] || 0 }}
-              </span>
+      <div v-else style="display:flex;flex-direction:column;gap:1rem;">
+        <section class="sn-card sn-reveal">
+          <div class="sn-card-inner" style="display:flex;flex-direction:column;gap:1rem;">
+            <div style="display:flex;justify-content:space-between;gap:1rem;align-items:flex-start;flex-wrap:wrap;">
+              <div>
+                <p class="sn-eyebrow" style="margin-bottom:0.35rem;">Overview</p>
+                <h1 class="sn-display" style="font-size:1.5rem;margin-bottom:0.35rem;">운영 현황</h1>
+                <p style="font-size:0.95rem;font-weight:600;color:var(--color-text-1);margin-bottom:0.25rem;">{{ roleBrief }}</p>
+                <p class="sn-body" style="max-width:44rem;">{{ roleDescription }}</p>
+              </div>
+              <button @click="openRoute('passports')" class="sn-btn sn-btn-accent" style="font-size:0.8125rem;padding:0.625rem 1rem;">Registry 열기</button>
             </div>
 
-            <!-- Cards in this column -->
-            <div style="padding: 0.5rem; flex: 1; display: flex; flex-direction: column; gap: 6px; overflow-y: auto; max-height: 65vh;">
-              <div v-for="p in passports.filter(pp => pp.status === status)" :key="p.passportId || p.id"
-                @click="$emit('navigate', 'passport-detail', { passportId: p.passportId || p.id })"
-                style="background: #fff; border: 1px solid rgba(0,0,0,0.06); border-radius: 6px; padding: 0.5rem 0.625rem; cursor: pointer; transition: all 0.2s;"
-                @mouseenter="$event.currentTarget.style.borderColor='rgba(0,0,0,0.15)';$event.currentTarget.style.transform='translateY(-1px)'"
-                @mouseleave="$event.currentTarget.style.borderColor='rgba(0,0,0,0.06)';$event.currentTarget.style.transform='none'">
+            <div class="sn-panel" style="padding:0.875rem 1rem;border:1px solid rgba(0,0,0,0.05);">
+              <p class="sn-eyebrow" style="margin-bottom:0.35rem;">우선 확인 흐름</p>
+              <div style="font-size:0.9rem;font-weight:600;color:var(--color-text-1);">{{ flowLine }}</div>
+            </div>
 
-                <!-- Model -->
-                <div style="font-size: 0.75rem; font-weight: 600; color: var(--color-text-1); margin-bottom: 0.25rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{ p.model || '미등록' }}</div>
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:0.75rem;">
+              <div v-for="item in statusDeck" :key="item.label" style="padding:0.875rem 1rem;border-radius:0.875rem;background:#fff;border:1px solid rgba(0,0,0,0.06);">
+                <p class="sn-eyebrow" style="margin-bottom:0.4rem;">{{ item.label }}</p>
+                <div style="font-family:var(--font-mono);font-size:1.25rem;font-weight:700;color:var(--color-text-1);">{{ item.value }}</div>
+                <p class="sn-caption" style="margin-top:0.2rem;">{{ item.hint }}</p>
+              </div>
+            </div>
+          </div>
+        </section>
 
-                <!-- Manufacturer + Chemistry -->
-                <div style="font-size: 0.625rem; color: var(--color-text-3); margin-bottom: 0.375rem; display: flex; gap: 0.375rem;">
-                  <span>{{ truncate(p.manufacturerName, 10) }}</span>
-                  <span v-if="p.chemistry" style="background: rgba(0,0,0,0.04); padding: 0 0.25rem; border-radius: 2px;">{{ p.chemistry }}</span>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:1rem;align-items:start;">
+          <section class="sn-panel sn-reveal sn-reveal-d1" style="padding:1.125rem;">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:1rem;margin-bottom:0.875rem;">
+              <div>
+                <p class="sn-eyebrow" style="margin-bottom:0.25rem;">Action docket</p>
+                <h2 class="sn-heading" style="font-size:1.05rem;">즉시 확인</h2>
+              </div>
+              <span style="font-size:0.75rem;font-weight:700;color:var(--color-text-3);">{{ immediateChecks.reduce((sum, item) => sum + item.count, 0) }} items</span>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:0.75rem;">
+              <button v-for="item in immediateChecks" :key="item.label" @click="openRoute(item.route)"
+                style="display:flex;justify-content:space-between;gap:1rem;align-items:flex-start;padding:0.875rem 0.9rem;border-radius:0.875rem;background:rgba(0,0,0,0.02);border:1px solid rgba(0,0,0,0.05);text-align:left;cursor:pointer;">
+                <div>
+                  <div style="font-size:0.9rem;font-weight:600;color:var(--color-text-1);margin-bottom:0.2rem;">{{ item.label }}</div>
+                  <div class="sn-caption" style="max-width:22rem;">{{ item.note }}</div>
                 </div>
+                <div style="font-family:var(--font-mono);font-size:1rem;font-weight:700;color:var(--color-text-1);">{{ item.count }}</div>
+              </button>
+            </div>
+          </section>
 
-                <!-- SOC bar -->
-                <div v-if="p.currentSoc != null" style="display: flex; align-items: center; gap: 0.375rem;">
-                  <div style="flex: 1; height: 3px; background: rgba(0,0,0,0.06); border-radius: 2px; overflow: hidden;">
-                    <div style="height: 100%; border-radius: 2px;"
-                      :style="{ width: Math.min(scaleSOC(p.currentSoc), 100) + '%', background: scaleSOC(p.currentSoc) >= 60 ? '#16a34a' : scaleSOC(p.currentSoc) >= 30 ? '#d97706' : '#dc2626' }"></div>
+          <section class="sn-panel sn-reveal sn-reveal-d2" style="padding:1.125rem;">
+            <div style="margin-bottom:0.875rem;">
+              <p class="sn-eyebrow" style="margin-bottom:0.25rem;">Overview register</p>
+              <h2 class="sn-heading" style="font-size:1.05rem;">등록 현황</h2>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:0.75rem;">
+              <div v-for="passport in recentPassports.slice(0, 4)" :key="passport.passportId"
+                @click="openPassport(passport.passportId)"
+                style="padding:0.85rem 0.9rem;border-radius:0.875rem;border:1px solid rgba(0,0,0,0.05);cursor:pointer;">
+                <div style="display:flex;justify-content:space-between;gap:0.75rem;align-items:flex-start;margin-bottom:0.35rem;">
+                  <div>
+                    <div style="font-size:0.9rem;font-weight:600;color:var(--color-text-1);">{{ passport.model || passport.passportId }}</div>
+                    <div class="sn-caption" style="margin-top:0.15rem;">{{ passport.passportId }}</div>
                   </div>
-                  <span style="font-family: var(--font-mono); font-size: 0.5625rem; font-weight: 600; color: var(--color-text-2);">{{ scaleSOC(p.currentSoc) }}%</span>
+                  <span :class="['sn-badge', getStatusBadge(passport.status).bg, getStatusBadge(passport.status).text, 'border', getStatusBadge(passport.status).border]">{{ getStatusBadge(passport.status).label }}</span>
+                </div>
+                <div style="display:flex;justify-content:space-between;gap:0.75rem;flex-wrap:wrap;">
+                  <span class="sn-caption">{{ passport.manufacturerName || '제조사 미기입' }}</span>
+                  <span style="font-size:0.75rem;font-weight:600;color:var(--color-text-2);">{{ nextAction(passport) }}</span>
                 </div>
               </div>
-
-              <!-- Empty column -->
-              <div v-if="!passports.filter(pp => pp.status === status).length"
-                style="flex: 1; display: flex; align-items: center; justify-content: center; padding: 1rem;">
-                <span style="font-size: 0.625rem; color: var(--color-text-3); text-align: center; line-height: 1.5;">
-                  {{ status === 'ACTIVE' ? '여권을 차량에 바인딩하면\n운행 상태로 전환됩니다'
-                   : status === 'MAINTENANCE' ? 'EV제조사가 정비를\n요청하면 표시됩니다'
-                   : status === 'ANALYSIS' ? '검증기관이 분석을\n요청하면 표시됩니다'
-                   : status === 'RECYCLING' ? '재활용 판정을 받은\n여권이 표시됩니다'
-                   : status === 'DISPOSED' ? '폐기 처리된\n여권이 표시됩니다'
-                   : '없음' }}
-                </span>
-              </div>
             </div>
-          </div>
+          </section>
         </div>
 
+        <section class="sn-panel sn-reveal sn-reveal-d3" style="padding:1.125rem;overflow:hidden;">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:1rem;margin-bottom:0.875rem;flex-wrap:wrap;">
+            <div>
+              <p class="sn-eyebrow" style="margin-bottom:0.25rem;">Recent docket</p>
+              <h2 class="sn-heading" style="font-size:1.05rem;">최근 등록 여권</h2>
+            </div>
+            <span class="sn-caption">registry · dossier handoff</span>
+          </div>
+          <div style="overflow-x:auto;">
+            <table class="sn-table">
+              <thead>
+                <tr>
+                  <th>여권 ID</th>
+                  <th>모델</th>
+                  <th>상태</th>
+                  <th>다음 조치</th>
+                  <th>등록일</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="passport in recentPassports" :key="passport.passportId" @click="openPassport(passport.passportId)" style="cursor:pointer;">
+                  <td style="font-family:var(--font-mono);font-size:0.75rem;">{{ passport.passportId }}</td>
+                  <td>
+                    <div style="font-weight:600;color:var(--color-text-1);">{{ passport.model || '-' }}</div>
+                    <div class="sn-caption">{{ passport.manufacturerName || '-' }}</div>
+                  </td>
+                  <td><span :class="['sn-badge', getStatusBadge(passport.status).bg, getStatusBadge(passport.status).text, 'border', getStatusBadge(passport.status).border]">{{ getStatusBadge(passport.status).label }}</span></td>
+                  <td style="font-size:0.75rem;font-weight:600;color:var(--color-text-2);">{{ nextAction(passport) }}</td>
+                  <td>{{ formatDate(passport.createdAt || passport.timestamp) }}</td>
+                </tr>
+                <tr v-if="recentPassports.length === 0">
+                  <td colspan="5" style="text-align:center;color:var(--color-text-3);padding:2rem 1rem;">최근 등록된 여권이 없습니다.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
       </div>
     </div>
-  `
+  `,
 });
