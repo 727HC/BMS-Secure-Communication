@@ -146,13 +146,13 @@ const ROUTE_META = {
   passports: {
     section: 'registry',
     pageTitle: '배터리 여권 등록부',
-    shellTitle: '배터리 여권 등록부',
+    shellTitle: 'Registry context',
     shellDescription: '발급, 바인딩, 후속 검토가 이어지는 registry work surface입니다.',
   },
   'passport-detail': {
     section: 'registry',
     pageTitle: 'Technical Dossier',
-    shellTitle: 'Technical Dossier',
+    shellTitle: 'Dossier context',
     shellDescription: '식별·규제·운영 증빙을 하나의 문서 흐름으로 연결합니다.',
   },
   materials: {
@@ -292,6 +292,11 @@ const app = createApp({
     const totalPendingCount = computed(() => (
       Object.values(navBadges.value || {}).reduce((sum, count) => sum + Number(count || 0), 0)
     ));
+    const currentNavLabel = computed(() => {
+      if (currentPage.value === 'passport-detail') return '여권 상세';
+      const item = SIDEBAR_NAV.find((nav) => nav.route === currentPage.value);
+      return item ? item.label : currentPageMeta.value.pageTitle || 'Overview';
+    });
 
     // Current page title in Korean
     const currentPageTitle = computed(() => {
@@ -407,7 +412,7 @@ const app = createApp({
       auth, currentPage, pageProps, toasts, api, fabricStatus, navBadges,
       IA_SECTION_CHIPS,
       orgLabel, groupedNavItems, currentPageComponent,
-      currentPageMeta, currentPageTitle, totalPendingCount,
+      currentPageMeta, currentPageTitle, currentNavLabel, totalPendingCount,
       userInitials, orgBadgeClasses, orgAvatarColor,
       mobileMenuOpen,
       navigate, onLogin, logout, showToast,
