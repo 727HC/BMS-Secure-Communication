@@ -264,12 +264,13 @@ app.component('recycling-page', {
   <div style="display:flex;flex-direction:column;gap:16px;">
 
     <!-- ====== PAGE HEADER ====== -->
-    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.25rem; padding-bottom: 0.75rem; border-bottom: 1px solid var(--color-border);">
+    <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; margin-bottom: 1.25rem; padding-bottom: 0.75rem; border-bottom: 1px solid var(--color-border);">
       <div>
-        <h1 class="sn-display" style="font-size: 1.5rem;">재활용 관리</h1>
-        <p class="sn-caption" style="margin-top: 0.125rem;">배터리 분석, 재활용 판정 및 폐기 처리 관리</p>
+        <p class="sn-eyebrow" style="margin:0 0 0.35rem;color:#0f766e;">OPERATIONS</p>
+        <h1 class="sn-display" style="font-size: 1.5rem;">재활용 종결 대장</h1>
+        <p class="sn-caption" style="margin-top: 0.125rem;">분석 요청부터 추출·폐기까지 말기 처리 흐름을 단계별로 정리합니다.</p>
       </div>
-      <button @click="fetchPassports" class="sn-btn sn-btn-ghost" style="display:inline-flex;align-items:center;gap:6px;font-size:0.82rem;">
+      <button @click="fetchPassports" class="sn-btn sn-btn-ghost" style="display:inline-flex;align-items:center;gap:6px;font-size:0.82rem;flex-shrink:0;">
         <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
         </svg>
@@ -277,43 +278,70 @@ app.component('recycling-page', {
       </button>
     </div>
 
+    <div class="sn-panel" style="padding:14px 16px;display:grid;grid-template-columns:1.5fr 1fr 1fr 1fr;gap:12px;">
+      <div style="padding-right:8px;border-right:1px solid rgba(0,0,0,0.06);">
+        <p class="sn-eyebrow" style="margin:0 0 0.35rem;">END-OF-LIFE PROTOCOL</p>
+        <p style="font-size:0.875rem;font-weight:600;color:#171717;margin:0 0 0.25rem;">분석 → 판정 → 추출 → 폐기</p>
+        <p style="font-size:0.75rem;color:#6b7280;line-height:1.6;margin:0;">기존 API는 유지하되, 화면 위계는 재활용 종결 문서처럼 읽히도록 재구성합니다.</p>
+      </div>
+      <div>
+        <p class="sn-eyebrow" style="margin:0 0 0.35rem;color:#2563eb;">분석 대기</p>
+        <p style="font-family:var(--font-mono);font-size:1.1rem;font-weight:700;color:#2563eb;margin:0;">{{ filteredPassports.filter(p => !p.recycleAvailable && p.status !== 'RECYCLING' && p.status !== 'DISPOSED').length }}</p>
+        <p style="font-size:0.72rem;color:#6b7280;margin:0.2rem 0 0;">판정 전 검토</p>
+      </div>
+      <div>
+        <p class="sn-eyebrow" style="margin:0 0 0.35rem;color:#16a34a;">재활용 승인</p>
+        <p style="font-family:var(--font-mono);font-size:1.1rem;font-weight:700;color:#16a34a;margin:0;">{{ tabCounts.recyclable }}</p>
+        <p style="font-size:0.72rem;color:#6b7280;margin:0.2rem 0 0;">추출 가능</p>
+      </div>
+      <div>
+        <p class="sn-eyebrow" style="margin:0 0 0.35rem;color:#dc2626;">종결 보관</p>
+        <p style="font-family:var(--font-mono);font-size:1.1rem;font-weight:700;color:#dc2626;margin:0;">{{ tabCounts.disposed }}</p>
+        <p style="font-size:0.72rem;color:#6b7280;margin:0.2rem 0 0;">폐기 완료</p>
+      </div>
+    </div>
+
     <!-- ====== STATUS SUMMARY CARDS ====== -->
     <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;">
       <div class="sn-panel" style="padding:10px 14px;">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
-          <span class="sn-eyebrow">전체</span>
+          <span class="sn-eyebrow">종결 대상</span>
           <div style="width:28px;height:28px;border-radius:8px;background:#f5f5f5;display:flex;align-items:center;justify-content:center;">
             <svg width="14" height="14" fill="none" stroke="#a3a3a3" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 10h16M4 14h16M4 18h16"/></svg>
           </div>
         </div>
         <span style="font-family:'JetBrains Mono',monospace;font-size:1.5rem;font-weight:800;color:#171717;">{{ tabCounts.all }}</span>
+        <p style="font-size:0.72rem;color:#6b7280;margin:0.35rem 0 0;">종결 검토에 오른 여권</p>
       </div>
       <div class="sn-panel" style="padding:10px 14px;">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
-          <span class="sn-eyebrow" style="color:#16a34a;">재활용가능</span>
+          <span class="sn-eyebrow" style="color:#16a34a;">재활용 승인</span>
           <div style="width:28px;height:28px;border-radius:8px;background:#f0fdf4;display:flex;align-items:center;justify-content:center;">
             <svg width="14" height="14" fill="none" stroke="#16a34a" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
           </div>
         </div>
         <span style="font-family:'JetBrains Mono',monospace;font-size:1.5rem;font-weight:800;color:#16a34a;">{{ tabCounts.recyclable }}</span>
+        <p style="font-size:0.72rem;color:#6b7280;margin:0.35rem 0 0;">추출 가능 판정</p>
       </div>
       <div class="sn-panel" style="padding:10px 14px;">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
-          <span class="sn-eyebrow" style="color:#2563eb;">재활용중</span>
+          <span class="sn-eyebrow" style="color:#2563eb;">추출 진행</span>
           <div style="width:28px;height:28px;border-radius:8px;background:#eff6ff;display:flex;align-items:center;justify-content:center;">
             <svg width="14" height="14" fill="none" stroke="#2563eb" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
           </div>
         </div>
         <span style="font-family:'JetBrains Mono',monospace;font-size:1.5rem;font-weight:800;color:#2563eb;">{{ tabCounts.recycling }}</span>
+        <p style="font-size:0.72rem;color:#6b7280;margin:0.35rem 0 0;">원자재 회수 중</p>
       </div>
       <div class="sn-panel" style="padding:10px 14px;">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
-          <span class="sn-eyebrow">폐기완료</span>
+          <span class="sn-eyebrow">종결 보관</span>
           <div style="width:28px;height:28px;border-radius:8px;background:#f5f5f5;display:flex;align-items:center;justify-content:center;">
             <svg width="14" height="14" fill="none" stroke="#a3a3a3" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
           </div>
         </div>
         <span style="font-family:'JetBrains Mono',monospace;font-size:1.5rem;font-weight:800;color:#a3a3a3;">{{ tabCounts.disposed }}</span>
+        <p style="font-size:0.72rem;color:#6b7280;margin:0.35rem 0 0;">폐기 증빙 보관</p>
       </div>
     </div>
 
@@ -338,7 +366,7 @@ app.component('recycling-page', {
 
     <!-- ====== EMPTY STATE ====== -->
     <div v-else-if="filteredPassports.length === 0" style="padding: 3rem; text-align: center; border: 1px dashed var(--color-border); border-radius: 0.5rem;">
-      <p style="font-size: 0.875rem; color: var(--color-text-3); margin-bottom: 0;">재활용 관리 대상 배터리가 없습니다. 배터리 여권이 등록되면 재활용 관리를 시작할 수 있습니다.</p>
+      <p style="font-size: 0.875rem; color: var(--color-text-3); margin-bottom: 0;">종결 검토에 오른 배터리가 없습니다. 분석 요청이나 재활용 판정이 기록되면 여기에 누적됩니다.</p>
     </div>
 
     <!-- ====== GROUPED SECTION VIEW (structural change from flat table) ====== -->
