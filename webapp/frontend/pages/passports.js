@@ -54,6 +54,7 @@ app.component('passports-page', {
     ];
 
     const isManufacturer = computed(() => props.auth.orgMsp === MSP.MANUFACTURER);
+    const isRegulator = computed(() => props.auth.orgMsp === MSP.REGULATOR);
 
     const gbaFields = ['passportId','batteryId','serialNumber','model','manufacturerName','manufactureCountry',
       'cellManufacturer','cellManufactureCountry','manufactureDate','cellType','chemistry',
@@ -93,6 +94,51 @@ app.component('passports-page', {
       }
       return list;
     });
+
+    const bindingPendingCount = computed(() =>
+      passports.value.filter((passport) => !passport.vin).length
+    );
+
+    const reviewPendingCount = computed(() =>
+      passports.value.filter((passport) => getGbaPct(passport) < 100).length
+    );
+
+    const registerEnglishTitle = computed(() => {
+      if (isManufacturer.value) return 'Issuer filing register';
+      if (isRegulator.value) return 'Compliance review register';
+      return 'Lifecycle passport register';
+    });
+
+    const registerSummary = computed(() => {
+      if (isManufacturer.value) {
+        return '발급 대기, VIN 바인딩, 규제 제출 준비 상태를 한 줄 기록부로 정리합니다.';
+      }
+      if (isRegulator.value) {
+        return '검토 대기, 불완전 서류, 재활용 전환 가능 건을 규제 점검 순서대로 읽습니다.';
+      }
+      return '기술 여권, 운용 상태, 정비 전환 여부를 등록부 순서로 검토합니다.';
+    });
+
+    function getPrimaryActionLabel(passport) {
+      if (isManufacturer.value && !passport.vin) return 'Advance to vehicle binding';
+      if (isRegulator.value) return 'Next register check';
+      return 'Open technical dossier';
+    }
+
+    function getPrimaryActionNote(passport) {
+      if (isManufacturer.value && !passport.vin) return 'VIN filing pending';
+      if (getGbaPct(passport) < 100) return 'Dossier completion required';
+      if (passport.recycleAvailable) return 'Disposition review pending';
+      return 'Registry ready';
+    }
+
+    function getLifecycleMemo(passport) {
+      if (passport.status === 'MAINTENANCE') return 'Service docket active';
+      if (passport.status === 'ANALYSIS') return 'Inspection findings pending';
+      if (passport.status === 'RECYCLING') return 'Recovery disposition open';
+      if (!passport.vin) return 'VIN filing pending';
+      return 'Technical dossier current';
+    }
 
     const step1Fields = ['passportId','batteryId','did','model','serialNumber','manufacturerName','manufactureCountry','cellManufacturer','cellManufactureCountry','manufactureDate','cellType','chemistry'];
     const step2Fields = ['cellCount','weight','totalEnergy','energyDensity','ratedCapacity','expectedLifespan','voltageRange','temperatureRange','carbonFootprint'];
@@ -190,10 +236,11 @@ app.component('passports-page', {
     }
 
     return {
-      passports, loading, searchQuery, filterStatus, showCreateModal, creating, createStep,
-      form, statusOptions, isManufacturer, filteredPassports, scaleSOC, completionPct,
+      passports, loading, searchQuery, filterStatus, sortBy, showCreateModal, creating, createStep,
+      form, statusOptions, isManufacturer, isRegulator, filteredPassports, scaleSOC, completionPct,
+      bindingPendingCount, reviewPendingCount, registerEnglishTitle, registerSummary,
       openCreateModal, closeCreateModal, submitCreate, viewDetail, getStatusBadge, getSocColor,
-      nextStep, prevStep, getGbaPct,
+      nextStep, prevStep, getGbaPct, getPrimaryActionLabel, getPrimaryActionNote, getLifecycleMemo,
     };
   },
   template: `
@@ -205,100 +252,124 @@ app.component('passports-page', {
 
       <div v-else class="space-y-4">
 
-        <!-- HEADER -->
-        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.25rem; padding-bottom: 0.75rem; border-bottom: 1px solid var(--color-border);">
-          <div>
-            <div style="display: flex; align-items: baseline; gap: 0.5rem;">
-              <h1 class="sn-display" style="font-size: 1.5rem;">배터리 여권</h1>
-              <span style="font-family: var(--font-mono); font-size: 0.875rem; color: var(--color-text-3); margin-left: 0.5rem;">{{ filteredPassports.length }}건</span>
+        <!-- COVER -->
+        <section style="border:1px solid var(--color-border); border-radius:0.75rem; overflow:hidden; background:#fff;">
+          <div style="padding:1.25rem 1.25rem 1rem; border-bottom:1px solid var(--color-border); background:#fafaf9;">
+            <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:1rem; flex-wrap:wrap;">
+              <div>
+                <p class="sn-eyebrow" style="margin-bottom:0.5rem;">Registry / Filing Surface</p>
+                <h1 class="sn-display" style="font-size:1.75rem;">배터리 여권 등록부</h1>
+                <p style="margin-top:0.375rem; font-size:0.95rem; font-weight:600; color:var(--color-text-1);">{{ registerEnglishTitle }}</p>
+                <p class="sn-caption" style="margin-top:0.375rem; max-width:42rem;">{{ registerSummary }}</p>
+              </div>
+              <div style="display:flex; align-items:center; gap:0.75rem;">
+                <div style="padding:0.75rem 0.9rem; border:1px solid var(--color-border); border-radius:0.5rem; background:#fff; min-width:7rem;">
+                  <p class="sn-eyebrow" style="margin-bottom:0.3rem;">Filed records</p>
+                  <p style="font-family:var(--font-mono); font-size:1.1rem; font-weight:700; color:var(--color-text-1);">{{ filteredPassports.length }}</p>
+                </div>
+                <button v-if="isManufacturer" @click="openCreateModal" class="sn-btn sn-btn-accent" style="display:inline-flex;align-items:center;gap:6px;">
+                  <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                  여권 발급
+                </button>
+              </div>
             </div>
-            <p class="sn-caption" style="margin-top: 0.125rem;">총 {{ passports.length }}건의 배터리 여권이 등록되어 있습니다</p>
           </div>
-          <button v-if="isManufacturer" @click="openCreateModal" class="sn-btn sn-btn-accent" style="display:inline-flex;align-items:center;gap:6px;">
-            <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-            여권 발급
-          </button>
-        </div>
 
-        <!-- FILTER BAR -->
-        <div class="sn-panel" style="padding:8px 12px;display:flex;flex-wrap:wrap;gap:8px;align-items:center;">
-          <input v-model="searchQuery" type="text" placeholder="ID, 시리얼, 모델, 제조사, VIN 검색..." class="sn-input" style="flex:1;min-width:200px;font-size:0.8125rem;" />
-          <select v-model="filterStatus" class="sn-input" style="width:auto;min-width:140px;font-size:0.8125rem;">
-            <option v-for="opt in statusOptions" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
-          </select>
-        </div>
+          <div style="padding:1rem 1.25rem; display:grid; grid-template-columns:repeat(auto-fit, minmax(180px, 1fr)); gap:0.75rem; border-bottom:1px solid var(--color-border);">
+            <div style="border:1px solid var(--color-border); border-radius:0.5rem; padding:0.85rem; background:#fff;">
+              <p class="sn-eyebrow" style="margin-bottom:0.35rem;">Register progression</p>
+              <p style="font-size:0.95rem; font-weight:600; color:var(--color-text-1);">{{ isManufacturer ? '발급 → 바인딩 → 운용 전환' : '검토 → 증빙 확인 → 판정' }}</p>
+            </div>
+            <div style="border:1px solid var(--color-border); border-radius:0.5rem; padding:0.85rem; background:#fff;">
+              <p class="sn-eyebrow" style="margin-bottom:0.35rem;">Binding pending</p>
+              <p style="font-family:var(--font-mono); font-size:1rem; font-weight:700; color:var(--color-text-1);">{{ bindingPendingCount }}</p>
+            </div>
+            <div style="border:1px solid var(--color-border); border-radius:0.5rem; padding:0.85rem; background:#fff;">
+              <p class="sn-eyebrow" style="margin-bottom:0.35rem;">Next register check</p>
+              <p style="font-size:0.95rem; font-weight:600; color:var(--color-text-1);">{{ isRegulator ? '불완전 dossier·재활용 전환 건 우선 확인' : '기술 dossier·VIN 누락 건 우선 정리' }}</p>
+            </div>
+            <div style="border:1px solid var(--color-border); border-radius:0.5rem; padding:0.85rem; background:#fff;">
+              <p class="sn-eyebrow" style="margin-bottom:0.35rem;">Dossiers incomplete</p>
+              <p style="font-family:var(--font-mono); font-size:1rem; font-weight:700; color:var(--color-text-1);">{{ reviewPendingCount }}</p>
+            </div>
+          </div>
 
-        <!-- Sort control -->
-        <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.75rem;">
-          <span style="font-size: 0.6875rem; color: var(--color-text-3);">정렬:</span>
-          <button v-for="s in [{v:'', l:'최신순'}, {v:'gba', l:'GBA'}]" :key="s.v"
-            @click="sortBy = s.v" type="button"
-            style="font-size: 0.6875rem; padding: 0.25rem 0.5rem; background: none; border: none; cursor: pointer; border-radius: 3px;"
-            :style="sortBy === s.v ? 'color: var(--color-text-1); background: rgba(0,0,0,0.04);' : 'color: var(--color-text-3);'">
-            {{ s.l }}
-          </button>
-        </div>
+          <div style="padding:0.9rem 1.25rem; display:flex; flex-wrap:wrap; gap:0.5rem; align-items:center;">
+            <input v-model="searchQuery" type="text" placeholder="ID, 시리얼, 모델, 제조사, VIN 검색..." class="sn-input" style="flex:1; min-width:220px; font-size:0.8125rem;" />
+            <select v-model="filterStatus" class="sn-input" style="width:auto; min-width:140px; font-size:0.8125rem;">
+              <option v-for="opt in statusOptions" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
+            </select>
+            <div style="display:flex; align-items:center; gap:0.35rem;">
+              <span style="font-size:0.6875rem; color:var(--color-text-3);">정렬</span>
+              <button v-for="s in [{v:'', l:'최신순'}, {v:'gba', l:'GBA'}]" :key="s.v"
+                @click="sortBy = s.v" type="button"
+                style="font-size:0.6875rem; padding:0.3rem 0.55rem; background:none; border:none; cursor:pointer; border-radius:3px;"
+                :style="sortBy === s.v ? 'color: var(--color-text-1); background: rgba(0,0,0,0.04);' : 'color: var(--color-text-3);'">
+                {{ s.l }}
+              </button>
+            </div>
+          </div>
+        </section>
 
-        <!-- CARD GRID -->
-        <div v-if="filteredPassports.length > 0">
-          <!-- CARD GRID (structural change from table) -->
-          <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 10px;">
-            <div v-for="p in filteredPassports" :key="p.passportId"
-              @click="viewDetail(p.passportId)"
-              style="background: #fff; border: 1px solid rgba(0,0,0,0.06); border-radius: 8px; padding: 1rem; cursor: pointer; transition: all 0.2s; position: relative; overflow: hidden;"
-              @mouseenter="$event.currentTarget.style.borderColor='rgba(0,0,0,0.15)';$event.currentTarget.style.transform='translateY(-1px)'"
-              @mouseleave="$event.currentTarget.style.borderColor='rgba(0,0,0,0.06)';$event.currentTarget.style.transform='none'">
+        <div v-if="filteredPassports.length > 0" style="border:1px solid var(--color-border); border-radius:0.75rem; overflow:hidden; background:#fff;">
+          <div class="sn-mobile-hide" style="display:grid; grid-template-columns:minmax(0, 1.1fr) minmax(0, 1.3fr) minmax(0, 0.9fr) minmax(0, 0.9fr); gap:1rem; padding:0.85rem 1.1rem; border-bottom:1px solid var(--color-border); background:#fafaf9;">
+            <span class="sn-eyebrow">Register ID</span>
+            <span class="sn-eyebrow">Dossier summary</span>
+            <span class="sn-eyebrow">Lifecycle note</span>
+            <span class="sn-eyebrow">Next register check</span>
+          </div>
 
-              <!-- Status top bar -->
-              <div style="position: absolute; top: 0; left: 0; right: 0; height: 3px;"
-                :style="{ background: p.status==='ACTIVE'?'#16a34a':p.status==='MANUFACTURED'?'#2563eb':p.status==='MAINTENANCE'?'#d97706':p.status==='ANALYSIS'?'#7c3aed':p.status==='RECYCLING'?'#ea580c':'#a3a3a3' }"></div>
+          <div v-for="p in filteredPassports" :key="p.passportId"
+            @click="viewDetail(p.passportId)"
+            style="padding:1rem 1.1rem; border-bottom:1px solid var(--color-border); cursor:pointer; transition:background 0.2s;"
+            @mouseenter="$event.currentTarget.style.background='#fafaf9'"
+            @mouseleave="$event.currentTarget.style.background='#fff'">
+            <div class="sn-mobile-hide" style="display:grid; grid-template-columns:minmax(0, 1.1fr) minmax(0, 1.3fr) minmax(0, 0.9fr) minmax(0, 0.9fr); gap:1rem; align-items:start;">
+              <div>
+                <p style="font-family:var(--font-mono); font-size:0.76rem; font-weight:700; color:var(--color-text-1);">{{ p.passportId }}</p>
+                <p style="margin-top:0.35rem; font-size:0.75rem; color:var(--color-text-3);">{{ p.serialNumber || 'SERIAL N/A' }}</p>
+              </div>
+              <div>
+                <div style="display:flex; align-items:center; gap:0.5rem; flex-wrap:wrap;">
+                  <p style="font-size:0.95rem; font-weight:700; color:var(--color-text-1);">{{ p.model || '미등록 모델' }}</p>
+                  <span :class="['bp-stamp', getStatusBadge(p.status).bg, getStatusBadge(p.status).text, getStatusBadge(p.status).border]" style="font-size:0.65rem;">
+                    {{ getStatusBadge(p.status).label }}
+                  </span>
+                </div>
+                <p style="margin-top:0.35rem; font-size:0.78rem; color:var(--color-text-2);">
+                  {{ p.manufacturerName || '제조사 미기록' }} · {{ p.chemistry || 'CHEM N/A' }} · GBA {{ getGbaPct(p) }}%
+                </p>
+                <div style="margin-top:0.55rem; display:flex; gap:0.9rem; align-items:center; flex-wrap:wrap;">
+                  <span style="font-size:0.72rem; color:var(--color-text-3);">SOC <strong style="color:var(--color-text-1); font-family:var(--font-mono);">{{ p.currentSoc != null ? scaleSOC(p.currentSoc) + '%' : '--' }}</strong></span>
+                  <span style="font-size:0.72rem; color:var(--color-text-3);">SOH <strong style="color:var(--color-text-1); font-family:var(--font-mono);">{{ p.currentSoh != null ? p.currentSoh + '%' : '--' }}</strong></span>
+                </div>
+              </div>
+              <div>
+                <p style="font-size:0.78rem; font-weight:600; color:var(--color-text-1);">{{ getLifecycleMemo(p) }}</p>
+                <p style="margin-top:0.35rem; font-size:0.72rem; color:var(--color-text-3);">{{ p.vin || 'VIN 미기록' }}</p>
+              </div>
+              <div>
+                <p style="font-size:0.78rem; font-weight:600; color:var(--color-text-1);">{{ getPrimaryActionLabel(p) }}</p>
+                <p style="margin-top:0.35rem; font-size:0.72rem; color:var(--color-text-3);">{{ getPrimaryActionNote(p) }}</p>
+              </div>
+            </div>
 
-              <!-- Header: model + status -->
-              <div style="display: flex; align-items: start; justify-content: space-between; margin-bottom: 0.5rem;">
-                <div style="font-size: 0.875rem; font-weight: 600; color: var(--color-text-1); line-height: 1.3;">{{ p.model || '미등록 모델' }}</div>
-                <span style="font-size: 0.625rem; font-weight: 600; padding: 0.125rem 0.5rem; border-radius: 3px; white-space: nowrap; flex-shrink: 0; margin-left: 0.5rem;"
-                  :style="{ background: p.status==='ACTIVE'?'#f0fdf4':p.status==='MANUFACTURED'?'#eff6ff':p.status==='MAINTENANCE'?'#fffbeb':'#f5f5f5', color: p.status==='ACTIVE'?'#16a34a':p.status==='MANUFACTURED'?'#2563eb':p.status==='MAINTENANCE'?'#d97706':'#a3a3a3' }">
+            <div class="lg:hidden" style="display:flex; flex-direction:column; gap:0.55rem;">
+              <div style="display:flex; justify-content:space-between; gap:0.75rem; align-items:flex-start;">
+                <div>
+                  <p style="font-size:0.82rem; font-weight:700; color:var(--color-text-1);">{{ p.manufacturerName || '제조사 미기록' }}</p>
+                  <p style="font-family:var(--font-mono); font-size:0.72rem; color:var(--color-text-3); margin-top:0.2rem;">{{ p.passportId }}</p>
+                </div>
+                <span :class="['bp-stamp', getStatusBadge(p.status).bg, getStatusBadge(p.status).text, getStatusBadge(p.status).border]" style="font-size:0.65rem;">
                   {{ getStatusBadge(p.status).label }}
                 </span>
               </div>
-
-              <!-- ID -->
-              <div style="font-family: var(--font-mono); font-size: 0.625rem; color: var(--color-text-3); margin-bottom: 0.75rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{ p.passportId }}</div>
-
-              <!-- Specs row -->
-              <div style="display: flex; gap: 0.75rem; font-size: 0.6875rem; color: var(--color-text-2); margin-bottom: 0.75rem;">
-                <span v-if="p.manufacturerName">{{ p.manufacturerName }}</span>
-                <span v-if="p.chemistry" style="background: rgba(0,0,0,0.04); padding: 0 0.25rem; border-radius: 2px;">{{ p.chemistry }}</span>
-                <span v-if="p.weight">{{ p.weight }}kg</span>
-              </div>
-
-              <!-- SOC/SOH gauges -->
-              <div v-if="p.currentSoc != null || p.currentSoh != null" style="display: flex; gap: 1rem; align-items: center;">
-                <div v-if="p.currentSoc != null" style="flex: 1;">
-                  <div style="display: flex; justify-content: space-between; margin-bottom: 0.25rem;">
-                    <span style="font-size: 0.5625rem; color: var(--color-text-3);">SOC</span>
-                    <span style="font-family: var(--font-mono); font-size: 0.625rem; font-weight: 600; color: var(--color-text-1);">{{ scaleSOC(p.currentSoc) }}%</span>
-                  </div>
-                  <div style="height: 4px; background: rgba(0,0,0,0.06); border-radius: 2px; overflow: hidden;">
-                    <div style="height: 100%; border-radius: 2px;" :style="{ width: Math.min(scaleSOC(p.currentSoc), 100) + '%', background: scaleSOC(p.currentSoc) >= 60 ? '#16a34a' : scaleSOC(p.currentSoc) >= 30 ? '#d97706' : '#dc2626' }"></div>
-                  </div>
-                </div>
-                <div v-if="p.currentSoh != null" style="flex: 1;">
-                  <div style="display: flex; justify-content: space-between; margin-bottom: 0.25rem;">
-                    <span style="font-size: 0.5625rem; color: var(--color-text-3);">SOH</span>
-                    <span style="font-family: var(--font-mono); font-size: 0.625rem; font-weight: 600; color: var(--color-text-1);">{{ p.currentSoh }}%</span>
-                  </div>
-                  <div style="height: 4px; background: rgba(0,0,0,0.06); border-radius: 2px; overflow: hidden;">
-                    <div style="height: 100%; border-radius: 2px;" :style="{ width: Math.min(p.currentSoh, 100) + '%', background: p.currentSoh >= 80 ? '#16a34a' : p.currentSoh >= 50 ? '#d97706' : '#dc2626' }"></div>
-                  </div>
-                </div>
-              </div>
-              <div v-else style="font-size: 0.625rem; color: var(--color-text-3); font-style: italic;">센서 데이터 없음</div>
+              <p style="font-size:0.76rem; color:var(--color-text-2);">{{ getLifecycleMemo(p) }}</p>
+              <p style="font-size:0.74rem; color:var(--color-text-3);">GBA {{ getGbaPct(p) }}% · {{ p.vin || 'VIN 대기' }}</p>
             </div>
           </div>
         </div>
 
-        <!-- Empty state -->
         <div v-else style="padding: 3rem; text-align: center; border: 1px dashed var(--color-border); border-radius: 0.5rem;">
           <p style="font-size: 0.875rem; color: var(--color-text-3); margin-bottom: 0.75rem;">등록된 여권이 없습니다. 검색 조건을 변경하거나 새 여권을 발급하세요.</p>
           <button v-if="isManufacturer" @click="openCreateModal" class="sn-btn sn-btn-accent">여권 발급</button>
