@@ -29,10 +29,10 @@ app.component('login-page', {
     const checkpointSteps = computed(() => [
       { code: '01', title: 'Route map', value: activeTab.value === 'login' ? 'credential → org check → access' : 'intake → org filing → activation' },
       { code: '02', title: 'Desk assignment', value: selectedOrg.value.note },
-      { code: '03', title: 'Surface scope', value: 'Overview · Registry · Operations · Inspection · Evidence' },
+      { code: '03', title: 'Surface scope', value: '개요 · 등록부 · 운영 · 점검 · 증빙' },
     ]);
     const deskNotes = computed(() => [
-      'Overview · Registry · Operations · Inspection · Evidence',
+      '개요 · 등록부 · 운영 · 점검 · 증빙',
       activeTab.value === 'login' ? '현재 조직 권한으로 접근 가능한 BATP surface만 엽니다.' : '등록 후에는 login checkpoint로 돌아가 access 승인 요청을 진행합니다.',
       selectedOrg.value.desc,
     ]);
@@ -136,7 +136,7 @@ app.component('login-page', {
               <p style="font-size:1rem; font-weight:700; margin:0 0 0.35rem;">{{ selectedOrg.short }}</p>
               <p style="font-size:0.84rem; line-height:1.7; color:rgba(255,255,255,0.62); margin:0;">{{ selectedOrg.desc }}</p>
             </div>
-            <div v-for="section in ['Overview','Registry','Operations','Inspection','Evidence']" :key="section" style="padding:0.85rem 0.95rem; border-radius:0.95rem; background:rgba(255,255,255,0.04); box-shadow:inset 0 0 0 1px rgba(255,255,255,0.06);">
+            <div v-for="section in ['개요','등록부','운영','점검','증빙']" :key="section" style="padding:0.85rem 0.95rem; border-radius:0.95rem; background:rgba(255,255,255,0.04); box-shadow:inset 0 0 0 1px rgba(255,255,255,0.06);">
               <p class="sn-eyebrow" style="color:rgba(255,255,255,0.35); margin-bottom:0.2rem;">Surface</p>
               <p style="font-size:0.86rem; font-weight:600; margin:0;">{{ section }}</p>
             </div>

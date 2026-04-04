@@ -142,10 +142,10 @@ test.describe('Cycle 02 / Micro 08 — Passports Issuance Register', () => {
 
     await bootstrap(page, 'ManufacturerMSP');
 
-    await expect(page.getByText('Issuer filing register')).toBeVisible();
-    await expect(page.getByText('Register progression')).toBeVisible();
-    await expect(page.getByText('Binding pending')).toBeVisible();
-    await expect(page.getByText('Advance to vehicle binding')).toBeVisible();
+    await expect(page.getByText('발급 등록부')).toBeVisible();
+    await expect(page.getByText('등록 진행')).toBeVisible();
+    await expect(page.getByText('바인딩 대기')).toBeVisible();
+    await expect(page.getByText('차량 바인딩 진행')).toBeVisible();
     await page.screenshot({ path: 'screenshots/c02_m08_passports_register.png', fullPage: true });
 
     expect(errors).toEqual([]);
@@ -200,9 +200,9 @@ test.describe('Cycle 02 / Micro 08 — Passports Issuance Register', () => {
 
     await bootstrap(page, 'RegulatorMSP');
 
-    await expect(page.getByText('Compliance review register')).toBeVisible();
-    await expect(page.getByText('Register progression')).toBeVisible();
-    await expect(page.getByText('Next register check').first()).toBeVisible();
+    await expect(page.getByText('규제 검토 등록부')).toBeVisible();
+    await expect(page.getByText('등록 진행')).toBeVisible();
+    await expect(page.getByText('다음 검토').first()).toBeVisible();
     await expect(page.getByRole('button', { name: '여권 발급' })).toHaveCount(0);
     await page.screenshot({ path: 'screenshots/c02_m08_passports_mobile.png', fullPage: true });
 
