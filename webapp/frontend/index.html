@@ -156,12 +156,13 @@
 <body class="min-h-screen" style="background: #fafafa;">
   <div id="app" v-cloak>
 
-    <!-- ===== LOGIN: Full-screen, no sidebar ===== -->
-    <template v-if="currentPage === 'login'">
+    <!-- ===== UNAUTHENTICATED ENTRY ===== -->
+    <template v-if="!auth.token">
       <main class="min-h-screen">
         <component :is="currentPageComponent"
           :auth="auth"
           :api="api"
+          :page-props="pageProps"
           @navigate="navigate"
           @login="onLogin">
         </component>
