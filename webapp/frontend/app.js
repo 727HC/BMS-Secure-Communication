@@ -131,6 +131,12 @@ const IA_SECTION_CHIPS = [
 ];
 
 const ROUTE_META = {
+  landing: {
+    section: 'overview',
+    pageTitle: 'BATP',
+    shellTitle: 'BATP',
+    shellDescription: '배터리 여권 플랫폼의 시작 화면입니다.',
+  },
   login: {
     section: 'overview',
     pageTitle: '로그인',
@@ -195,6 +201,7 @@ const ROUTE_META = {
 
 // Page component map
 const PAGE_COMPONENTS = {
+  landing: 'landing-page',
   login: 'login-page',
   dashboard: 'dashboard-page',
   passports: 'passports-page',
@@ -221,7 +228,7 @@ const app = createApp({
     const hashParams = new URLSearchParams(hashQuery || '');
     const initialPage = auth.value.token
       ? (hashPage && PAGE_COMPONENTS[hashPage] ? hashPage : 'dashboard')
-      : 'login';
+      : ((hashPage === 'login' || hashPage === 'landing') ? hashPage : 'landing');
     const currentPage = ref(initialPage);
     const initialProps = {};
     if (hashParams.get('passportId')) initialProps.passportId = hashParams.get('passportId');
@@ -287,7 +294,7 @@ const app = createApp({
       return groups;
     });
 
-    const currentPageComponent = computed(() => PAGE_COMPONENTS[currentPage.value] || 'login-page');
+    const currentPageComponent = computed(() => PAGE_COMPONENTS[currentPage.value] || (auth.value.token ? 'dashboard-page' : 'landing-page'));
     const currentPageMeta = computed(() => ROUTE_META[currentPage.value] || ROUTE_META.dashboard);
     const totalPendingCount = computed(() => (
       Object.values(navBadges.value || {}).reduce((sum, count) => sum + Number(count || 0), 0)
@@ -333,8 +340,8 @@ const app = createApp({
     });
 
     function navigate(page, navProps, skipHistory) {
-      if (!auth.value.token && page !== 'login') {
-        currentPage.value = 'login';
+      if (!auth.value.token && !['landing', 'login'].includes(page)) {
+        currentPage.value = 'landing';
         return;
       }
       currentPage.value = page;
@@ -362,7 +369,7 @@ const app = createApp({
         // Fallback: parse hash for page & props (B-2 fix)
         const hash = window.location.hash.replace('#', '');
         const [pg, q] = hash.split('?');
-        const page = PAGE_COMPONENTS[pg] ? pg : (auth.value.token ? 'dashboard' : 'login');
+        const page = PAGE_COMPONENTS[pg] ? pg : (auth.value.token ? 'dashboard' : 'landing');
         const raw = Object.fromEntries(new URLSearchParams(q || ''));
         const ALLOWED_PROPS = ['passportId', 'tab', 'materialId', 'recordId'];
         const props = {};
@@ -397,7 +404,7 @@ const app = createApp({
       localStorage.removeItem('bp_orgMsp');
       clearInterval(fabricInterval);
       clearInterval(badgeInterval);
-      navigate('login');
+      navigate('landing');
     }
 
     function showToast(type, message) {
