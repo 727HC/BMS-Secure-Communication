@@ -2423,16 +2423,16 @@ app.component('passport-detail-page', {
         @submit="submitCorrection"
       ></ModalDataCorrection>
 
-      <bmu-invalidate-modal
-        :show="showInvalidateModal"
+      <ModalBMUInvalidate
+        :visible="showInvalidateModal"
         :form="invalidateForm"
         :submitting="submitting"
         @close="showInvalidateModal = false"
         @submit="submitInvalidate"
-      ></bmu-invalidate-modal>
+      ></ModalBMUInvalidate>
 
-      <link-materials-modal
-        :show="showLinkMaterialsModal"
+      <ModalLinkMaterials
+        :visible="showLinkMaterialsModal"
         :available-materials="availableMaterials"
         :selected-material-ids="selectedMaterialIds"
         :passport="passport"
@@ -2440,7 +2440,7 @@ app.component('passport-detail-page', {
         @close="showLinkMaterialsModal = false"
         @submit="submitLinkMaterials"
         @toggle="toggleMaterial"
-      ></link-materials-modal>
+      ></ModalLinkMaterials>
 
       <maintenance-request-modal
         :show="showMaintenanceRequestModal"
@@ -2506,9 +2506,13 @@ app.component('passport-detail-page', {
 });
 import ModalBind from '../components/passport-detail/ModalBind.js'
 import ModalDataCorrection from '../components/passport-detail/ModalDataCorrection.js'
+import ModalBMUInvalidate from '../components/passport-detail/ModalBMUInvalidate.js'
+import ModalLinkMaterials from '../components/passport-detail/ModalLinkMaterials.js'
 
 // Register globally for CDN-based runtime (align with VC Issue Modal usage)
 if (typeof app !== 'undefined' && app.component) {
   app.component('ModalBind', ModalBind)
   app.component('ModalDataCorrection', ModalDataCorrection)
+  app.component('ModalBMUInvalidate', ModalBMUInvalidate)
+  app.component('ModalLinkMaterials', ModalLinkMaterials)
 }
