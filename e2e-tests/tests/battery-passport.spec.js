@@ -82,8 +82,11 @@ test.describe('3. 프론트엔드 로그인', () => {
     await page.goto(BASE);
     await page.waitForTimeout(2000);
 
-    // 로그인 폼 확인
-    const userInput = page.locator('input[placeholder*="아이디"]');
+    // 로그인 폼 확인 (플레이스홀더가 다를 수 있음 대비)
+    let userInput = page.locator('input[placeholder*="아이디"]');
+    if ((await userInput.count()) === 0) {
+      userInput = page.locator('input[name="userId"]');
+    }
     await expect(userInput).toBeVisible({ timeout: 5000 });
 
     // 로그인
