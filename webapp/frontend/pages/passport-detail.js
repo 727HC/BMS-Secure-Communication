@@ -2442,65 +2442,65 @@ app.component('passport-detail-page', {
         @toggle="toggleMaterial"
       ></ModalLinkMaterials>
 
-      <maintenance-request-modal
-        :show="showMaintenanceRequestModal"
+      <ModalMaintenanceRequest
+        :visible="showMaintenanceRequestModal"
         :submitting="submitting"
         @close="showMaintenanceRequestModal = false"
         @submit="submitMaintenanceRequest"
-      ></maintenance-request-modal>
+      ></ModalMaintenanceRequest>
 
-      <maintenance-log-modal
-        :show="showMaintenanceLogModal"
+      <ModalMaintenanceLog
+        :visible="showMaintenanceLogModal"
         :form="maintenanceForm"
         :submitting="submitting"
         @close="showMaintenanceLogModal = false"
         @submit="submitMaintenanceLog"
-      ></maintenance-log-modal>
+      ></ModalMaintenanceLog>
 
-      <accident-log-modal
-        :show="showAccidentLogModal"
+      <ModalAccidentLog
+        :visible="showAccidentLogModal"
         :form="accidentForm"
         :submitting="submitting"
         @close="showAccidentLogModal = false"
         @submit="submitAccidentLog"
-      ></accident-log-modal>
+      ></ModalAccidentLog>
 
-      <analysis-request-modal
-        :show="showAnalysisRequestModal"
+      <ModalAnalysisRequest
+        :visible="showAnalysisRequestModal"
         :submitting="submitting"
         @close="showAnalysisRequestModal = false"
         @submit="submitAnalysisRequest"
-      ></analysis-request-modal>
+      ></ModalAnalysisRequest>
 
-      <analysis-result-modal
-        :show="showAnalysisResultModal"
+      <ModalAnalysisResult
+        :visible="showAnalysisResultModal"
         :form="analysisForm"
         :submitting="submitting"
         @close="showAnalysisResultModal = false"
         @submit="submitAnalysisResult"
-      ></analysis-result-modal>
+      ></ModalAnalysisResult>
 
-      <recycle-modal
-        :show="showRecycleModal"
+      <ModalRecycle
+        :visible="showRecycleModal"
         :submitting="submitting"
         @close="showRecycleModal = false"
         @submit="submitRecycleAvailability"
-      ></recycle-modal>
+      ></ModalRecycle>
 
-      <extract-modal
-        :show="showExtractModal"
+      <ModalExtract
+        :visible="showExtractModal"
         :form="extractForm"
         :submitting="submitting"
         @close="showExtractModal = false"
         @submit="submitExtractMaterials"
-      ></extract-modal>
+      ></ModalExtract>
 
-      <dispose-modal
-        :show="showDisposeConfirm"
+      <ModalDispose
+        :visible="showDisposeConfirm"
         :submitting="submitting"
         @close="showDisposeConfirm = false"
         @submit="disposeBattery"
-      ></dispose-modal>
+      ></ModalDispose>
     </div>
   `
 });
@@ -2508,11 +2508,29 @@ import ModalBind from '../components/passport-detail/ModalBind.js'
 import ModalDataCorrection from '../components/passport-detail/ModalDataCorrection.js'
 import ModalBMUInvalidate from '../components/passport-detail/ModalBMUInvalidate.js'
 import ModalLinkMaterials from '../components/passport-detail/ModalLinkMaterials.js'
+import ModalMaintenanceRequest from '../components/passport-detail/ModalMaintenanceRequest.js'
+import ModalMaintenanceLog from '../components/passport-detail/ModalMaintenanceLog.js'
+import ModalAccidentLog from '../components/passport-detail/ModalAccidentLog.js'
+import ModalAnalysisRequest from '../components/passport-detail/ModalAnalysisRequest.js'
+import ModalAnalysisResult from '../components/passport-detail/ModalAnalysisResult.js'
+import ModalRecycle from '../components/passport-detail/ModalRecycle.js'
+import ModalExtract from '../components/passport-detail/ModalExtract.js'
+import ModalDispose from '../components/passport-detail/ModalDispose.js'
+import ModalBMUInvalidate from '../components/passport-detail/ModalBMUInvalidate.js'
+import ModalLinkMaterials from '../components/passport-detail/ModalLinkMaterials.js'
 
 // Register globally for CDN-based runtime (align with VC Issue Modal usage)
-if (typeof app !== 'undefined' && app.component) {
+  if (typeof app !== 'undefined' && app.component) {
   app.component('ModalBind', ModalBind)
   app.component('ModalDataCorrection', ModalDataCorrection)
   app.component('ModalBMUInvalidate', ModalBMUInvalidate)
   app.component('ModalLinkMaterials', ModalLinkMaterials)
+  app.component('ModalMaintenanceRequest', ModalMaintenanceRequest)
+  app.component('ModalMaintenanceLog', ModalMaintenanceLog)
+  app.component('ModalAccidentLog', ModalAccidentLog)
+  app.component('ModalAnalysisRequest', ModalAnalysisRequest)
+  app.component('ModalAnalysisResult', ModalAnalysisResult)
+  app.component('ModalRecycle', ModalRecycle)
+  app.component('ModalExtract', ModalExtract)
+  app.component('ModalDispose', ModalDispose)
 }
