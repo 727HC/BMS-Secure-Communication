@@ -9,6 +9,8 @@ app.component('bmu-data-page', {
     const loading = ref(false);
     const autoRefresh = ref(false);
     const refreshing = ref(false);
+    const errorMsg = ref('');
+    const accessDenied = ref(false);
     let intervalId = null;
 
     const sortedRecords = computed(() => {
@@ -45,7 +47,7 @@ app.component('bmu-data-page', {
       const map = {
         blue: 'bg-[#60a5fa]',
         green: 'bg-[#34d399]',
-        red: 'bg-[rgba(239,68,68,0.1)]0',
+        red: 'bg-[#ef4444]',
       };
       return map[color] || 'bg-gray-400';
     }
@@ -62,9 +64,15 @@ app.component('bmu-data-page', {
         records.value = Array.isArray(data) ? data : (data.records || []);
         hasSearched.value = true;
         lastFetchedAt.value = new Date();
+        errorMsg.value = '';
+        accessDenied.value = false;
       } catch (e) {
         window.$toast('error', 'BMU 데이터 조회 실패: ' + e.message);
         records.value = [];
+        hasSearched.value = true;
+        lastFetchedAt.value = null;
+        errorMsg.value = e.message;
+        accessDenied.value = /access denied|권한/i.test(e.message || '');
       } finally {
         loading.value = false;
         refreshing.value = false;
@@ -74,6 +82,8 @@ app.component('bmu-data-page', {
     function handleSearch() {
       if (passportId.value.trim()) {
         hasSearched.value = false;
+        errorMsg.value = '';
+        accessDenied.value = false;
         fetchRecords();
       }
     }
@@ -141,7 +151,7 @@ app.component('bmu-data-page', {
     });
 
     return {
-      passportId, records, loading, autoRefresh, refreshing, hasSearched,
+      passportId, records, loading, autoRefresh, refreshing, hasSearched, errorMsg, accessDenied,
       sortedRecords, decodeStatusFlags, getBadgeClasses, getDotClasses,
       fetchRecords, handleSearch, formatTimestamp, formatNumber, scaleSOC, scaleTemp,
       countdown, lastFetchedAt,
@@ -155,15 +165,15 @@ app.component('bmu-data-page', {
       <div>
         <div style="display:flex;align-items:center;flex-wrap:wrap;gap:0.75rem;">
           <div>
-            <p class="sn-eyebrow" style="margin:0 0 0.35rem;color:#0f766e;">INSPECTION</p>
+            <p class="sn-eyebrow" style="margin:0 0 0.35rem;color:#0f766e;">현장 점검</p>
             <h1 class="sn-display" style="font-size: 1.5rem;">BMU 판독 콘솔</h1>
           </div>
           <span v-if="autoRefresh" style="display: inline-flex; align-items: center; gap: 0.375rem; padding: 0.25rem 0.625rem; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 9999px; font-size: 0.6875rem; font-weight: 600; color: #16a34a; margin-left: 0.75rem;">
             <span style="width: 6px; height: 6px; border-radius: 50%; background: #16a34a; animation: pulse 1.5s infinite;"></span>
-            LIVE
+            실시간
           </span>
         </div>
-        <p class="sn-caption" style="margin-top: 0.125rem;">현장 식별 후 센서 기록을 연속 판독하는 inspection surface</p>
+        <p class="sn-caption" style="margin-top: 0.125rem;">현장 식별 후 센서 기록을 연속 판독하는 점검 화면입니다.</p>
       </div>
 
       <!-- Auto-refresh toggle with countdown -->
@@ -190,9 +200,9 @@ app.component('bmu-data-page', {
 
     <div class="sn-panel" style="padding:14px 16px;display:grid;grid-template-columns:1.35fr 1fr 1fr;gap:12px;">
       <div style="padding-right:8px;border-right:1px solid rgba(0,0,0,0.06);">
-        <p class="sn-eyebrow" style="margin:0 0 0.35rem;">FIELD PROTOCOL</p>
+        <p class="sn-eyebrow" style="margin:0 0 0.35rem;">판독 요약</p>
         <p style="font-size:0.875rem;font-weight:600;color:#171717;margin:0 0 0.25rem;">식별 → 라이브 판독 → 이상 플래그 확인</p>
-        <p style="font-size:0.75rem;color:#6b7280;line-height:1.6;margin:0;">여권 ID를 기준으로 BMU 레코드를 불러오고 최신 행을 inspection 첫 증거로 사용합니다.</p>
+        <p style="font-size:0.75rem;color:#6b7280;line-height:1.6;margin:0;">여권 ID를 기준으로 BMU 레코드를 불러오고 최신 행을 첫 점검 근거로 사용합니다.</p>
       </div>
       <div>
         <p class="sn-eyebrow" style="margin:0 0 0.35rem;">조회 상태</p>
@@ -201,7 +211,7 @@ app.component('bmu-data-page', {
       </div>
       <div>
         <p class="sn-eyebrow" style="margin:0 0 0.35rem;color:#059669;">최근 조회</p>
-        <p style="font-size:0.82rem;font-weight:600;color:#171717;margin:0;">{{ lastFetchedAt ? lastFetchedAt.toLocaleTimeString('ko-KR') : '대기중' }}</p>
+        <p style="font-size:0.82rem;font-weight:600;color:#171717;margin:0;">{{ lastFetchedAt ? lastFetchedAt.toLocaleTimeString('ko-KR') : '대기 중' }}</p>
         <p style="font-size:0.72rem;color:#6b7280;margin:0.2rem 0 0;">{{ autoRefresh ? '라이브 모니터링 활성' : '수동 조회' }}</p>
       </div>
     </div>
@@ -264,6 +274,18 @@ app.component('bmu-data-page', {
     </div>
 
     <!-- ===== EMPTY: searched but no results ===== -->
+    <div v-else-if="hasSearched && errorMsg && accessDenied" class="sn-panel" style="overflow:hidden;">
+      <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:72px 24px;text-align:center;">
+        <div style="width:56px;height:56px;border-radius:12px;background:#fff7ed;display:flex;align-items:center;justify-content:center;margin-bottom:18px;">
+          <svg width="26" height="26" fill="none" stroke="#d97706" stroke-width="1.8" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+          </svg>
+        </div>
+        <h3 style="font-size:1rem;font-weight:700;color:#171717;margin:0 0 6px;">현재 계정으로는 이 여권의 BMU 기록을 열 수 없습니다</h3>
+        <p style="font-size:0.85rem;color:#6b7280;max-width:32rem;margin:0 0 6px;">제조사 또는 접근 권한이 있는 계정으로 다시 조회해 주세요. 현재 메시지: {{ errorMsg }}</p>
+      </div>
+    </div>
+
     <div v-else-if="hasSearched && records.length === 0 && !loading" class="sn-panel" style="overflow:hidden;">
       <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:80px 24px;">
         <div style="width:56px;height:56px;border-radius:12px;background:#f5f5f5;display:flex;align-items:center;justify-content:center;margin-bottom:20px;">
@@ -287,7 +309,7 @@ app.component('bmu-data-page', {
             <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 10h16M4 14h16M4 18h16"/>
           </svg>
           <span style="font-family:'Pretendard Variable', sans-serif;font-size:0.875rem;font-weight:600;color:#374151;">
-            inspection trace
+            판독 기록
           </span>
           <span style="display:inline-flex;align-items:center;padding:2px 8px;border-radius:20px;font-family:'JetBrains Mono', monospace;font-size:0.7rem;font-weight:600;color:#059669;background:rgba(52,211,153,0.1);">
             {{ records.length }}건

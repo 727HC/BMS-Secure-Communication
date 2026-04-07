@@ -8,10 +8,18 @@ xEV BMS 보안 플랫폼 — 배터리 여권, Hyperledger Fabric, 임베디드 
 
 | Session | Scope | Directories |
 |---------|-------|-------------|
-| Passport | 배터리 여권, GBA 21, DID/VC | `chaincode/`, `webapp/` |
-| Blockchain | Fabric 인프라, 채널, 피어, CA | `passport-network/`, `bmu-agent/` |
+| Passport | API 서버, 프론트엔드 | `bmu-agent/`, `webapp/` |
+| Blockchain | Fabric 인프라, 체인코드 | `passport-network/`, `chaincode/` |
 | Embedded | BMU/CMU, S32K, CAN-FD, HSE | `embedded/`, `firmware/` |
 | MCP | MCP 모니터링 서버 | `mcp-monitor/` |
+
+## Knowledge Base
+
+프로젝트 지식 베이스: `wiki/` (Obsidian vault). 작업 전 관련 문서 확인할 것.
+- `wiki/passport/design-tokens.md` — UI 색상, 폰트, 크기 규칙 (프론트 작업 시 필수)
+- `wiki/common/` — 아키텍처, 용어 사전
+- `wiki/decisions/` — 기술 결정 기록 (ADR)
+- **세션 종료 시** `wiki/{세션}/activity-log.md`에 활동 기록 필수 (작업 내용, 변경 파일, 미완료, 교훈)
 
 ## Rules
 

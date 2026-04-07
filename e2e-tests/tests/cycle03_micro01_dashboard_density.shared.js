@@ -75,7 +75,7 @@ async function bootstrap(page, orgMsp) {
     localStorage.setItem('bp_orgMsp', org);
   }, orgMsp);
   await page.goto(`${BASE}/#dashboard`, { waitUntil: 'domcontentloaded' });
-  await expect(page.getByRole('heading', { name: '운영 현황', level: 1 })).toBeVisible();
+  await expect(page.getByRole('heading', { name: '대시보드', level: 1 })).toBeVisible();
 }
 
 test.describe('Cycle 03 / Micro 01 — Dashboard Density Compression', () => {
@@ -85,10 +85,10 @@ test.describe('Cycle 03 / Micro 01 — Dashboard Density Compression', () => {
 
     await bootstrap(page, 'ServiceMSP');
 
-    await expect(page.getByText('서비스 운영 현황')).toBeVisible();
-    await expect(page.getByText('우선 확인 흐름')).toBeVisible();
-    await expect(page.getByRole('heading', { name: '즉시 확인' })).toBeVisible();
-    await expect(page.locator('span').filter({ hasText: /^정비·분석 후속$/ }).first()).toBeVisible();
+    await expect(page.getByRole('heading', { name: '대시보드', level: 1 })).toBeVisible();
+    await expect(page.getByText('화학계열 분포')).toBeVisible();
+    await expect(page.getByText('상태 분류')).toBeVisible();
+    await expect(page.getByText('정비·분석 대기')).toBeVisible();
     await page.screenshot({ path: 'screenshots/c03_m01_dashboard_density.png', fullPage: true });
 
     expect(errors).toEqual([]);
@@ -105,9 +105,9 @@ test.describe('Cycle 03 / Micro 01 — Dashboard Density Compression', () => {
 
     await bootstrap(page, 'RegulatorMSP');
 
-    await expect(page.getByText('규제 운영 현황')).toBeVisible();
-    await expect(page.getByText('회수 검토 대상')).toBeVisible();
-    await expect(page.getByText('최근 등록 여권')).toBeVisible();
+    await expect(page.getByRole('heading', { name: '대시보드', level: 1 })).toBeVisible();
+    await expect(page.getByText('회수·재활용 검토')).toBeVisible();
+    await expect(page.getByText('맞춤 리포트 추가')).toBeVisible();
     await page.screenshot({ path: 'screenshots/c03_m01_dashboard_mobile.png', fullPage: true });
 
     expect(errors).toEqual([]);

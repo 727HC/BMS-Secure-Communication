@@ -77,10 +77,10 @@ test.describe('Cycle 02 / Micro 01 — Maintenance Workflow Clarity', () => {
 
     await bootstrap(page, 'EVManufacturerMSP');
 
-    await expect(page.getByText('Service Operations Desk')).toBeVisible();
-    await expect(page.getByText('Service desk progression')).toBeVisible();
-    await expect(page.getByText('EV intake desk')).toBeVisible();
-    await expect(page.getByText('Request intake', { exact: true })).toBeVisible();
+    await expect(page.getByText('정비 운영')).toBeVisible();
+    await expect(page.getByText('운영 요약')).toBeVisible();
+    await expect(page.getByRole('heading', { name: '정비 운영 대장' })).toBeVisible();
+    await expect(page.getByText('접수 포함', { exact: true })).toBeVisible();
     await expect(page.getByRole('button', { name: '정비요청' }).first()).toBeVisible();
     await page.screenshot({ path: 'screenshots/c02_m01_maintenance_ev.png', fullPage: true });
 
@@ -97,8 +97,8 @@ test.describe('Cycle 02 / Micro 01 — Maintenance Workflow Clarity', () => {
 
     await bootstrap(page, 'ServiceMSP');
 
-    await expect(page.getByText('Service desk', { exact: true })).toBeVisible();
-    await expect(page.getByText('Closure ready', { exact: true })).toBeVisible();
+    await expect(page.getByText('정비 운영')).toBeVisible();
+    await expect(page.getByText('운영 요약')).toBeVisible();
     await expect(page.getByRole('button', { name: '정비완료' }).first()).toBeVisible();
     await page.screenshot({ path: 'screenshots/c02_m01_maintenance_service.png', fullPage: true });
 
@@ -118,8 +118,8 @@ test.describe('Cycle 02 / Micro 01 — Maintenance Workflow Clarity', () => {
 
     await bootstrap(page, 'ServiceMSP');
 
-    await expect(page.getByText('Service desk progression')).toBeVisible();
-    await expect(page.getByText('Next action docket').first()).toBeVisible();
+    await expect(page.getByText('운영 요약')).toBeVisible();
+    await expect(page.getByText('접수 포함').first()).toBeVisible();
     await page.screenshot({ path: 'screenshots/c02_m01_maintenance_mobile.png', fullPage: true });
 
     await context.close();

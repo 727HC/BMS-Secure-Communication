@@ -62,6 +62,10 @@ app.component('audit-log-page', {
       { value: 'ISSUE_VC', label: 'VC 발급' },
       { value: 'LOGIN', label: '로그인' },
     ];
+    const activeActionLabel = computed(() => {
+      const found = actionOptions.find((item) => item.value === filterAction.value);
+      return found ? found.label : '전체';
+    });
 
     async function fetchLogs() {
       loading.value = true;
@@ -135,7 +139,7 @@ app.component('audit-log-page', {
     onMounted(fetchLogs);
 
     return {
-      logs, total, loading, page, filterAction, filterWriteOnly, autoRefresh,
+      logs, total, loading, page, filterAction, filterWriteOnly, autoRefresh, activeActionLabel,
       actionLabels, actionColors, actionOptions, totalPages, expandedId,
       fetchLogs, formatTime, relativeTime, getStatusStyle, prevPage, nextPage, toggleDetail,
     };
@@ -146,7 +150,7 @@ app.component('audit-log-page', {
     <!-- ====== PAGE HEADER ====== -->
     <div style="display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 1.25rem; padding-bottom: 0.75rem; border-bottom: 1px solid var(--color-border); gap: 1rem;">
       <div>
-        <p class="sn-eyebrow" style="margin:0 0 0.35rem;color:#4338ca;">EVIDENCE</p>
+        <p class="sn-eyebrow" style="margin:0 0 0.35rem;color:#4338ca;">증빙 원장</p>
         <h1 class="sn-display" style="font-size: 1.5rem;">감사 증빙 원장</h1>
         <p class="sn-caption" style="margin-top: 0.125rem;">총 {{ total }}건의 작업·검증 흔적을 증빙 순서대로 확인합니다.</p>
       </div>
@@ -170,7 +174,7 @@ app.component('audit-log-page', {
 
     <div class="sn-panel" style="padding:14px 16px;display:grid;grid-template-columns:1.4fr 1fr 1fr;gap:12px;">
       <div style="padding-right:8px;border-right:1px solid rgba(0,0,0,0.06);">
-        <p class="sn-eyebrow" style="margin:0 0 0.35rem;">EVIDENCE CHAIN</p>
+        <p class="sn-eyebrow" style="margin:0 0 0.35rem;">증빙 요약</p>
         <p style="font-size:0.875rem;font-weight:600;color:#171717;margin:0 0 0.25rem;">행위 → 응답 → 요청 데이터</p>
         <p style="font-size:0.75rem;color:#6b7280;line-height:1.6;margin:0;">필터는 증빙 묶음을 줄이는 도구이고, 상세 패널은 각 사건의 request context를 보존합니다.</p>
       </div>
@@ -198,6 +202,14 @@ app.component('audit-log-page', {
       <span style="margin-left:auto;font-family:'JetBrains Mono',monospace;font-size:0.72rem;color:#a3a3a3;">총 {{ total }}건</span>
     </div>
 
+    <div v-if="filterAction" class="sn-panel" style="padding:10px 14px;display:flex;align-items:center;justify-content:space-between;">
+      <div>
+        <p class="sn-eyebrow" style="margin:0 0 4px;">활성 필터</p>
+        <p style="margin:0;font-size:0.9rem;font-weight:700;color:#171717;">{{ activeActionLabel }}</p>
+      </div>
+      <span style="font-family:'JetBrains Mono',monospace;font-size:0.78rem;color:#6b7280;">{{ total }}건</span>
+    </div>
+
     <!-- ====== LOADING STATE ====== -->
     <div v-if="loading && logs.length === 0" style="display: flex; align-items: center; justify-content: center; min-height: 40vh;">
       <div style="width: 28px; height: 28px; border: 2px solid rgba(0,0,0,0.06); border-top-color: var(--color-accent); border-radius: 50%; animation: spin 0.8s linear infinite;"></div>
@@ -205,7 +217,7 @@ app.component('audit-log-page', {
 
     <!-- ====== EMPTY STATE ====== -->
     <div v-else-if="logs.length === 0" style="padding: 3rem; text-align: center; border: 1px dashed var(--color-border); border-radius: 0.5rem;">
-      <p style="font-size: 0.875rem; color: var(--color-text-3); margin-bottom: 0;">표시할 증빙 항목이 없습니다.</p>
+      <p style="font-size: 0.875rem; color: var(--color-text-3); margin-bottom: 0;">{{ filterAction ? activeActionLabel + ' 필터에 해당하는 증빙이 없습니다.' : '표시할 증빙 항목이 없습니다.' }}</p>
     </div>
 
     <!-- ====== ACTIVITY FEED (structural change from table) ====== -->

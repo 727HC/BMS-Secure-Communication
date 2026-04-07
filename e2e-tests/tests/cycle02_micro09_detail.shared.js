@@ -176,7 +176,7 @@ async function bootstrap(page, orgMsp, passport) {
     localStorage.setItem('bp_orgMsp', org);
   }, orgMsp);
   await page.goto(`${BASE}/#passport-detail?passportId=${passport.passportId}`, { waitUntil: 'domcontentloaded' });
-  await expect(page.getByRole('banner').getByRole('heading', { name: '기술 문서' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: passport.model, level: 1 })).toBeVisible();
 }
 
 test.describe('Cycle 02 / Micro 09 — Passport Detail Dossier Handoff', () => {
@@ -187,8 +187,8 @@ test.describe('Cycle 02 / Micro 09 — Passport Detail Dossier Handoff', () => {
     const passport = createPassport({ rawMaterials: [] });
     await bootstrap(page, 'ManufacturerMSP', passport);
 
-    await expect(page.getByText('문서 인계 상태')).toBeVisible();
-    await expect(page.locator('div').filter({ hasText: /^현재 조치$/ }).first()).toBeVisible();
+    await expect(page.getByText('핵심 식별')).toBeVisible();
+    await expect(page.getByText('문서 조치')).toBeVisible();
     await expect(page.getByText('원자재 연결').first()).toBeVisible();
     await page.screenshot({ path: 'screenshots/c02_m09_detail_cover.png', fullPage: true });
 
@@ -214,8 +214,8 @@ test.describe('Cycle 02 / Micro 09 — Passport Detail Dossier Handoff', () => {
 
     await expect(page.getByText('정비 작업 진행').first()).toBeVisible();
     await expect(page.getByText('정비 완료 등록').first()).toBeVisible();
-    await page.getByRole('button', { name: '정비/이력' }).click();
-    await expect(page.getByText('정비 이력 흐름')).toBeVisible();
+    await page.getByRole('button', { name: '운영 이력' }).click();
+    await expect(page.getByText('최근 운영 이벤트')).toBeVisible();
     await page.screenshot({ path: 'screenshots/c02_m09_detail_traceability.png', fullPage: true });
 
     expect(errors).toEqual([]);
@@ -240,6 +240,7 @@ test.describe('Cycle 02 / Micro 09 — Passport Detail Dossier Handoff', () => {
 
     await expect(page.getByText('회수 판정 진행').first()).toBeVisible();
     await expect(page.getByText('추출 검토 또는 종료 판정').first()).toBeVisible();
+    await expect(page.getByRole('button', { name: '개요' })).toBeVisible();
     await page.screenshot({ path: 'screenshots/c02_m09_detail_mobile.png', fullPage: true });
 
     expect(errors).toEqual([]);

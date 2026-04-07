@@ -30,7 +30,7 @@ app.component('materials-page', {
       loading.value = true;
       try {
         const data = await props.api.get('/materials');
-        materials.value = Array.isArray(data) ? data : (data.materials || []);
+        materials.value = Array.isArray(data) ? data : (data.records || data.materials || []);
       } catch (e) {
         window.$toast('error', '원자재 목록 조회 실패: ' + e.message);
       } finally {
@@ -120,6 +120,7 @@ app.component('materials-page', {
     <!-- ====== PAGE HEADER ====== -->
     <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.25rem; padding-bottom: 0.75rem; border-bottom: 1px solid var(--color-border);">
       <div>
+        <p class="sn-eyebrow" style="margin:0 0 0.35rem;color:#1769e0;">원자재 원장</p>
         <h1 class="sn-display" style="font-size: 1.5rem;">원자재 관리</h1>
         <p class="sn-caption" style="margin-top: 0.125rem;">총 {{ materials.length }}건의 원자재가 등록되어 있습니다</p>
       </div>
@@ -136,10 +137,11 @@ app.component('materials-page', {
     </div>
 
     <!-- ====== TRACEABILITY HEADER ====== -->
-    <div v-if="!loading && filteredMaterials.length > 0" style="display: flex; align-items: center; gap: 1rem; padding: 0.75rem 1rem; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 0.5rem; margin-bottom: 1rem;">
+    <div v-if="!loading && filteredMaterials.length > 0" class="sn-panel" style="display: flex; align-items: center; gap: 1rem; padding: 0.9rem 1rem; margin-bottom: 1rem;">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
       <div style="flex: 1;">
-        <span style="font-size: 0.8125rem; color: #16a34a; font-weight: 500;">블록체인 인증 공급망 추적</span>
+        <p class="sn-eyebrow" style="margin:0 0 0.25rem;">추적 요약</p>
+        <span style="font-size: 0.8125rem; color: #16a34a; font-weight: 600;">블록체인 인증 공급망 추적</span>
         <div style="display: flex; align-items: center; gap: 0.5rem; margin-top: 0.5rem;">
           <div style="flex: 1; max-width: 120px; height: 4px; background: rgba(22,163,74,0.15); border-radius: 2px; overflow: hidden;">
             <div style="height: 100%; background: #16a34a; border-radius: 2px;"

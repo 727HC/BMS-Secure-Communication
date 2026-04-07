@@ -20,6 +20,21 @@
 - 디자인 방향은 admin CRUD가 아니라 filing surface, dossier, ledger, register 같은 제품 언어다.
 - dashboard, passports, passport-detail, login, maintenance, bmu-data는 이미 재작성 흐름이 있다. 새 작업도 그 결을 유지한다.
 
+## Knowledge Base
+
+- 프로젝트 지식 베이스는 `wiki/` 디렉토리에 있다 (Obsidian vault).
+- 작업 전 관련 문서를 먼저 확인한다:
+  - `wiki/common/` — 아키텍처, 용어 사전
+  - `wiki/passport/design-tokens.md` — 디자인 토큰, UI 레퍼런스, anti-pattern
+  - `wiki/passport/` — 배터리여권 세션 컨텍스트
+  - `wiki/blockchain/` — 블록체인 세션 컨텍스트
+  - `wiki/embedded/` — 임베디드 세션 컨텍스트
+  - `wiki/mcp/` — MCP 세션 컨텍스트
+  - `wiki/decisions/` — 기술 결정 기록 (ADR)
+- UI 작업 시 `wiki/passport/design-tokens.md`의 색상, 폰트, 크기 규칙을 반드시 따른다.
+- 새로운 기술 결정을 내릴 때 `wiki/decisions/`에 ADR을 작성한다.
+- **세션 종료 시 반드시** `wiki/{세션}/activity-log.md`에 활동 기록을 남긴다 (작업 내용, 변경 파일, 미완료, 교훈).
+
 ## Repository Rules
 
 - 반드시 먼저 [CLAUDE.md](./CLAUDE.md)를 읽고 현재 멀티 세션 범위를 확인한다.
