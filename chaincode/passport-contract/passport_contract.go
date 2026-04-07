@@ -340,7 +340,10 @@ func (c *PassportContract) checkPassportAccess(ctx contractapi.TransactionContex
 		}
 	case mspEVManufacturer:
 		if passport.VIN != "" && passport.EvBinderMSP == msp {
-			return nil // 자기 조직이 바인딩한 배터리만
+			return nil // 자기 조직이 바인딩한 배터리
+		}
+		if passport.Status == "MANUFACTURED" {
+			return nil // 미바인딩 여권 조회 허용 (바인딩 대상 탐색용)
 		}
 	case mspService:
 		if passport.Status == "MAINTENANCE" || passport.Status == "ANALYSIS" {
@@ -364,7 +367,8 @@ func (c *PassportContract) buildPassportQuery(ctx contractapi.TransactionContext
 	case mspManufacturer:
 		return fmt.Sprintf(`{"selector":{"docType":"%s","creatorMsp":"%s"}}`, docTypePassport, msp), nil
 	case mspEVManufacturer:
-		return fmt.Sprintf(`{"selector":{"docType":"%s","vin":{"$gt":""},"evBinderMsp":"%s"}}`, docTypePassport, msp), nil
+		// 본인 바인딩 여권 + 미바인딩(MANUFACTURED) 여권도 조회 가능
+		return fmt.Sprintf(`{"selector":{"docType":"%s","$or":[{"vin":{"$gt":""},"evBinderMsp":"%s"},{"status":"MANUFACTURED"}]}}`, docTypePassport, msp), nil
 	case mspService:
 		// 현재 정비/분석 의뢰 상태인 배터리만 조회 (checkPassportAccess와 일치)
 		return fmt.Sprintf(`{"selector":{"docType":"%s","status":{"$in":["MAINTENANCE","ANALYSIS"]}}}`, docTypePassport), nil
