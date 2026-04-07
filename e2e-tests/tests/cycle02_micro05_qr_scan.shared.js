@@ -59,7 +59,7 @@ async function bootstrap(page, { orgMsp, nfcSupport = false } = {}) {
     }
   }, { org: orgMsp, enableNfc: nfcSupport });
   await page.goto(`${BASE}/#qr-scan`, { waitUntil: 'domcontentloaded' });
-  await expect(page.getByText('QR / NFC Passport Intake')).toBeVisible();
+  await expect(page.getByText('식별 접수')).toBeVisible();
 }
 
 test.describe('Cycle 02 / Micro 05 — QR Intake Station', () => {
@@ -69,14 +69,14 @@ test.describe('Cycle 02 / Micro 05 — QR Intake Station', () => {
 
     await bootstrap(page, { orgMsp: 'ManufacturerMSP' });
 
-    await expect(page.getByText('Issuer intake station')).toBeVisible();
-    await expect(page.getByText('Filed intake dossier')).toBeVisible();
-    await page.locator('input[placeholder="예: PASSPORT-001"]').fill(passport.passportId);
-    await page.getByRole('button', { name: 'File intake token' }).click();
+    await expect(page.getByText('식별 접수')).toBeVisible();
+    await expect(page.getByText('접수 요약')).toBeVisible();
+    await page.locator('input[placeholder="여권 ID를 입력하세요 (예: BP-SDI-001)"]').fill(passport.passportId);
+    await page.getByRole('button', { name: '조회' }).click();
 
-    await expect(page.getByText('Dossier matched')).toBeVisible();
+    await expect(page.getByText('식별 결과 확인됨')).toBeVisible();
     await expect(page.getByText('Samsung SDI')).toBeVisible();
-    await expect(page.getByText('Open lifecycle dossier')).toBeVisible();
+    await expect(page.getByText('상세 보기')).toBeVisible();
     await page.screenshot({ path: 'screenshots/c02_m05_qr_manual.png', fullPage: true });
 
     expect(errors).toEqual([]);
@@ -88,10 +88,10 @@ test.describe('Cycle 02 / Micro 05 — QR Intake Station', () => {
 
     await bootstrap(page, { orgMsp: 'ServiceMSP', nfcSupport: true });
 
-    await expect(page.getByText('Field service intake station')).toBeVisible();
-    await page.getByRole('button', { name: 'Arm NFC' }).click();
-    await expect(page.getByText('Channel NFC armed')).toBeVisible();
-    await expect(page.getByText('NFC State')).toBeVisible();
+    await expect(page.getByText('식별 접수')).toBeVisible();
+    await page.getByRole('button', { name: 'NFC 활성화' }).click();
+    await expect(page.getByText('NFC 대기 중...')).toBeVisible();
+    await expect(page.getByText('NFC 스캔')).toBeVisible();
     await expect(page.getByText('대기 중')).toBeVisible();
     await page.screenshot({ path: 'screenshots/c02_m05_qr_nfc.png', fullPage: true });
 
@@ -109,8 +109,8 @@ test.describe('Cycle 02 / Micro 05 — QR Intake Station', () => {
 
     await bootstrap(page, { orgMsp: 'RegulatorMSP' });
 
-    await expect(page.getByText('Compliance intake station')).toBeVisible();
-    await expect(page.getByText('Result stage')).toBeVisible();
+    await expect(page.getByText('식별 접수')).toBeVisible();
+    await expect(page.getByText('결과 상태')).toBeVisible();
     await expect(page.getByText('미지원')).toBeVisible();
     await page.screenshot({ path: 'screenshots/c02_m05_qr_mobile.png', fullPage: true });
 

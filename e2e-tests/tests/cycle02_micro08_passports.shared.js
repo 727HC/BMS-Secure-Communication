@@ -131,7 +131,7 @@ async function bootstrap(page, orgMsp) {
     localStorage.setItem('bp_orgMsp', org);
   }, orgMsp);
   await page.goto(`${BASE}/#passports`, { waitUntil: 'domcontentloaded' });
-  await expect(page.getByText('배터리 여권 등록부')).toBeVisible();
+  await expect(page.getByRole('heading', { name: '배터리 여권 등록부', level: 1 })).toBeVisible();
   return state;
 }
 

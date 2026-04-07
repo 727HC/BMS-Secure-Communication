@@ -55,7 +55,7 @@ async function bootstrap(page, orgMsp) {
     localStorage.setItem('bp_orgMsp', org);
   }, orgMsp);
   await page.goto(`${BASE}/#bmu-data`, { waitUntil: 'domcontentloaded' });
-  await expect(page.getByText('BMU Sensor Record Filing')).toBeVisible();
+  await expect(page.getByText('현장 점검')).toBeVisible();
 }
 
 test.describe('Cycle 02 / Micro 06 — BMU Telemetry Desk', () => {
@@ -65,14 +65,14 @@ test.describe('Cycle 02 / Micro 06 — BMU Telemetry Desk', () => {
 
     await bootstrap(page, 'ServiceMSP');
 
-    await expect(page.getByText('Service telemetry desk')).toBeVisible();
-    await expect(page.getByText('Evidence progression')).toBeVisible();
-    await page.locator('input[placeholder="예: PASSPORT-001"]').fill(PASSPORT_ID);
-    await page.getByRole('button', { name: 'Open Evidence Ledger' }).click();
+    await expect(page.getByText('현장 점검')).toBeVisible();
+    await expect(page.getByText('판독 요약')).toBeVisible();
+    await page.locator('input[placeholder="조회할 배터리 여권 ID를 입력하세요"]').fill(PASSPORT_ID);
+    await page.getByRole('button', { name: '조회' }).click();
 
-    await expect(page.getByText('Passport telemetry evidence')).toBeVisible();
-    await expect(page.getByText('Cross-check maintenance docket')).toBeVisible();
-    await expect(page.getByText('BMU-REC-20260403-003')).toBeVisible();
+    await expect(page.getByText('판독 기록').first()).toBeVisible();
+    await expect(page.getByText(PASSPORT_ID).first()).toBeVisible();
+    await expect(page.getByText('충전중', { exact: true }).first()).toBeVisible();
     await page.screenshot({ path: 'screenshots/c02_m06_bmu_desk.png', fullPage: true });
 
     expect(errors).toEqual([]);
@@ -84,16 +84,16 @@ test.describe('Cycle 02 / Micro 06 — BMU Telemetry Desk', () => {
 
     await bootstrap(page, 'ManufacturerMSP');
 
-    await page.locator('input[placeholder="예: PASSPORT-001"]').fill(PASSPORT_ID);
+    await page.locator('input[placeholder="조회할 배터리 여권 ID를 입력하세요"]').fill(PASSPORT_ID);
     await page.locator('input[type="checkbox"]').first().evaluate((element) => {
       element.checked = true;
       element.dispatchEvent(new Event('input', { bubbles: true }));
       element.dispatchEvent(new Event('change', { bubbles: true }));
     });
-    await page.getByRole('button', { name: 'Open Evidence Ledger' }).click();
+    await page.getByRole('button', { name: '조회' }).click();
 
-    await expect(page.getByText('Live 10s loop')).toBeVisible();
-    await expect(page.getByText('Refresh loop')).toBeVisible();
+    await expect(page.getByText('라이브 모니터링 활성')).toBeVisible();
+    await expect(page.getByText('판독 기록')).toBeVisible();
     await expect(page.getByText('충전중', { exact: true }).first()).toBeVisible();
     await page.screenshot({ path: 'screenshots/c02_m06_bmu_live.png', fullPage: true });
 
@@ -111,9 +111,9 @@ test.describe('Cycle 02 / Micro 06 — BMU Telemetry Desk', () => {
 
     await bootstrap(page, 'RegulatorMSP');
 
-    await expect(page.getByText('Compliance telemetry desk')).toBeVisible();
-    await expect(page.getByText('Telemetry filing desk is idle')).toBeVisible();
-    await expect(page.getByText('Evidence progression')).toBeVisible();
+    await expect(page.getByText('현장 점검')).toBeVisible();
+    await expect(page.getByText('여권 ID를 입력하여 데이터를 조회하세요')).toBeVisible();
+    await expect(page.getByText('판독 요약')).toBeVisible();
     await page.screenshot({ path: 'screenshots/c02_m06_bmu_mobile.png', fullPage: true });
 
     expect(errors).toEqual([]);

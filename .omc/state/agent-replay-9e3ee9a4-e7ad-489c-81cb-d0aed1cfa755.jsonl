@@ -1,0 +1,5 @@
+{"t":0,"agent":"a940def","agent_type":"Explore","event":"agent_start","parent_mode":"none"}
+{"t":0,"agent":"a16a461","agent_type":"designer","event":"agent_start","parent_mode":"none"}
+{"t":0,"agent":"a940def","agent_type":"Explore","event":"agent_stop","success":true,"duration_ms":73551}
+{"t":0,"agent":"a16a461","agent_type":"designer","event":"agent_stop","success":true,"duration_ms":80179}
+{"t":0,"agent":"system","event":"keyword_detected","keyword":"security-review"}

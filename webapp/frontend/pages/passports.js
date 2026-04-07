@@ -114,9 +114,9 @@ app.component('passports-page', {
         return '발급 대기, VIN 바인딩, 규제 제출 준비 상태를 한 줄 기록부로 정리합니다.';
       }
       if (isRegulator.value) {
-        return '검토 대기, 불완전 서류, 재활용 전환 가능 건을 규제 점검 순서대로 읽습니다.';
+        return '검토 대기, 서류 미비, 재활용 전환 대상을 점검 순서대로 확인합니다.';
       }
-      return '기술 여권, 운용 상태, 정비 전환 여부를 등록부 순서로 검토합니다.';
+      return '여권 현황, 운용 상태, 정비 필요 여부를 등록부 순서로 확인합니다.';
     });
 
     function getPrimaryActionLabel(passport) {
@@ -133,7 +133,7 @@ app.component('passports-page', {
     }
 
     function getLifecycleMemo(passport) {
-      if (passport.status === 'MAINTENANCE') return '정비 작업 진행 중';
+      if (passport.status === 'MAINTENANCE') return '정비 진행 중';
       if (passport.status === 'ANALYSIS') return '점검 결과 대기';
       if (passport.status === 'RECYCLING') return '회수·재활용 검토 중';
       if (!passport.vin) return 'VIN 등록 대기';
@@ -213,10 +213,11 @@ app.component('passports-page', {
             delete body[k];
           }
         }
-        await props.api.post('/passports', body);
+        const created = await props.api.post('/passports', body);
         window.$toast('success', '배터리 여권이 생성되었습니다.');
         closeCreateModal();
         await fetchPassports();
+        emit('navigate', 'passport-detail', { passportId: created.passportId || body.passportId });
       } catch (e) {
         window.$toast('error', '여권 생성 실패: ' + e.message);
       } finally {
@@ -232,7 +233,7 @@ app.component('passports-page', {
       if (soc == null) return 'bg-[#33302a]';
       if (soc >= 60) return 'bg-[#34d399]';
       if (soc >= 30) return 'bg-[#fbbf24]';
-      return 'bg-[rgba(239,68,68,0.1)]0';
+      return 'bg-[#ef4444]';
     }
 
     return {
@@ -253,18 +254,18 @@ app.component('passports-page', {
       <div v-else class="space-y-4">
 
         <!-- COVER -->
-        <section style="border:1px solid var(--color-border); border-radius:0.75rem; overflow:hidden; background:#fff;">
-          <div style="padding:1.25rem 1.25rem 1rem; border-bottom:1px solid var(--color-border); background:#fafaf9;">
+        <section style="border:1px solid var(--color-border); border-radius:1.25rem; overflow:hidden; background:#fff; box-shadow:0 1px 3px rgba(0,0,0,0.05);">
+          <div style="padding:1.4rem 1.4rem 1.1rem; border-bottom:1px solid var(--color-border); background:linear-gradient(180deg,#fbfdff 0%,#f8fbff 100%);">
             <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:1rem; flex-wrap:wrap;">
               <div>
-                <p class="sn-eyebrow" style="margin-bottom:0.5rem;">등록 작업면</p>
+                <p class="sn-eyebrow" style="margin-bottom:0.5rem;">등록 원장</p>
                 <h1 class="sn-display" style="font-size:1.75rem;">배터리 여권 등록부</h1>
-                <p style="margin-top:0.375rem; font-size:0.95rem; font-weight:600; color:var(--color-text-1);">{{ registerEnglishTitle }}</p>
+                <p class="sn-heading" style="font-size:1rem;margin-top:0.375rem;">{{ registerEnglishTitle }}</p>
                 <p class="sn-caption" style="margin-top:0.375rem; max-width:42rem;">{{ registerSummary }}</p>
               </div>
               <div style="display:flex; align-items:center; gap:0.75rem;">
                 <div style="padding:0.75rem 0.9rem; border:1px solid var(--color-border); border-radius:0.5rem; background:#fff; min-width:7rem;">
-                  <p class="sn-eyebrow" style="margin-bottom:0.3rem;">Filed records</p>
+                  <p class="sn-eyebrow" style="margin-bottom:0.3rem;">등록 현황</p>
                   <p style="font-family:var(--font-mono); font-size:1.1rem; font-weight:700; color:var(--color-text-1);">{{ filteredPassports.length }}</p>
                 </div>
                 <button v-if="isManufacturer" @click="openCreateModal" class="sn-btn sn-btn-accent" style="display:inline-flex;align-items:center;gap:6px;">
@@ -276,25 +277,25 @@ app.component('passports-page', {
           </div>
 
           <div style="padding:1rem 1.25rem; display:grid; grid-template-columns:repeat(auto-fit, minmax(180px, 1fr)); gap:0.75rem; border-bottom:1px solid var(--color-border);">
-            <div style="border:1px solid var(--color-border); border-radius:0.5rem; padding:0.85rem; background:#fff;">
+            <div style="border:1px solid var(--color-border); border-radius:0.9rem; padding:0.95rem; background:#fff;">
               <p class="sn-eyebrow" style="margin-bottom:0.35rem;">등록 진행</p>
               <p style="font-size:0.95rem; font-weight:600; color:var(--color-text-1);">{{ isManufacturer ? '발급 → 바인딩 → 운용 전환' : '검토 → 증빙 확인 → 판정' }}</p>
             </div>
-            <div style="border:1px solid var(--color-border); border-radius:0.5rem; padding:0.85rem; background:#fff;">
+            <div style="border:1px solid var(--color-border); border-radius:0.9rem; padding:0.95rem; background:#fff;">
               <p class="sn-eyebrow" style="margin-bottom:0.35rem;">바인딩 대기</p>
               <p style="font-family:var(--font-mono); font-size:1rem; font-weight:700; color:var(--color-text-1);">{{ bindingPendingCount }}</p>
             </div>
-            <div style="border:1px solid var(--color-border); border-radius:0.5rem; padding:0.85rem; background:#fff;">
+            <div style="border:1px solid var(--color-border); border-radius:0.9rem; padding:0.95rem; background:#fff;">
               <p class="sn-eyebrow" style="margin-bottom:0.35rem;">다음 검토</p>
-              <p style="font-size:0.95rem; font-weight:600; color:var(--color-text-1);">{{ isRegulator ? '불완전 dossier·재활용 전환 건 우선 확인' : '기술 dossier·VIN 누락 건 우선 정리' }}</p>
+              <p style="font-size:0.95rem; font-weight:600; color:var(--color-text-1);">{{ isRegulator ? '서류 미비·재활용 전환 대상 우선 확인' : '문서 미비·VIN 누락 대상 우선 정리' }}</p>
             </div>
-            <div style="border:1px solid var(--color-border); border-radius:0.5rem; padding:0.85rem; background:#fff;">
+            <div style="border:1px solid var(--color-border); border-radius:0.9rem; padding:0.95rem; background:#fff;">
               <p class="sn-eyebrow" style="margin-bottom:0.35rem;">문서 보완 필요</p>
               <p style="font-family:var(--font-mono); font-size:1rem; font-weight:700; color:var(--color-text-1);">{{ reviewPendingCount }}</p>
             </div>
           </div>
 
-          <div style="padding:0.9rem 1.25rem; display:flex; flex-wrap:wrap; gap:0.5rem; align-items:center;">
+          <div style="padding:0.9rem 1.25rem; display:flex; flex-wrap:wrap; gap:0.5rem; align-items:center; background:#fff;">
             <input v-model="searchQuery" type="text" placeholder="ID, 시리얼, 모델, 제조사, VIN 검색..." class="sn-input" style="flex:1; min-width:220px; font-size:0.8125rem;" />
             <select v-model="filterStatus" class="sn-input" style="width:auto; min-width:140px; font-size:0.8125rem;">
               <option v-for="opt in statusOptions" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
@@ -311,9 +312,9 @@ app.component('passports-page', {
           </div>
         </section>
 
-        <div v-if="filteredPassports.length > 0" style="border:1px solid var(--color-border); border-radius:0.75rem; overflow:hidden; background:#fff;">
-          <div class="sn-mobile-hide" style="display:grid; grid-template-columns:minmax(0, 1.1fr) minmax(0, 1.3fr) minmax(0, 0.9fr) minmax(0, 0.9fr); gap:1rem; padding:0.85rem 1.1rem; border-bottom:1px solid var(--color-border); background:#fafaf9;">
-            <span class="sn-eyebrow">Register ID</span>
+        <div v-if="filteredPassports.length > 0" style="border:1px solid var(--color-border); border-radius:1.25rem; overflow:hidden; background:#fff; box-shadow:0 1px 3px rgba(0,0,0,0.05);">
+          <div class="sn-mobile-hide" style="display:grid; grid-template-columns:minmax(0, 1.1fr) minmax(0, 1.3fr) minmax(0, 0.9fr) minmax(0, 0.9fr); gap:1rem; padding:0.9rem 1.1rem; border-bottom:1px solid var(--color-border); background:#fbfdff;">
+            <span class="sn-eyebrow">passport id</span>
             <span class="sn-eyebrow">문서 요약</span>
             <span class="sn-eyebrow">진행 메모</span>
             <span class="sn-eyebrow">다음 조치</span>
@@ -322,7 +323,7 @@ app.component('passports-page', {
           <div v-for="p in filteredPassports" :key="p.passportId"
             @click="viewDetail(p.passportId)"
             style="padding:1rem 1.1rem; border-bottom:1px solid var(--color-border); cursor:pointer; transition:background 0.2s;"
-            @mouseenter="$event.currentTarget.style.background='#fafaf9'"
+            @mouseenter="$event.currentTarget.style.background='#f8fbff'"
             @mouseleave="$event.currentTarget.style.background='#fff'">
             <div class="sn-mobile-hide" style="display:grid; grid-template-columns:minmax(0, 1.1fr) minmax(0, 1.3fr) minmax(0, 0.9fr) minmax(0, 0.9fr); gap:1rem; align-items:start;">
               <div>
@@ -377,8 +378,9 @@ app.component('passports-page', {
       </div>
 
       <!-- CREATE MODAL — 3-step wizard -->
-      <div v-if="showCreateModal" class="sn-overlay" @click.self="closeCreateModal">
-        <div class="sn-modal" style="max-width:560px;">
+      <div v-if="showCreateModal" class="fixed inset-0 z-50 flex items-center justify-center p-4" @click.self="closeCreateModal">
+        <div class="sn-overlay fixed inset-0 bg-black/40 backdrop-blur-sm" @click="closeCreateModal"></div>
+        <div class="sn-modal relative bg-white shadow-xl border border-gray-200 w-full" style="max-width:560px;border-radius:1rem;">
 
           <!-- Modal header -->
           <div style="padding:20px 24px;border-bottom:1px solid rgba(0,0,0,0.06);display:flex;align-items:center;justify-content:space-between;">

@@ -31,7 +31,7 @@ app.component('maintenance-page', {
     const severityOptions = [
       { value: 'minor', label: '경미', bgClass: 'bg-[rgba(200,255,0,0.08)] text-[#c8ff00] border-emerald-500', dotClass: 'bg-[#34d399]' },
       { value: 'moderate', label: '보통', bgClass: 'bg-[rgba(255,184,0,0.1)] text-[#ffb800] border-amber-200', dotClass: 'bg-[#fbbf24]' },
-      { value: 'severe', label: '심각', bgClass: 'bg-[rgba(239,68,68,0.1)] text-[#ff6b6b] border-[rgba(250,250,245,0.06)]', dotClass: 'bg-[rgba(239,68,68,0.1)]0' },
+      { value: 'severe', label: '심각', bgClass: 'bg-[rgba(239,68,68,0.1)] text-[#ff6b6b] border-[rgba(250,250,245,0.06)]', dotClass: 'bg-[#ef4444]' },
     ];
 
     // Forms
@@ -207,9 +207,9 @@ app.component('maintenance-page', {
       <!-- HEADER -->
       <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; margin-bottom: 1.25rem; padding-bottom: 0.75rem; border-bottom: 1px solid var(--color-border);">
         <div>
-          <p class="sn-eyebrow" style="margin:0 0 0.35rem;color:#a16207;">OPERATIONS</p>
+          <p class="sn-eyebrow" style="margin:0 0 0.35rem;color:#a16207;">정비 운영</p>
           <h1 class="sn-display" style="font-size: 1.5rem;">정비 운영 대장</h1>
-          <p class="sn-caption" style="margin-top: 0.125rem;">정비 요청, 현장 처리, 사고 기록을 하나의 운영 흐름으로 정리합니다.</p>
+          <p class="sn-caption" style="margin-top: 0.125rem;">정비 요청, 현장 처리, 사고 기록을 한 화면에서 관리합니다.</p>
         </div>
         <button @click="fetchPassports" class="sn-btn sn-btn-ghost" style="display:inline-flex;align-items:center;gap:6px;flex-shrink:0;">
           <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -221,7 +221,7 @@ app.component('maintenance-page', {
 
       <div class="sn-panel" style="padding:14px 16px;display:grid;grid-template-columns:1.5fr 1fr 1fr 1fr;gap:12px;">
         <div style="padding-right:8px;border-right:1px solid rgba(0,0,0,0.06);">
-          <p class="sn-eyebrow" style="margin:0 0 0.35rem;">OPERATIONS BRIEF</p>
+          <p class="sn-eyebrow" style="margin:0 0 0.35rem;">운영 요약</p>
           <p style="font-size:0.875rem;font-weight:600;color:#171717;margin:0 0 0.25rem;">배터리 후속 조치의 단일 작업면</p>
           <p style="font-size:0.75rem;color:#6b7280;line-height:1.6;margin:0;">
             {{ canRequestMaintenance ? 'EV 제조사는 접수와 사고 기록을 올리고,' : '' }}

@@ -1,7 +1,7 @@
 {
   "tool_name": "Bash",
-  "tool_input_preview": "{\"command\":\"source /home/heechan/.nvm/nvm.sh && nvm use 22 && openclaw skills setup gemini 2>&1\",\"timeout\":30000,\"description\":\"Setup gemini skill in openclaw\"}",
-  "error": "Exit code 1\nNow using node v22.22.2 (npm v10.9.7)\nerror: too many arguments for 'skills'. Expected 0 arguments but got 2.",
-  "timestamp": "2026-04-03T05:13:35.385Z",
-  "retry_count": 1
+  "tool_input_preview": "{\"command\":\"docker exec -e CORE_PEER_MSPCONFIGPATH=/tmp/admin-msp \\\\\\n  peer0.manufacturer.battery.com peer lifecycle chaincode commit \\\\\\n  -o orderer.battery.com:7050 --channelID passportchannel \\\\\\...",
+  "error": "Exit code 1\nError: failed to retrieve endorser client for commit: unable to load TLS root cert file from /tmp/evmfg-tls-ca.pem: open /tmp/evmfg-tls-ca.pem: no such file or directory\nUsage:\n  peer lifecycle chaincode commit [flags]\n\nFlags:\n      --channel-config-policy string   The endorsement policy associated to this chaincode specified as a channel config policy reference\n  -C, --channelID string               The channel on which this command should be executed\n      --collections-config stri...",
+  "timestamp": "2026-04-07T06:19:42.996Z",
+  "retry_count": 3
 }

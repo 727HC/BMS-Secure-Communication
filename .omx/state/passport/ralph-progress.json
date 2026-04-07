@@ -1,0 +1,15 @@
+{
+  "timestamp": "2026-04-07T11:00:00+09:00",
+  "scope": "runtime-issues-followup",
+  "score": 95,
+  "threshold": 90,
+  "passed": true,
+  "verdict": "pass",
+  "reasoning": "생성 후 상세 진입과 감사 로그 필터는 실서버에서 해결을 확인했고, BMU 조회는 RBAC 제약을 드러내는 안내 UI로 정리됐다.",
+  "suggestions": [
+    "BMU 조회용 서비스 계정 테스트에는 권한 있는 여권을 쓰도록 QA 시나리오를 분리하면 좋다"
+  ],
+  "next_actions": [
+    "qa scenario refinement if requested"
+  ]
+}

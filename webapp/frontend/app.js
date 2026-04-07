@@ -122,6 +122,13 @@ const SIDEBAR_NAV = [
   { route: 'audit-log', label: '감사 로그', icon: 'audit', section: '도구' },
 ];
 
+const SIDEBAR_QUICK_LINKS = [
+  { key: 'customers', label: '고객/공급사', description: '연결 준비 중', toast: '고객/공급사 화면은 다음 라운드에서 연결합니다.' },
+  { key: 'access', label: '접근 제어', description: '권한 설계 준비 중', toast: '접근 제어 화면은 권한 흐름 정리 후 연결합니다.' },
+  { key: 'support', label: '지원', description: '가이드 준비 중', toast: '지원 센터는 연결 전입니다. 우선 감사 로그와 작업 화면부터 마감합니다.' },
+  { key: 'settings', label: '설정', description: '환경 설정 준비 중', toast: '설정 화면은 아직 연결 전입니다.' },
+];
+
 const IA_SECTION_CHIPS = [
   { key: 'overview', label: '개요' },
   { key: 'registry', label: '등록부' },
@@ -147,19 +154,19 @@ const ROUTE_META = {
     section: 'overview',
     pageTitle: '개요',
     shellTitle: '운영 현황',
-    shellDescription: '상태, 병목, 최근 변화를 한 번에 읽는 lifecycle control surface입니다.',
+    shellDescription: '상태, 병목, 최근 변화를 한 화면에서 읽는 운영 개요입니다.',
   },
   passports: {
     section: 'registry',
     pageTitle: '배터리 여권 등록부',
     shellTitle: '등록부',
-    shellDescription: '발급, 바인딩, 후속 검토를 한 흐름으로 다루는 등록 화면입니다.',
+    shellDescription: '발급, 바인딩, 후속 검토를 한 화면에서 관리합니다.',
   },
   'passport-detail': {
     section: 'registry',
     pageTitle: '기술 문서',
     shellTitle: '기술 문서',
-    shellDescription: '식별, 규제, 운영 증빙을 한 문서 흐름으로 정리합니다.',
+    shellDescription: '식별, 규제, 운영 증빙을 한 화면에서 확인합니다.',
   },
   materials: {
     section: 'registry',
@@ -177,7 +184,7 @@ const ROUTE_META = {
     section: 'operations',
     pageTitle: '회수 운영',
     shellTitle: '회수 운영',
-    shellDescription: '분석, 회수 판정, 추출·폐기 결정을 recovery flow로 정리합니다.',
+    shellDescription: '분석, 회수 판정, 추출·폐기 결정을 한 흐름으로 정리합니다.',
   },
   'bmu-data': {
     section: 'inspection',
@@ -195,7 +202,7 @@ const ROUTE_META = {
     section: 'evidence',
     pageTitle: '감사 기록부',
     shellTitle: '감사 기록부',
-    shellDescription: '검증 근거와 행위 이력을 evidence ledger로 확인합니다.',
+    shellDescription: '검증 근거와 행위 이력을 증빙 원장으로 확인합니다.',
   },
 };
 
@@ -236,6 +243,7 @@ const app = createApp({
     const pageProps = ref(initialProps);
     const toasts = ref([]);
     const mobileMenuOpen = ref(false);
+    const sidebarQuery = ref('');
 
     const api = computed(() => createApi(auth.value));
 
@@ -310,6 +318,16 @@ const app = createApp({
       return currentPageMeta.value.pageTitle || '개요';
     });
 
+    const sidebarSearchHint = computed(() => {
+      const query = sidebarQuery.value.trim().toLowerCase();
+      if (!query) return '화면 이름으로 바로 이동';
+      const navItem = SIDEBAR_NAV.find((item) => item.label.toLowerCase().includes(query));
+      if (navItem) return `${navItem.label} 화면으로 이동`;
+      const quickItem = SIDEBAR_QUICK_LINKS.find((item) => item.label.toLowerCase().includes(query));
+      if (quickItem) return `${quickItem.label} 연결 상태 안내`;
+      return '일치하는 메뉴 없음';
+    });
+
     // User initials (first 2 chars of userId)
     const userInitials = computed(() => {
       const id = auth.value.userId;
@@ -338,6 +356,29 @@ const app = createApp({
         default: return 'bg-gray-500';
       }
     });
+
+    function openSidebarUtility(key) {
+      const item = SIDEBAR_QUICK_LINKS.find((entry) => entry.key === key);
+      if (!item) return;
+      showToast('info', item.toast);
+    }
+
+    function submitSidebarSearch() {
+      const query = sidebarQuery.value.trim().toLowerCase();
+      if (!query) return;
+      const navItem = SIDEBAR_NAV.find((item) => item.label.toLowerCase().includes(query));
+      if (navItem) {
+        navigate(navItem.route);
+        sidebarQuery.value = '';
+        return;
+      }
+      const quickItem = SIDEBAR_QUICK_LINKS.find((item) => item.label.toLowerCase().includes(query));
+      if (quickItem) {
+        openSidebarUtility(quickItem.key);
+        return;
+      }
+      showToast('error', '일치하는 화면이 없습니다');
+    }
 
     function navigate(page, navProps, skipHistory) {
       if (!auth.value.token && !['landing', 'login'].includes(page)) {
@@ -421,8 +462,8 @@ const app = createApp({
       orgLabel, groupedNavItems, currentPageComponent,
       currentPageMeta, currentPageTitle, currentNavLabel, totalPendingCount,
       userInitials, orgBadgeClasses, orgAvatarColor,
-      mobileMenuOpen,
-      navigate, onLogin, logout, showToast,
+      mobileMenuOpen, sidebarQuery, sidebarSearchHint,
+      navigate, onLogin, logout, showToast, submitSidebarSearch, openSidebarUtility,
     };
   },
 });
