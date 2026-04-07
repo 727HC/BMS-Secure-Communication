@@ -2403,15 +2403,15 @@ app.component('passport-detail-page', {
 
       <!-- ==================== MODALS ==================== -->
 
-      <bind-modal
-        :show="showBindModal"
+      <ModalBind
+        :visible="showBindModal"
         :form="bindForm"
-        :submitting="submitting"
         :vehicle-image-file="vehicleImageFile"
+        :submitting="submitting"
         @close="showBindModal = false"
         @submit="submitBind"
         @update:vehicleImageFile="vehicleImageFile = $event"
-      ></bind-modal>
+      ></ModalBind>
 
       <correction-modal
         :show="showCorrectModal"
@@ -2504,3 +2504,9 @@ app.component('passport-detail-page', {
     </div>
   `
 });
+import ModalBind from '../components/passport-detail/ModalBind.js'
+
+// Register globally for CDN-based runtime (align with VC Issue Modal usage)
+if (typeof app !== 'undefined' && app.component) {
+  app.component('ModalBind', ModalBind)
+}
