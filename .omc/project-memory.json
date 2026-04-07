@@ -340,20 +340,20 @@
     },
     {
       "path": "chaincode/passport-contract/passport_contract.go",
-      "accessCount": 5,
-      "lastAccessed": 1775548320810,
+      "accessCount": 6,
+      "lastAccessed": 1775548328142,
+      "type": "file"
+    },
+    {
+      "path": "wiki/blockchain/activity-log.md",
+      "accessCount": 6,
+      "lastAccessed": 1775548776257,
       "type": "file"
     },
     {
       "path": "wiki/passport/overview.md",
       "accessCount": 4,
       "lastAccessed": 1775461100600,
-      "type": "file"
-    },
-    {
-      "path": "wiki/blockchain/activity-log.md",
-      "accessCount": 4,
-      "lastAccessed": 1775461157135,
       "type": "file"
     },
     {

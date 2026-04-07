@@ -67,6 +67,294 @@
       "specs": [],
       "suites": [
         {
+          "title": "1. 서버 상태",
+          "file": "battery-passport.spec.js",
+          "line": 30,
+          "column": 6,
+          "specs": [
+            {
+              "title": "API /status 응답 정상",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 40,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-04-07T08:01:38.478Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "b7c79cbd656540b68b79-95d1bcd0ba72136e3b5b",
+              "file": "battery-passport.spec.js",
+              "line": 31,
+              "column": 3
+            },
+            {
+              "title": "프론트엔드 index.html 로드",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1349,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-04-07T08:01:38.547Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "b7c79cbd656540b68b79-507de997b1eb1e4c40a1",
+              "file": "battery-passport.spec.js",
+              "line": 40,
+              "column": 3
+            }
+          ]
+        },
+        {
+          "title": "2. 인증",
+          "file": "battery-passport.spec.js",
+          "line": 49,
+          "column": 6,
+          "specs": [
+            {
+              "title": "Manufacturer (org1) 로그인 성공",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 75,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-04-07T08:01:40.522Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "b7c79cbd656540b68b79-804e0834cb0c59228faa",
+              "file": "battery-passport.spec.js",
+              "line": 51,
+              "column": 5
+            },
+            {
+              "title": "EVManufacturer (org2) 로그인 성공",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 30,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-04-07T08:01:40.616Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "b7c79cbd656540b68b79-b8d10bebde573270fa0b",
+              "file": "battery-passport.spec.js",
+              "line": 51,
+              "column": 5
+            },
+            {
+              "title": "Service (org3) 로그인 성공",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 24,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-04-07T08:01:40.670Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "b7c79cbd656540b68b79-6a8a40f6151e0976c989",
+              "file": "battery-passport.spec.js",
+              "line": 51,
+              "column": 5
+            },
+            {
+              "title": "Regulator (org4) 로그인 성공",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 27,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-04-07T08:01:40.702Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "b7c79cbd656540b68b79-44d3dc132dffdc3ca224",
+              "file": "battery-passport.spec.js",
+              "line": 51,
+              "column": 5
+            },
+            {
+              "title": "존재하지 않는 사용자 거부",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 80,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-04-07T08:01:40.741Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "b7c79cbd656540b68b79-90cd79c440996ff19dea",
+              "file": "battery-passport.spec.js",
+              "line": 62,
+              "column": 3
+            },
+            {
+              "title": "orgNum 누락 시 400",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 6,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-04-07T08:01:40.829Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "b7c79cbd656540b68b79-e451a5b5811fc48b62fc",
+              "file": "battery-passport.spec.js",
+              "line": 69,
+              "column": 3
+            }
+          ]
+        },
+        {
           "title": "3. 프론트엔드 로그인",
           "file": "battery-passport.spec.js",
           "line": 80,
@@ -88,7 +376,7 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "failed",
-                      "duration": 8807,
+                      "duration": 8338,
                       "error": {
                         "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: locator('input[placeholder=\"아이디를 입력하세요\"]')\nExpected: visible\nTimeout: 5000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for locator('input[placeholder=\"아이디를 입력하세요\"]')\u001b[22m\n",
                         "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: locator('input[placeholder=\"아이디를 입력하세요\"]')\nExpected: visible\nTimeout: 5000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for locator('input[placeholder=\"아이디를 입력하세요\"]')\u001b[22m\n\n    at /home/heechan/bms-blockchain/e2e-tests/tests/battery-passport.spec.js:87:29",
@@ -112,7 +400,7 @@
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-04-07T04:05:55.593Z",
+                      "startTime": "2026-04-07T08:01:40.846Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -142,17 +430,1217 @@
               "column": 3
             }
           ]
+        },
+        {
+          "title": "4. 대시보드",
+          "file": "battery-passport.spec.js",
+          "line": 106,
+          "column": 6,
+          "specs": [
+            {
+              "title": "대시보드 로드 및 통계 표시",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 4352,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-04-07T08:01:50.515Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "b7c79cbd656540b68b79-c13bcfdef385cfe3bd54",
+              "file": "battery-passport.spec.js",
+              "line": 107,
+              "column": 3
+            }
+          ]
+        },
+        {
+          "title": "5. 배터리 여권 API",
+          "file": "battery-passport.spec.js",
+          "line": 133,
+          "column": 6,
+          "specs": [
+            {
+              "title": "여권 목록 조회",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 192,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-04-07T08:01:52.402Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "b7c79cbd656540b68b79-906f27f14a0904b1c430",
+              "file": "battery-passport.spec.js",
+              "line": 140,
+              "column": 3
+            },
+            {
+              "title": "여권 생성",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1048,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-04-07T08:01:52.653Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "b7c79cbd656540b68b79-ff84c2632dfc7de96c81",
+              "file": "battery-passport.spec.js",
+              "line": 149,
+              "column": 3
+            },
+            {
+              "title": "여권 상세 조회",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 310,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-04-07T08:01:53.754Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "b7c79cbd656540b68b79-b04a44f708b00ba44264",
+              "file": "battery-passport.spec.js",
+              "line": 182,
+              "column": 3
+            },
+            {
+              "title": "존재하지 않는 여권 조회 시 에러",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 22,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-04-07T08:01:54.107Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "b7c79cbd656540b68b79-201d9874e2401c4c734b",
+              "file": "battery-passport.spec.js",
+              "line": 200,
+              "column": 3
+            }
+          ]
+        },
+        {
+          "title": "6. RBAC 권한",
+          "file": "battery-passport.spec.js",
+          "line": 211,
+          "column": 6,
+          "specs": [
+            {
+              "title": "인증 없이 여권 조회 시 401",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 6,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-04-07T08:01:54.151Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "b7c79cbd656540b68b79-758153a1374bc157fe27",
+              "file": "battery-passport.spec.js",
+              "line": 212,
+              "column": 3
+            },
+            {
+              "title": "Service MSP로 여권 생성 불가 (403)",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 25,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-04-07T08:01:54.165Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "b7c79cbd656540b68b79-fb52ed4556db9226b61b",
+              "file": "battery-passport.spec.js",
+              "line": 217,
+              "column": 3
+            },
+            {
+              "title": "Manufacturer만 원자재 등록 가능",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 12,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-04-07T08:01:54.198Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "b7c79cbd656540b68b79-03ed0df83e459de08212",
+              "file": "battery-passport.spec.js",
+              "line": 226,
+              "column": 3
+            },
+            {
+              "title": "감사 로그는 Manufacturer/Regulator만 접근",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 23,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-04-07T08:01:54.229Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "b7c79cbd656540b68b79-5523629c908e8a0b6e52",
+              "file": "battery-passport.spec.js",
+              "line": 235,
+              "column": 3
+            }
+          ]
+        },
+        {
+          "title": "7. BMU 데이터",
+          "file": "battery-passport.spec.js",
+          "line": 255,
+          "column": 6,
+          "specs": [
+            {
+              "title": "BMU 데이터 — rawPayload 누락 시 400",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 11,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-04-07T08:01:54.261Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "b7c79cbd656540b68b79-426ce87cf4ae3e5467af",
+              "file": "battery-passport.spec.js",
+              "line": 262,
+              "column": 3
+            },
+            {
+              "title": "BMU 데이터 — 서명 누락 시 400",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 12,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-04-07T08:01:54.306Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "b7c79cbd656540b68b79-8e2ad513d2d1eb309966",
+              "file": "battery-passport.spec.js",
+              "line": 269,
+              "column": 3
+            },
+            {
+              "title": "BMU 데이터 — DID 누락 시 400",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 7,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-04-07T08:01:54.335Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "b7c79cbd656540b68b79-4c5703d29b038a9bc021",
+              "file": "battery-passport.spec.js",
+              "line": 276,
+              "column": 3
+            },
+            {
+              "title": "BMU records 조회 (인증 필요)",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 0,
+                      "status": "failed",
+                      "duration": 133,
+                      "error": {
+                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBeTruthy\u001b[2m()\u001b[22m\n\nReceived: \u001b[31mfalse\u001b[39m",
+                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBeTruthy\u001b[2m()\u001b[22m\n\nReceived: \u001b[31mfalse\u001b[39m\n    at /home/heechan/bms-blockchain/e2e-tests/tests/battery-passport.spec.js:294:22",
+                        "location": {
+                          "file": "/home/heechan/bms-blockchain/e2e-tests/tests/battery-passport.spec.js",
+                          "column": 22,
+                          "line": 294
+                        },
+                        "snippet": "  292 |       headers: { Authorization: `Bearer ${token}` },\n  293 |     });\n> 294 |     expect(res.ok()).toBeTruthy();\n      |                      ^\n  295 |   });\n  296 | });\n  297 |"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "/home/heechan/bms-blockchain/e2e-tests/tests/battery-passport.spec.js",
+                            "column": 22,
+                            "line": 294
+                          },
+                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBeTruthy\u001b[2m()\u001b[22m\n\nReceived: \u001b[31mfalse\u001b[39m\n\n  292 |       headers: { Authorization: `Bearer ${token}` },\n  293 |     });\n> 294 |     expect(res.ok()).toBeTruthy();\n      |                      ^\n  295 |   });\n  296 | });\n  297 |\n    at /home/heechan/bms-blockchain/e2e-tests/tests/battery-passport.spec.js:294:22"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-04-07T08:01:54.352Z",
+                      "annotations": [],
+                      "attachments": [],
+                      "errorLocation": {
+                        "file": "/home/heechan/bms-blockchain/e2e-tests/tests/battery-passport.spec.js",
+                        "column": 22,
+                        "line": 294
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "b7c79cbd656540b68b79-e919978050d197b2a6a0",
+              "file": "battery-passport.spec.js",
+              "line": 283,
+              "column": 3
+            }
+          ]
+        },
+        {
+          "title": "8. DID 서비스",
+          "file": "battery-passport.spec.js",
+          "line": 301,
+          "column": 6,
+          "specs": [
+            {
+              "title": "DID verkey 조회",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 2,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 69,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-04-07T08:01:55.934Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "b7c79cbd656540b68b79-963e2b3c40bd025650e5",
+              "file": "battery-passport.spec.js",
+              "line": 302,
+              "column": 3
+            },
+            {
+              "title": "DID 등록 — 필수 필드 누락 시 400",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 2,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 27,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-04-07T08:01:56.037Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "b7c79cbd656540b68b79-f7b3e789afb80d8f3e41",
+              "file": "battery-passport.spec.js",
+              "line": 309,
+              "column": 3
+            }
+          ]
+        },
+        {
+          "title": "9. 원자재",
+          "file": "battery-passport.spec.js",
+          "line": 322,
+          "column": 6,
+          "specs": [
+            {
+              "title": "원자재 목록 조회",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 2,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 219,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-04-07T08:01:56.092Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "b7c79cbd656540b68b79-13e32005abc3ef1a4d54",
+              "file": "battery-passport.spec.js",
+              "line": 323,
+              "column": 3
+            },
+            {
+              "title": "원자재 등록",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 2,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 770,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-04-07T08:01:56.335Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "b7c79cbd656540b68b79-857e267dc6a9fd9dbcfe",
+              "file": "battery-passport.spec.js",
+              "line": 331,
+              "column": 3
+            }
+          ]
+        },
+        {
+          "title": "10. 정비",
+          "file": "battery-passport.spec.js",
+          "line": 352,
+          "column": 6,
+          "specs": [
+            {
+              "title": "정비 목록 조회",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 2,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 28,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-04-07T08:01:57.124Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "b7c79cbd656540b68b79-d9c7b0e8735b0362afd0",
+              "file": "battery-passport.spec.js",
+              "line": 353,
+              "column": 3
+            }
+          ]
+        },
+        {
+          "title": "11. 프론트엔드 네비게이션",
+          "file": "battery-passport.spec.js",
+          "line": 366,
+          "column": 6,
+          "specs": [
+            {
+              "title": "dashboard 페이지 로드",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 2,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 3337,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-04-07T08:01:57.164Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "b7c79cbd656540b68b79-57f49c78fc89c0ac20d4",
+              "file": "battery-passport.spec.js",
+              "line": 383,
+              "column": 5
+            },
+            {
+              "title": "passports 페이지 로드",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 2,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 3252,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-04-07T08:02:00.672Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "b7c79cbd656540b68b79-3987d4b1f0fd70117c2b",
+              "file": "battery-passport.spec.js",
+              "line": 383,
+              "column": 5
+            },
+            {
+              "title": "bmu-data 페이지 로드",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 2,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 3301,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-04-07T08:02:03.960Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "b7c79cbd656540b68b79-53e3e4b68f3e6a68d6af",
+              "file": "battery-passport.spec.js",
+              "line": 383,
+              "column": 5
+            },
+            {
+              "title": "materials 페이지 로드",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 2,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 3215,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-04-07T08:02:07.287Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "b7c79cbd656540b68b79-29cad78518b14d46f3cd",
+              "file": "battery-passport.spec.js",
+              "line": 383,
+              "column": 5
+            },
+            {
+              "title": "maintenance 페이지 로드",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 2,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 3069,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-04-07T08:02:10.544Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "b7c79cbd656540b68b79-2ba0675a8a21bb853bb2",
+              "file": "battery-passport.spec.js",
+              "line": 383,
+              "column": 5
+            },
+            {
+              "title": "recycling 페이지 로드",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 2,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 3139,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-04-07T08:02:13.628Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "b7c79cbd656540b68b79-de6746166724faf17171",
+              "file": "battery-passport.spec.js",
+              "line": 383,
+              "column": 5
+            },
+            {
+              "title": "qr-scan 페이지 로드",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 2,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 3351,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-04-07T08:02:16.779Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "b7c79cbd656540b68b79-af969db49ac8571b60e4",
+              "file": "battery-passport.spec.js",
+              "line": 383,
+              "column": 5
+            },
+            {
+              "title": "audit-log 페이지 로드",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 2,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 2999,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-04-07T08:02:20.143Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "b7c79cbd656540b68b79-86afbe21b5098207fc19",
+              "file": "battery-passport.spec.js",
+              "line": 383,
+              "column": 5
+            }
+          ]
+        },
+        {
+          "title": "12. 여권 상세 탭",
+          "file": "battery-passport.spec.js",
+          "line": 398,
+          "column": 6,
+          "specs": [
+            {
+              "title": "5개 탭 전환 확인",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 2,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 3429,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-04-07T08:02:20.441Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "b7c79cbd656540b68b79-388cfa4aca59d30397ee",
+              "file": "battery-passport.spec.js",
+              "line": 399,
+              "column": 3
+            },
+            {
+              "title": "탭 새로고침 시 유지",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 2,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 7912,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-04-07T08:02:23.882Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "b7c79cbd656540b68b79-9f0648f30348131efd8d",
+              "file": "battery-passport.spec.js",
+              "line": 430,
+              "column": 3
+            }
+          ]
+        },
+        {
+          "title": "13. Rate Limit",
+          "file": "battery-passport.spec.js",
+          "line": 463,
+          "column": 6,
+          "specs": [
+            {
+              "title": "BMU data rate limit 동작 확인",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 2,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 188,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-04-07T08:02:31.806Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "b7c79cbd656540b68b79-4462294da41f485eb857",
+              "file": "battery-passport.spec.js",
+              "line": 464,
+              "column": 3
+            }
+          ]
+        },
+        {
+          "title": "14. 보안",
+          "file": "battery-passport.spec.js",
+          "line": 483,
+          "column": 6,
+          "specs": [
+            {
+              "title": "vehicle-image GET 인증 필요",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 2,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 10,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-04-07T08:02:32.059Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "b7c79cbd656540b68b79-dfcd4ca073eccca10141",
+              "file": "battery-passport.spec.js",
+              "line": 484,
+              "column": 3
+            },
+            {
+              "title": "vehicle-image POST 인증+RBAC 필요",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 2,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 15,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-04-07T08:02:32.081Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "b7c79cbd656540b68b79-d04cbdea3788b50be9e4",
+              "file": "battery-passport.spec.js",
+              "line": 489,
+              "column": 3
+            },
+            {
+              "title": "Fabric fail-fast 환경변수 확인",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 2,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 14,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-04-07T08:02:32.113Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "b7c79cbd656540b68b79-2784352eeeba78531239",
+              "file": "battery-passport.spec.js",
+              "line": 494,
+              "column": 3
+            }
+          ]
         }
       ]
     }
   ],
   "errors": [],
   "stats": {
-    "startTime": "2026-04-07T04:05:53.972Z",
-    "duration": 10913.283,
-    "expected": 0,
+    "startTime": "2026-04-07T08:01:37.097Z",
+    "duration": 61053.804,
+    "expected": 39,
     "skipped": 0,
-    "unexpected": 1,
+    "unexpected": 2,
     "flaky": 0
   }
 }
