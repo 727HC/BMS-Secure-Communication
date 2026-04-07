@@ -2,7 +2,7 @@
 export default {
   name: 'ModalBind',
   props: {
-    show: Boolean,
+    visible: Boolean,
     form: Object,
     vehicleImageFile: Object,
     submitting: Boolean
@@ -10,7 +10,7 @@ export default {
   emits: ['close','submit','update:vehicleImageFile'],
   template: `
     <bind-modal
-      :show="show"
+      :show="visible"
       :form="form"
       :vehicle-image-file="vehicleImageFile"
       :submitting="submitting"
