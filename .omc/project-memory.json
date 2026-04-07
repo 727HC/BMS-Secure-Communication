@@ -1,0 +1,523 @@
+{
+  "version": "1.0.0",
+  "lastScanned": 1775452369768,
+  "projectRoot": "/home/heechan/bms-blockchain",
+  "techStack": {
+    "languages": [],
+    "frameworks": [],
+    "packageManager": null,
+    "runtime": null
+  },
+  "build": {
+    "buildCommand": null,
+    "testCommand": null,
+    "lintCommand": null,
+    "devCommand": null,
+    "scripts": {}
+  },
+  "conventions": {
+    "namingStyle": null,
+    "importStyle": null,
+    "testPattern": null,
+    "fileOrganization": null
+  },
+  "structure": {
+    "isMonorepo": false,
+    "workspaces": [],
+    "mainDirectories": [
+      "docs"
+    ],
+    "gitBranches": null
+  },
+  "customNotes": [],
+  "directoryMap": {
+    "BMU_BMS_S32K344": {
+      "path": "BMU_BMS_S32K344",
+      "purpose": null,
+      "fileCount": 6,
+      "lastAccessed": 1775452369707,
+      "keyFiles": [
+        "ClockConfigurationMappings.txt",
+        "ClockYaml.txt",
+        "S32K344.mex"
+      ]
+    },
+    "CMU_BMS_S32K144": {
+      "path": "CMU_BMS_S32K144",
+      "purpose": null,
+      "fileCount": 8,
+      "lastAccessed": 1775452369722,
+      "keyFiles": [
+        "ClockConfigurationMappings.txt",
+        "ClockYaml.txt",
+        "FlexCAN_Example_S32K144.mex",
+        "description.txt"
+      ]
+    },
+    "NXP_COMM": {
+      "path": "NXP_COMM",
+      "purpose": null,
+      "fileCount": 2,
+      "lastAccessed": 1775452369723,
+      "keyFiles": [
+        "main.c",
+        "test_vectors.txt"
+      ]
+    },
+    "bmu-agent": {
+      "path": "bmu-agent",
+      "purpose": null,
+      "fileCount": 6,
+      "lastAccessed": 1775452369723,
+      "keyFiles": [
+        "package-lock.json",
+        "package.json",
+        "server.js"
+      ]
+    },
+    "caliper-workspace": {
+      "path": "caliper-workspace",
+      "purpose": null,
+      "fileCount": 5,
+      "lastAccessed": 1775452369723,
+      "keyFiles": [
+        "benchconfig.yaml",
+        "networkConfig.yaml",
+        "package-lock.json",
+        "package.json",
+        "run-bench.sh"
+      ]
+    },
+    "canoe": {
+      "path": "canoe",
+      "purpose": null,
+      "fileCount": 5,
+      "lastAccessed": 1775452369724,
+      "keyFiles": [
+        "BMS_AttackSim.can",
+        "BMS_Test.cfg",
+        "Panel1.xvp",
+        "ProjectSettings.vtesettings"
+      ]
+    },
+    "chaincode": {
+      "path": "chaincode",
+      "purpose": null,
+      "fileCount": 0,
+      "lastAccessed": 1775452369724,
+      "keyFiles": []
+    },
+    "docs": {
+      "path": "docs",
+      "purpose": "Documentation",
+      "fileCount": 1,
+      "lastAccessed": 1775452369724,
+      "keyFiles": [
+        "ARCHITECTURE.md"
+      ]
+    },
+    "e2e-tests": {
+      "path": "e2e-tests",
+      "purpose": null,
+      "fileCount": 4,
+      "lastAccessed": 1775452369724,
+      "keyFiles": [
+        "package-lock.json",
+        "package.json",
+        "playwright.config.js",
+        "test-results.json"
+      ]
+    },
+    "fabric-samples": {
+      "path": "fabric-samples",
+      "purpose": null,
+      "fileCount": 10,
+      "lastAccessed": 1775452369725,
+      "keyFiles": [
+        "CHANGELOG.md",
+        "CODEOWNERS",
+        "CODE_OF_CONDUCT.md",
+        "CONTRIBUTING.md",
+        "LICENSE"
+      ]
+    },
+    "firmware": {
+      "path": "firmware",
+      "purpose": null,
+      "fileCount": 0,
+      "lastAccessed": 1775452369725,
+      "keyFiles": []
+    },
+    "islab-hlf-k8s": {
+      "path": "islab-hlf-k8s",
+      "purpose": null,
+      "fileCount": 0,
+      "lastAccessed": 1775452369725,
+      "keyFiles": []
+    },
+    "logs": {
+      "path": "logs",
+      "purpose": null,
+      "fileCount": 20,
+      "lastAccessed": 1775452369725,
+      "keyFiles": [
+        "acapy.log",
+        "agent.log",
+        "agent.log.1774641814104.bak",
+        "agent.log.1774710004552.bak",
+        "agent.log.1774778338977.bak"
+      ]
+    },
+    "mcp-monitor": {
+      "path": "mcp-monitor",
+      "purpose": null,
+      "fileCount": 6,
+      "lastAccessed": 1775452369725,
+      "keyFiles": [
+        "CLAUDE.md",
+        "package-lock.json",
+        "package.json"
+      ]
+    },
+    "passport-network": {
+      "path": "passport-network",
+      "purpose": null,
+      "fileCount": 0,
+      "lastAccessed": 1775452369726,
+      "keyFiles": []
+    },
+    "simulink": {
+      "path": "simulink",
+      "purpose": null,
+      "fileCount": 3,
+      "lastAccessed": 1775452369726,
+      "keyFiles": [
+        "BEVsystemModel.slx",
+        "ElectricVehicleSimscape.prj",
+        "README.md"
+      ]
+    },
+    "test-results": {
+      "path": "test-results",
+      "purpose": null,
+      "fileCount": 1,
+      "lastAccessed": 1775452369726,
+      "keyFiles": []
+    },
+    "von-network": {
+      "path": "von-network",
+      "purpose": null,
+      "fileCount": 14,
+      "lastAccessed": 1775452369728,
+      "keyFiles": [
+        "CODE_OF_CONDUCT.md",
+        "COMPLIANCE.yaml",
+        "CONTRIBUTING.md",
+        "Dockerfile",
+        "LICENSE"
+      ]
+    },
+    "webapp": {
+      "path": "webapp",
+      "purpose": null,
+      "fileCount": 0,
+      "lastAccessed": 1775452369728,
+      "keyFiles": []
+    },
+    "bmu-agent/config": {
+      "path": "bmu-agent/config",
+      "purpose": "Configuration files",
+      "fileCount": 3,
+      "lastAccessed": 1775452369735,
+      "keyFiles": [
+        "auth.js",
+        "constants.js",
+        "fabric.js"
+      ]
+    },
+    "bmu-agent/data": {
+      "path": "bmu-agent/data",
+      "purpose": "Data files",
+      "fileCount": 0,
+      "lastAccessed": 1775452369735,
+      "keyFiles": []
+    },
+    "bmu-agent/middleware": {
+      "path": "bmu-agent/middleware",
+      "purpose": "Middleware",
+      "fileCount": 3,
+      "lastAccessed": 1775452369736,
+      "keyFiles": [
+        "audit.js",
+        "auth.js",
+        "rbac.js"
+      ]
+    },
+    "bmu-agent/node_modules": {
+      "path": "bmu-agent/node_modules",
+      "purpose": "Dependencies",
+      "fileCount": 1,
+      "lastAccessed": 1775452369736,
+      "keyFiles": []
+    },
+    "bmu-agent/routes": {
+      "path": "bmu-agent/routes",
+      "purpose": "Route handlers",
+      "fileCount": 9,
+      "lastAccessed": 1775452369736,
+      "keyFiles": [
+        "analysis.routes.js",
+        "auth.routes.js",
+        "bmu.routes.js"
+      ]
+    },
+    "caliper-workspace/node_modules": {
+      "path": "caliper-workspace/node_modules",
+      "purpose": "Dependencies",
+      "fileCount": 1,
+      "lastAccessed": 1775452369750,
+      "keyFiles": []
+    },
+    "e2e-tests/node_modules": {
+      "path": "e2e-tests/node_modules",
+      "purpose": "Dependencies",
+      "fileCount": 1,
+      "lastAccessed": 1775452369760,
+      "keyFiles": []
+    },
+    "e2e-tests/tests": {
+      "path": "e2e-tests/tests",
+      "purpose": "Test files",
+      "fileCount": 29,
+      "lastAccessed": 1775452369760,
+      "keyFiles": [
+        "battery-passport.spec.js",
+        "c01_l09_typography.spec.js",
+        "c01_l10_stamps.spec.js"
+      ]
+    },
+    "mcp-monitor/node_modules": {
+      "path": "mcp-monitor/node_modules",
+      "purpose": "Dependencies",
+      "fileCount": 1,
+      "lastAccessed": 1775452369766,
+      "keyFiles": []
+    },
+    "mcp-monitor/src": {
+      "path": "mcp-monitor/src",
+      "purpose": "Source code",
+      "fileCount": 1,
+      "lastAccessed": 1775452369767,
+      "keyFiles": [
+        "index.js"
+      ]
+    }
+  },
+  "hotPaths": [
+    {
+      "path": "wiki/common/architecture.md",
+      "accessCount": 14,
+      "lastAccessed": 1775462169979,
+      "type": "file"
+    },
+    {
+      "path": "webapp/frontend/pages/dashboard.js",
+      "accessCount": 8,
+      "lastAccessed": 1775458014844,
+      "type": "file"
+    },
+    {
+      "path": "wiki/common/terminology.md",
+      "accessCount": 8,
+      "lastAccessed": 1775462134245,
+      "type": "file"
+    },
+    {
+      "path": "wiki/blockchain/overview.md",
+      "accessCount": 7,
+      "lastAccessed": 1775460939587,
+      "type": "file"
+    },
+    {
+      "path": "wiki/passport/overview.md",
+      "accessCount": 4,
+      "lastAccessed": 1775461100600,
+      "type": "file"
+    },
+    {
+      "path": "wiki/blockchain/activity-log.md",
+      "accessCount": 4,
+      "lastAccessed": 1775461157135,
+      "type": "file"
+    },
+    {
+      "path": "wiki/mcp/activity-log.md",
+      "accessCount": 4,
+      "lastAccessed": 1775461158671,
+      "type": "file"
+    },
+    {
+      "path": "wiki/passport/activity-log.md",
+      "accessCount": 4,
+      "lastAccessed": 1775461172367,
+      "type": "file"
+    },
+    {
+      "path": "chaincode/passport-contract/passport_contract.go",
+      "accessCount": 4,
+      "lastAccessed": 1775541949795,
+      "type": "file"
+    },
+    {
+      "path": "wiki/mcp/overview.md",
+      "accessCount": 3,
+      "lastAccessed": 1775460515185,
+      "type": "file"
+    },
+    {
+      "path": "CLAUDE.md",
+      "accessCount": 3,
+      "lastAccessed": 1775461095653,
+      "type": "file"
+    },
+    {
+      "path": "wiki/README.md",
+      "accessCount": 3,
+      "lastAccessed": 1775462099399,
+      "type": "file"
+    },
+    {
+      "path": "webapp/frontend/index.html",
+      "accessCount": 2,
+      "lastAccessed": 1775454279485,
+      "type": "file"
+    },
+    {
+      "path": "webapp/frontend/app.js",
+      "accessCount": 2,
+      "lastAccessed": 1775454284522,
+      "type": "file"
+    },
+    {
+      "path": "webapp/frontend/pages/login.js",
+      "accessCount": 2,
+      "lastAccessed": 1775454519882,
+      "type": "file"
+    },
+    {
+      "path": "AGENTS.md",
+      "accessCount": 2,
+      "lastAccessed": 1775461098592,
+      "type": "file"
+    },
+    {
+      "path": "wiki/passport/frontend.md",
+      "accessCount": 2,
+      "lastAccessed": 1775461102577,
+      "type": "file"
+    },
+    {
+      "path": ".harness/progress_ledger.md",
+      "accessCount": 1,
+      "lastAccessed": 1775452987701,
+      "type": "file"
+    },
+    {
+      "path": ".harness/cycle_05_real/00_cycle_contract.md",
+      "accessCount": 1,
+      "lastAccessed": 1775452989860,
+      "type": "file"
+    },
+    {
+      "path": "e2e-tests/screenshots/figma_ref_thumbnail.png",
+      "accessCount": 1,
+      "lastAccessed": 1775454079274,
+      "type": "file"
+    },
+    {
+      "path": "webapp/frontend/pages/materials.js",
+      "accessCount": 1,
+      "lastAccessed": 1775454259406,
+      "type": "file"
+    },
+    {
+      "path": "webapp/frontend/pages/audit-log.js",
+      "accessCount": 1,
+      "lastAccessed": 1775454260767,
+      "type": "file"
+    },
+    {
+      "path": "webapp/frontend/pages/qr-scan.js",
+      "accessCount": 1,
+      "lastAccessed": 1775454261281,
+      "type": "file"
+    },
+    {
+      "path": "webapp/frontend/pages/bmu-data.js",
+      "accessCount": 1,
+      "lastAccessed": 1775454261354,
+      "type": "file"
+    },
+    {
+      "path": "webapp/frontend/pages",
+      "accessCount": 1,
+      "lastAccessed": 1775454269207,
+      "type": "directory"
+    },
+    {
+      "path": "webapp/frontend/pages/passport-detail.js",
+      "accessCount": 1,
+      "lastAccessed": 1775454285183,
+      "type": "file"
+    },
+    {
+      "path": "e2e-tests/playwright.config.js",
+      "accessCount": 1,
+      "lastAccessed": 1775454789182,
+      "type": "file"
+    },
+    {
+      "path": "",
+      "accessCount": 1,
+      "lastAccessed": 1775461089337,
+      "type": "directory"
+    },
+    {
+      "path": "wiki/decisions/001-sidebar-navigation.md",
+      "accessCount": 1,
+      "lastAccessed": 1775462103465,
+      "type": "file"
+    },
+    {
+      "path": "wiki/decisions/003-mcp-monitor-read-only.md",
+      "accessCount": 1,
+      "lastAccessed": 1775462117958,
+      "type": "file"
+    },
+    {
+      "path": "wiki/decisions/004-mcp-session-hook-isolation.md",
+      "accessCount": 1,
+      "lastAccessed": 1775462126307,
+      "type": "file"
+    },
+    {
+      "path": "fabric-samples/test-network-nano-bash/install&approve&commit_chaincode_peer1.sh",
+      "accessCount": 1,
+      "lastAccessed": 1775542231782,
+      "type": "file"
+    },
+    {
+      "path": "start_all.sh",
+      "accessCount": 1,
+      "lastAccessed": 1775542227390,
+      "type": "file"
+    },
+    {
+      "path": "upgrade_chaincode.sh",
+      "accessCount": 1,
+      "lastAccessed": 1775543033301,
+      "type": "file"
+    }
+  ],
+  "userDirectives": []
+}

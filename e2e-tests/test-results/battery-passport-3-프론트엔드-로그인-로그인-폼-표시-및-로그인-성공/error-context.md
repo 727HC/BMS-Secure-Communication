@@ -1,0 +1,47 @@
+# Page snapshot
+
+```yaml
+- main [ref=e3]:
+  - generic [ref=e5]:
+    - generic [ref=e6]:
+      - generic [ref=e7]:
+        - img [ref=e9]
+        - generic [ref=e11]:
+          - paragraph [ref=e12]: BATP
+          - paragraph [ref=e13]: BatteryPass
+      - navigation [ref=e14]:
+        - generic [ref=e15]: 배터리 여권
+        - generic [ref=e16]: 정비 이력
+        - generic [ref=e17]: 규제 증빙
+        - button "로그인" [ref=e18] [cursor=pointer]
+    - main [ref=e19]:
+      - generic [ref=e20]:
+        - paragraph [ref=e21]: BATP Platform
+        - heading "배터리 여권을 한 번에 보고 바로 이어서 처리하세요" [level=1] [ref=e22]:
+          - text: 배터리 여권을
+          - text: 한 번에 보고
+          - text: 바로 이어서 처리하세요
+        - paragraph [ref=e23]: 제조, 차량 바인딩, 정비, 회수, 감사 기록까지 배터리 여권의 모든 단계를 하나의 플랫폼에서 관리하세요.
+        - generic [ref=e24]:
+          - button "로그인" [ref=e25] [cursor=pointer]
+          - button "계정 등록" [ref=e26] [cursor=pointer]
+      - generic [ref=e27]:
+        - img "Solar EV station illustration" [ref=e30]
+        - img [ref=e32]
+        - generic [ref=e34]:
+          - paragraph [ref=e35]: Now available
+          - heading "정비 · 회수 · 증빙을 바로 확인하는 BATP 입구" [level=2] [ref=e36]:
+            - text: 정비 · 회수 · 증빙을
+            - text: 바로 확인하는 BATP 입구
+          - paragraph [ref=e37]: 대시보드처럼 꾸미기보다, 실제로 들어가서 어떤 작업을 이어서 할지부터 보여줍니다.
+    - generic [ref=e38]:
+      - article [ref=e39]:
+        - paragraph [ref=e40]: 배터리 여권
+        - paragraph [ref=e41]: 생성부터 회수까지 전 과정을 한 화면에서 관리합니다.
+      - article [ref=e42]:
+        - paragraph [ref=e43]: 정비 이력
+        - paragraph [ref=e44]: 정비 요청, 분석 결과, 사고 기록을 이어서 관리합니다.
+      - article [ref=e45]:
+        - paragraph [ref=e46]: 규제 증빙
+        - paragraph [ref=e47]: 감사 기록과 회수 판단 근거를 빠르게 확인합니다.
+```

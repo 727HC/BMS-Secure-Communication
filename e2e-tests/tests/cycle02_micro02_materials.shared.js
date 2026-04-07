@@ -87,7 +87,7 @@ async function bootstrap(page, orgMsp) {
     localStorage.setItem('bp_orgMsp', org);
   }, orgMsp);
   await page.goto(`${BASE}/#materials`, { waitUntil: 'domcontentloaded' });
-  await expect(page.getByText('Raw Material Filing')).toBeVisible();
+  await expect(page.getByText('원자재 원장')).toBeVisible();
   return state;
 }
 
@@ -98,14 +98,14 @@ test.describe('Cycle 02 / Micro 02 — Materials Provenance Filing', () => {
 
     await bootstrap(page, 'ManufacturerMSP');
 
-    await expect(page.getByText('Manufacturer filing desk')).toBeVisible();
-    await expect(page.getByText('Filing progression')).toBeVisible();
-    await expect(page.getByText('Open provenance dossier')).toBeVisible();
+    await expect(page.getByText('원자재 원장')).toBeVisible();
+    await expect(page.getByText('추적 요약')).toBeVisible();
+    await expect(page.getByText('블록체인 인증 공급망 추적')).toBeVisible();
     await page.screenshot({ path: 'screenshots/c02_m02_materials_desk.png', fullPage: true });
 
     await page.getByText('Cobalt Hydroxide').click();
-    await expect(page.getByText('Provenance dossier', { exact: true })).toBeVisible();
-    await expect(page.getByText('Certification filing linked')).toBeVisible();
+    await expect(page.getByText('인증됨').first()).toBeVisible();
+    await expect(page.getByText('CERT-CO-2026-01')).toBeVisible();
     await page.screenshot({ path: 'screenshots/c02_m02_materials_detail.png', fullPage: false });
 
     expect(errors).toEqual([]);
@@ -117,8 +117,8 @@ test.describe('Cycle 02 / Micro 02 — Materials Provenance Filing', () => {
 
     const state = await bootstrap(page, 'ManufacturerMSP');
 
-    await page.getByRole('button', { name: 'File provenance lot' }).click();
-    await expect(page.getByRole('heading', { name: 'Provenance lot filing' })).toBeVisible();
+    await page.getByRole('button', { name: '원자재 등록' }).first().click();
+    await expect(page.getByRole('heading', { name: '원자재 등록' })).toBeVisible();
     await page.screenshot({ path: 'screenshots/c02_m02_materials_filing_modal.png', fullPage: false });
 
     await page.locator('input[placeholder="예: 리튬, 코발트, 니켈"]').fill('Graphite Powder');
@@ -127,7 +127,7 @@ test.describe('Cycle 02 / Micro 02 — Materials Provenance Filing', () => {
     await page.locator('input[placeholder="0"]').fill('27');
     await page.locator('input[placeholder="인증서 번호"]').fill('CERT-GR-2026-03');
 
-    await page.getByRole('button', { name: 'File lot' }).click();
+    await page.getByRole('button', { name: '등록', exact: true }).click();
 
     await expect(page.getByText('Graphite Powder')).toBeVisible();
     expect(state.lastPosted).toMatchObject({
@@ -152,9 +152,9 @@ test.describe('Cycle 02 / Micro 02 — Materials Provenance Filing', () => {
 
     await bootstrap(page, 'ServiceMSP');
 
-    await expect(page.getByText('Read-only provenance desk')).toBeVisible();
-    await expect(page.getByText('Review provenance dossier')).toBeVisible();
-    await expect(page.getByRole('button', { name: 'File provenance lot' })).toHaveCount(0);
+    await expect(page.getByText('원자재 원장')).toBeVisible();
+    await expect(page.getByText('추적 요약')).toBeVisible();
+    await expect(page.getByRole('button', { name: '원자재 등록' })).toHaveCount(0);
     await page.screenshot({ path: 'screenshots/c02_m02_materials_mobile.png', fullPage: true });
 
     expect(errors).toEqual([]);

@@ -3,7 +3,7 @@ app.component('landing-page', {
   emits: ['navigate'],
   setup(props, { emit }) {
     const featureCards = [
-      { title: '배터리 여권', desc: '생성부터 회수까지 상태를 하나의 등록 흐름으로 정리합니다.' },
+      { title: '배터리 여권', desc: '생성부터 회수까지 전 과정을 한 화면에서 관리합니다.' },
       { title: '정비 이력', desc: '정비 요청, 분석 결과, 사고 기록을 이어서 관리합니다.' },
       { title: '규제 증빙', desc: '감사 기록과 회수 판단 근거를 빠르게 확인합니다.' },
     ];
@@ -54,7 +54,7 @@ app.component('landing-page', {
               배터리 여권을<br/>한 번에 보고<br/>바로 이어서 처리하세요
             </h1>
             <p class="mt-8 max-w-[32rem] text-lg leading-9 text-[#555]">
-              제조, 차량 바인딩, 정비, 회수, 감사 기록을 하나의 BATP 흐름으로 정리합니다. 처음 들어오는 화면은 설명이 아니라 바로 이해되는 입구여야 합니다.
+              제조, 차량 바인딩, 정비, 회수, 감사 기록까지 배터리 여권의 모든 단계를 하나의 플랫폼에서 관리하세요.
             </p>
 
             <div class="mt-10 flex flex-wrap items-center gap-4">

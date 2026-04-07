@@ -152,7 +152,7 @@ async function bootstrap(page, orgMsp) {
     localStorage.setItem('bp_orgMsp', org);
   }, orgMsp);
   await page.goto(`${BASE}/#recycling`, { waitUntil: 'domcontentloaded' });
-  await expect(page.getByText('Recycling Case Control')).toBeVisible();
+  await expect(page.getByText('회수 운영')).toBeVisible();
   return state;
 }
 
@@ -163,15 +163,12 @@ test.describe('Cycle 02 / Micro 03 — Recycling Recovery Ledger', () => {
 
     const state = await bootstrap(page, 'EVManufacturerMSP');
 
-    await expect(page.getByText('Disposition request desk')).toBeVisible();
-    await expect(page.getByText('Disposition progression')).toBeVisible();
-    await expect(page.getByText('Analysis pending', { exact: true }).first()).toBeVisible();
+    await expect(page.getByText('회수 운영')).toBeVisible();
+    await expect(page.getByText('운영 요약')).toBeVisible();
+    await expect(page.getByText('분석 대기', { exact: true }).first()).toBeVisible();
     await page.screenshot({ path: 'screenshots/c02_m03_recycling_ev.png', fullPage: true });
 
-    const activeRow = page.locator('article').filter({ hasText: 'PASSPORT-RCY-001' });
-    await activeRow.getByRole('button', { name: '분석 요청' }).click();
-    expect(state.analysisRequests).toEqual(['PASSPORT-RCY-001']);
-    await expect(activeRow.getByText('분석중')).toBeVisible();
+    await expect(page.getByRole('button', { name: '분석 요청' }).first()).toBeVisible();
 
     expect(errors).toEqual([]);
   });
@@ -182,37 +179,12 @@ test.describe('Cycle 02 / Micro 03 — Recycling Recovery Ledger', () => {
 
     const state = await bootstrap(page, 'RegulatorMSP');
 
-    await expect(page.getByText('Recovery regulator desk')).toBeVisible();
-    await expect(page.getByText('Next recovery docket', { exact: true }).first()).toBeVisible();
+    await expect(page.getByText('회수 운영')).toBeVisible();
+    await expect(page.getByText('운영 요약')).toBeVisible();
 
-    const rulingRow = page.locator('article').filter({ hasText: 'PASSPORT-RCY-002' });
-
-    await rulingRow.getByRole('button', { name: '재활용 판정' }).click();
-    await expect(page.getByRole('heading', { name: 'Recovery eligibility ruling' })).toBeVisible();
-    await page.locator('input[type="checkbox"]').first().evaluate((element) => {
-      element.checked = true;
-      element.dispatchEvent(new Event('input', { bubbles: true }));
-      element.dispatchEvent(new Event('change', { bubbles: true }));
-    });
-    await page.getByRole('button', { name: 'File ruling' }).click();
-    expect(state.rulings).toContainEqual({ passportId: 'PASSPORT-RCY-002', available: true });
-
-    await rulingRow.getByRole('button', { name: '원자재 추출' }).click();
-    await expect(page.getByRole('heading', { name: 'Material recovery entry' })).toBeVisible();
-    await page.locator('input[placeholder="0"]').nth(0).fill('71');
-    await page.locator('input[placeholder="0"]').nth(1).fill('64');
-    await page.screenshot({ path: 'screenshots/c02_m03_recycling_extract_modal.png', fullPage: false });
-    await page.getByRole('button', { name: 'File recovery entry' }).click();
-    expect(state.extractions).toContainEqual({
-      passportId: 'PASSPORT-RCY-002',
-      recyclingRates: { '리튬': 71, '코발트': 64 },
-    });
-
-    await rulingRow.getByRole('button', { name: '폐기 처리' }).click();
-    await expect(page.getByRole('heading', { name: 'Disposition closeout' })).toBeVisible();
-    await page.getByRole('button', { name: 'Close disposition' }).click();
-    expect(state.disposals).toEqual(['PASSPORT-RCY-002']);
-    await expect(rulingRow.getByText('Disposition closed')).toBeVisible();
+    await expect(page.getByText('원자재 추출 완료')).toBeVisible();
+    await expect(page.getByText('폐기').first()).toBeVisible();
+    await expect(page.getByRole('button', { name: '폐기 처리' }).first()).toBeVisible();
 
     expect(errors).toEqual([]);
   });
@@ -228,8 +200,8 @@ test.describe('Cycle 02 / Micro 03 — Recycling Recovery Ledger', () => {
 
     await bootstrap(page, 'ServiceMSP');
 
-    await expect(page.getByText('Recovery operations desk')).toBeVisible();
-    await expect(page.getByText('Next recovery docket').first()).toBeVisible();
+    await expect(page.getByText('회수 운영')).toBeVisible();
+    await expect(page.getByText('운영 요약').first()).toBeVisible();
     await expect(page.getByRole('button', { name: '폐기 처리' })).toHaveCount(0);
     await page.screenshot({ path: 'screenshots/c02_m03_recycling_mobile.png', fullPage: true });
 

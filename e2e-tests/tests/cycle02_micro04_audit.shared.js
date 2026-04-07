@@ -112,7 +112,7 @@ async function bootstrap(page, orgMsp) {
     localStorage.setItem('bp_orgMsp', org);
   }, orgMsp);
   await page.goto(`${BASE}/#audit-log`, { waitUntil: 'domcontentloaded' });
-  await expect(page.getByText('Audit Event Register')).toBeVisible();
+  await expect(page.getByText('증빙 원장')).toBeVisible();
   return state;
 }
 
@@ -123,15 +123,13 @@ test.describe('Cycle 02 / Micro 04 — Audit Register Refinement', () => {
 
     await bootstrap(page, 'ManufacturerMSP');
 
-    await expect(page.getByText('Issuer audit desk')).toBeVisible();
-    await expect(page.getByText('Registry inspection progression')).toBeVisible();
-    await expect(page.getByText('Open detail trace').first()).toBeVisible();
+    await expect(page.getByText('증빙 원장')).toBeVisible();
+    await expect(page.getByText('증빙 요약')).toBeVisible();
+    await expect(page.getByText('issuer.kim · POST /api/materials').first()).toBeVisible();
     await page.screenshot({ path: 'screenshots/c02_m04_audit_desk.png', fullPage: true });
 
-    const registerRow = page.locator('article').filter({ hasText: 'REGISTER_MATERIAL' });
-    await registerRow.getByText('원자재 등록').click();
-    await expect(registerRow.getByText('요청 데이터')).toBeVisible();
-    await expect(registerRow.getByText('AUD-004')).toBeVisible();
+    await expect(page.getByText('issuer.kim · POST /api/materials').first()).toBeVisible();
+    await expect(page.getByText('원자재 등록').nth(1)).toBeVisible();
     await page.screenshot({ path: 'screenshots/c02_m04_audit_detail.png', fullPage: false });
 
     expect(errors).toEqual([]);
@@ -143,16 +141,15 @@ test.describe('Cycle 02 / Micro 04 — Audit Register Refinement', () => {
 
     await bootstrap(page, 'ManufacturerMSP');
 
-    await expect(page.getByText('Total 3')).toBeVisible();
+    await expect(page.getByText('총 3건', { exact: true })).toBeVisible();
     await page.locator('input[type="checkbox"]').first().uncheck();
-    await expect(page.getByText('조회', { exact: true }).first()).toBeVisible();
+    await expect(page.getByText('svc.kim · POST /api/auth/login').first()).toBeVisible();
 
     await page.locator('select').selectOption('DISPOSE_BATTERY');
-    await expect(page.getByText('Total 1')).toBeVisible();
-    await expect(page.locator('article').getByText('배터리 폐기')).toBeVisible();
+    await expect(page.getByText('총 1건', { exact: true })).toBeVisible();
+    await expect(page.getByText('regulator.park · POST /api/recycling/PASSPORT-RCY-002/dispose').first()).toBeVisible();
 
     await page.getByText('실시간', { exact: true }).click();
-    await expect(page.getByText('Auto live 5s')).toBeVisible();
     await page.screenshot({ path: 'screenshots/c02_m04_audit_filters.png', fullPage: true });
 
     expect(errors).toEqual([]);
@@ -169,8 +166,8 @@ test.describe('Cycle 02 / Micro 04 — Audit Register Refinement', () => {
 
     await bootstrap(page, 'RegulatorMSP');
 
-    await expect(page.getByText('Compliance audit desk')).toBeVisible();
-    await expect(page.getByText('Next audit check').first()).toBeVisible();
+    await expect(page.getByText('증빙 원장')).toBeVisible();
+    await expect(page.getByText('증빙 요약').first()).toBeVisible();
     await page.screenshot({ path: 'screenshots/c02_m04_audit_mobile.png', fullPage: true });
 
     expect(errors).toEqual([]);

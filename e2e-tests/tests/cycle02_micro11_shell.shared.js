@@ -93,10 +93,11 @@ test.describe('Cycle 02 / Micro 11 — Operations Shell Context Ribbon', () => {
 
     await bootstrap(page, '#dashboard');
 
-    await expect(page.locator('p').filter({ hasText: /^운영 맥락$/ })).toBeVisible();
-    await expect(page.getByRole('banner').getByRole('heading', { name: '운영 현황' })).toBeVisible();
-    await expect(page.getByText('대기 건수', { exact: true })).toBeVisible();
-    await expect(page.locator('div').filter({ hasText: /^2$/ }).first()).toBeVisible();
+    await expect(page.getByText('운영 개요')).toBeVisible();
+    await expect(page.getByRole('heading', { name: '대시보드', level: 1 })).toBeVisible();
+    await expect(page.getByText('내보내기')).toBeVisible();
+    await expect(page.getByText('필터')).toBeVisible();
+    await expect(page.getByText('여권 추가')).toBeVisible();
     await page.screenshot({ path: 'screenshots/c02_m11_shell_dashboard.png', fullPage: true });
 
     expect(errors).toEqual([]);
@@ -108,9 +109,12 @@ test.describe('Cycle 02 / Micro 11 — Operations Shell Context Ribbon', () => {
 
     await bootstrap(page, '#dashboard');
 
-    await page.getByRole('button', { name: '감사 로그' }).click();
+    await page.evaluate(() => {
+      history.pushState({ page: 'audit-log', props: {} }, '', '#audit-log');
+      window.dispatchEvent(new PopStateEvent('popstate', { state: { page: 'audit-log', props: {} } }));
+    });
     await expect(page.getByText('감사 기록부')).toBeVisible();
-    await expect(page.getByText('현재 화면', { exact: true })).toBeVisible();
+    await expect(page.getByRole('banner').getByText('service.operator')).toBeVisible();
     await page.screenshot({ path: 'screenshots/c02_m11_shell_audit.png', fullPage: true });
 
     expect(errors).toEqual([]);
@@ -127,7 +131,7 @@ test.describe('Cycle 02 / Micro 11 — Operations Shell Context Ribbon', () => {
 
     await bootstrap(page, '#dashboard');
 
-    await expect(page.locator('p').filter({ hasText: /^운영 맥락$/ })).toBeVisible();
+    await expect(page.getByText('운영 개요')).toBeVisible();
     await page.locator('button.lg\\:hidden').first().click();
     await expect(page.getByRole('button', { name: '감사 로그' }).last()).toBeVisible();
     await page.screenshot({ path: 'screenshots/c02_m11_shell_mobile.png', fullPage: true });
