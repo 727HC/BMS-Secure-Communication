@@ -4,7 +4,7 @@
 export default {
   name: 'ModalDataCorrection',
   props: {
-    show: Boolean,
+    visible: Boolean,
     form: Object,
     correctableFields: Array,
     passport: Object,
@@ -13,7 +13,7 @@ export default {
   emits: ['close','submit'],
   template: `
     <correction-modal
-      :show="show"
+      :show="visible"
       :form="form"
       :correctable-fields="correctableFields"
       :passport="passport"
