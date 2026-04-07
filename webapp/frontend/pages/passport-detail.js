@@ -2413,15 +2413,15 @@ app.component('passport-detail-page', {
         @update:vehicleImageFile="vehicleImageFile = $event"
       ></ModalBind>
 
-      <correction-modal
-        :show="showCorrectModal"
+      <ModalDataCorrection
+        :visible="showCorrectModal"
         :form="correctForm"
         :correctable-fields="correctableFields"
         :passport="passport"
         :submitting="submitting"
         @close="showCorrectModal = false"
         @submit="submitCorrection"
-      ></correction-modal>
+      ></ModalDataCorrection>
 
       <bmu-invalidate-modal
         :show="showInvalidateModal"
@@ -2505,8 +2505,10 @@ app.component('passport-detail-page', {
   `
 });
 import ModalBind from '../components/passport-detail/ModalBind.js'
+import ModalDataCorrection from '../components/passport-detail/ModalDataCorrection.js'
 
 // Register globally for CDN-based runtime (align with VC Issue Modal usage)
 if (typeof app !== 'undefined' && app.component) {
   app.component('ModalBind', ModalBind)
+  app.component('ModalDataCorrection', ModalDataCorrection)
 }
