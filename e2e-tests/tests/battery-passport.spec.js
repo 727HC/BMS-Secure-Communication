@@ -83,7 +83,7 @@ test.describe('3. 프론트엔드 로그인', () => {
     await page.waitForTimeout(2000);
 
     // 로그인 폼 확인
-    const userInput = page.locator('input[placeholder="아이디를 입력하세요"]');
+    const userInput = page.locator('input[placeholder*="아이디"]');
     await expect(userInput).toBeVisible({ timeout: 5000 });
 
     // 로그인
