@@ -116,7 +116,7 @@ type BatteryPassport struct {
 	SerialNumber           string `json:"serialNumber"`
 	EVManufacturer         string `json:"evManufacturer"`
 	EVAssemblyCountry      string `json:"evAssemblyCountry"`
-	EvBinderMSP            string `json:"evBinderMsp,omitempty"`
+	EvBinderMSP            string `json:"evBinderMsp"`
 	ManufacturerName       string `json:"manufacturerName"`
 	ManufactureCountry     string `json:"manufactureCountry"`
 	CellManufacturer       string `json:"cellManufacturer"`
