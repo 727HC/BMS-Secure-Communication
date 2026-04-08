@@ -119,7 +119,7 @@ app.component('recycling-page', {
     // Analysis request
     async function requestAnalysis(passport) {
       try {
-        await props.api.post('/analysis/' + passport.passportId + '/request', {});
+        await retryOnConflict(() => props.api.post('/analysis/' + passport.passportId + '/request', {}));
         window.$toast('success', '분석 요청이 등록되었습니다.');
         await fetchPassports();
       } catch (e) {
@@ -137,12 +137,12 @@ app.component('recycling-page', {
     async function submitAnalysisResult() {
       submitting.value = true;
       try {
-        await props.api.post('/analysis/' + selectedPassport.value.passportId + '/result', {
+        await retryOnConflict(() => props.api.post('/analysis/' + selectedPassport.value.passportId + '/result', {
           soh: Number(analysisForm.value.soh),
           soce: Number(analysisForm.value.soce),
           remainingLifeCycle: Number(analysisForm.value.remainingLifeCycle),
           recycleAvailable: analysisForm.value.recycleAvailable,
-        });
+        }));
         window.$toast('success', '분석 결과가 제출되었습니다.');
         closeModals();
         await fetchPassports();
@@ -163,9 +163,9 @@ app.component('recycling-page', {
     async function submitRecycleToggle() {
       submitting.value = true;
       try {
-        await props.api.put('/recycling/' + selectedPassport.value.passportId + '/availability', {
+        await retryOnConflict(() => props.api.put('/recycling/' + selectedPassport.value.passportId + '/availability', {
           available: recycleToggleValue.value,
-        });
+        }));
         window.$toast('success', '재활용 판정이 업데이트되었습니다.');
         closeModals();
         await fetchPassports();
@@ -200,9 +200,9 @@ app.component('recycling-page', {
             recyclingRates[e.key.trim()] = Number(e.value);
           }
         });
-        await props.api.post('/recycling/' + selectedPassport.value.passportId + '/extract', {
+        await retryOnConflict(() => props.api.post('/recycling/' + selectedPassport.value.passportId + '/extract', {
           recyclingRates,
-        });
+        }));
         window.$toast('success', '원자재 추출이 기록되었습니다.');
         closeModals();
         await fetchPassports();
@@ -222,7 +222,7 @@ app.component('recycling-page', {
     async function submitDispose() {
       submitting.value = true;
       try {
-        await props.api.post('/recycling/' + selectedPassport.value.passportId + '/dispose', {});
+        await retryOnConflict(() => props.api.post('/recycling/' + selectedPassport.value.passportId + '/dispose', {}));
         window.$toast('success', '폐기 처리가 완료되었습니다.');
         closeModals();
         await fetchPassports();
@@ -267,12 +267,12 @@ app.component('recycling-page', {
 
     <!-- ====== PAGE HEADER ====== -->
     <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; margin-bottom: 1.25rem; padding-bottom: 0.75rem; border-bottom: 1px solid var(--color-border);">
-      <div>
-        <p class="sn-eyebrow" style="margin:0 0 0.35rem;color:#0f766e;">회수 운영</p>
-        <h1 class="sn-display" style="font-size: 1.5rem;">재활용 종결 대장</h1>
-        <p class="sn-caption" style="margin-top: 0.125rem;">분석 요청부터 추출·폐기까지 단계별로 관리합니다.</p>
+      <div class="sn-page-head-main">
+        <p class="sn-eyebrow" style="margin:0 0 0.35rem;color:#0f766e;">재활용 처리</p>
+        <h1 class="sn-page-title">재활용 처리</h1>
+        <p class="sn-page-subtitle">분석 요청부터 추출·폐기까지 단계별로 관리합니다.</p>
       </div>
-      <button @click="fetchPassports" class="sn-btn sn-btn-ghost" style="display:inline-flex;align-items:center;gap:6px;font-size:0.82rem;flex-shrink:0;">
+      <button @click="fetchPassports" class="sn-btn sn-btn-ghost" style="font-size:0.82rem;flex-shrink:0;">
         <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
         </svg>
@@ -280,26 +280,26 @@ app.component('recycling-page', {
       </button>
     </div>
 
-    <div class="sn-panel" style="padding:14px 16px;display:grid;grid-template-columns:1.5fr 1fr 1fr 1fr;gap:12px;">
-      <div style="padding-right:8px;border-right:1px solid rgba(0,0,0,0.06);">
-        <p class="sn-eyebrow" style="margin:0 0 0.35rem;">운영 요약</p>
-        <p style="font-size:0.875rem;font-weight:600;color:#171717;margin:0 0 0.25rem;">분석 → 판정 → 추출 → 폐기</p>
-        <p style="font-size:0.75rem;color:#6b7280;line-height:1.6;margin:0;">분석 요청부터 추출·폐기까지 종결 흐름을 한 화면에서 정리합니다.</p>
+    <div class="sn-panel sn-summary-grid sn-summary-grid-4">
+      <div class="sn-summary-lead">
+        <p class="sn-eyebrow sn-summary-title">요약</p>
+        <p class="sn-summary-copy-strong">분석 → 판정 → 추출 → 폐기</p>
+        <p class="sn-summary-copy">분석 요청부터 추출과 폐기까지 필요한 처리를 한곳에서 확인합니다.</p>
       </div>
       <div>
-        <p class="sn-eyebrow" style="margin:0 0 0.35rem;color:#2563eb;">분석 대기</p>
-        <p style="font-family:var(--font-mono);font-size:1.1rem;font-weight:700;color:#2563eb;margin:0;">{{ filteredPassports.filter(p => !p.recycleAvailable && p.status !== 'RECYCLING' && p.status !== 'DISPOSED').length }}</p>
-        <p style="font-size:0.72rem;color:#6b7280;margin:0.2rem 0 0;">판정 전 검토</p>
+        <p class="sn-eyebrow sn-stat-card-title" style="color:#2563eb;">분석 대기</p>
+        <p class="sn-stat-count" style="color:#2563eb;">{{ filteredPassports.filter(p => !p.recycleAvailable && p.status !== 'RECYCLING' && p.status !== 'DISPOSED').length }}</p>
+        <p class="sn-stat-note">판정 전 확인</p>
       </div>
       <div>
-        <p class="sn-eyebrow" style="margin:0 0 0.35rem;color:#16a34a;">재활용 승인</p>
-        <p style="font-family:var(--font-mono);font-size:1.1rem;font-weight:700;color:#16a34a;margin:0;">{{ tabCounts.recyclable }}</p>
-        <p style="font-size:0.72rem;color:#6b7280;margin:0.2rem 0 0;">추출 가능</p>
+        <p class="sn-eyebrow sn-stat-card-title" style="color:#16a34a;">재활용 승인</p>
+        <p class="sn-stat-count" style="color:#16a34a;">{{ tabCounts.recyclable }}</p>
+        <p class="sn-stat-note">추출 가능</p>
       </div>
       <div>
-        <p class="sn-eyebrow" style="margin:0 0 0.35rem;color:#dc2626;">종결 보관</p>
-        <p style="font-family:var(--font-mono);font-size:1.1rem;font-weight:700;color:#dc2626;margin:0;">{{ tabCounts.disposed }}</p>
-        <p style="font-size:0.72rem;color:#6b7280;margin:0.2rem 0 0;">폐기 완료</p>
+        <p class="sn-eyebrow sn-stat-card-title" style="color:#dc2626;">종결 보관</p>
+        <p class="sn-stat-count" style="color:#dc2626;">{{ tabCounts.disposed }}</p>
+        <p class="sn-stat-note">폐기 완료</p>
       </div>
     </div>
 
@@ -313,7 +313,7 @@ app.component('recycling-page', {
           </div>
         </div>
         <span style="font-family:'JetBrains Mono',monospace;font-size:1.5rem;font-weight:800;color:#171717;">{{ tabCounts.all }}</span>
-        <p style="font-size:0.72rem;color:#6b7280;margin:0.35rem 0 0;">회수 검토에 오른 여권</p>
+        <p style="font-size:0.75rem;color:#6b7280;margin:0.35rem 0 0;">검토할 여권</p>
       </div>
       <div class="sn-panel" style="padding:10px 14px;">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
@@ -323,7 +323,7 @@ app.component('recycling-page', {
           </div>
         </div>
         <span style="font-family:'JetBrains Mono',monospace;font-size:1.5rem;font-weight:800;color:#16a34a;">{{ tabCounts.recyclable }}</span>
-        <p style="font-size:0.72rem;color:#6b7280;margin:0.35rem 0 0;">추출 가능 상태</p>
+        <p style="font-size:0.75rem;color:#6b7280;margin:0.35rem 0 0;">추출 가능 상태</p>
       </div>
       <div class="sn-panel" style="padding:10px 14px;">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
@@ -333,17 +333,17 @@ app.component('recycling-page', {
           </div>
         </div>
         <span style="font-family:'JetBrains Mono',monospace;font-size:1.5rem;font-weight:800;color:#2563eb;">{{ tabCounts.recycling }}</span>
-        <p style="font-size:0.72rem;color:#6b7280;margin:0.35rem 0 0;">원자재 회수 중</p>
+        <p style="font-size:0.75rem;color:#6b7280;margin:0.35rem 0 0;">원자재 회수 중</p>
       </div>
       <div class="sn-panel" style="padding:10px 14px;">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
-          <span class="sn-eyebrow">폐기 보관</span>
+          <span class="sn-eyebrow">폐기 완료</span>
           <div style="width:28px;height:28px;border-radius:8px;background:#f5f5f5;display:flex;align-items:center;justify-content:center;">
             <svg width="14" height="14" fill="none" stroke="#a3a3a3" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
           </div>
         </div>
         <span style="font-family:'JetBrains Mono',monospace;font-size:1.5rem;font-weight:800;color:#a3a3a3;">{{ tabCounts.disposed }}</span>
-        <p style="font-size:0.72rem;color:#6b7280;margin:0.35rem 0 0;">폐기 증빙 보관</p>
+        <p style="font-size:0.75rem;color:#6b7280;margin:0.35rem 0 0;">폐기 기록 보관</p>
       </div>
     </div>
 
@@ -356,7 +356,7 @@ app.component('recycling-page', {
           <path stroke-linecap="round" stroke-linejoin="round" :d="tab.icon"/>
         </svg>
         {{ tab.label }}
-        <span style="font-family:'JetBrains Mono',monospace;font-size:0.68rem;padding:1px 7px;border-radius:12px;background:#f5f5f5;"
+        <span style="font-family:'JetBrains Mono',monospace;font-size:0.75rem;padding:1px 7px;border-radius:12px;background:#f5f5f5;"
           :style="activeTab===tab.key ? 'color:#171717;' : 'color:#a3a3a3;'">{{ tabCounts[tab.key] }}</span>
       </button>
     </div>
@@ -379,24 +379,24 @@ app.component('recycling-page', {
         <div>
           <div style="display:flex;align-items:center;gap:0.625rem;padding:0.5rem 0.75rem;background:#f8faff;border:1px solid #dbeafe;border-radius:6px 6px 0 0;">
             <span style="font-size:0.75rem;font-weight:700;color:#2563eb;">분석 대기</span>
-            <span style="font-size:0.625rem;font-weight:700;background:#dbeafe;color:#2563eb;padding:0.125rem 0.5rem;border-radius:99px;">{{ filteredPassports.filter(p => !p.recycleAvailable && p.status !== 'RECYCLING' && p.status !== 'DISPOSED').length }}</span>
+            <span style="font-size:0.75rem;font-weight:700;background:#dbeafe;color:#2563eb;padding:0.125rem 0.5rem;border-radius:99px;">{{ filteredPassports.filter(p => !p.recycleAvailable && p.status !== 'RECYCLING' && p.status !== 'DISPOSED').length }}</span>
           </div>
           <div style="border:1px solid #dbeafe;border-top:none;border-radius:0 0 6px 6px;overflow:hidden;">
             <div v-for="(p, idx) in filteredPassports.filter(p => !p.recycleAvailable && p.status !== 'RECYCLING' && p.status !== 'DISPOSED')" :key="p.passportId"
               :style="idx > 0 ? 'border-top:1px solid rgba(0,0,0,0.05);' : ''"
               style="background:#fff;padding:0.75rem 1rem;display:flex;align-items:center;justify-content:space-between;gap:1rem;">
               <div style="min-width:0;">
-                <div style="font-family:'JetBrains Mono',monospace;font-size:0.78rem;font-weight:600;color:#374151;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ p.passportId }}</div>
-                <div style="font-size:0.72rem;color:#6b7280;margin-top:2px;">S/N: {{ p.serialNumber || '-' }}</div>
+                <div style="font-family:'JetBrains Mono',monospace;font-size:0.875rem;font-weight:600;color:#374151;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ p.passportId }}</div>
+                <div style="font-size:0.875rem;color:#6b7280;margin-top:2px;">시리얼: {{ p.serialNumber || '-' }}</div>
               </div>
               <div style="display:flex;align-items:center;gap:0.5rem;flex-shrink:0;" @click.stop>
                 <button v-if="canRequestAnalysis" @click="requestAnalysis(p)"
-                  class="sn-btn sn-btn-ghost" style="font-size:0.72rem;padding:4px 10px;display:inline-flex;align-items:center;gap:4px;color:#2563eb;border-color:#2563eb;">
+                  class="sn-btn sn-btn-ghost" style="font-size:0.875rem;padding:4px 10px;display:inline-flex;align-items:center;gap:4px;color:#2563eb;border-color:#2563eb;">
                   <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
                   분석 요청
                 </button>
                 <button v-if="canSubmitAnalysis" @click="openAnalysisResult(p)"
-                  class="sn-btn sn-btn-ghost" style="font-size:0.72rem;padding:4px 10px;display:inline-flex;align-items:center;gap:4px;color:#7c3aed;border-color:#7c3aed;">
+                  class="sn-btn sn-btn-ghost" style="font-size:0.875rem;padding:4px 10px;display:inline-flex;align-items:center;gap:4px;color:#7c3aed;border-color:#7c3aed;">
                   <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
                   분석 결과
                 </button>
@@ -411,37 +411,37 @@ app.component('recycling-page', {
         <div>
           <div style="display:flex;align-items:center;gap:0.625rem;padding:0.5rem 0.75rem;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:6px 6px 0 0;">
             <span style="font-size:0.75rem;font-weight:700;color:#16a34a;">재활용 가능</span>
-            <span style="font-size:0.625rem;font-weight:700;background:#bbf7d0;color:#16a34a;padding:0.125rem 0.5rem;border-radius:99px;">{{ filteredPassports.filter(p => p.recycleAvailable === true && p.status !== 'RECYCLING' && p.status !== 'DISPOSED').length }}</span>
+            <span style="font-size:0.75rem;font-weight:700;background:#bbf7d0;color:#16a34a;padding:0.125rem 0.5rem;border-radius:99px;">{{ filteredPassports.filter(p => p.recycleAvailable === true && p.status !== 'RECYCLING' && p.status !== 'DISPOSED').length }}</span>
           </div>
           <div style="border:1px solid #bbf7d0;border-top:none;border-radius:0 0 6px 6px;overflow:hidden;">
             <div v-for="(p, idx) in filteredPassports.filter(p => p.recycleAvailable === true && p.status !== 'RECYCLING' && p.status !== 'DISPOSED')" :key="p.passportId"
               :style="idx > 0 ? 'border-top:1px solid rgba(0,0,0,0.05);' : ''"
               style="background:#fff;padding:0.75rem 1rem;display:flex;align-items:center;justify-content:space-between;gap:1rem;">
               <div style="min-width:0;flex:1;">
-                <div style="font-family:'JetBrains Mono',monospace;font-size:0.78rem;font-weight:600;color:#374151;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ p.passportId }}</div>
-                <div style="font-size:0.72rem;color:#6b7280;margin-top:2px;">
+                <div style="font-family:'JetBrains Mono',monospace;font-size:0.875rem;font-weight:600;color:#374151;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ p.passportId }}</div>
+                <div style="font-size:0.875rem;color:#6b7280;margin-top:2px;">
                   SOH: <span :class="getSohColor(p.currentSoh)" style="font-weight:600;">{{ p.currentSoh != null ? p.currentSoh + '%' : '미측정' }}</span>
                 </div>
                 <!-- Recycling rates -->
                 <div v-if="getRecyclingRateEntries(p.recyclingRates).length > 0" style="display:flex;flex-direction:column;gap:4px;margin-top:6px;">
                   <div v-for="entry in getRecyclingRateEntries(p.recyclingRates)" :key="entry.key"
                     style="display:flex;align-items:center;gap:8px;">
-                    <span style="font-size:0.68rem;color:#6b7280;width:56px;text-align:right;flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" :title="entry.key">{{ entry.key }}</span>
+                    <span style="font-size:0.75rem;color:#6b7280;width:56px;text-align:right;flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" :title="entry.key">{{ entry.key }}</span>
                     <div style="flex:1;height:5px;background:#f1f5f9;border-radius:999px;overflow:hidden;min-width:50px;">
                       <div :class="getRateBarColor(entry.value)" style="height:5px;border-radius:999px;transition:width 0.4s;" :style="{ width: Math.min(entry.value, 100) + '%' }"></div>
                     </div>
-                    <span style="font-family:'JetBrains Mono',monospace;font-size:0.68rem;font-weight:700;color:#374151;width:32px;flex-shrink:0;">{{ entry.value }}%</span>
+                    <span style="font-family:'JetBrains Mono',monospace;font-size:0.75rem;font-weight:700;color:#374151;width:32px;flex-shrink:0;">{{ entry.value }}%</span>
                   </div>
                 </div>
               </div>
               <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0;" @click.stop>
                 <button v-if="canToggleRecycle" @click="openRecycleToggle(p)"
-                  class="sn-btn sn-btn-ghost" style="font-size:0.72rem;padding:4px 10px;display:inline-flex;align-items:center;gap:4px;color:#059669;border-color:#059669;">
+                  class="sn-btn sn-btn-ghost" style="font-size:0.875rem;padding:4px 10px;display:inline-flex;align-items:center;gap:4px;color:#059669;border-color:#059669;">
                   <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                   재활용 판정
                 </button>
                 <button v-if="canExtract" @click="openExtract(p)"
-                  class="sn-btn sn-btn-ghost" style="font-size:0.72rem;padding:4px 10px;display:inline-flex;align-items:center;gap:4px;color:#d97706;border-color:#d97706;">
+                  class="sn-btn sn-btn-ghost" style="font-size:0.875rem;padding:4px 10px;display:inline-flex;align-items:center;gap:4px;color:#d97706;border-color:#d97706;">
                   <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
                   원자재 추출
                 </button>
@@ -456,19 +456,19 @@ app.component('recycling-page', {
         <div>
           <div style="display:flex;align-items:center;gap:0.625rem;padding:0.5rem 0.75rem;background:#fffbeb;border:1px solid #fde68a;border-radius:6px 6px 0 0;">
             <span style="font-size:0.75rem;font-weight:700;color:#d97706;">원자재 추출 완료</span>
-            <span style="font-size:0.625rem;font-weight:700;background:#fde68a;color:#d97706;padding:0.125rem 0.5rem;border-radius:99px;">{{ filteredPassports.filter(p => p.status === 'RECYCLING').length }}</span>
+            <span style="font-size:0.75rem;font-weight:700;background:#fde68a;color:#d97706;padding:0.125rem 0.5rem;border-radius:99px;">{{ filteredPassports.filter(p => p.status === 'RECYCLING').length }}</span>
           </div>
           <div style="border:1px solid #fde68a;border-top:none;border-radius:0 0 6px 6px;overflow:hidden;">
             <div v-for="(p, idx) in filteredPassports.filter(p => p.status === 'RECYCLING')" :key="p.passportId"
               :style="idx > 0 ? 'border-top:1px solid rgba(0,0,0,0.05);' : ''"
               style="background:#fff;padding:0.75rem 1rem;display:flex;align-items:center;justify-content:space-between;gap:1rem;">
               <div style="min-width:0;">
-                <div style="font-family:'JetBrains Mono',monospace;font-size:0.78rem;font-weight:600;color:#374151;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ p.passportId }}</div>
-                <div style="font-size:0.72rem;color:#6b7280;margin-top:2px;">S/N: {{ p.serialNumber || '-' }}</div>
+                <div style="font-family:'JetBrains Mono',monospace;font-size:0.875rem;font-weight:600;color:#374151;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ p.passportId }}</div>
+                <div style="font-size:0.875rem;color:#6b7280;margin-top:2px;">시리얼: {{ p.serialNumber || '-' }}</div>
               </div>
               <div style="display:flex;align-items:center;gap:0.5rem;flex-shrink:0;" @click.stop>
                 <button v-if="canDispose" @click="openDispose(p)"
-                  class="sn-btn sn-btn-danger" style="font-size:0.72rem;padding:4px 10px;display:inline-flex;align-items:center;gap:4px;">
+                  class="sn-btn sn-btn-danger" style="font-size:0.875rem;padding:4px 10px;display:inline-flex;align-items:center;gap:4px;">
                   <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
                   폐기 처리
                 </button>
@@ -483,17 +483,17 @@ app.component('recycling-page', {
         <div>
           <div style="display:flex;align-items:center;gap:0.625rem;padding:0.5rem 0.75rem;background:#fef2f2;border:1px solid #fecaca;border-radius:6px 6px 0 0;">
             <span style="font-size:0.75rem;font-weight:700;color:#dc2626;">폐기</span>
-            <span style="font-size:0.625rem;font-weight:700;background:#fecaca;color:#dc2626;padding:0.125rem 0.5rem;border-radius:99px;">{{ filteredPassports.filter(p => p.status === 'DISPOSED').length }}</span>
+            <span style="font-size:0.75rem;font-weight:700;background:#fecaca;color:#dc2626;padding:0.125rem 0.5rem;border-radius:99px;">{{ filteredPassports.filter(p => p.status === 'DISPOSED').length }}</span>
           </div>
           <div style="border:1px solid #fecaca;border-top:none;border-radius:0 0 6px 6px;overflow:hidden;">
             <div v-for="(p, idx) in filteredPassports.filter(p => p.status === 'DISPOSED')" :key="p.passportId"
               :style="idx > 0 ? 'border-top:1px solid rgba(0,0,0,0.05);' : ''"
               style="background:#fff;padding:0.75rem 1rem;display:flex;align-items:center;justify-content:space-between;gap:1rem;">
               <div style="min-width:0;">
-                <div style="font-family:'JetBrains Mono',monospace;font-size:0.78rem;font-weight:600;color:#374151;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ p.passportId }}</div>
-                <div style="font-size:0.72rem;color:#6b7280;margin-top:2px;">S/N: {{ p.serialNumber || '-' }}</div>
+                <div style="font-family:'JetBrains Mono',monospace;font-size:0.875rem;font-weight:600;color:#374151;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ p.passportId }}</div>
+                <div style="font-size:0.875rem;color:#6b7280;margin-top:2px;">시리얼: {{ p.serialNumber || '-' }}</div>
               </div>
-              <span style="font-size:0.72rem;color:#6b7280;">폐기 완료</span>
+              <span style="font-size:0.875rem;color:#6b7280;">폐기 완료</span>
             </div>
           </div>
         </div>

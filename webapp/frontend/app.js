@@ -269,7 +269,7 @@ const app = createApp({
         const msp = auth.value.orgMsp;
         const badges = {};
         if (msp === MSP.SERVICE) {
-          const serviceCount = list.filter(p => p.status === 'MAINTENANCE' || p.status === 'ANALYSIS').length;
+          const serviceCount = list.filter(p => p.status === 'MAINTENANCE').length;
           if (serviceCount > 0) badges['maintenance'] = serviceCount;
         }
         if (msp === MSP.REGULATOR) {
