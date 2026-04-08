@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastScanned": 1775452369768,
+  "lastScanned": 1775555703005,
   "projectRoot": "/path/to/bms-blockchain",
   "techStack": {
     "languages": [],
@@ -35,7 +35,7 @@
       "path": "BMU_BMS_S32K344",
       "purpose": null,
       "fileCount": 6,
-      "lastAccessed": 1775452369707,
+      "lastAccessed": 1775555702986,
       "keyFiles": [
         "ClockConfigurationMappings.txt",
         "ClockYaml.txt",
@@ -46,7 +46,7 @@
       "path": "CMU_BMS_S32K144",
       "purpose": null,
       "fileCount": 8,
-      "lastAccessed": 1775452369722,
+      "lastAccessed": 1775555702991,
       "keyFiles": [
         "ClockConfigurationMappings.txt",
         "ClockYaml.txt",
@@ -58,7 +58,7 @@
       "path": "NXP_COMM",
       "purpose": null,
       "fileCount": 2,
-      "lastAccessed": 1775452369723,
+      "lastAccessed": 1775555702992,
       "keyFiles": [
         "main.c",
         "test_vectors.txt"
@@ -68,7 +68,7 @@
       "path": "bmu-agent",
       "purpose": null,
       "fileCount": 6,
-      "lastAccessed": 1775452369723,
+      "lastAccessed": 1775555702993,
       "keyFiles": [
         "package-lock.json",
         "package.json",
@@ -79,7 +79,7 @@
       "path": "caliper-workspace",
       "purpose": null,
       "fileCount": 5,
-      "lastAccessed": 1775452369723,
+      "lastAccessed": 1775555702993,
       "keyFiles": [
         "benchconfig.yaml",
         "networkConfig.yaml",
@@ -92,7 +92,7 @@
       "path": "canoe",
       "purpose": null,
       "fileCount": 5,
-      "lastAccessed": 1775452369724,
+      "lastAccessed": 1775555702993,
       "keyFiles": [
         "BMS_AttackSim.can",
         "BMS_Test.cfg",
@@ -103,15 +103,17 @@
     "chaincode": {
       "path": "chaincode",
       "purpose": null,
-      "fileCount": 0,
-      "lastAccessed": 1775452369724,
-      "keyFiles": []
+      "fileCount": 1,
+      "lastAccessed": 1775555702993,
+      "keyFiles": [
+        "CLAUDE.md"
+      ]
     },
     "docs": {
       "path": "docs",
       "purpose": "Documentation",
       "fileCount": 1,
-      "lastAccessed": 1775452369724,
+      "lastAccessed": 1775555702994,
       "keyFiles": [
         "ARCHITECTURE.md"
       ]
@@ -119,20 +121,30 @@
     "e2e-tests": {
       "path": "e2e-tests",
       "purpose": null,
-      "fileCount": 4,
-      "lastAccessed": 1775452369724,
+      "fileCount": 6,
+      "lastAccessed": 1775555702994,
       "keyFiles": [
+        "check_console.js",
+        "check_modals.js",
         "package-lock.json",
         "package.json",
-        "playwright.config.js",
-        "test-results.json"
+        "playwright.config.js"
+      ]
+    },
+    "embedded": {
+      "path": "embedded",
+      "purpose": null,
+      "fileCount": 1,
+      "lastAccessed": 1775555702994,
+      "keyFiles": [
+        "CLAUDE.md"
       ]
     },
     "fabric-samples": {
       "path": "fabric-samples",
       "purpose": null,
       "fileCount": 10,
-      "lastAccessed": 1775452369725,
+      "lastAccessed": 1775555702995,
       "keyFiles": [
         "CHANGELOG.md",
         "CODEOWNERS",
@@ -145,21 +157,21 @@
       "path": "firmware",
       "purpose": null,
       "fileCount": 0,
-      "lastAccessed": 1775452369725,
+      "lastAccessed": 1775555702995,
       "keyFiles": []
     },
     "islab-hlf-k8s": {
       "path": "islab-hlf-k8s",
       "purpose": null,
       "fileCount": 0,
-      "lastAccessed": 1775452369725,
+      "lastAccessed": 1775555702995,
       "keyFiles": []
     },
     "logs": {
       "path": "logs",
       "purpose": null,
-      "fileCount": 20,
-      "lastAccessed": 1775452369725,
+      "fileCount": 21,
+      "lastAccessed": 1775555702996,
       "keyFiles": [
         "acapy.log",
         "agent.log",
@@ -172,7 +184,7 @@
       "path": "mcp-monitor",
       "purpose": null,
       "fileCount": 6,
-      "lastAccessed": 1775452369725,
+      "lastAccessed": 1775555702996,
       "keyFiles": [
         "CLAUDE.md",
         "package-lock.json",
@@ -183,14 +195,14 @@
       "path": "passport-network",
       "purpose": null,
       "fileCount": 0,
-      "lastAccessed": 1775452369726,
+      "lastAccessed": 1775555702996,
       "keyFiles": []
     },
     "simulink": {
       "path": "simulink",
       "purpose": null,
       "fileCount": 3,
-      "lastAccessed": 1775452369726,
+      "lastAccessed": 1775555702997,
       "keyFiles": [
         "BEVsystemModel.slx",
         "ElectricVehicleSimscape.prj",
@@ -201,14 +213,14 @@
       "path": "test-results",
       "purpose": null,
       "fileCount": 1,
-      "lastAccessed": 1775452369726,
+      "lastAccessed": 1775555702997,
       "keyFiles": []
     },
     "von-network": {
       "path": "von-network",
       "purpose": null,
       "fileCount": 14,
-      "lastAccessed": 1775452369728,
+      "lastAccessed": 1775555702997,
       "keyFiles": [
         "CODE_OF_CONDUCT.md",
         "COMPLIANCE.yaml",
@@ -220,15 +232,37 @@
     "webapp": {
       "path": "webapp",
       "purpose": null,
-      "fileCount": 0,
-      "lastAccessed": 1775452369728,
-      "keyFiles": []
+      "fileCount": 1,
+      "lastAccessed": 1775555702998,
+      "keyFiles": [
+        "CLAUDE.md"
+      ]
+    },
+    "wiki": {
+      "path": "wiki",
+      "purpose": null,
+      "fileCount": 2,
+      "lastAccessed": 1775555702998,
+      "keyFiles": [
+        "README.md"
+      ]
+    },
+    "wiki-mcp": {
+      "path": "wiki-mcp",
+      "purpose": null,
+      "fileCount": 3,
+      "lastAccessed": 1775555702998,
+      "keyFiles": [
+        "package-lock.json",
+        "package.json",
+        "server.js"
+      ]
     },
     "bmu-agent/config": {
       "path": "bmu-agent/config",
       "purpose": "Configuration files",
       "fileCount": 3,
-      "lastAccessed": 1775452369735,
+      "lastAccessed": 1775555702999,
       "keyFiles": [
         "auth.js",
         "constants.js",
@@ -239,14 +273,14 @@
       "path": "bmu-agent/data",
       "purpose": "Data files",
       "fileCount": 0,
-      "lastAccessed": 1775452369735,
+      "lastAccessed": 1775555702999,
       "keyFiles": []
     },
     "bmu-agent/middleware": {
       "path": "bmu-agent/middleware",
       "purpose": "Middleware",
       "fileCount": 3,
-      "lastAccessed": 1775452369736,
+      "lastAccessed": 1775555702999,
       "keyFiles": [
         "audit.js",
         "auth.js",
@@ -257,14 +291,14 @@
       "path": "bmu-agent/node_modules",
       "purpose": "Dependencies",
       "fileCount": 1,
-      "lastAccessed": 1775452369736,
+      "lastAccessed": 1775555703000,
       "keyFiles": []
     },
     "bmu-agent/routes": {
       "path": "bmu-agent/routes",
       "purpose": "Route handlers",
       "fileCount": 9,
-      "lastAccessed": 1775452369736,
+      "lastAccessed": 1775555703000,
       "keyFiles": [
         "analysis.routes.js",
         "auth.routes.js",
@@ -275,42 +309,38 @@
       "path": "caliper-workspace/node_modules",
       "purpose": "Dependencies",
       "fileCount": 1,
-      "lastAccessed": 1775452369750,
+      "lastAccessed": 1775555703002,
       "keyFiles": []
     },
     "e2e-tests/node_modules": {
       "path": "e2e-tests/node_modules",
       "purpose": "Dependencies",
       "fileCount": 1,
-      "lastAccessed": 1775452369760,
+      "lastAccessed": 1775555703002,
       "keyFiles": []
-    },
-    "e2e-tests/tests": {
-      "path": "e2e-tests/tests",
-      "purpose": "Test files",
-      "fileCount": 29,
-      "lastAccessed": 1775452369760,
-      "keyFiles": [
-        "battery-passport.spec.js",
-        "c01_l09_typography.spec.js",
-        "c01_l10_stamps.spec.js"
-      ]
     },
     "mcp-monitor/node_modules": {
       "path": "mcp-monitor/node_modules",
       "purpose": "Dependencies",
       "fileCount": 1,
-      "lastAccessed": 1775452369766,
+      "lastAccessed": 1775555703004,
       "keyFiles": []
     },
     "mcp-monitor/src": {
       "path": "mcp-monitor/src",
       "purpose": "Source code",
       "fileCount": 1,
-      "lastAccessed": 1775452369767,
+      "lastAccessed": 1775555703004,
       "keyFiles": [
         "index.js"
       ]
+    },
+    "wiki-mcp/node_modules": {
+      "path": "wiki-mcp/node_modules",
+      "purpose": "Dependencies",
+      "fileCount": 1,
+      "lastAccessed": 1775555703005,
+      "keyFiles": []
     }
   },
   "hotPaths": [
@@ -339,6 +369,12 @@
       "type": "file"
     },
     {
+      "path": "wiki/passport/activity-log.md",
+      "accessCount": 7,
+      "lastAccessed": 1775554851740,
+      "type": "file"
+    },
+    {
       "path": "chaincode/passport-contract/passport_contract.go",
       "accessCount": 6,
       "lastAccessed": 1775548328142,
@@ -360,12 +396,6 @@
       "path": "wiki/mcp/activity-log.md",
       "accessCount": 4,
       "lastAccessed": 1775461158671,
-      "type": "file"
-    },
-    {
-      "path": "wiki/passport/activity-log.md",
-      "accessCount": 4,
-      "lastAccessed": 1775461172367,
       "type": "file"
     },
     {
@@ -523,7 +553,45 @@
       "accessCount": 1,
       "lastAccessed": 1775543033301,
       "type": "file"
+    },
+    {
+      "path": "wiki/common/task-packet-template.md",
+      "accessCount": 1,
+      "lastAccessed": 1775554609443,
+      "type": "file"
+    },
+    {
+      "path": "webapp/CLAUDE.md",
+      "accessCount": 1,
+      "lastAccessed": 1775554618580,
+      "type": "file"
+    },
+    {
+      "path": "chaincode/CLAUDE.md",
+      "accessCount": 1,
+      "lastAccessed": 1775554632397,
+      "type": "file"
+    },
+    {
+      "path": "embedded/CLAUDE.md",
+      "accessCount": 1,
+      "lastAccessed": 1775554637782,
+      "type": "file"
+    },
+    {
+      "path": ".claude/session-guard.sh",
+      "accessCount": 1,
+      "lastAccessed": 1775554738176,
+      "type": "file"
     }
   ],
-  "userDirectives": []
+  "userDirectives": [
+    {
+      "timestamp": 1775564560999,
+      "directive": "Use Gemini 3.1 Pro for broad exploration and long-context drafting; use GPT-5.4 for final architectural judgment, risky changes, and UI/copy sign-off.",
+      "context": "Derived from current OMC/OpenAgent workflow analysis for this repository on 2026-04-07.",
+      "source": "explicit",
+      "priority": "high"
+    }
+  ]
 }
