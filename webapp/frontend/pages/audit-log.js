@@ -148,13 +148,13 @@ app.component('audit-log-page', {
   <div style="display:flex;flex-direction:column;gap:16px;">
 
     <!-- ====== PAGE HEADER ====== -->
-    <div style="display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 1.25rem; padding-bottom: 0.75rem; border-bottom: 1px solid var(--color-border); gap: 1rem;">
-      <div>
-        <p class="sn-eyebrow" style="margin:0 0 0.35rem;color:#4338ca;">증빙 원장</p>
-        <h1 class="sn-display" style="font-size: 1.5rem;">감사 증빙 원장</h1>
-        <p class="sn-caption" style="margin-top: 0.125rem;">총 {{ total }}건의 작업·검증 흔적을 증빙 순서대로 확인합니다.</p>
+    <div class="sn-page-head">
+      <div class="sn-page-head-main">
+        <p class="sn-eyebrow" style="margin:0 0 0.35rem;color:#4338ca;">감사 기록</p>
+        <h1 class="sn-page-title">감사 기록</h1>
+        <p class="sn-page-subtitle">총 {{ total }}건의 작업 기록을 시간순으로 확인합니다.</p>
       </div>
-      <div style="display:flex;align-items:center;gap:12px;">
+      <div class="sn-page-actions">
         <label style="display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none;">
           <div style="position:relative;">
             <input type="checkbox" v-model="autoRefresh" style="position:absolute;opacity:0;width:0;height:0;" />
@@ -163,7 +163,7 @@ app.component('audit-log-page', {
           </div>
           <span style="font-size:0.75rem;font-weight:500;color:#525252;">실시간</span>
         </label>
-        <button @click="fetchLogs" class="sn-btn sn-btn-ghost" style="display:inline-flex;align-items:center;gap:6px;font-size:0.78rem;">
+        <button @click="fetchLogs" class="sn-btn sn-btn-ghost" style="font-size:0.78rem;">
           <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
           </svg>
@@ -172,34 +172,34 @@ app.component('audit-log-page', {
       </div>
     </div>
 
-    <div class="sn-panel" style="padding:14px 16px;display:grid;grid-template-columns:1.4fr 1fr 1fr;gap:12px;">
-      <div style="padding-right:8px;border-right:1px solid rgba(0,0,0,0.06);">
-        <p class="sn-eyebrow" style="margin:0 0 0.35rem;">증빙 요약</p>
-        <p style="font-size:0.875rem;font-weight:600;color:#171717;margin:0 0 0.25rem;">행위 → 응답 → 요청 데이터</p>
-        <p style="font-size:0.75rem;color:#6b7280;line-height:1.6;margin:0;">필터는 증빙 묶음을 줄이는 도구이고, 상세 패널은 각 사건의 request context를 보존합니다.</p>
+    <div class="sn-panel sn-summary-grid sn-summary-grid-3">
+      <div class="sn-summary-lead">
+        <p class="sn-eyebrow sn-summary-title">요약</p>
+        <p class="sn-summary-copy-strong">행위 → 응답 → 요청 데이터</p>
+        <p class="sn-summary-copy">필터로 필요한 기록만 추려 보고, 상세 패널에서 요청 내용을 확인할 수 있습니다.</p>
       </div>
       <div>
-        <p class="sn-eyebrow" style="margin:0 0 0.35rem;">현재 페이지</p>
-        <p style="font-family:var(--font-mono);font-size:1.1rem;font-weight:700;color:#171717;margin:0;">{{ logs.length }}</p>
-        <p style="font-size:0.72rem;color:#6b7280;margin:0.2rem 0 0;">표시 중인 기록</p>
+        <p class="sn-eyebrow sn-stat-card-title">현재 페이지</p>
+        <p class="sn-stat-count">{{ logs.length }}</p>
+        <p class="sn-stat-note">표시 중인 기록</p>
       </div>
       <div>
-        <p class="sn-eyebrow" style="margin:0 0 0.35rem;color:#059669;">필터</p>
-        <p style="font-size:0.82rem;font-weight:600;color:#171717;margin:0;">{{ filterWriteOnly ? '쓰기 중심' : '전체 행위' }}</p>
-        <p style="font-size:0.72rem;color:#6b7280;margin:0.2rem 0 0;">{{ autoRefresh ? '실시간 모니터링' : '수동 새로고침' }}</p>
+        <p class="sn-eyebrow sn-stat-card-title" style="color:#059669;">필터</p>
+        <p class="sn-summary-copy-strong" style="margin:0;">{{ filterWriteOnly ? '쓰기 작업만' : '전체 기록' }}</p>
+        <p class="sn-stat-note">{{ autoRefresh ? '실시간 확인' : '수동 새로고침' }}</p>
       </div>
     </div>
 
     <!-- ====== FILTERS ====== -->
-    <div class="sn-panel" style="padding:8px 12px;display:flex;flex-wrap:wrap;align-items:center;gap:10px;">
-      <select v-model="filterAction" class="sn-input" style="min-width:140px;font-size:0.82rem;">
+    <div class="sn-panel sn-toolbar">
+      <select v-model="filterAction" class="sn-input" style="min-width:140px;font-size:0.875rem;">
         <option v-for="opt in actionOptions" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
       </select>
       <label style="display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none;">
         <input type="checkbox" v-model="filterWriteOnly" style="width:16px;height:16px;accent-color:#171717;border-radius:4px;" />
-        <span style="font-size:0.82rem;color:#525252;">쓰기 작업만</span>
+        <span style="font-size:0.875rem;color:#525252;">쓰기 작업만</span>
       </label>
-      <span style="margin-left:auto;font-family:'JetBrains Mono',monospace;font-size:0.72rem;color:#a3a3a3;">총 {{ total }}건</span>
+      <span style="margin-left:auto;font-family:'JetBrains Mono',monospace;font-size:0.75rem;color:#a3a3a3;">총 {{ total }}건</span>
     </div>
 
     <div v-if="filterAction" class="sn-panel" style="padding:10px 14px;display:flex;align-items:center;justify-content:space-between;">
@@ -232,20 +232,20 @@ app.component('audit-log-page', {
             <!-- Content -->
             <div style="flex: 1; min-width: 0;">
               <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.25rem;">
-                <span style="font-size: 0.8125rem; font-weight: 500; color: var(--color-text-1);">{{ actionLabels[log.action] || log.action }}</span>
-                <span style="font-size: 0.625rem; color: var(--color-text-3);">{{ relativeTime(log.timestamp) }}</span>
+                <span style="font-size: 0.875rem; font-weight: 500; color: var(--color-text-1);">{{ actionLabels[log.action] || log.action }}</span>
+                <span style="font-size: 0.75rem; color: var(--color-text-3);">{{ relativeTime(log.timestamp) }}</span>
                 <svg :style="{ width:'10px',height:'10px',color:'#6b7280',transition:'transform 0.2s',transform: expandedId === log.id ? 'rotate(90deg)' : 'rotate(0deg)', marginLeft:'auto', flexShrink:0 }" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                   <polyline points="9 18 15 12 9 6"/>
                 </svg>
               </div>
-              <div style="font-size: 0.75rem; color: var(--color-text-3);">
+              <div style="font-size: 0.875rem; color: var(--color-text-3);">
                 {{ log.userId || (log.action === 'RECORD_BMU' ? '시스템(BMU)' : '-') }}
                 <span v-if="log.path" style="font-family:'JetBrains Mono',monospace;"> · {{ log.method }} {{ log.path }}</span>
                 <span style="font-family:'JetBrains Mono',monospace;"> · {{ formatTime(log.timestamp) }}</span>
               </div>
             </div>
             <!-- Status code -->
-            <span style="font-family: var(--font-mono); font-size: 0.625rem; padding: 0.125rem 0.375rem; border-radius: 3px; flex-shrink:0;"
+            <span style="font-family: var(--font-mono); font-size: 0.75rem; padding: 0.125rem 0.375rem; border-radius: 3px; flex-shrink:0;"
               :style="{ background: log.statusCode < 400 ? '#f0fdf4' : '#fef2f2', color: log.statusCode < 400 ? '#16a34a' : '#dc2626' }">
               {{ log.statusCode || '—' }}
             </span>
@@ -255,42 +255,42 @@ app.component('audit-log-page', {
             <div style="background:#fff;box-shadow:inset 0 0 0 1px rgba(0,0,0,0.06);border-radius:10px;padding:16px;display:flex;flex-direction:column;gap:14px;">
               <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;">
                 <div>
-                  <p style="font-size:0.6rem;font-weight:600;color:#6b7280;text-transform:uppercase;margin:0 0 2px;">로그 ID</p>
-                  <p class="font-mono" style="font-size:0.72rem;color:#374151;word-break:break-all;margin:0;">{{ log.id }}</p>
+                  <p style="font-size:0.75rem;font-weight:600;color:#6b7280;text-transform:uppercase;margin:0 0 2px;">로그 ID</p>
+                  <p class="font-mono" style="font-size:0.875rem;color:#374151;word-break:break-all;margin:0;">{{ log.id }}</p>
                 </div>
                 <div>
-                  <p style="font-size:0.6rem;font-weight:600;color:#6b7280;text-transform:uppercase;margin:0 0 2px;">HTTP 메서드</p>
-                  <p class="font-mono" style="font-size:0.72rem;color:#374151;margin:0;">{{ log.method }}</p>
+                  <p style="font-size:0.75rem;font-weight:600;color:#6b7280;text-transform:uppercase;margin:0 0 2px;">HTTP 메서드</p>
+                  <p class="font-mono" style="font-size:0.875rem;color:#374151;margin:0;">{{ log.method }}</p>
                 </div>
                 <div>
-                  <p style="font-size:0.6rem;font-weight:600;color:#6b7280;text-transform:uppercase;margin:0 0 2px;">경로</p>
-                  <p class="font-mono" style="font-size:0.72rem;color:#374151;word-break:break-all;margin:0;">{{ log.path }}</p>
+                  <p style="font-size:0.75rem;font-weight:600;color:#6b7280;text-transform:uppercase;margin:0 0 2px;">경로</p>
+                  <p class="font-mono" style="font-size:0.875rem;color:#374151;word-break:break-all;margin:0;">{{ log.path }}</p>
                 </div>
                 <div>
-                  <p style="font-size:0.6rem;font-weight:600;color:#6b7280;text-transform:uppercase;margin:0 0 2px;">상태 코드</p>
-                  <p class="font-mono" style="font-size:0.72rem;margin:0;"
+                  <p style="font-size:0.75rem;font-weight:600;color:#6b7280;text-transform:uppercase;margin:0 0 2px;">상태 코드</p>
+                  <p class="font-mono" style="font-size:0.875rem;margin:0;"
                     :style="{ color: getStatusStyle(log.statusCode).color }">{{ log.statusCode }}</p>
                 </div>
                 <div>
-                  <p style="font-size:0.6rem;font-weight:600;color:#6b7280;text-transform:uppercase;margin:0 0 2px;">IP</p>
-                  <p class="font-mono" style="font-size:0.72rem;color:#374151;margin:0;">{{ log.ip || '-' }}</p>
+                  <p style="font-size:0.75rem;font-weight:600;color:#6b7280;text-transform:uppercase;margin:0 0 2px;">IP</p>
+                  <p class="font-mono" style="font-size:0.875rem;color:#374151;margin:0;">{{ log.ip || '-' }}</p>
                 </div>
                 <div>
-                  <p style="font-size:0.6rem;font-weight:600;color:#6b7280;text-transform:uppercase;margin:0 0 2px;">응답 시간</p>
-                  <p class="font-mono" style="font-size:0.72rem;color:#374151;margin:0;">{{ log.duration }}ms</p>
+                  <p style="font-size:0.75rem;font-weight:600;color:#6b7280;text-transform:uppercase;margin:0 0 2px;">응답 시간</p>
+                  <p class="font-mono" style="font-size:0.875rem;color:#374151;margin:0;">{{ log.duration }}ms</p>
                 </div>
                 <div>
-                  <p style="font-size:0.6rem;font-weight:600;color:#6b7280;text-transform:uppercase;margin:0 0 2px;">사용자</p>
-                  <p style="font-size:0.72rem;color:#374151;margin:0;">{{ log.userId || '(미인증)' }}</p>
+                  <p style="font-size:0.75rem;font-weight:600;color:#6b7280;text-transform:uppercase;margin:0 0 2px;">사용자</p>
+                  <p style="font-size:0.875rem;color:#374151;margin:0;">{{ log.userId || '(미인증)' }}</p>
                 </div>
                 <div>
-                  <p style="font-size:0.6rem;font-weight:600;color:#6b7280;text-transform:uppercase;margin:0 0 2px;">조직</p>
-                  <p style="font-size:0.72rem;color:#374151;margin:0;">{{ log.orgMsp || '(없음)' }}</p>
+                  <p style="font-size:0.75rem;font-weight:600;color:#6b7280;text-transform:uppercase;margin:0 0 2px;">조직</p>
+                  <p style="font-size:0.875rem;color:#374151;margin:0;">{{ log.orgMsp || '(없음)' }}</p>
                 </div>
               </div>
               <div v-if="log.requestBody">
                 <p class="sn-eyebrow" style="margin:0 0 6px;">요청 데이터</p>
-                <pre style="font-family:'JetBrains Mono',monospace;font-size:0.72rem;color:#525252;background:#fafafa;box-shadow:inset 0 0 0 1px rgba(0,0,0,0.06);border-radius:8px;padding:12px;overflow-x:auto;max-height:160px;margin:0;">{{ JSON.stringify(log.requestBody, null, 2) }}</pre>
+                <pre style="font-family:'JetBrains Mono',monospace;font-size:0.875rem;color:#525252;background:#fafafa;box-shadow:inset 0 0 0 1px rgba(0,0,0,0.06);border-radius:8px;padding:12px;overflow-x:auto;max-height:160px;margin:0;">{{ JSON.stringify(log.requestBody, null, 2) }}</pre>
               </div>
             </div>
           </div>
@@ -299,11 +299,11 @@ app.component('audit-log-page', {
 
       <!-- Pagination -->
       <div style="padding:12px 20px;border-top:1px solid rgba(0,0,0,0.06);display:flex;align-items:center;justify-content:space-between;">
-        <span style="font-family:'JetBrains Mono',monospace;font-size:0.72rem;color:#a3a3a3;">{{ total }}건 중 {{ (page - 1) * 50 + 1 }}~{{ Math.min(page * 50, total) }}</span>
+        <span style="font-family:'JetBrains Mono',monospace;font-size:0.75rem;color:#a3a3a3;">{{ total }}건 중 {{ (page - 1) * 50 + 1 }}~{{ Math.min(page * 50, total) }}</span>
         <div style="display:flex;align-items:center;gap:8px;">
           <button @click="prevPage" :disabled="page <= 1" class="sn-btn sn-btn-ghost" style="font-size:0.75rem;padding:6px 12px;"
             :style="page <= 1 ? 'opacity:0.3;cursor:not-allowed;' : ''">이전</button>
-          <span style="font-family:'JetBrains Mono',monospace;font-size:0.72rem;color:#a3a3a3;font-variant-numeric:tabular-nums;">{{ page }} / {{ totalPages }}</span>
+          <span style="font-family:'JetBrains Mono',monospace;font-size:0.75rem;color:#a3a3a3;font-variant-numeric:tabular-nums;">{{ page }} / {{ totalPages }}</span>
           <button @click="nextPage" :disabled="page >= totalPages" class="sn-btn sn-btn-ghost" style="font-size:0.75rem;padding:6px 12px;"
             :style="page >= totalPages ? 'opacity:0.3;cursor:not-allowed;' : ''">다음</button>
         </div>

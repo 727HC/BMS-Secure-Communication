@@ -118,11 +118,11 @@ app.component('materials-page', {
   <div style="display:flex;flex-direction:column;gap:16px;">
 
     <!-- ====== PAGE HEADER ====== -->
-    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.25rem; padding-bottom: 0.75rem; border-bottom: 1px solid var(--color-border);">
-      <div>
-        <p class="sn-eyebrow" style="margin:0 0 0.35rem;color:#1769e0;">원자재 원장</p>
-        <h1 class="sn-display" style="font-size: 1.5rem;">원자재 관리</h1>
-        <p class="sn-caption" style="margin-top: 0.125rem;">총 {{ materials.length }}건의 원자재가 등록되어 있습니다</p>
+    <div class="sn-page-head">
+      <div class="sn-page-head-main">
+        <p class="sn-eyebrow" style="margin:0 0 0.35rem;color:#1769e0;">원자재 목록</p>
+        <h1 class="sn-page-title">원자재 관리</h1>
+        <p class="sn-page-subtitle">총 {{ materials.length }}건의 원자재가 등록되어 있습니다</p>
       </div>
       <button v-if="isManufacturer" @click="openModal" class="sn-btn sn-btn-accent" style="display:inline-flex;align-items:center;gap:6px;">
         <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
@@ -131,7 +131,7 @@ app.component('materials-page', {
     </div>
 
     <!-- ====== SEARCH BAR ====== -->
-    <div class="sn-panel" style="padding:8px 12px;">
+    <div class="sn-panel sn-toolbar">
       <input v-model="searchQuery" type="text" placeholder="자재ID, 명칭, 원산지, 공급업체, 인증번호 검색..."
         class="sn-input" style="width:100%;font-size:0.8125rem;" />
     </div>
@@ -147,7 +147,7 @@ app.component('materials-page', {
             <div style="height: 100%; background: #16a34a; border-radius: 2px;"
               :style="{ width: (filteredMaterials.length > 0 ? (filteredMaterials.filter(m => m.certificationId).length / filteredMaterials.length * 100) : 0) + '%' }"></div>
           </div>
-          <span style="font-size: 0.625rem; color: #16a34a; font-weight: 600;">
+          <span style="font-size: 0.75rem; color: #16a34a; font-weight: 600;">
             {{ filteredMaterials.filter(m => m.certificationId).length }}/{{ filteredMaterials.length }} 인증
           </span>
         </div>
@@ -252,7 +252,7 @@ app.component('materials-page', {
             </div>
           </div>
           <div>
-            <label style="display:block;font-size:0.82rem;font-weight:600;color:#171717;margin-bottom:6px;">인증번호 <span style="font-size:0.72rem;font-weight:400;color:#a3a3a3;">(선택)</span></label>
+            <label style="display:block;font-size:0.875rem;font-weight:600;color:#171717;margin-bottom:6px;">인증번호 <span style="font-size:0.75rem;font-weight:400;color:#a3a3a3;">(선택)</span></label>
             <input v-model="form.certificationId" type="text" placeholder="인증서 번호" class="sn-input" />
           </div>
         </div>
@@ -279,7 +279,7 @@ app.component('materials-page', {
         <div style="padding:18px 24px;border-bottom:1px solid rgba(0,0,0,0.06);display:flex;align-items:center;justify-content:space-between;">
           <div>
             <h3 style="font-size:1rem;font-weight:700;color:#171717;margin:0;">{{ selectedMaterial.name }}</h3>
-            <p style="font-family:'JetBrains Mono',monospace;font-size:0.72rem;color:#a3a3a3;margin:2px 0 0;">{{ selectedMaterial.materialId }}</p>
+            <p style="font-family:'JetBrains Mono',monospace;font-size:0.75rem;color:#a3a3a3;margin:2px 0 0;">{{ selectedMaterial.materialId }}</p>
           </div>
           <button @click="showDetail = false" class="sn-btn sn-btn-ghost" style="padding:6px 10px;">
             <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
@@ -312,7 +312,7 @@ app.component('materials-page', {
               <svg width="16" height="16" fill="none" stroke="#16a34a" stroke-width="2" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
               </svg>
-              <span style="font-size:0.72rem;font-weight:600;color:#16a34a;">인증 확인됨</span>
+              <span style="font-size:0.75rem;font-weight:600;color:#16a34a;">인증 확인됨</span>
             </div>
             <p style="font-family:'JetBrains Mono',monospace;font-size:0.82rem;color:#16a34a;margin:0;">{{ selectedMaterial.certificationId }}</p>
           </div>
@@ -323,7 +323,7 @@ app.component('materials-page', {
           <!-- Creator MSP -->
           <div>
             <dt class="sn-eyebrow" style="margin-bottom:4px;">등록 기관</dt>
-            <dd style="display:inline-flex;font-size:0.72rem;font-weight:600;padding:3px 10px;border-radius:6px;background:#f5f5f5;color:#525252;margin:0;">
+            <dd style="display:inline-flex;font-size:0.75rem;font-weight:600;padding:3px 10px;border-radius:6px;background:#f5f5f5;color:#525252;margin:0;">
               {{ selectedMaterial.creatorMsp || selectedMaterial.creatorMSP || '-' }}
             </dd>
           </div>
