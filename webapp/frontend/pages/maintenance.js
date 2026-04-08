@@ -42,6 +42,13 @@ app.component('maintenance-page', {
     // Use global STATUS_CONFIG from app.js
     const statusConfig = STATUS_CONFIG;
 
+    function isMaintenanceWorkbenchItem(passport) {
+      const hasHistory = (passport.maintenanceLogs && passport.maintenanceLogs.length > 0) ||
+        (passport.accidentLogs && passport.accidentLogs.length > 0);
+      const canRequestFromHere = isEVManufacturer.value && passport.status === 'ACTIVE' && passport.vin;
+      return passport.status === 'MAINTENANCE' || hasHistory || canRequestFromHere;
+    }
+
     const filteredPassports = computed(() => {
       if (activeTab.value === 'maintenance') {
         return passports.value.filter(p => p.status === 'MAINTENANCE');
@@ -49,12 +56,7 @@ app.component('maintenance-page', {
       if (activeTab.value === 'accident') {
         return passports.value.filter(p => (p.accidentLogs && p.accidentLogs.length > 0));
       }
-      // 전체: 정비이력 또는 사고기록이 있거나, 정비중 상태인 배터리만
-      return passports.value.filter(p =>
-        p.status === 'MAINTENANCE' ||
-        (p.maintenanceLogs && p.maintenanceLogs.length > 0) ||
-        (p.accidentLogs && p.accidentLogs.length > 0)
-      );
+      return passports.value.filter(isMaintenanceWorkbenchItem);
     });
 
     const tabs = [
@@ -64,11 +66,7 @@ app.component('maintenance-page', {
     ];
 
     const tabCounts = computed(() => ({
-      all: passports.value.filter(p =>
-        p.status === 'MAINTENANCE' ||
-        (p.maintenanceLogs && p.maintenanceLogs.length > 0) ||
-        (p.accidentLogs && p.accidentLogs.length > 0)
-      ).length,
+      all: passports.value.filter(isMaintenanceWorkbenchItem).length,
       maintenance: passports.value.filter(p => p.status === 'MAINTENANCE').length,
       accident: passports.value.filter(p => (p.accidentLogs && p.accidentLogs.length > 0)).length,
     }));
@@ -115,10 +113,10 @@ app.component('maintenance-page', {
     async function submitMaintenanceRequest() {
       submitting.value = true;
       try {
-        await props.api.post('/maintenance/' + selectedPassport.value.passportId + '/request', {
+        await retryOnConflict(() => props.api.post('/maintenance/' + selectedPassport.value.passportId + '/request', {
           maintenanceType: requestForm.value.maintenanceType,
           description: requestForm.value.description,
-        });
+        }));
         window.$toast('success', '정비 요청이 등록되었습니다.');
         closeModals();
         await fetchPassports();
@@ -132,11 +130,11 @@ app.component('maintenance-page', {
     async function submitMaintenanceLog() {
       submitting.value = true;
       try {
-        await props.api.post('/maintenance/' + selectedPassport.value.passportId + '/log', {
+        await retryOnConflict(() => props.api.post('/maintenance/' + selectedPassport.value.passportId + '/log', {
           maintenanceType: logForm.value.maintenanceType,
           description: logForm.value.description,
           technician: logForm.value.technician,
-        });
+        }));
         window.$toast('success', '정비 완료가 기록되었습니다.');
         closeModals();
         await fetchPassports();
@@ -150,11 +148,11 @@ app.component('maintenance-page', {
     async function submitAccident() {
       submitting.value = true;
       try {
-        await props.api.post('/maintenance/' + selectedPassport.value.passportId + '/accident', {
+        await retryOnConflict(() => props.api.post('/maintenance/' + selectedPassport.value.passportId + '/accident', {
           severity: accidentForm.value.severity,
           description: accidentForm.value.description,
           reporter: accidentForm.value.reporter,
-        });
+        }));
         window.$toast('success', '사고가 기록되었습니다.');
         closeModals();
         await fetchPassports();
@@ -205,13 +203,13 @@ app.component('maintenance-page', {
     <template v-else>
 
       <!-- HEADER -->
-      <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; margin-bottom: 1.25rem; padding-bottom: 0.75rem; border-bottom: 1px solid var(--color-border);">
-        <div>
-          <p class="sn-eyebrow" style="margin:0 0 0.35rem;color:#a16207;">정비 운영</p>
-          <h1 class="sn-display" style="font-size: 1.5rem;">정비 운영 대장</h1>
-          <p class="sn-caption" style="margin-top: 0.125rem;">정비 요청, 현장 처리, 사고 기록을 한 화면에서 관리합니다.</p>
+      <div class="sn-page-head">
+        <div class="sn-page-head-main">
+          <p class="sn-eyebrow" style="margin:0 0 0.35rem;color:#a16207;">정비 관리</p>
+          <h1 class="sn-page-title">정비 관리</h1>
+          <p class="sn-page-subtitle">정비 요청, 현장 처리, 사고 기록을 한 화면에서 관리합니다.</p>
         </div>
-        <button @click="fetchPassports" class="sn-btn sn-btn-ghost" style="display:inline-flex;align-items:center;gap:6px;flex-shrink:0;">
+        <button @click="fetchPassports" class="sn-btn sn-btn-ghost" style="flex-shrink:0;">
           <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
             <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
           </svg>
@@ -219,42 +217,42 @@ app.component('maintenance-page', {
         </button>
       </div>
 
-      <div class="sn-panel" style="padding:14px 16px;display:grid;grid-template-columns:1.5fr 1fr 1fr 1fr;gap:12px;">
-        <div style="padding-right:8px;border-right:1px solid rgba(0,0,0,0.06);">
-          <p class="sn-eyebrow" style="margin:0 0 0.35rem;">운영 요약</p>
-          <p style="font-size:0.875rem;font-weight:600;color:#171717;margin:0 0 0.25rem;">배터리 후속 조치의 단일 작업면</p>
-          <p style="font-size:0.75rem;color:#6b7280;line-height:1.6;margin:0;">
+      <div class="sn-panel sn-summary-grid sn-summary-grid-4">
+        <div class="sn-summary-lead">
+          <p class="sn-eyebrow sn-summary-title">요약</p>
+          <p class="sn-summary-copy-strong">정비와 사고 기록을 한곳에서 확인합니다</p>
+          <p class="sn-summary-copy">
             {{ canRequestMaintenance ? 'EV 제조사는 접수와 사고 기록을 올리고,' : '' }}
-            {{ canLogMaintenance ? '정비 조직은 정비 완료와 이력 정리를 마감합니다.' : '정비 진행 상황과 사고 흔적을 동일한 대장 안에서 확인할 수 있습니다.' }}
+            {{ canLogMaintenance ? '정비 조직은 정비 완료와 이력 정리를 마감합니다.' : '정비 진행 상황과 사고 기록을 같은 화면에서 확인할 수 있습니다.' }}
           </p>
         </div>
         <div>
-          <p class="sn-eyebrow" style="margin:0 0 0.35rem;">접수 포함</p>
-          <p style="font-family:var(--font-mono);font-size:1.1rem;font-weight:700;color:#171717;margin:0;">{{ tabCounts.all }}</p>
-          <p style="font-size:0.72rem;color:#6b7280;margin:0.2rem 0 0;">운영 검토 대상</p>
+          <p class="sn-eyebrow sn-stat-card-title">접수 포함</p>
+          <p class="sn-stat-count">{{ tabCounts.all }}</p>
+          <p class="sn-stat-note">확인할 항목</p>
         </div>
         <div>
-          <p class="sn-eyebrow" style="margin:0 0 0.35rem;color:#d97706;">정비중</p>
-          <p style="font-family:var(--font-mono);font-size:1.1rem;font-weight:700;color:#d97706;margin:0;">{{ tabCounts.maintenance }}</p>
-          <p style="font-size:0.72rem;color:#6b7280;margin:0.2rem 0 0;">현장 처리중</p>
+          <p class="sn-eyebrow sn-stat-card-title" style="color:#d97706;">정비중</p>
+          <p class="sn-stat-count" style="color:#d97706;">{{ tabCounts.maintenance }}</p>
+          <p class="sn-stat-note">현재 처리 중</p>
         </div>
         <div>
-          <p class="sn-eyebrow" style="margin:0 0 0.35rem;color:#dc2626;">사고기록</p>
-          <p style="font-family:var(--font-mono);font-size:1.1rem;font-weight:700;color:#dc2626;margin:0;">{{ tabCounts.accident }}</p>
-          <p style="font-size:0.72rem;color:#6b7280;margin:0.2rem 0 0;">예외·사건 이력</p>
+          <p class="sn-eyebrow sn-stat-card-title" style="color:#dc2626;">사고기록</p>
+          <p class="sn-stat-count" style="color:#dc2626;">{{ tabCounts.accident }}</p>
+          <p class="sn-stat-note">사고 기록</p>
         </div>
       </div>
 
       <!-- FILTER TABS -->
-      <div style="display:flex;gap:4px;border-bottom:1px solid rgba(0,0,0,0.06);padding-bottom:0;">
+      <div class="sn-filter-tabs" style="padding-bottom:0;">
         <button v-for="tab in tabs" :key="tab.key" @click="activeTab = tab.key"
-          style="display:inline-flex;align-items:center;gap:6px;padding:8px 14px;font-size:0.85rem;font-weight:500;cursor:pointer;border:none;background:none;border-bottom:2px solid transparent;margin-bottom:-1px;transition:all 0.2s;"
+          class="sn-filter-tab"
           :style="activeTab === tab.key ? 'color:#171717;border-bottom-color:#171717;' : 'color:#a3a3a3;'">
           <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" :d="tab.icon"/>
           </svg>
           {{ tab.label }}
-          <span style="font-size:0.68rem;font-family:'JetBrains Mono',monospace;padding:1px 7px;border-radius:12px;"
+          <span class="sn-filter-tab-chip"
             :style="activeTab === tab.key ? 'background:#f5f5f5;color:#171717;' : 'background:#f5f5f5;color:#a3a3a3;'">
             {{ tabCounts[tab.key] }}
           </span>
@@ -265,7 +263,7 @@ app.component('maintenance-page', {
       <div v-if="filteredPassports.length > 0" style="display: flex; gap: 1.5rem; margin-bottom: 1rem;">
         <div style="display: flex; align-items: baseline; gap: 0.375rem;">
           <span style="font-family: var(--font-mono); font-size: 1.25rem; font-weight: 700; color: var(--color-text-1);">{{ filteredPassports.length }}</span>
-          <span style="font-size: 0.75rem; color: var(--color-text-3);">현재 작업 항목</span>
+          <span style="font-size: 0.875rem; color: var(--color-text-3);">현재 작업 항목</span>
         </div>
       </div>
 
@@ -274,7 +272,7 @@ app.component('maintenance-page', {
         <div style="position: absolute; left: 0.75rem; top: 0; bottom: 0; width: 2px; background: rgba(0,0,0,0.06);"></div>
         <div style="position: absolute; left: 0.5rem; top: 50%; transform: translateY(-50%); width: 12px; height: 12px; border-radius: 50%; background: rgba(0,0,0,0.06);"></div>
         <div style="display: flex; align-items: center; justify-content: center; min-height: 200px;">
-          <p style="font-size: 0.875rem; color: var(--color-text-3);">아직 운영 대장에 올라온 정비·사고 항목이 없습니다</p>
+          <p style="font-size: 0.875rem; color: var(--color-text-3);">아직 확인할 정비·사고 항목이 없습니다</p>
         </div>
       </div>
 
@@ -294,13 +292,13 @@ app.component('maintenance-page', {
           <div style="background: #fff; border: 1px solid rgba(0,0,0,0.06); border-radius: 8px; padding: 0.875rem 1rem;">
             <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.5rem;">
               <span style="font-size: 0.875rem; font-weight: 600; color: var(--color-text-1);">{{ p.model || p.passportId }}</span>
-              <span style="font-size: 0.625rem; font-weight: 600; padding: 0.125rem 0.5rem; border-radius: 3px;"
+              <span style="font-size: 0.75rem; font-weight: 600; padding: 0.125rem 0.5rem; border-radius: 3px;"
                 :style="{ background: p.status==='MAINTENANCE'?'#fffbeb':'#f0fdf4', color: p.status==='MAINTENANCE'?'#d97706':'#16a34a' }">
                 {{ getStatusBadge(p.status).label }}
               </span>
             </div>
-            <div style="font-size: 0.75rem; color: var(--color-text-3); font-family: var(--font-mono);">{{ p.passportId }}</div>
-            <div v-if="p.maintenanceLogs && p.maintenanceLogs.length" style="margin-top: 0.5rem; font-size: 0.75rem; color: var(--color-text-2);">
+            <div style="font-size: 0.875rem; color: var(--color-text-3); font-family: var(--font-mono);">{{ p.passportId }}</div>
+            <div v-if="p.maintenanceLogs && p.maintenanceLogs.length" style="margin-top: 0.5rem; font-size: 0.875rem; color: var(--color-text-2);">
               정비 {{ p.maintenanceLogs.length }}건 기록
             </div>
             <!-- Actions row -->
@@ -308,7 +306,7 @@ app.component('maintenance-page', {
               style="display:flex;align-items:center;gap:8px;margin-top:0.625rem;" @click.stop>
               <button v-if="canRequestMaintenance && p.status === 'ACTIVE'"
                 @click="openMaintenanceRequest(p)"
-                class="sn-btn sn-btn-ghost" style="font-size:0.75rem;padding:4px 10px;display:inline-flex;align-items:center;gap:4px;">
+                class="sn-btn sn-btn-ghost" style="font-size:0.875rem;padding:4px 10px;display:inline-flex;align-items:center;gap:4px;">
                 <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
                 </svg>
@@ -316,7 +314,7 @@ app.component('maintenance-page', {
               </button>
               <button v-if="canLogMaintenance && p.status === 'MAINTENANCE'"
                 @click="openMaintenanceLog(p)"
-                class="sn-btn sn-btn-accent" style="font-size:0.75rem;padding:4px 10px;display:inline-flex;align-items:center;gap:4px;">
+                class="sn-btn sn-btn-accent" style="font-size:0.875rem;padding:4px 10px;display:inline-flex;align-items:center;gap:4px;">
                 <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
                 </svg>
@@ -324,7 +322,7 @@ app.component('maintenance-page', {
               </button>
               <button v-if="canLogAccident"
                 @click="openAccident(p)"
-                style="font-size:0.75rem;padding:4px 10px;display:inline-flex;align-items:center;gap:4px;background:#fef2f2;color:#dc2626;border:none;border-radius:6px;cursor:pointer;box-shadow:inset 0 0 0 1px rgba(220,38,38,0.2);">
+                style="font-size:0.875rem;padding:4px 10px;display:inline-flex;align-items:center;gap:4px;background:#fef2f2;color:#dc2626;border:none;border-radius:6px;cursor:pointer;box-shadow:inset 0 0 0 1px rgba(220,38,38,0.2);">
                 <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
                 </svg>
@@ -348,7 +346,7 @@ app.component('maintenance-page', {
         </div>
         <div style="padding:20px 24px;display:flex;flex-direction:column;gap:20px;">
           <div style="padding:12px;border-radius:8px;background:#fafafa;box-shadow:inset 0 0 0 1px rgba(0,0,0,0.06);">
-            <p class="sn-eyebrow" style="margin:0 0 2px;">TARGET PASSPORT</p>
+            <p class="sn-eyebrow" style="margin:0 0 2px;">선택한 여권</p>
             <p style="font-size:0.85rem;font-weight:600;color:#171717;font-family:'JetBrains Mono',monospace;margin:0;">{{ selectedPassport?.passportId }}</p>
           </div>
           <div>
