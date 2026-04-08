@@ -79,27 +79,23 @@ test.describe('2. 인증', () => {
 // ============================================================
 test.describe('3. 프론트엔드 로그인', () => {
   test('로그인 폼 표시 및 로그인 성공', async ({ page }) => {
-    await page.goto(BASE);
-    await page.waitForTimeout(2000);
+    await page.goto(`${BASE}/#login`);
 
-    // 로그인 폼 확인 (플레이스홀더가 다를 수 있음 대비)
-    let userInput = page.locator('input[placeholder*="아이디"]');
-    if ((await userInput.count()) === 0) {
-      userInput = page.locator('input[name="userId"]');
-    }
-    await expect(userInput).toBeVisible({ timeout: 5000 });
+    const loginHeading = page.getByRole('heading', { name: '로그인' });
+    const userInput = page.getByPlaceholder('예: issuer.operator.01');
+    const passwordInput = page.getByPlaceholder('비밀번호 입력');
 
-    // 로그인
+    await expect(loginHeading).toBeVisible();
+    await expect(userInput).toBeVisible();
+    await expect(passwordInput).toBeVisible();
+
+    await page.getByRole('button', { name: '제조사 여권 발급 · 원자재 등록 · 데이터 정정' }).click();
     await userInput.fill('admin');
-    await page.locator('input[type="password"]').fill('adminpw');
-    // orgNum select — value 기반 선택 (1=제조사)
-    await page.locator('select').first().selectOption('1');
-    await page.locator('button:has-text("로그인")').last().click();
+    await passwordInput.fill('adminpw');
+    await page.locator('form').getByRole('button', { name: '로그인' }).click();
 
-    // 로그인 성공 확인 — URL hash가 dashboard로 변경되거나 localStorage에 토큰 존재
-    await page.waitForTimeout(5000);
-    const token = await page.evaluate(() => localStorage.getItem('bp_token'));
-    expect(token).toBeTruthy();
+    await expect(page).toHaveURL(/#dashboard/);
+    await expect.poll(async () => page.evaluate(() => localStorage.getItem('bp_token'))).toBeTruthy();
   });
 });
 
@@ -284,17 +280,32 @@ test.describe('7. BMU 데이터', () => {
   });
 
   test('BMU records 조회 (인증 필요)', async ({ request }) => {
-    const listRes = await request.get(`${API}/passports?pageSize=1`, {
+    const listRes = await request.get(`${API}/passports?pageSize=100`, {
       headers: { Authorization: `Bearer ${token}` },
     });
     const list = await listRes.json();
-    const passportId = (list.records || list)[0]?.passportId;
-    if (!passportId) return test.skip();
+    const recordsPassport = (list.records || list).find((passport) => (
+      /^PASSPORT-(BMU-DEVICE|CALIPER-)/.test(passport?.passportId || '')
+    ));
 
-    const res = await request.get(`${API}/bmu/records/${passportId}`, {
+    test.skip(!recordsPassport, '현재 환경에 BMU records 시드 여권이 없습니다.');
+
+    const res = await request.get(`${API}/bmu/records/${recordsPassport.passportId}`, {
       headers: { Authorization: `Bearer ${token}` },
     });
-    expect(res.ok()).toBeTruthy();
+    expect(res.status()).toBe(200);
+
+    const data = await res.json();
+    expect(data).toMatchObject({
+      count: expect.any(Number),
+      bookmark: expect.any(String),
+    });
+    expect(data.records).toBeInstanceOf(Array);
+    expect(data.records.length).toBeGreaterThan(0);
+    expect(data.records[0]).toMatchObject({
+      docType: 'bmuRecord',
+      passportId: recordsPassport.passportId,
+    });
   });
 });
 
