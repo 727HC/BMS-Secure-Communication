@@ -161,19 +161,19 @@ app.component('bmu-data-page', {
   <div style="display:flex;flex-direction:column;gap:16px;">
 
     <!-- ===== HEADER ===== -->
-    <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; margin-bottom: 1.25rem; padding-bottom: 0.75rem; border-bottom: 1px solid var(--color-border);">
-      <div>
+    <div class="sn-page-head">
+      <div class="sn-page-head-main">
         <div style="display:flex;align-items:center;flex-wrap:wrap;gap:0.75rem;">
           <div>
             <p class="sn-eyebrow" style="margin:0 0 0.35rem;color:#0f766e;">현장 점검</p>
-            <h1 class="sn-display" style="font-size: 1.5rem;">BMU 판독 콘솔</h1>
+            <h1 class="sn-page-title">BMU 판독 콘솔</h1>
           </div>
           <span v-if="autoRefresh" style="display: inline-flex; align-items: center; gap: 0.375rem; padding: 0.25rem 0.625rem; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 9999px; font-size: 0.6875rem; font-weight: 600; color: #16a34a; margin-left: 0.75rem;">
             <span style="width: 6px; height: 6px; border-radius: 50%; background: #16a34a; animation: pulse 1.5s infinite;"></span>
             실시간
           </span>
         </div>
-        <p class="sn-caption" style="margin-top: 0.125rem;">현장 식별 후 센서 기록을 연속 판독하는 점검 화면입니다.</p>
+        <p class="sn-page-subtitle">현장 식별 후 센서 기록을 연속 판독하는 점검 화면입니다.</p>
       </div>
 
       <!-- Auto-refresh toggle with countdown -->
@@ -190,7 +190,7 @@ app.component('bmu-data-page', {
         </label>
         <transition name="fade">
           <span v-if="autoRefresh"
-                style="display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border-radius:20px;font-family:'JetBrains Mono', monospace;font-size:0.72rem;font-weight:600;color:#059669;background:rgba(52,211,153,0.1);">
+                style="display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border-radius:20px;font-family:'JetBrains Mono', monospace;font-size:0.75rem;font-weight:600;color:#059669;background:rgba(52,211,153,0.1);">
             <span style="width:6px;height:6px;border-radius:50%;background:#059669;animation:pulse 1.5s infinite;"></span>
             {{ countdown }}s
           </span>
@@ -198,26 +198,26 @@ app.component('bmu-data-page', {
       </div>
     </div>
 
-    <div class="sn-panel" style="padding:14px 16px;display:grid;grid-template-columns:1.35fr 1fr 1fr;gap:12px;">
-      <div style="padding-right:8px;border-right:1px solid rgba(0,0,0,0.06);">
-        <p class="sn-eyebrow" style="margin:0 0 0.35rem;">판독 요약</p>
-        <p style="font-size:0.875rem;font-weight:600;color:#171717;margin:0 0 0.25rem;">식별 → 라이브 판독 → 이상 플래그 확인</p>
-        <p style="font-size:0.75rem;color:#6b7280;line-height:1.6;margin:0;">여권 ID를 기준으로 BMU 레코드를 불러오고 최신 행을 첫 점검 근거로 사용합니다.</p>
+    <div class="sn-panel sn-summary-grid sn-summary-grid-3">
+      <div class="sn-summary-lead">
+        <p class="sn-eyebrow sn-summary-title">판독 요약</p>
+        <p class="sn-summary-copy-strong">식별 → 라이브 판독 → 이상 플래그 확인</p>
+        <p class="sn-stat-note" style="margin:0; line-height:1.6;">여권 ID를 기준으로 BMU 레코드를 불러오고 최신 행을 첫 점검 근거로 사용합니다.</p>
       </div>
       <div>
-        <p class="sn-eyebrow" style="margin:0 0 0.35rem;">조회 상태</p>
-        <p style="font-family:var(--font-mono);font-size:1.1rem;font-weight:700;color:#171717;margin:0;">{{ hasSearched ? sortedRecords.length : 0 }}</p>
-        <p style="font-size:0.72rem;color:#6b7280;margin:0.2rem 0 0;">확인된 레코드</p>
+        <p class="sn-eyebrow sn-stat-card-title">조회 상태</p>
+        <p class="sn-stat-count">{{ hasSearched ? sortedRecords.length : 0 }}</p>
+        <p class="sn-stat-note">확인된 기록</p>
       </div>
       <div>
-        <p class="sn-eyebrow" style="margin:0 0 0.35rem;color:#059669;">최근 조회</p>
-        <p style="font-size:0.82rem;font-weight:600;color:#171717;margin:0;">{{ lastFetchedAt ? lastFetchedAt.toLocaleTimeString('ko-KR') : '대기 중' }}</p>
-        <p style="font-size:0.72rem;color:#6b7280;margin:0.2rem 0 0;">{{ autoRefresh ? '라이브 모니터링 활성' : '수동 조회' }}</p>
+        <p class="sn-eyebrow sn-stat-card-title" style="color:#059669;">최근 조회</p>
+        <p class="sn-summary-copy-strong" style="margin:0;">{{ lastFetchedAt ? lastFetchedAt.toLocaleTimeString('ko-KR') : '대기 중' }}</p>
+        <p class="sn-stat-note">{{ autoRefresh ? '실시간 확인 중' : '수동 조회' }}</p>
       </div>
     </div>
 
     <!-- ===== SEARCH BAR ===== -->
-    <div class="sn-panel" style="padding:12px 16px;">
+    <div class="sn-panel sn-toolbar" style="padding:12px 16px;">
       <div style="display:flex;align-items:flex-end;gap:12px;">
         <div style="flex:1;">
           <label class="sn-eyebrow" style="display:block;margin-bottom:8px;">
