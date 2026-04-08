@@ -40,3 +40,20 @@ xEV BMS 보안 플랫폼 — 배터리 여권, Hyperledger Fabric, 임베디드 
 - Commit message: 한글 or 영어, `feat:/fix:/refactor:` prefix
 - 테스트: 수정 후 `node -c` 구문 검증 필수
 - 환경변수: `.env` 파일로 관리, 커밋 금지
+
+## Test Checklist
+
+- [ ] `node -c` 구문 검증 통과
+- [ ] 변경된 모듈의 기존 기능 정상 동작 확인
+- [ ] API 엔드포인트 변경 시 요청/응답 검증
+- [ ] 체인코드 변경 시 `peer chaincode invoke` 테스트
+- [ ] 프론트엔드 변경 시 브라우저 콘솔 에러 없음 확인
+
+## Review Checklist
+
+- [ ] 보안: secrets/키/토큰 하드코딩 없음
+- [ ] 보안: 사용자 입력 검증 (injection 방지)
+- [ ] 성능: 불필요한 반복/중복 호출 없음
+- [ ] 테스트: 변경 범위에 맞는 테스트 존재
+- [ ] 호환성: 기존 API/인터페이스 깨지지 않음
+- [ ] 범위: 다른 세션 디렉토리 침범 없음
