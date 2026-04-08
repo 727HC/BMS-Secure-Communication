@@ -95,7 +95,7 @@ app.component('dashboard-page', {
         .slice(0, 8)
     );
 
-    const displayTitle = computed(() => '대시보드');
+    const displayTitle = computed(() => '등록 현황');
     const rowMenuId = ref(null);
     const tableWrapRef = ref(null);
 
@@ -114,10 +114,10 @@ app.component('dashboard-page', {
     }
 
     function actionTarget(p) {
-      if (!p.vin) return { route: 'passports', label: '등록부에서 확인' };
+      if (!p.vin) return { route: 'passports', label: '목록에서 확인' };
       if (p.status === 'MAINTENANCE' || p.status === 'ANALYSIS') return { route: 'maintenance', label: nextAction(p) };
       if (p.recycleAvailable || p.status === 'RECYCLING') return { route: 'recycling', label: nextAction(p) };
-      return { route: 'passport-detail', label: '기술 문서' };
+      return { route: 'passport-detail', label: '상세 보기' };
     }
 
     function primaryActionLabel(passport) {
@@ -137,8 +137,8 @@ app.component('dashboard-page', {
     }
 
     function quickActions(passport) {
-      const items = [{ key: 'detail', label: '기술 문서 보기' }];
-      if (!passport.vin) items.push({ key: 'bind', label: '등록부에서 바인딩 확인' });
+      const items = [{ key: 'detail', label: '상세 보기' }];
+      if (!passport.vin) items.push({ key: 'bind', label: '목록에서 연결 확인' });
       if (passport.status === 'MAINTENANCE' || passport.status === 'ANALYSIS') items.push({ key: 'maintenance', label: '정비 화면으로 이동' });
       if (passport.recycleAvailable || passport.status === 'RECYCLING') items.push({ key: 'recycling', label: '재활용 화면으로 이동' });
       return items;
@@ -182,52 +182,52 @@ app.component('dashboard-page', {
 
   <div v-else style="display:flex;flex-direction:column;gap:24px;">
 
-    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap;">
-      <div>
-        <p class="sn-eyebrow" style="margin:0 0 6px;color:#94a3b8;">운영 개요</p>
+    <div class="sn-page-head" style="margin-bottom:0; border-bottom:none; padding-bottom:0; flex-wrap:wrap;">
+      <div class="sn-page-head-main">
+        <p class="sn-eyebrow" style="margin:0 0 6px;color:#94a3b8;">한눈에 보기</p>
         <h1 class="sn-display" style="font-size:2rem;margin:0 0 6px;">{{ displayTitle }}</h1>
-        <p class="sn-body" style="margin:0;max-width:44rem;">배터리 여권의 등록 현황, 후속 처리, 회수 검토 상태를 한 번에 확인하고 바로 다음 조치로 이어집니다.</p>
+        <p class="sn-body" style="margin:0;max-width:44rem;">현재 상태와 다음 처리 항목을 한 번에 확인하고 바로 이어서 움직일 수 있습니다.</p>
       </div>
-      <div style="display:flex;align-items:center;gap:10px;">
+      <div class="sn-page-actions" style="gap:10px;">
         <button style="display:inline-flex;align-items:center;gap:8px;padding:11px 18px;background:#fff;border:1px solid rgba(0,0,0,0.08);border-radius:12px;font-size:14px;font-weight:600;color:#475569;cursor:pointer;">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M5 21h14"/></svg>
-          내보내기
+          내려받기
         </button>
         <button style="display:inline-flex;align-items:center;gap:8px;padding:11px 18px;background:#fff;border:1px solid rgba(0,0,0,0.08);border-radius:12px;font-size:14px;font-weight:600;color:#475569;cursor:pointer;">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 5h18"/><path d="M6 12h12"/><path d="M10 19h4"/></svg>
-          필터
+          보기 기준
         </button>
         <button @click="go('passports')" style="display:inline-flex;align-items:center;gap:8px;padding:12px 18px;background:#1769e0;color:#fff;border:none;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;box-shadow:0 14px 28px rgba(23,105,224,0.18);">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-          여권 추가
+          여권 만들기
         </button>
       </div>
     </div>
 
     <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;">
-      <div style="background:#fff;border-radius:20px;padding:22px 24px;box-shadow:0 1px 3px rgba(0,0,0,0.05);border:1px solid rgba(0,0,0,0.04);">
+      <div class="sn-panel" style="border-radius:20px;padding:22px 24px;border:1px solid rgba(0,0,0,0.04);">
         <p class="sn-eyebrow" style="margin-bottom:8px;color:#94a3b8;">등록 여권</p>
         <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:10px;">
           <p style="font-family:var(--font-display);font-size:3rem;font-weight:700;line-height:1;color:#0f172a;margin:0;">{{ total }}</p>
           <span style="display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;background:#edf7f0;color:#11945c;font-size:12px;font-weight:700;">+ {{ bindPend > 0 ? bindPend : active }}건</span>
         </div>
-        <p class="sn-caption" style="margin-top:10px;">현재 등록부에 올라온 배터리 여권 수</p>
+        <p class="sn-caption" style="margin-top:10px;">현재 등록된 배터리 여권 수</p>
       </div>
-      <div style="background:#fff;border-radius:20px;padding:22px 24px;box-shadow:0 1px 3px rgba(0,0,0,0.05);border:1px solid rgba(0,0,0,0.04);">
+      <div class="sn-panel" style="border-radius:20px;padding:22px 24px;border:1px solid rgba(0,0,0,0.04);">
         <p class="sn-eyebrow" style="margin-bottom:8px;color:#94a3b8;">후속 처리</p>
         <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:10px;">
           <p style="font-family:var(--font-display);font-size:3rem;font-weight:700;line-height:1;color:#0f172a;margin:0;">{{ svcOpen }}</p>
-          <span style="display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;background:#eef5ff;color:#1769e0;font-size:12px;font-weight:700;">정비·분석 대기</span>
+          <span style="display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;background:#eef5ff;color:#1769e0;font-size:12px;font-weight:700;">정비·분석 예정</span>
         </div>
-        <p class="sn-caption" style="margin-top:10px;">정비 또는 분석 결과 입력이 필요한 여권</p>
+        <p class="sn-caption" style="margin-top:10px;">정비나 분석 처리가 필요한 여권</p>
       </div>
-      <div style="background:#fff;border-radius:20px;padding:22px 24px;box-shadow:0 1px 3px rgba(0,0,0,0.05);border:1px solid rgba(0,0,0,0.04);">
+      <div class="sn-panel" style="border-radius:20px;padding:22px 24px;border:1px solid rgba(0,0,0,0.04);">
         <p class="sn-eyebrow" style="margin-bottom:8px;color:#94a3b8;">회수 검토</p>
         <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:10px;">
           <p style="font-family:var(--font-display);font-size:3rem;font-weight:700;line-height:1;color:#0f172a;margin:0;">{{ recycleN }}</p>
-          <span style="display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;background:#ecfbff;color:#0891b2;font-size:12px;font-weight:700;">회수·재활용 검토</span>
+          <span style="display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;background:#ecfbff;color:#0891b2;font-size:12px;font-weight:700;">회수·재활용 확인</span>
         </div>
-        <p class="sn-caption" style="margin-top:10px;">재활용 가능 또는 추출 검토 상태</p>
+        <p class="sn-caption" style="margin-top:10px;">회수나 추출 검토가 필요한 상태</p>
       </div>
     </div>
 
@@ -235,7 +235,7 @@ app.component('dashboard-page', {
       <section style="background:#fff;border-radius:20px;padding:22px 24px;box-shadow:0 1px 3px rgba(0,0,0,0.05);border:1px solid rgba(0,0,0,0.04);">
         <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:18px;">
           <div>
-            <p class="sn-eyebrow" style="margin-bottom:6px;color:#94a3b8;">Chemistry</p>
+            <p class="sn-eyebrow" style="margin-bottom:6px;color:#94a3b8;">화학계열</p>
             <h2 class="sn-heading" style="font-size:1.1rem;margin:0;">화학계열 분포</h2>
           </div>
           <span class="sn-caption">화학계열 기준</span>
@@ -246,8 +246,8 @@ app.component('dashboard-page', {
               <circle cx="90" cy="90" r="72" fill="none" stroke="#eef4fb" stroke-width="24"></circle>
               <circle v-for="segment in chemistrySegments" :key="segment.label" cx="90" cy="90" r="72" fill="none" :stroke="segment.color" stroke-width="24" stroke-linecap="butt" :stroke-dasharray="segment.dashArray" :stroke-dashoffset="segment.dashOffset" transform="rotate(-90 90 90)"></circle>
               <circle cx="90" cy="90" r="38" fill="#fff"></circle>
-              <text x="90" y="82" text-anchor="middle" style="font-family:var(--font-display);font-size:13px;font-weight:700;fill:#0f172a;">총 {{ total }}</text>
-              <text x="90" y="101" text-anchor="middle" style="font-size:11px;font-weight:600;fill:#94a3b8;">여권</text>
+              <text x="90" y="79" text-anchor="middle" style="font-family:var(--font-display);font-size:16px;font-weight:800;fill:#0f172a;">총 {{ total }}</text>
+              <text x="90" y="103" text-anchor="middle" style="font-size:13px;font-weight:600;fill:#94a3b8;">여권</text>
             </svg>
           </div>
           <div style="display:flex;flex-direction:column;gap:10px;">
@@ -283,7 +283,7 @@ app.component('dashboard-page', {
       <section style="background:#fff;border-radius:20px;padding:22px 24px;box-shadow:0 1px 3px rgba(0,0,0,0.05);border:1px solid rgba(0,0,0,0.04);">
         <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:18px;">
           <div>
-            <p class="sn-eyebrow" style="margin-bottom:6px;color:#94a3b8;">Category</p>
+            <p class="sn-eyebrow" style="margin-bottom:6px;color:#94a3b8;">등록 상태</p>
             <h2 class="sn-heading" style="font-size:1.1rem;margin:0;">상태 분류</h2>
           </div>
           <span class="sn-caption">상태 기준</span>
@@ -332,7 +332,7 @@ app.component('dashboard-page', {
     <div style="display:flex;justify-content:center;">
       <button style="display:inline-flex;align-items:center;gap:10px;padding:13px 18px;background:#fff;border:1px solid rgba(0,0,0,0.08);border-radius:12px;font-size:14px;font-weight:600;color:#475569;cursor:pointer;box-shadow:0 8px 20px rgba(15,23,42,0.04);">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-        맞춤 리포트 추가
+        정리 보기 추가
       </button>
     </div>
 
@@ -349,7 +349,7 @@ app.component('dashboard-page', {
               <th>등록일</th>
               <th>상태</th>
               <th>다음 조치</th>
-              <th style="text-align:right;">관리</th>
+              <th style="text-align:right;">조치</th>
             </tr>
           </thead>
           <tbody>
