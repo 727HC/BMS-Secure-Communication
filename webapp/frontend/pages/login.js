@@ -3,9 +3,9 @@ app.component('landing-page', {
   emits: ['navigate'],
   setup(props, { emit }) {
     const featureCards = [
-      { title: '배터리 여권', desc: '생성부터 회수까지 전 과정을 한 화면에서 관리합니다.' },
-      { title: '정비 이력', desc: '정비 요청, 분석 결과, 사고 기록을 이어서 관리합니다.' },
-      { title: '규제 증빙', desc: '감사 기록과 회수 판단 근거를 빠르게 확인합니다.' },
+      { title: '배터리 여권', desc: '발급부터 회수 확인까지 필요한 상태를 빠르게 확인합니다.' },
+      { title: '정비 기록', desc: '정비 요청과 점검 결과를 한 흐름으로 이어서 봅니다.' },
+      { title: '감사 기록', desc: '검토 근거와 작업 기록을 필요한 시점에 확인합니다.' },
     ];
 
     function goLogin() {
@@ -20,70 +20,66 @@ app.component('landing-page', {
   },
   template: `
     <div class="min-h-screen overflow-hidden bg-[#f5f6f8] text-[#3b3b3b]">
-      <div class="relative mx-auto min-h-screen max-w-[1440px] px-6 pb-10 pt-8 lg:px-16 lg:pt-10">
+      <div class="relative mx-auto min-h-screen max-w-[1440px] px-6 pb-4 pt-8 lg:px-16 lg:pt-10">
         <div class="pointer-events-none absolute -left-[22rem] -top-[18rem] h-[42rem] w-[42rem] rotate-45 rounded-[70px] bg-[#e1f3ff]"></div>
         <div class="pointer-events-none absolute right-[-10rem] top-[-4rem] h-[32rem] w-[32rem] rotate-45 rounded-[60px] bg-[#e1f3ff]"></div>
         <div class="pointer-events-none absolute bottom-[-12rem] right-[12rem] h-[28rem] w-[28rem] rotate-45 rounded-[60px] bg-[#e1f3ff]"></div>
-        <div class="pointer-events-none absolute right-[2rem] top-[16rem] h-[16rem] w-[40rem] rounded-[48px] bg-[#00a8ff]/80 blur-[2px]"></div>
 
         <header class="relative z-10 flex items-center justify-between gap-6">
-          <div class="flex items-center gap-3">
-            <div class="flex h-12 w-12 items-center justify-center rounded-full bg-[#1769e0] text-white shadow-sm">
+          <div class="flex items-center gap-4">
+            <div class="flex h-14 w-14 items-center justify-center rounded-full bg-[#1769e0] text-white shadow-sm">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><rect x="6" y="2" width="12" height="20" rx="2"/><line x1="6" y1="7" x2="18" y2="7"/><line x1="6" y1="17" x2="18" y2="17"/></svg>
             </div>
             <div>
-              <p class="text-sm font-semibold tracking-[0.18em] text-[#1769e0]">BATP</p>
-              <p class="text-lg font-semibold tracking-[-0.02em] text-[#1769e0]">BatteryPass</p>
+              <p class="text-[0.95rem] font-semibold tracking-[0.18em] text-[#1769e0]">BATP</p>
+              <p class="text-[1.35rem] font-semibold tracking-[-0.03em] text-[#1769e0]">BatteryPass</p>
             </div>
           </div>
 
-          <nav class="hidden items-center gap-10 text-base font-semibold text-[#3b3b3b] lg:flex">
+          <nav class="hidden items-center gap-12 text-[1.05rem] font-semibold text-[#3b3b3b] lg:flex">
             <span>배터리 여권</span>
             <span>정비 이력</span>
-            <span>규제 증빙</span>
-            <button @click="goLogin" type="button" class="rounded-xl bg-[#00a8ff] px-8 py-3 text-white shadow-sm transition hover:bg-[#0998e2]">로그인</button>
+            <span>감사 기록</span>
+            <button @click="goLogin" type="button" class="rounded-xl bg-[#00a8ff] px-9 py-3.5 text-[1.02rem] text-white shadow-sm transition hover:bg-[#0998e2]">로그인</button>
           </nav>
 
           <button @click="goLogin" type="button" class="rounded-xl bg-[#00a8ff] px-5 py-3 text-sm font-semibold text-white shadow-sm lg:hidden">로그인</button>
         </header>
 
-        <main class="relative z-10 mt-16 grid items-center gap-12 lg:grid-cols-[minmax(0,0.9fr)_minmax(420px,1fr)] lg:gap-6 xl:mt-20">
-          <section class="max-w-[33rem]">
-            <p class="text-sm font-semibold uppercase tracking-[0.3em] text-[#1769e0]">BATP Platform</p>
-            <h1 class="mt-5 font-display text-[3.4rem] font-semibold leading-[1.04] tracking-[-0.05em] text-[#3b3b3b] lg:text-[4.7rem]">
-              배터리 여권을<br/>한 번에 보고<br/>바로 이어서 처리하세요
+        <main class="relative z-10 mt-17 grid items-center gap-20 lg:grid-cols-[minmax(0,1fr)_minmax(600px,1.24fr)] lg:gap-40 xl:mt-20">
+          <section class="max-w-[38rem]">
+            <p class="text-sm font-semibold uppercase tracking-[0.26em] text-[#1769e0]">업무 시작</p>
+            <h1 class="mt-5 font-display text-[3.4rem] font-semibold leading-[1.08] tracking-[-0.05em] text-[#3b3b3b] lg:text-[4.95rem]">
+              배터리 여권과<br/>관련 기록을<br/>한곳에서 확인하세요
             </h1>
-            <p class="mt-8 max-w-[32rem] text-lg leading-9 text-[#555]">
-              제조, 차량 바인딩, 정비, 회수, 감사 기록까지 배터리 여권의 모든 단계를 하나의 플랫폼에서 관리하세요.
-            </p>
+            <div class="mt-9 flex max-w-[30rem] items-start gap-4 text-[#555]">
+              <span class="mt-1 h-[88px] w-[6px] rounded-full bg-[#171717]"></span>
+              <p class="text-[1.08rem] leading-9">
+                발급, 차량 연결, 정비, 회수 확인에 필요한 화면을 한곳에 모았습니다.
+              </p>
+            </div>
 
-            <div class="mt-10 flex flex-wrap items-center gap-4">
-              <button @click="goLogin" type="button" class="rounded-xl bg-[#00a8ff] px-9 py-4 text-lg font-semibold text-white shadow-sm transition hover:bg-[#0998e2]">로그인</button>
-              <button @click="goRegister" type="button" class="rounded-xl border border-[#d5d9df] bg-white px-9 py-4 text-lg font-semibold text-[#3b3b3b] transition hover:border-[#b9c2cf]">계정 등록</button>
+            <div class="mt-7 flex flex-wrap items-center gap-4">
+              <button @click="goLogin" type="button" class="rounded-xl bg-[#00a8ff] px-10 py-4 text-[1.08rem] font-semibold text-white shadow-sm transition hover:bg-[#0998e2]">로그인</button>
+              <button @click="goRegister" type="button" class="rounded-xl border border-[#d5d9df] bg-white px-10 py-4 text-[1.08rem] font-semibold text-[#3b3b3b] transition hover:border-[#b9c2cf]">계정 등록</button>
             </div>
           </section>
 
-          <section class="relative min-h-[420px] lg:min-h-[560px]">
-            <div class="absolute inset-x-0 bottom-0 h-[88%] rounded-[36px] bg-white/65 backdrop-blur-[1px]"></div>
-            <div class="absolute left-[8%] top-[8%] flex h-[66%] w-[58%] items-center justify-center rounded-[28px] bg-white shadow-[0_24px_80px_rgba(23,105,224,0.12)]">
-              <img src="./solar-ev-station.png" alt="Solar EV station illustration" class="max-h-[88%] w-auto object-contain" />
-            </div>
-            <div class="absolute right-[2%] top-[12%] flex h-16 w-16 items-center justify-center rounded-2xl bg-[#1769e0] text-white shadow-[0_16px_32px_rgba(23,105,224,0.2)]">
-              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1"><path d="M13 3L4 14h7v7l9-11h-7z"/></svg>
-            </div>
-            <div class="absolute right-[8%] bottom-[14%] w-[38%] rounded-[26px] bg-white px-6 py-5 shadow-[0_20px_40px_rgba(0,0,0,0.08)]">
-              <p class="text-sm font-semibold uppercase tracking-[0.18em] text-[#9aa3ad]">Now available</p>
-              <h2 class="mt-3 text-2xl font-semibold leading-tight tracking-[-0.03em] text-[#3b3b3b]">정비 · 회수 · 증빙을<br/>바로 확인하는 BATP 입구</h2>
-              <p class="mt-4 text-sm leading-7 text-[#666]">대시보드처럼 꾸미기보다, 실제로 들어가서 어떤 작업을 이어서 할지부터 보여줍니다.</p>
+          <section class="relative min-h-[560px] lg:min-h-[710px]">
+            <div class="absolute inset-x-0 bottom-0 h-[93%] rounded-[42px] bg-white/68 backdrop-blur-[1px]"></div>
+            <div class="absolute left-[-7%] top-[16%] flex h-[82%] w-[104%] items-end justify-center overflow-visible rounded-[34px] bg-transparent shadow-none">
+              <img src="./assets/landing-hero.png" alt="Electric vehicle charging illustration" class="h-[138%] w-auto max-w-none object-contain object-right-bottom translate-x-[6%] translate-y-[15%]" />
             </div>
           </section>
         </main>
 
-        <section class="relative z-10 mt-20 grid gap-6 md:grid-cols-3">
-          <article v-for="card in featureCards" :key="card.title" class="rounded-[20px] bg-white px-6 py-6 shadow-[0_16px_32px_rgba(0,0,0,0.05)]">
-            <p class="text-2xl font-semibold tracking-[-0.03em] text-[#3b3b3b]">{{ card.title }}</p>
-            <p class="mt-4 text-[0.95rem] leading-8 text-[#666]">{{ card.desc }}</p>
-          </article>
+        <section class="relative z-10 mt-32 ml-[42%] w-[58%] px-4 py-2 md:px-6 md:py-3">
+          <div class="grid gap-7 md:grid-cols-3 md:gap-14">
+            <article v-for="card in featureCards" :key="card.title" class="min-w-0">
+              <p class="text-[1.12rem] font-semibold tracking-[-0.03em] text-[#3b3b3b]">{{ card.title }}</p>
+              <p class="mt-2 text-[1rem] leading-7 text-[#667085]">{{ card.desc }}</p>
+            </article>
+          </div>
         </section>
       </div>
     </div>
@@ -106,7 +102,7 @@ app.component('login-page', {
     const orgOptions = [
       { value: 1, short: '제조사', desc: '여권 발급 · 원자재 등록 · 데이터 정정' },
       { value: 2, short: 'EV제조사', desc: '차량 바인딩 · 운행 인계 · 사고 접수' },
-      { value: 3, short: '정비/분석', desc: '정비 완료 · 분석 결과 · 후속 처리' },
+      { value: 3, short: '정비/분석', desc: '정비 완료 · 분석 결과 · 처리 마감' },
       { value: 4, short: '검증기관', desc: '규제 검토 · 회수 판정 · 폐기 승인' },
     ];
 
@@ -115,7 +111,7 @@ app.component('login-page', {
     });
 
     const selectedOrg = computed(() => orgOptions.find((org) => org.value === orgNum.value) || orgOptions[0]);
-    const submitLabel = computed(() => activeTab.value === 'login' ? '로그인' : '등록 요청 보내기');
+      const submitLabel = computed(() => activeTab.value === 'login' ? '로그인' : '계정 등록');
 
     function resetForm() {
       userId.value = '';
@@ -148,7 +144,7 @@ app.component('login-page', {
       try {
         const data = await props.api.post(endpoint, body);
         if (activeTab.value === 'register') {
-          window.$toast('success', '회원가입이 완료되었습니다. 로그인해주세요.');
+          window.$toast('success', '조직 계정 등록이 완료되었습니다. 로그인해 주세요.');
           switchTab('login');
           userId.value = body.userId;
           orgNum.value = body.orgNum;
@@ -208,24 +204,24 @@ app.component('login-page', {
 
           <form @submit.prevent="handleSubmit" class="mt-6 flex flex-col gap-4">
             <div>
-              <label class="mb-2 block text-[0.72rem] font-semibold uppercase tracking-[0.08em] text-stone-500">조직 선택</label>
+              <label class="mb-2 block text-[0.75rem] font-semibold uppercase tracking-[0.08em] text-stone-500">조직 선택</label>
               <div class="grid grid-cols-2 gap-2">
                 <button v-for="org in orgOptions" :key="org.value" type="button" @click="orgNum = org.value"
                   class="rounded-2xl border px-4 py-3 text-left transition"
                   :class="orgNum === org.value ? 'border-stone-900 bg-stone-900 text-white shadow-sm' : 'border-stone-200 bg-stone-50 text-stone-700'">
                   <p class="text-sm font-semibold">{{ org.short }}</p>
-                  <p class="mt-1 text-[0.72rem] leading-5 opacity-80">{{ org.desc }}</p>
+                  <p class="mt-1 text-[0.75rem] leading-5 opacity-80">{{ org.desc }}</p>
                 </button>
               </div>
             </div>
 
             <div>
-              <label class="mb-2 block text-[0.72rem] font-semibold uppercase tracking-[0.08em] text-stone-500">사용자 ID</label>
+              <label class="mb-2 block text-[0.75rem] font-semibold uppercase tracking-[0.08em] text-stone-500">사용자 ID</label>
               <input v-model="userId" type="text" placeholder="예: issuer.operator.01" class="sn-input" style="padding:0.95rem 1rem;" />
             </div>
 
             <div>
-              <label class="mb-2 block text-[0.72rem] font-semibold uppercase tracking-[0.08em] text-stone-500">비밀번호</label>
+              <label class="mb-2 block text-[0.75rem] font-semibold uppercase tracking-[0.08em] text-stone-500">비밀번호</label>
               <input v-model="password" type="password" placeholder="비밀번호 입력" class="sn-input" style="padding:0.95rem 1rem;" />
             </div>
 
