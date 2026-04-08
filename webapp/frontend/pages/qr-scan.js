@@ -148,29 +148,29 @@ app.component('qr-scan-page', {
   <div style="display:flex;flex-direction:column;gap:16px;">
 
     <!-- ====== PAGE HEADER ====== -->
-    <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; margin-bottom: 1.25rem; padding-bottom: 0.75rem; border-bottom: 1px solid var(--color-border);">
-      <div>
+    <div class="sn-page-head">
+      <div class="sn-page-head-main">
         <p class="sn-eyebrow" style="margin:0 0 0.35rem;color:#0f766e;">식별 접수</p>
-        <h1 class="sn-display" style="font-size: 1.5rem;">식별 진입점</h1>
-        <p class="sn-caption" style="margin-top: 0.125rem;">QR·NFC·수동 입력으로 여권을 식별하고 상세 조회로 연결합니다.</p>
+        <h1 class="sn-page-title">식별 진입점</h1>
+        <p class="sn-page-subtitle">QR·NFC·수동 입력으로 여권을 식별하고 상세 조회로 연결합니다.</p>
       </div>
     </div>
 
-    <div class="sn-panel" style="padding:14px 16px;display:grid;grid-template-columns:1.35fr 1fr 1fr;gap:12px;">
-      <div style="padding-right:8px;border-right:1px solid rgba(0,0,0,0.06);">
-        <p class="sn-eyebrow" style="margin:0 0 0.35rem;">접수 요약</p>
-        <p style="font-size:0.875rem;font-weight:600;color:#171717;margin:0 0 0.25rem;">카메라 · NFC · 수동 질의</p>
-        <p style="font-size:0.75rem;color:#6b7280;line-height:1.6;margin:0;">현장에서 식별값을 확보한 뒤 바로 여권 상세와 데이터 조회로 이동할 수 있습니다.</p>
+    <div class="sn-panel sn-summary-grid sn-summary-grid-3">
+      <div class="sn-summary-lead">
+        <p class="sn-eyebrow sn-summary-title">접수 요약</p>
+        <p class="sn-summary-copy-strong">카메라 · NFC · 수동 질의</p>
+        <p class="sn-stat-note" style="margin:0;line-height:1.6;">현장에서 식별값을 확보한 뒤 바로 여권 상세와 데이터 조회로 이동할 수 있습니다.</p>
       </div>
       <div>
-        <p class="sn-eyebrow" style="margin:0 0 0.35rem;">마지막 입력</p>
-        <p style="font-family:var(--font-mono);font-size:0.82rem;font-weight:600;color:#171717;margin:0;word-break:break-all;">{{ scanResult || '대기 중' }}</p>
-        <p style="font-size:0.72rem;color:#6b7280;margin:0.2rem 0 0;">식별 토큰</p>
+        <p class="sn-eyebrow sn-stat-card-title">마지막 입력</p>
+        <p class="sn-summary-copy-strong" style="font-family:var(--font-mono);word-break:break-all;margin:0;">{{ scanResult || '대기 중' }}</p>
+        <p class="sn-stat-note">식별값</p>
       </div>
       <div>
-        <p class="sn-eyebrow" style="margin:0 0 0.35rem;color:#059669;">결과 상태</p>
-        <p style="font-size:0.82rem;font-weight:600;color:#171717;margin:0;">{{ loadingPassport ? '조회 중' : (passportData ? '여권 확인' : '대기') }}</p>
-        <p style="font-size:0.72rem;color:#6b7280;margin:0.2rem 0 0;">상세 연결 상태</p>
+        <p class="sn-eyebrow sn-stat-card-title" style="color:#059669;">결과 상태</p>
+        <p class="sn-summary-copy-strong" style="margin:0;">{{ loadingPassport ? '조회 중' : (passportData ? '여권 확인' : '대기') }}</p>
+        <p class="sn-stat-note">상세 연결 상태</p>
       </div>
     </div>
 
@@ -181,9 +181,9 @@ app.component('qr-scan-page', {
 
         <!-- Camera Scanner -->
         <div class="sn-panel" style="overflow:hidden;">
-          <div style="padding:14px 20px;border-bottom:1px solid rgba(0,0,0,0.06);display:flex;align-items:center;justify-content:space-between;">
-            <span style="font-size:0.85rem;font-weight:600;color:#171717;">카메라 스캔</span>
-            <button v-if="!scanning" @click="startScan" class="sn-btn sn-btn-accent" style="font-size:0.75rem;padding:6px 12px;display:inline-flex;align-items:center;gap:6px;">
+          <div class="sn-scan-panel-head">
+            <span class="sn-scan-title">카메라 스캔</span>
+            <button v-if="!scanning" @click="startScan" class="sn-btn sn-btn-accent" style="font-size:0.75rem;padding:6px 12px;">
               <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/>
               </svg>
@@ -213,19 +213,19 @@ app.component('qr-scan-page', {
                 </div>
               </div>
               <p style="font-size:0.85rem;color:#6b7280;margin:0 0 4px;font-family:'Pretendard Variable', sans-serif;">카메라를 열어 QR 코드를 스캔하세요</p>
-              <p style="font-size:0.72rem;color:#6b7280;font-family:'Pretendard Variable', sans-serif;">배터리 여권 QR 코드를 인식하면 자동으로 조회됩니다</p>
+              <p style="font-size:0.75rem;color:#6b7280;font-family:'Pretendard Variable', sans-serif;">배터리 여권 QR 코드를 인식하면 자동으로 조회합니다</p>
             </div>
           </div>
         </div>
 
         <!-- NFC Scanner -->
         <div v-if="nfcSupported" class="sn-panel" style="overflow:hidden;">
-          <div style="padding:14px 20px;border-bottom:1px solid rgba(0,0,0,0.06);display:flex;align-items:center;justify-content:space-between;">
+          <div class="sn-scan-panel-head">
             <div style="display:flex;align-items:center;gap:8px;">
-              <span style="font-size:0.85rem;font-weight:600;color:#171717;">NFC 스캔</span>
-              <span style="font-size:0.6rem;padding:1px 6px;border-radius:4px;background:#eff6ff;color:#2563eb;">Web NFC</span>
+              <span class="sn-scan-title">NFC 스캔</span>
+              <span class="sn-scan-icon-chip" style="background:#eff6ff;color:#2563eb;">Web NFC</span>
             </div>
-            <button v-if="!nfcScanning" @click="startNfc" class="sn-btn sn-btn-accent" style="font-size:0.75rem;padding:6px 12px;display:inline-flex;align-items:center;gap:6px;">
+            <button v-if="!nfcScanning" @click="startNfc" class="sn-btn sn-btn-accent" style="font-size:0.75rem;padding:6px 12px;">
               <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071c3.904-3.905 10.236-3.905 14.14 0M1.394 9.393c5.857-5.858 15.355-5.858 21.213 0"/>
               </svg>
@@ -241,7 +241,7 @@ app.component('qr-scan-page', {
                 </svg>
               </div>
               <p style="font-size:0.85rem;font-weight:500;color:#2563eb;margin:0 0 4px;">NFC 대기 중...</p>
-              <p style="font-size:0.72rem;color:#6b7280;">배터리에 부착된 NFC 태그를 디바이스에 가까이 대세요</p>
+              <p style="font-size:0.75rem;color:#6b7280;">배터리에 붙어 있는 NFC 태그를 기기에 가까이 대세요</p>
             </div>
             <div v-else style="display:flex;flex-direction:column;align-items:center;">
               <div style="width:56px;height:56px;border-radius:16px;background:#f1f5f9;display:flex;align-items:center;justify-content:center;margin-bottom:12px;">
@@ -254,10 +254,10 @@ app.component('qr-scan-page', {
           </div>
         </div>
         <div v-else class="sn-panel" style="overflow:hidden;">
-          <div style="padding:14px 20px;border-bottom:1px solid rgba(0,0,0,0.06);display:flex;align-items:center;justify-content:space-between;">
+          <div class="sn-scan-panel-head">
             <div style="display:flex;align-items:center;gap:8px;">
-              <span style="font-size:0.85rem;font-weight:600;color:#171717;">NFC 스캔</span>
-              <span style="font-size:0.6rem;padding:1px 6px;border-radius:4px;background:#fef2f2;color:#dc2626;">미지원</span>
+              <span class="sn-scan-title">NFC 스캔</span>
+              <span class="sn-scan-icon-chip" style="background:#fef2f2;color:#dc2626;">미지원</span>
             </div>
           </div>
           <div style="padding:24px 16px;display:flex;flex-direction:column;align-items:center;text-align:center;">
@@ -304,37 +304,37 @@ app.component('qr-scan-page', {
             </div>
 
             <!-- Info grid -->
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-              <div style="background:#fafafa;box-shadow:inset 0 0 0 1px rgba(0,0,0,0.06);border-radius:8px;padding:10px 12px;">
+            <div class="sn-result-grid">
+              <div class="sn-result-tile">
                 <p class="sn-eyebrow" style="margin:0;">여권 ID</p>
-                <p style="font-family:'JetBrains Mono',monospace;font-size:0.75rem;color:#525252;margin:4px 0 0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ passportData.passportId }}</p>
+                <p class="sn-result-value-mono" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ passportData.passportId }}</p>
               </div>
-              <div style="background:#fafafa;box-shadow:inset 0 0 0 1px rgba(0,0,0,0.06);border-radius:8px;padding:10px 12px;">
+              <div class="sn-result-tile">
                 <p class="sn-eyebrow" style="margin:0;">시리얼번호</p>
-                <p style="font-family:'JetBrains Mono',monospace;font-size:0.75rem;color:#525252;margin:4px 0 0;">{{ passportData.serialNumber || '-' }}</p>
+                <p class="sn-result-value-mono">{{ passportData.serialNumber || '-' }}</p>
               </div>
-              <div style="background:#fafafa;box-shadow:inset 0 0 0 1px rgba(0,0,0,0.06);border-radius:8px;padding:10px 12px;">
+              <div class="sn-result-tile">
                 <p class="sn-eyebrow" style="margin:0;">제조사</p>
-                <p style="font-size:0.85rem;font-weight:500;color:#525252;margin:4px 0 0;">{{ passportData.manufacturerName || '-' }}</p>
+                <p class="sn-result-value">{{ passportData.manufacturerName || '-' }}</p>
               </div>
-              <div style="background:#fafafa;box-shadow:inset 0 0 0 1px rgba(0,0,0,0.06);border-radius:8px;padding:10px 12px;">
+              <div class="sn-result-tile">
                 <p class="sn-eyebrow" style="margin:0;">화학물질</p>
-                <p style="font-size:0.85rem;font-weight:500;color:#525252;margin:4px 0 0;">{{ passportData.chemistry || '-' }}</p>
+                <p class="sn-result-value">{{ passportData.chemistry || '-' }}</p>
               </div>
-              <div style="background:#fafafa;box-shadow:inset 0 0 0 1px rgba(0,0,0,0.06);border-radius:8px;padding:10px 12px;">
+              <div class="sn-result-tile">
                 <p class="sn-eyebrow" style="margin:0;">총 에너지</p>
-                <p style="font-size:0.85rem;font-weight:500;color:#525252;margin:4px 0 0;">{{ passportData.totalEnergy ? passportData.totalEnergy + ' kWh' : '-' }}</p>
+                <p class="sn-result-value">{{ passportData.totalEnergy ? passportData.totalEnergy + ' kWh' : '-' }}</p>
               </div>
-              <div style="background:#fafafa;box-shadow:inset 0 0 0 1px rgba(0,0,0,0.06);border-radius:8px;padding:10px 12px;">
+              <div class="sn-result-tile">
                 <p class="sn-eyebrow" style="margin:0;">VIN</p>
-                <p style="font-family:'JetBrains Mono',monospace;font-size:0.75rem;color:#525252;margin:4px 0 0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ passportData.vin || '미바인딩' }}</p>
+                <p class="sn-result-value-mono" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ passportData.vin || '미바인딩' }}</p>
               </div>
             </div>
 
             <!-- DID -->
             <div v-if="passportData.did" style="background:#f0fdf4;box-shadow:inset 0 0 0 1px rgba(22,163,74,0.2);border-radius:8px;padding:10px 12px;">
               <p class="sn-eyebrow" style="color:#16a34a;margin:0;">DID</p>
-              <p style="font-family:'JetBrains Mono',monospace;font-size:0.72rem;color:#16a34a;margin:4px 0 0;word-break:break-all;">{{ passportData.did }}</p>
+              <p style="font-family:'JetBrains Mono',monospace;font-size:0.75rem;color:#16a34a;margin:4px 0 0;word-break:break-all;">{{ passportData.did }}</p>
             </div>
 
             <!-- Action -->
@@ -355,7 +355,7 @@ app.component('qr-scan-page', {
             </svg>
           </div>
           <p style="font-size:0.85rem;font-weight:500;color:#525252;margin:0 0 4px;">식별값을 입력하거나 스캔해 조회를 시작하세요</p>
-          <p style="font-size:0.72rem;color:#a3a3a3;">여권 확인 결과가 여기에 누적됩니다</p>
+          <p style="font-size:0.75rem;color:#a3a3a3;">조회 결과가 여기에 쌓입니다</p>
         </div>
       </div>
     </div>
