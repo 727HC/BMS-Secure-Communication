@@ -197,6 +197,7 @@ def main():
                 if len(pending_data_by_fc) > 50:
                     oldest = sorted(pending_data_by_fc.keys())[:-50]
                     for k in oldest:
+                        print(f"  [DROP] FC={k} evicted from pending cache (no matching SIGN within 50 frames)", flush=True)
                         del pending_data_by_fc[k]
 
             elif parsed['type'] == 'sign':
