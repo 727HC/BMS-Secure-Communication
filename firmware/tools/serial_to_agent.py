@@ -12,11 +12,11 @@ Usage:
 
 import serial
 import requests
-import hashlib
 import re
-import sys
+import os
+import sqlite3
+import json
 import argparse
-import time
 
 
 def parse_bmu_line(line):
@@ -50,10 +50,25 @@ def parse_bmu_line(line):
     return None
 
 
-def send_to_agent(agent_url, sign_record, data_record=None, did=None):
-    """Send verified + signed data to BMS Agent."""
-    signature = sign_record['signR'] + sign_record['signS']
+def init_spool(db_path):
+    """Initialize SQLite spool for durable message delivery."""
+    conn = sqlite3.connect(db_path)
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS pending (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            fc INTEGER,
+            payload_json TEXT NOT NULL,
+            created_at TEXT DEFAULT (datetime('now')),
+            retry_count INTEGER DEFAULT 0
+        )
+    """)
+    conn.commit()
+    return conn
 
+
+def build_payload(sign_record, data_record=None, did=None):
+    """Build JSON payload from sign + data records."""
+    signature = sign_record['signR'] + sign_record['signS']
     payload = {
         'fc': sign_record['fc'],
         'signature': signature,
@@ -65,19 +80,70 @@ def send_to_agent(agent_url, sign_record, data_record=None, did=None):
     if data_record:
         payload['soc'] = data_record['soc']
         payload['temperature'] = data_record['temperature']
+    return payload
 
+
+def post_to_agent(agent_url, payload):
+    """POST payload to agent. Returns True on success."""
     try:
         api_url = f"{agent_url}/api/bmu/data"
         resp = requests.post(api_url, json=payload, timeout=5)
         if resp.status_code == 200:
             result = resp.json()
             print(f"  -> Blockchain: {result.get('id', result.get('recordId', 'ok'))} OK", flush=True)
+            return True
         else:
-            print(f"  → Agent error: {resp.status_code} {resp.text[:100]}")
+            print(f"  -> Agent error: {resp.status_code} {resp.text[:100]}")
+            return False
     except requests.exceptions.ConnectionError:
-        print(f"  → Agent not reachable at {agent_url}")
+        print(f"  -> Agent not reachable at {agent_url}")
+        return False
     except Exception as e:
-        print(f"  → Error: {e}")
+        print(f"  -> Error: {e}")
+        return False
+
+
+def spool_insert(conn, fc, payload):
+    """Insert failed payload into spool for later retry."""
+    conn.execute(
+        "INSERT INTO pending (fc, payload_json) VALUES (?, ?)",
+        (fc, json.dumps(payload))
+    )
+    conn.commit()
+
+
+def spool_retry(conn, agent_url, max_batch=10):
+    """Retry pending payloads from spool. Returns number of successful sends."""
+    rows = conn.execute(
+        "SELECT id, fc, payload_json, retry_count FROM pending "
+        "WHERE retry_count < 50 ORDER BY id ASC LIMIT ?",
+        (max_batch,)
+    ).fetchall()
+
+    if not rows:
+        return 0
+
+    success = 0
+    for row_id, fc, payload_json, retry_count in rows:
+        payload = json.loads(payload_json)
+        if post_to_agent(agent_url, payload):
+            conn.execute("DELETE FROM pending WHERE id = ?", (row_id,))
+            success += 1
+        else:
+            conn.execute(
+                "UPDATE pending SET retry_count = ? WHERE id = ?",
+                (retry_count + 1, row_id)
+            )
+            break  # agent still down, stop retrying this batch
+
+    conn.commit()
+
+    # Warn about stuck entries
+    stuck = conn.execute("SELECT COUNT(*) FROM pending WHERE retry_count >= 50").fetchone()[0]
+    if stuck > 0:
+        print(f"  [WARN] {stuck} spool entries exceeded max retries", flush=True)
+
+    return success
 
 
 def main():
@@ -90,17 +156,29 @@ def main():
                         help="BMU DID for signature verification (e.g. MPGsQGEaPz9qcySnxfFt4B)")
     args = parser.parse_args()
 
-    print(f"BMU Serial → Agent Bridge")
+    spool_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "spool.db")
+
+    print(f"BMU Serial -> Agent Bridge")
     print(f"  Serial: {args.port} @ {args.baud}")
     print(f"  Agent:  {args.agent}")
+    print(f"  Spool:  {spool_path}")
     print(f"  Press Ctrl+C to stop\n", flush=True)
 
+    spool = init_spool(spool_path)
     ser = serial.Serial(args.port, args.baud, timeout=1)
     pending_data_by_fc = {}
     sent_count = 0
+    loop_count = 0
 
     try:
         while True:
+            # Retry spooled payloads every 20 loops (~20s at 1s serial timeout)
+            loop_count += 1
+            if loop_count % 20 == 0:
+                retried = spool_retry(spool, args.agent)
+                if retried > 0:
+                    print(f"  [SPOOL] Retried {retried} pending records", flush=True)
+
             raw = ser.readline()
             if not raw:
                 continue
@@ -116,7 +194,6 @@ def main():
             if parsed['type'] == 'data':
                 pending_data_by_fc[parsed['fc']] = parsed
                 print(f"[DATA] FC={parsed['fc']} SOC={parsed['soc']} T={parsed['temperature']}", flush=True)
-                # 오래된 pending 항목 정리 (최근 50개만 유지)
                 if len(pending_data_by_fc) > 50:
                     oldest = sorted(pending_data_by_fc.keys())[:-50]
                     for k in oldest:
@@ -126,14 +203,22 @@ def main():
                 fc = parsed['fc']
                 data_record = pending_data_by_fc.pop(fc, None)
                 print(f"[SIGN] FC={fc} R={parsed['signR'][:16]}... S={parsed['signS'][:16]}...", flush=True)
-                send_to_agent(args.agent, parsed, data_record=data_record, did=args.did)
-                sent_count += 1
-                if sent_count % 10 == 0:
+
+                payload = build_payload(parsed, data_record=data_record, did=args.did)
+                if post_to_agent(args.agent, payload):
+                    sent_count += 1
+                else:
+                    spool_insert(spool, fc, payload)
+                    print(f"  [SPOOL] FC={fc} saved for retry", flush=True)
+
+                if sent_count % 10 == 0 and sent_count > 0:
                     print(f"  Total sent: {sent_count}")
 
     except KeyboardInterrupt:
-        print(f"\nStopped. Total sent: {sent_count}")
+        pending = spool.execute("SELECT COUNT(*) FROM pending WHERE retry_count < 50").fetchone()[0]
+        print(f"\nStopped. Sent: {sent_count}, Pending in spool: {pending}")
     finally:
+        spool.close()
         ser.close()
 
 
