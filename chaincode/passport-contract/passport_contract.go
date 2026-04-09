@@ -196,6 +196,8 @@ type BMUSnapshot struct {
 	DocType              string  `json:"docType"`
 	PassportID           string  `json:"passportId"`
 	CurrentSOC           float64 `json:"currentSoc"`
+	Temperature          uint16  `json:"temperature"`
+	StatusFlags          uint8   `json:"statusFlags"`
 	TotalDischargeCycles int     `json:"totalDischargeCycles"`
 	LastBMUDataID        string  `json:"lastBmuDataId"`
 	UpdatedAt            string  `json:"updatedAt"`
@@ -347,7 +349,13 @@ func (c *PassportContract) checkPassportAccess(ctx contractapi.TransactionContex
 		}
 	case mspService:
 		if passport.Status == "MAINTENANCE" || passport.Status == "ANALYSIS" {
-			return nil // 현재 정비/분석 의뢰된 배터리만 접근 허용
+			return nil // 현재 정비/분석 의뢰된 배터리
+		}
+		// 사후 조회: 과거 정비 이력이 있으면 접근 허용
+		for _, log := range passport.MaintenanceLogs {
+			if log.OrgMSP == mspService {
+				return nil
+			}
 		}
 	}
 
@@ -370,8 +378,8 @@ func (c *PassportContract) buildPassportQuery(ctx contractapi.TransactionContext
 		// 본인 바인딩 여권 + 미바인딩(MANUFACTURED) 여권도 조회 가능
 		return fmt.Sprintf(`{"selector":{"docType":"%s","$or":[{"vin":{"$gt":""},"evBinderMsp":"%s"},{"status":"MANUFACTURED"}]}}`, docTypePassport, msp), nil
 	case mspService:
-		// 현재 정비/분석 의뢰 상태인 배터리만 조회 (checkPassportAccess와 일치)
-		return fmt.Sprintf(`{"selector":{"docType":"%s","status":{"$in":["MAINTENANCE","ANALYSIS"]}}}`, docTypePassport), nil
+		// 현재 정비/분석 진행 중 + 과거 정비 이력이 있는 여권도 조회 허용
+		return fmt.Sprintf(`{"selector":{"docType":"%s","$or":[{"status":{"$in":["MAINTENANCE","ANALYSIS"]}},{"maintenanceLogs":{"$elemMatch":{"orgMsp":"%s"}}}]}}`, docTypePassport, mspService), nil
 	default:
 		return "", fmt.Errorf("unknown MSP: %s", msp)
 	}
@@ -561,7 +569,8 @@ func (c *PassportContract) RecordBMUData(ctx contractapi.TransactionContextInter
 	temperature string, cellCount string, statusFlags string,
 	dischargeCycles string, timestamp string) error {
 
-	if err := c.requireMSP(ctx, mspManufacturer); err != nil {
+	// BMU 데이터 수집: 배터리 제조사(제조/테스트) + EV 제조사(차량 운행 중) 허용
+	if err := c.requireMSP(ctx, mspManufacturer, mspEVManufacturer); err != nil {
 		return err
 	}
 
@@ -700,6 +709,8 @@ func (c *PassportContract) RecordBMUData(ctx contractapi.TransactionContextInter
 		DocType:              docTypeBMUSnapshot,
 		PassportID:           passportId,
 		CurrentSOC:           float64(uint16(socVal)),
+		Temperature:          uint16(temperatureVal),
+		StatusFlags:          uint8(statusFlagsVal),
 		TotalDischargeCycles: int(dischargeCyclesVal),
 		LastBMUDataID:        recordId,
 		UpdatedAt:            now,
