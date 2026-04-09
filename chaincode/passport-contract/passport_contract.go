@@ -23,6 +23,7 @@ const (
 	docTypeRawMaterial   = "rawMaterial"
 	docTypeVC            = "verifiableCredential"
 	docTypeVerification  = "vcVerification"
+	docTypeFCReset       = "fcReset"
 	defaultPageSize int32 = 100
 	maxPageSize     int32 = 500
 )
@@ -2245,6 +2246,80 @@ func (c *PassportContract) QueryCorrectionHistory(ctx contractapi.TransactionCon
 // ============================================================
 // main
 // ============================================================
+
+// ============================================================
+// ResetFCForDID — FC 재동기화 (장비 재부팅/교체/DID 재프로비저닝)
+// ============================================================
+
+// FCResetLog records a freshness counter reset event for audit trail
+type FCResetLog struct {
+	DocType   string `json:"docType"`
+	LogID     string `json:"logId"`
+	DID       string `json:"did"`
+	Reason    string `json:"reason"`
+	PreviousFC uint64 `json:"previousFc"`
+	ResetBy   string `json:"resetBy"`
+	ResetAt   string `json:"resetAt"`
+}
+
+func (c *PassportContract) ResetFCForDID(ctx contractapi.TransactionContextInterface,
+	did string, reason string) error {
+
+	// ManufacturerMSP + RegulatorMSP만 허용 (보안 민감 작업)
+	if err := c.requireMSP(ctx, mspManufacturer, mspRegulator); err != nil {
+		return err
+	}
+
+	if did == "" || reason == "" {
+		return fmt.Errorf("did and reason must not be empty")
+	}
+
+	// 현재 lastFc 값 조회 (감사 로그용)
+	lastFcKey, err := ctx.GetStub().CreateCompositeKey("lastFc", []string{did})
+	if err != nil {
+		return fmt.Errorf("failed to create lastFc composite key: %v", err)
+	}
+
+	var previousFC uint64
+	lastFcBytes, err := ctx.GetStub().GetState(lastFcKey)
+	if err != nil {
+		return fmt.Errorf("failed to read lastFc for DID %s: %v", did, err)
+	}
+	if lastFcBytes != nil {
+		previousFC, _ = strconv.ParseUint(string(lastFcBytes), 10, 64)
+	}
+
+	// lastFc 키 삭제 — 다음 BMU 데이터부터 새 FC 시퀀스 시작
+	if err := ctx.GetStub().DelState(lastFcKey); err != nil {
+		return fmt.Errorf("failed to delete lastFc for DID %s: %v", did, err)
+	}
+
+	// 감사 로그 기록
+	msp, _ := c.getClientMSP(ctx)
+	now := time.Now().UTC().Format(time.RFC3339)
+	logID := fmt.Sprintf("FCRESET-%s-%s", did, now)
+
+	resetLog := FCResetLog{
+		DocType:    docTypeFCReset,
+		LogID:      logID,
+		DID:        did,
+		Reason:     reason,
+		PreviousFC: previousFC,
+		ResetBy:    msp,
+		ResetAt:    now,
+	}
+
+	logJSON, err := json.Marshal(resetLog)
+	if err != nil {
+		return fmt.Errorf("failed to marshal FC reset log: %v", err)
+	}
+
+	if err := ctx.GetStub().PutState(logID, logJSON); err != nil {
+		return fmt.Errorf("failed to store FC reset log: %v", err)
+	}
+
+	return nil
+}
 
 func main() {
 	chaincode, err := contractapi.NewChaincode(&PassportContract{})
