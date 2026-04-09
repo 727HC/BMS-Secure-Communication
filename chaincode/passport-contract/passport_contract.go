@@ -146,6 +146,8 @@ type BatteryPassport struct {
 
 	// Real-time state (updated by BMU data)
 	CurrentSOC           float64 `json:"currentSoc"`
+	Temperature          uint16  `json:"currentTemperature"`
+	StatusFlags          uint8   `json:"currentStatusFlags"`
 	CurrentSOH           float64 `json:"currentSoh"`
 	SOCE                 float64 `json:"soce"`
 	RemainingLifeCycle   int     `json:"remainingLifeCycle"`
@@ -319,6 +321,8 @@ func (c *PassportContract) mergeSnapshot(ctx contractapi.TransactionContextInter
 	var snap BMUSnapshot
 	if json.Unmarshal(snapshotJSON, &snap) == nil {
 		passport.CurrentSOC = snap.CurrentSOC
+		passport.Temperature = snap.Temperature
+		passport.StatusFlags = snap.StatusFlags
 		passport.TotalDischargeCycles = snap.TotalDischargeCycles
 		passport.LastBMUDataID = snap.LastBMUDataID
 		if snap.UpdatedAt > passport.UpdatedAt {
