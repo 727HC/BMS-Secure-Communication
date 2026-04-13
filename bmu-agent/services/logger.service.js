@@ -6,20 +6,37 @@ const path = require('path');
 const LOG_DIR = path.resolve(__dirname, '..', '..', 'logs');
 const LOG_FILE = path.join(LOG_DIR, 'agent.log');
 const MAX_LOG_SIZE = 10 * 1024 * 1024; // 10MB rotation
+let logStream = null;
+let currentLogSize = 0;
 
 // Ensure log directory exists
 if (!fs.existsSync(LOG_DIR)) {
   fs.mkdirSync(LOG_DIR, { recursive: true });
 }
 
+try {
+  if (fs.existsSync(LOG_FILE)) {
+    currentLogSize = fs.statSync(LOG_FILE).size;
+  }
+} catch { /* ignore startup stat errors */ }
+
+function ensureLogStream() {
+  if (!logStream) {
+    logStream = fs.createWriteStream(LOG_FILE, { flags: 'a' });
+  }
+  return logStream;
+}
+
 function rotateIfNeeded() {
   try {
-    if (fs.existsSync(LOG_FILE)) {
-      const stat = fs.statSync(LOG_FILE);
-      if (stat.size > MAX_LOG_SIZE) {
-        const rotated = `${LOG_FILE}.${Date.now()}.bak`;
-        fs.renameSync(LOG_FILE, rotated);
+    if (currentLogSize > MAX_LOG_SIZE) {
+      if (logStream) {
+        logStream.end();
+        logStream = null;
       }
+      const rotated = `${LOG_FILE}.${Date.now()}.bak`;
+      fs.renameSync(LOG_FILE, rotated);
+      currentLogSize = 0;
     }
   } catch { /* ignore rotation errors */ }
 }
@@ -38,8 +55,10 @@ function writeLog(entry) {
 
   // File output
   try {
+    const payload = line + '\n';
     rotateIfNeeded();
-    fs.appendFileSync(LOG_FILE, line + '\n');
+    ensureLogStream().write(payload);
+    currentLogSize += Buffer.byteLength(payload);
   } catch { /* ignore file write errors */ }
 }
 

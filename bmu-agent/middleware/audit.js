@@ -4,6 +4,7 @@
  * Logs are persisted to NDJSON file with rotation.
  */
 
+const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
 
@@ -11,6 +12,8 @@ const AUDIT_DIR = path.resolve(__dirname, '..', '..', 'logs');
 const AUDIT_FILE = path.join(AUDIT_DIR, 'audit.log');
 const MAX_AUDIT_SIZE = 50 * 1024 * 1024; // 50MB rotation
 const MEMORY_BUFFER_SIZE = 1000; // recent logs in memory for fast queries
+let auditStream = null;
+let currentAuditSize = 0;
 
 // Ensure directory exists
 if (!fs.existsSync(AUDIT_DIR)) {
@@ -23,6 +26,7 @@ const recentLogs = [];
 // Load recent logs from file on startup
 try {
   if (fs.existsSync(AUDIT_FILE)) {
+    currentAuditSize = fs.statSync(AUDIT_FILE).size;
     const lines = fs.readFileSync(AUDIT_FILE, 'utf-8').trim().split('\n').filter(Boolean);
     const tail = lines.slice(-MEMORY_BUFFER_SIZE);
     for (const line of tail) {
@@ -31,22 +35,33 @@ try {
   }
 } catch { /* ignore startup read errors */ }
 
+function ensureAuditStream() {
+  if (!auditStream) {
+    auditStream = fs.createWriteStream(AUDIT_FILE, { flags: 'a' });
+  }
+  return auditStream;
+}
+
 function rotateIfNeeded() {
   try {
-    if (fs.existsSync(AUDIT_FILE)) {
-      const stat = fs.statSync(AUDIT_FILE);
-      if (stat.size > MAX_AUDIT_SIZE) {
-        const rotated = `${AUDIT_FILE}.${Date.now()}.bak`;
-        fs.renameSync(AUDIT_FILE, rotated);
+    if (currentAuditSize > MAX_AUDIT_SIZE) {
+      if (auditStream) {
+        auditStream.end();
+        auditStream = null;
       }
+      const rotated = `${AUDIT_FILE}.${Date.now()}.bak`;
+      fs.renameSync(AUDIT_FILE, rotated);
+      currentAuditSize = 0;
     }
   } catch { /* ignore rotation errors */ }
 }
 
 function persistEntry(entry) {
   try {
+    const line = JSON.stringify(entry) + '\n';
     rotateIfNeeded();
-    fs.appendFileSync(AUDIT_FILE, JSON.stringify(entry) + '\n');
+    ensureAuditStream().write(line);
+    currentAuditSize += Buffer.byteLength(line);
   } catch { /* ignore file write errors */ }
 }
 
@@ -61,7 +76,7 @@ function auditMiddleware(req, res, next) {
 
   res.json = function (body) {
     const entry = {
-      id: `AUDIT-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`,
+      id: `AUDIT-${crypto.randomUUID()}`,
       timestamp: new Date().toISOString(),
       method: req.method,
       path: req.originalUrl,
