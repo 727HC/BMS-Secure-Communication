@@ -412,18 +412,8 @@ static boolean CMU_SendSecuredData(const uint8 *battery_data)
     }
 
 #if PAYLOAD_ENCRYPTION_ENABLED
-    /* 3a. Encrypt-then-MAC: CBC encrypt payload, then CMAC over ciphertext */
-    BMS_BuildCbcIv(g_cbc_iv, g_freshness_counter);
-    result = CMU_AesCbcEncrypt(&g_canfd_payload[0], BATTERY_DATA_SIZE,
-                               g_cbc_iv, g_encrypted_data);
-    if (result != CSEC_IP_ERC_NO_ERROR)
-    {
-        return FALSE;
-    }
-    /* Replace plaintext with ciphertext in payload buffer */
-    memcpy(&g_canfd_payload[0], g_encrypted_data, BATTERY_DATA_SIZE);
-
-    /* CMAC over ciphertext: FC(4B) || Ciphertext(48B) */
+    /* 3a. MAC-then-encrypt: CMAC over plaintext, then CBC encrypt */
+    /* CMAC on plaintext first: FC(4B) || Plaintext(48B) */
     BMS_BuildCmacInput(g_cmac_input, g_freshness_counter, &g_canfd_payload[0]);
 #else
     /* 3b. Plaintext + CMAC (legacy): FC(4B) || Plaintext(48B) */
@@ -440,7 +430,19 @@ static boolean CMU_SendSecuredData(const uint8 *battery_data)
     /* 5. Append CMAC tag */
     memcpy(&g_canfd_payload[BATTERY_DATA_SIZE], g_cmac_output, CMAC_TAG_SIZE);
 
-    /* 5. Send via CAN-FD (ID = 0x14), polling */
+#if PAYLOAD_ENCRYPTION_ENABLED
+    /* 6. CBC encrypt payload (after CMAC, MAC-then-encrypt) */
+    BMS_BuildCbcIv(g_cbc_iv, g_freshness_counter);
+    result = CMU_AesCbcEncrypt(&g_canfd_payload[0], BATTERY_DATA_SIZE,
+                               g_cbc_iv, g_encrypted_data);
+    if (result != CSEC_IP_ERC_NO_ERROR)
+    {
+        return FALSE;
+    }
+    memcpy(&g_canfd_payload[0], g_encrypted_data, BATTERY_DATA_SIZE);
+#endif
+
+    /* 7. Send via CAN-FD (ID = 0x14), polling */
     FlexCAN_Ip_Send(INST_FLEXCAN_0, CAN_TX_MB_IDX,
                     &g_canfd_tx_info, CAN_ID_BATTERY_DATA,
                     g_canfd_payload);
@@ -915,7 +917,7 @@ static void CMU_CanTxTask(void *pvParameters)
         {
             /* No UART data and no fallback — skip this cycle */
             txCount++;
-            vTaskDelay(pdMS_TO_TICKS(TX_PERIOD_MS));
+            vTaskDelay(pdMS_TO_TICKS(CMU_TX_PERIOD_MS));
             continue;
         }
 #endif

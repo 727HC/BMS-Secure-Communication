@@ -652,19 +652,66 @@ static boolean BMU_VerifySecuredData(const uint8 *rx_payload)
 {
     const uint8 *battery_data = &rx_payload[0];
     const uint8 *received_cmac = &rx_payload[BATTERY_DATA_SIZE];
-    const BatteryData_t *pFrame = (const BatteryData_t *)rx_payload;
     hseSrvResponse_t hse_resp;
 
-    /* Read FC from payload (embedded in BatteryData_t.freshness_counter) */
+#if PAYLOAD_ENCRYPTION_ENABLED
+    /* MAC-then-encrypt: decrypt first, then verify CMAC on plaintext */
+    /* We need FC to build IV, but FC is inside encrypted payload.
+     * Use g_expected_fc as IV hint — CMU's FC increments predictably. */
+    uint32 iv_fc = g_expected_fc;
+    /* Try current expected FC first; if CMAC fails, try FC+1..+window */
+    boolean decrypted = FALSE;
+    for (uint32 try_fc = iv_fc; try_fc < iv_fc + FC_WINDOW_SIZE && !decrypted; try_fc++)
+    {
+        BMS_BuildCbcIv(g_cbc_iv, try_fc);
+        hse_resp = BMU_AesCbcDecrypt(HSE_SESSION_KEY_HANDLE,
+                                      battery_data, BATTERY_DATA_SIZE,
+                                      g_cbc_iv, g_decrypted_payload);
+        if (hse_resp != HSE_SRV_RSP_OK) continue;
+
+        /* Read FC from decrypted payload */
+        const BatteryData_t *pFrame = (const BatteryData_t *)g_decrypted_payload;
+        uint32 rx_fc = pFrame->freshness_counter;
+        if (rx_fc != try_fc) continue;
+
+        /* Verify CMAC on plaintext: FC(4B) || Plaintext(48B) */
+        BMS_BuildCmacInput(g_cmac_input, rx_fc, g_decrypted_payload);
+
+        uint32 cyc_start = DWT_CYCCNT;
+        hse_resp = BMU_CmacVerify(HSE_SESSION_KEY_HANDLE,
+                                   g_cmac_input, CMAC_INPUT_SIZE,
+                                   received_cmac, CMAC_TAG_SIZE);
+        uint32 cyc_end = DWT_CYCCNT;
+        g_perf_cmac_us = (cyc_end - cyc_start) / (configCPU_CLOCK_HZ / 1000000U);
+
+        if (hse_resp == HSE_SRV_RSP_OK)
+        {
+            /* Copy decrypted data back so downstream parsing works unchanged */
+            memcpy((uint8 *)rx_payload, g_decrypted_payload, BATTERY_DATA_SIZE);
+            g_expected_fc = rx_fc + 1U;
+            g_cmac_fail_count = 0U;
+            decrypted = TRUE;
+        }
+    }
+    if (!decrypted)
+    {
+        g_cmac_fail_count++;
+        UART_SendString("[BMU] WARN: CMAC verify failed\r\n");
+        return FALSE;
+    }
+    return TRUE;
+
+#else
+    /* Legacy plaintext path */
+    const BatteryData_t *pFrame = (const BatteryData_t *)rx_payload;
     uint32 rx_fc = pFrame->freshness_counter;
 
-    /* Sync FC on first frame after key exchange (queue may introduce delay) */
+    /* Sync FC on first frame after key exchange */
     if (g_expected_fc <= 1U && rx_fc > 0U)
     {
         g_expected_fc = rx_fc;
     }
 
-    /* Check FC is within acceptable window (subtraction avoids overflow) */
     if (rx_fc < g_expected_fc || (rx_fc - g_expected_fc) >= FC_WINDOW_SIZE)
     {
         g_cmac_fail_count++;
@@ -672,10 +719,8 @@ static boolean BMU_VerifySecuredData(const uint8 *rx_payload)
         return FALSE;
     }
 
-    /* Build CMAC input: FC(4B) || Data(48B) */
     BMS_BuildCmacInput(g_cmac_input, rx_fc, battery_data);
 
-    /* Verify CMAC using session key — measure time */
     uint32 cyc_start = DWT_CYCCNT;
     hse_resp = BMU_CmacVerify(HSE_SESSION_KEY_HANDLE,
                                g_cmac_input, CMAC_INPUT_SIZE,
@@ -690,24 +735,10 @@ static boolean BMU_VerifySecuredData(const uint8 *rx_payload)
         return FALSE;
     }
 
-#if PAYLOAD_ENCRYPTION_ENABLED
-    /* Decrypt payload after CMAC verification (Encrypt-then-MAC) */
-    BMS_BuildCbcIv(g_cbc_iv, rx_fc);
-    hse_resp = BMU_AesCbcDecrypt(HSE_SESSION_KEY_HANDLE,
-                                  battery_data, BATTERY_DATA_SIZE,
-                                  g_cbc_iv, g_decrypted_payload);
-    if (hse_resp != HSE_SRV_RSP_OK)
-    {
-        UART_SendString("[BMU] ERR: CBC decrypt failed\r\n");
-        return FALSE;
-    }
-    /* Copy decrypted data back to rx buffer so downstream parsing works unchanged */
-    memcpy((uint8 *)rx_payload, g_decrypted_payload, BATTERY_DATA_SIZE);
-#endif
-
     g_expected_fc = rx_fc + 1U;
     g_cmac_fail_count = 0U;
     return TRUE;
+#endif
 }
 
 /*============================================================================
