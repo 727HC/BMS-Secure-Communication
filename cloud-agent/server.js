@@ -23,12 +23,58 @@ app.use(express.json());
 const PORT = parseInt(process.env.PORT || '3002', 10);
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017';
 const MONGODB_DB = process.env.MONGODB_DB || 'battery_passport';
+const API_KEY = process.env.CLOUD_AGENT_API_KEY || '';
 
 let db = null;
+
+// C-2: API 인증 미들웨어
+function authMiddleware(req, res, next) {
+  // /health는 인증 없이 허용
+  if (req.path === '/health') return next();
+  // API 키 설정되어 있으면 검증
+  if (API_KEY) {
+    const token = req.headers['x-api-key'] || req.query.apiKey;
+    if (token !== API_KEY) {
+      return res.status(401).json({ error: 'unauthorized: invalid or missing API key' });
+    }
+  }
+  next();
+}
+app.use(authMiddleware);
+
+// H-1: MongoDB $regex injection 방지
+function escapeRegex(str) {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
 
 // ============================================================
 // REST API — 고속 조회 (MongoDB direct)
 // ============================================================
+
+// M-1: /search를 /:id보다 먼저 배치 (라우트 섀도잉 방지)
+// GET /api/passports/search — 여권 검색 (VIN, DID, model 등)
+app.get('/api/passports/search', async (req, res) => {
+  try {
+    const { vin, did, model, manufacturer, status } = req.query;
+    const filter = { docType: 'batteryPassport' };
+    if (vin) filter.vin = vin;
+    if (did) filter.did = did;
+    if (model) filter.model = { $regex: escapeRegex(model), $options: 'i' };
+    if (manufacturer) filter.manufacturerName = { $regex: escapeRegex(manufacturer), $options: 'i' };
+    if (status) filter.status = status;
+
+    const pageSize = Math.min(parseInt(req.query.pageSize || '100', 10), 500);
+    const records = await db.collection('passports')
+      .find(filter)
+      .sort({ updatedAt: -1 })
+      .limit(pageSize)
+      .toArray();
+
+    res.json({ records, count: records.length });
+  } catch (err) {
+    res.status(500).json({ error: 'internal server error' });
+  }
+});
 
 // GET /api/passports — 여권 목록
 app.get('/api/passports', async (req, res) => {
@@ -49,7 +95,7 @@ app.get('/api/passports', async (req, res) => {
 
     res.json({ records, total, page, pageSize });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'internal server error' });
   }
 });
 
@@ -63,33 +109,11 @@ app.get('/api/passports/:id', async (req, res) => {
     }
     res.json(passport);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'internal server error' });
   }
 });
 
-// GET /api/passports/search — 여권 검색 (VIN, DID, model 등)
-app.get('/api/passports/search', async (req, res) => {
-  try {
-    const { vin, did, model, manufacturer, status } = req.query;
-    const filter = { docType: 'batteryPassport' };
-    if (vin) filter.vin = vin;
-    if (did) filter.did = did;
-    if (model) filter.model = { $regex: model, $options: 'i' };
-    if (manufacturer) filter.manufacturerName = { $regex: manufacturer, $options: 'i' };
-    if (status) filter.status = status;
-
-    const pageSize = Math.min(parseInt(req.query.pageSize || '100', 10), 500);
-    const records = await db.collection('passports')
-      .find(filter)
-      .sort({ updatedAt: -1 })
-      .limit(pageSize)
-      .toArray();
-
-    res.json({ records, count: records.length });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
+// (search 라우트는 /:id 위에 배치됨 — M-1 섀도잉 수정)
 
 // GET /api/bmu/:passportId — BMU 데이터 조회
 app.get('/api/bmu/:passportId', async (req, res) => {
@@ -103,7 +127,7 @@ app.get('/api/bmu/:passportId', async (req, res) => {
 
     res.json({ records, count: records.length });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'internal server error' });
   }
 });
 
@@ -117,7 +141,7 @@ app.get('/api/credentials/:passportId', async (req, res) => {
 
     res.json({ records, count: records.length });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'internal server error' });
   }
 });
 
@@ -141,7 +165,7 @@ app.get('/api/stats', async (req, res) => {
       statusCounts: Object.fromEntries(statusCounts.map(s => [s._id, s.count])),
     });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'internal server error' });
   }
 });
 

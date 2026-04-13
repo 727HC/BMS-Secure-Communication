@@ -324,7 +324,11 @@ func (c *PassportContract) ResetFCForDID(ctx contractapi.TransactionContextInter
 		return fmt.Errorf("failed to read lastFc for DID %s: %v", did, err)
 	}
 	if lastFcBytes != nil {
-		previousFC, _ = strconv.ParseUint(string(lastFcBytes), 10, 64)
+		var parseErr error
+		previousFC, parseErr = strconv.ParseUint(string(lastFcBytes), 10, 64)
+		if parseErr != nil {
+			return fmt.Errorf("failed to parse lastFc for DID %s: %v", did, parseErr)
+		}
 	}
 
 	// lastFc 키 삭제 — 다음 BMU 데이터부터 새 FC 시퀀스 시작
