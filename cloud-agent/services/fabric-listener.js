@@ -35,7 +35,7 @@ async function enrollAdmin(wallet, ccp) {
 
   const ca = new FabricCAServices(caURL, {
     trustedRoots: [],
-    verify: false,
+    verify: process.env.NODE_ENV === 'production',
   }, process.env.FABRIC_CA_NAME || 'ca-manufacturer');
 
   const enrollment = await ca.enroll({

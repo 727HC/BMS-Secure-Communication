@@ -268,6 +268,14 @@ func (c *PassportContract) RequestMaintenance(ctx contractapi.TransactionContext
 		return fmt.Errorf("passport status must be ACTIVE for maintenance request, current: %s", passport.Status)
 	}
 
+	msp, _ := c.getClientMSP(ctx)
+	requestLog := MaintenanceLog{
+		Date:        txTimestamp(ctx),
+		Type:        maintenanceType,
+		Description: description,
+		OrgMSP:      msp,
+	}
+	passport.MaintenanceLogs = append(passport.MaintenanceLogs, requestLog)
 	passport.Status = "MAINTENANCE"
 	passport.UpdatedAt = txTimestamp(ctx)
 

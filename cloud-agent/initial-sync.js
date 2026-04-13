@@ -32,7 +32,7 @@ async function getContract() {
   const existing = await wallet.get(IDENTITY);
   if (!existing) {
     const caURL = `https://localhost:${process.env.FABRIC_CA_PORT || '7054'}`;
-    const ca = new FabricCAServices(caURL, { verify: false },
+    const ca = new FabricCAServices(caURL, { verify: process.env.NODE_ENV === 'production' },
       process.env.FABRIC_CA_NAME || 'ca-manufacturer');
     const enrollment = await ca.enroll({
       enrollmentID: IDENTITY,
