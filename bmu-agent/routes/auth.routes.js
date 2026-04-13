@@ -2,6 +2,9 @@ const express = require('express');
 const router = express.Router();
 const authService = require('../services/auth.service');
 const { authenticateToken } = require('../middleware/auth');
+const { MSP } = require('../config/constants');
+const { createLogger } = require('../services/logger.service');
+const log = createLogger('auth');
 
 const isOpenReg = process.env.ALLOW_OPEN_REGISTRATION === 'true';
 
@@ -14,11 +17,36 @@ router.post('/register', ...(isOpenReg ? [] : [authenticateToken]), async (req, 
   }
 
   try {
-    const result = await authService.registerAndEnroll(userId, password, parseInt(orgNum, 10));
+    const targetOrgNum = parseInt(orgNum, 10);
+    const caller = req.user || null;
+
+    if (!isOpenReg) {
+      const callerOrgMsp = caller && caller.orgMsp;
+      const targetOrgConfig = require('../config/fabric').orgs[targetOrgNum];
+
+      if (!callerOrgMsp) {
+        return res.status(401).json({ error: 'authenticated caller required for registration' });
+      }
+      if (!targetOrgConfig) {
+        return res.status(400).json({ error: `Invalid org number: ${targetOrgNum}` });
+      }
+      const canRegister = callerOrgMsp === MSP.REGULATOR || callerOrgMsp === targetOrgConfig.mspId;
+      if (!canRegister) {
+        return res.status(403).json({ error: `caller ${callerOrgMsp} cannot register users for ${targetOrgConfig.mspId}` });
+      }
+    }
+
+    const result = await authService.registerAndEnroll(userId, password, targetOrgNum, caller);
     res.json({ success: true, ...result });
   } catch (err) {
-    console.error('Registration failed:', err.message);
-    res.status(500).json({ error: err.message });
+    log.error('Registration failed', { action: 'register', error: err.message });
+    if (/forbidden|not allowed/i.test(err.message)) {
+      return res.status(403).json({ error: 'Forbidden' });
+    }
+    if (/Invalid org number/i.test(err.message)) {
+      return res.status(400).json({ error: 'Invalid organization number' });
+    }
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -34,8 +62,8 @@ router.post('/login', async (req, res) => {
     const result = await authService.login(userId, password, parseInt(orgNum, 10));
     res.json({ success: true, ...result });
   } catch (err) {
-    console.error('Login failed:', err.message);
-    res.status(401).json({ error: 'Authentication failed', detail: err.message });
+    log.error('Login failed', { action: 'login', error: err.message });
+    res.status(401).json({ error: 'Authentication failed' });
   }
 });
 

@@ -33,17 +33,17 @@ router.post('/register', (req, res, next) => {
 });
 
 // GET /api/did/verkey/:did — Get public key for DID
-router.get('/verkey/:did', async (req, res) => {
+router.get('/verkey/:did', authenticateToken, async (req, res) => {
   try {
     const verkey = await didService.getVerkey(req.params.did);
     res.json({ did: req.params.did, verkey, encoding: 'base58' });
   } catch (err) {
-    res.status(500).json({ error: 'Failed to get verkey', detail: err.message });
+    res.status(500).json({ error: 'Failed to get verkey' });
   }
 });
 
 // POST /api/did/verify — Verify signature
-router.post('/verify', async (req, res) => {
+router.post('/verify', authenticateToken, async (req, res) => {
   const { did, msg, signature } = req.body;
   if (!did || !msg || !signature) {
     return res.status(400).json({ error: 'did, msg, signature required' });
@@ -53,7 +53,7 @@ router.post('/verify', async (req, res) => {
     const valid = await didService.verifySignature(did, msg, signature);
     res.json({ valid });
   } catch (err) {
-    res.status(500).json({ error: 'Verification failed', detail: err.message });
+    res.status(500).json({ error: 'Verification failed' });
   }
 });
 
