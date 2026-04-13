@@ -17,7 +17,9 @@ const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, uploadDir),
   filename: (req, file, cb) => {
     const ext = path.extname(file.originalname) || '.jpg';
-    cb(null, req.params.id + ext);
+    const safeId = path.basename(String(req.params.id || ''));
+    if (!/^[A-Za-z0-9._-]+$/.test(safeId)) return cb(new Error('유효하지 않은 여권 ID입니다.'));
+    cb(null, safeId + ext);
   },
 });
 const upload = multer({ storage, limits: { fileSize: 5 * 1024 * 1024 }, fileFilter: (req, file, cb) => {
@@ -134,7 +136,7 @@ router.post('/:id/vehicle-image', authenticateToken, requireMSP(MSP.EV_MANUFACTU
     if (!result) return res.status(404).json({ error: 'passport not found' });
     next();
   } catch (err) {
-    return res.status(403).json({ error: 'passport access denied: ' + err.message });
+    return res.status(403).json({ error: 'passport access denied' });
   }
 }, upload.single('image'), (req, res) => {
   if (!req.file) {
@@ -153,7 +155,14 @@ router.get('/:id/vehicle-image', authenticateToken, async (req, res) => {
 
   const exts = ['.jpg', '.jpeg', '.png', '.webp', '.svg'];
   for (const ext of exts) {
-    const filePath = path.join(uploadDir, req.params.id + ext);
+    const safeId = path.basename(String(req.params.id || ''));
+    if (!/^[A-Za-z0-9._-]+$/.test(safeId)) {
+      return res.status(400).json({ error: 'invalid passport id' });
+    }
+    const filePath = path.resolve(path.join(uploadDir, safeId + ext));
+    if (!filePath.startsWith(path.resolve(uploadDir) + path.sep)) {
+      return res.status(400).json({ error: 'invalid passport id' });
+    }
     if (fs.existsSync(filePath)) {
       return res.sendFile(filePath);
     }
