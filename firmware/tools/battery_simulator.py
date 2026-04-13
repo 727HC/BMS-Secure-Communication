@@ -38,7 +38,8 @@ except ImportError:
 #   uint16   timestamp_ms        (2B)
 #   uint8    status_flags        (1B)
 #   uint8    cell_count          (1B)
-#   uint8    reserved[8]         (8B)
+#   uint32   freshness_counter   (4B)
+#   uint8    reserved[4]         (4B)
 # Total: 48 bytes
 
 UART_SYNC_0 = 0xAA
@@ -91,6 +92,7 @@ class BatterySimulator:
         self.soc = 0.95  # Start near full
         self.charging = False
         self.base_temp = 25.0  # Celsius
+        self.freshness_counter = 0
 
     def step(self, dt: float) -> dict:
         """Advance simulation by dt seconds and return battery state"""
@@ -148,7 +150,9 @@ class BatterySimulator:
             "timestamp_ms": int(self.time_s * 1000) % 65536,
             "status_flags": flags,
             "cell_count": self.num_cells,
+            "freshness_counter": self.freshness_counter,
         }
+        self.freshness_counter += 1
 
 
 def pack_battery_data(state: dict) -> bytes:
@@ -171,7 +175,8 @@ def pack_battery_data(state: dict) -> bytes:
     data += struct.pack("<H", state["timestamp_ms"])    # 2B
     data += struct.pack("B", state["status_flags"])     # 1B
     data += struct.pack("B", state["cell_count"])       # 1B
-    data += b"\x00" * 8                                 # 8B reserved
+    data += struct.pack("<I", state["freshness_counter"])  # 4B FC
+    data += b"\x00" * 4                                    # 4B reserved
 
     assert len(data) == BATTERY_DATA_SIZE, f"Data size mismatch: {len(data)} != {BATTERY_DATA_SIZE}"
     return data
