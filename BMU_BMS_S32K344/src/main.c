@@ -135,6 +135,10 @@ static uint8 g_session_key[AES_KEY_SIZE];
 /* Work buffers */
 static uint8 g_cmac_input[CMAC_INPUT_SIZE];
 static uint8 g_kdf_input[KDF_INPUT_SIZE];
+#if PAYLOAD_ENCRYPTION_ENABLED
+static uint8 g_cbc_iv[AES_KEY_SIZE];
+static uint8 g_decrypted_payload[BATTERY_DATA_SIZE];
+#endif
 
 /* EDDSA (Ed25519) buffers */
 static uint8 g_eddsa_signR[EDDSA_SIGN_SIZE];
@@ -392,6 +396,42 @@ static hseSrvResponse_t BMU_AesEcbDecrypt(hseKeyHandle_t keyHandle,
                                  }, pDesc);
 }
 
+#if PAYLOAD_ENCRYPTION_ENABLED
+/** AES-128 CBC Decrypt (for payload decryption) */
+static hseSrvResponse_t BMU_AesCbcDecrypt(hseKeyHandle_t keyHandle,
+                                            const uint8 *cipher,
+                                            uint32 len,
+                                            const uint8 *iv,
+                                            uint8 *plain)
+{
+    uint8 ch = Hse_Ip_GetFreeChannel(HSE_MU_INSTANCE);
+    hseSrvDescriptor_t *pDesc = &g_hse_srv_desc[ch];
+
+    memset(pDesc, 0, sizeof(hseSrvDescriptor_t));
+    pDesc->srvId = HSE_SRV_ID_SYM_CIPHER;
+
+    hseSymCipherSrv_t *pCipher = &pDesc->hseSrv.symCipherReq;
+    pCipher->accessMode      = HSE_ACCESS_MODE_ONE_PASS;
+    pCipher->cipherAlgo      = HSE_CIPHER_ALGO_AES;
+    pCipher->cipherBlockMode = HSE_CIPHER_BLOCK_MODE_CBC;
+    pCipher->cipherDir       = HSE_CIPHER_DIR_DECRYPT;
+    pCipher->keyHandle       = keyHandle;
+    pCipher->pIV             = (HOST_ADDR)iv;
+    pCipher->inputLength     = len;
+    pCipher->pInput          = (HOST_ADDR)cipher;
+    pCipher->pOutput         = (HOST_ADDR)plain;
+    pCipher->sgtOption       = HSE_SGT_OPTION_NONE;
+
+    return Hse_Ip_ServiceRequest(HSE_MU_INSTANCE, ch,
+                                 &(Hse_Ip_ReqType){
+                                     .eReqType       = HSE_IP_REQTYPE_SYNC,
+                                     .pfCallback      = NULL_PTR,
+                                     .pCallbackParam  = NULL_PTR,
+                                     .u32Timeout      = HSE_TIMEOUT_TICKS
+                                 }, pDesc);
+}
+#endif /* PAYLOAD_ENCRYPTION_ENABLED */
+
 /** AES-128 CMAC Generate (for KDF) */
 static hseSrvResponse_t BMU_CmacGenerate(hseKeyHandle_t keyHandle,
                                            const uint8 *input,
@@ -643,16 +683,31 @@ static boolean BMU_VerifySecuredData(const uint8 *rx_payload)
     uint32 cyc_end = DWT_CYCCNT;
     g_perf_cmac_us = (cyc_end - cyc_start) / (configCPU_CLOCK_HZ / 1000000U);
 
-    if (hse_resp == HSE_SRV_RSP_OK)
+    if (hse_resp != HSE_SRV_RSP_OK)
     {
-        g_expected_fc = rx_fc + 1U;
-        g_cmac_fail_count = 0U;
-        return TRUE;
+        g_cmac_fail_count++;
+        UART_SendString("[BMU] WARN: CMAC verify failed\r\n");
+        return FALSE;
     }
 
-    g_cmac_fail_count++;
-    UART_SendString("[BMU] WARN: CMAC verify failed\r\n");
-    return FALSE;
+#if PAYLOAD_ENCRYPTION_ENABLED
+    /* Decrypt payload after CMAC verification (Encrypt-then-MAC) */
+    BMS_BuildCbcIv(g_cbc_iv, rx_fc);
+    hse_resp = BMU_AesCbcDecrypt(HSE_SESSION_KEY_HANDLE,
+                                  battery_data, BATTERY_DATA_SIZE,
+                                  g_cbc_iv, g_decrypted_payload);
+    if (hse_resp != HSE_SRV_RSP_OK)
+    {
+        UART_SendString("[BMU] ERR: CBC decrypt failed\r\n");
+        return FALSE;
+    }
+    /* Copy decrypted data back to rx buffer so downstream parsing works unchanged */
+    memcpy((uint8 *)rx_payload, g_decrypted_payload, BATTERY_DATA_SIZE);
+#endif
+
+    g_expected_fc = rx_fc + 1U;
+    g_cmac_fail_count = 0U;
+    return TRUE;
 }
 
 /*============================================================================
