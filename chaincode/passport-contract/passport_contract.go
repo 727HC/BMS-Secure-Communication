@@ -28,6 +28,13 @@ const (
 	maxPageSize     int32 = 500
 )
 
+// sanitizeSelector escapes characters that could break CouchDB JSON selectors
+func sanitizeSelector(s string) string {
+	s = strings.ReplaceAll(s, `\`, `\\`)
+	s = strings.ReplaceAll(s, `"`, `\"`)
+	return s
+}
+
 // MSP identity constants
 const (
 	mspManufacturer   = "ManufacturerMSP"
@@ -66,6 +73,10 @@ var fieldCorrectors = map[string][]string{
 	"ratedCapacity":          {mspManufacturer, mspRegulator},
 	"expectedLifespan":       {mspManufacturer, mspRegulator},
 	"carbonFootprint":        {mspManufacturer, mspRegulator},
+	"manufacturingProcess":   {mspManufacturer, mspRegulator},
+	"disposalMethod":         {mspManufacturer, mspRegulator},
+	"recycledElementContent": {mspManufacturer, mspRegulator},
+	"extensionInfo":          {mspManufacturer, mspRegulator},
 	// EV Manufacturer fields
 	"vin":               {mspEVManufacturer, mspRegulator},
 	"installDate":       {mspEVManufacturer, mspRegulator},
@@ -139,10 +150,14 @@ type BatteryPassport struct {
 	InstallDate string `json:"installDate"`
 
 	// Raw materials & sustainability
-	RawMaterials      []string           `json:"rawMaterials"`
-	RecyclingRates    map[string]float64 `json:"recyclingRates"`
-	ContainsHazardous bool               `json:"containsHazardous"`
-	CarbonFootprint   float64            `json:"carbonFootprint"`
+	RawMaterials           []string           `json:"rawMaterials"`
+	RecyclingRates         map[string]float64 `json:"recyclingRates"`
+	ContainsHazardous      bool               `json:"containsHazardous"`
+	CarbonFootprint        float64            `json:"carbonFootprint"`
+	ManufacturingProcess   string             `json:"manufacturingProcess"`
+	DisposalMethod         string             `json:"disposalMethod"`
+	RecycledElementContent map[string]float64 `json:"recycledElementContent"`
+	ExtensionInfo          map[string]string  `json:"extensionInfo"`
 
 	// Real-time state (updated by BMU data)
 	CurrentSOC           float64 `json:"currentSoc"`
@@ -159,6 +174,15 @@ type BatteryPassport struct {
 	RecycleAvailable bool             `json:"recycleAvailable"`
 	MaintenanceLogs  []MaintenanceLog `json:"maintenanceLogs"`
 	AccidentLogs     []AccidentLog    `json:"accidentLogs"`
+
+	// Regulatory verification (3차년도)
+	RegulatoryStatus      string   `json:"regulatoryVerificationStatus"`
+	RegulatoryVerifiedAt  string   `json:"regulatoryVerifiedAt"`
+	RegulatoryVerifier    string   `json:"regulatoryVerifier"`
+	RegulatoryEvidenceIds []string `json:"regulatoryEvidenceIds"`
+
+	// Physical-history verification (3차년도)
+	PhysicalVerification *PhysicalVerification `json:"physicalHistoryVerification,omitempty"`
 
 	// Corrections
 	CorrectionLogs []CorrectionLog `json:"correctionLogs"`
@@ -246,11 +270,27 @@ type CredentialVerification struct {
 	Timestamp      string `json:"timestamp"`
 }
 
+// PhysicalVerification represents physical-history binding verification
+type PhysicalVerification struct {
+	Status      string          `json:"status"`      // VERIFIED | MISMATCH | PENDING
+	VerifiedAt  string          `json:"verifiedAt"`
+	VerifierMSP string          `json:"verifierMsp"`
+	Reason      string          `json:"reason"`
+	Signals     map[string]bool `json:"signals"`
+}
+
 // PaginatedVCResult for VC queries
 type PaginatedVCResult struct {
 	Records  []*VerifiableCredential `json:"records"`
 	Bookmark string                  `json:"bookmark"`
 	Count    int                     `json:"count"`
+}
+
+// PaginatedVerificationResult for verification history queries
+type PaginatedVerificationResult struct {
+	Records  []*CredentialVerification `json:"records"`
+	Bookmark string                    `json:"bookmark"`
+	Count    int                       `json:"count"`
 }
 
 // PaginatedPassportResult for passport queries
@@ -304,6 +344,15 @@ func normalizePassport(p *BatteryPassport) {
 	}
 	if p.CorrectionLogs == nil {
 		p.CorrectionLogs = []CorrectionLog{}
+	}
+	if p.RecycledElementContent == nil {
+		p.RecycledElementContent = map[string]float64{}
+	}
+	if p.ExtensionInfo == nil {
+		p.ExtensionInfo = map[string]string{}
+	}
+	if p.RegulatoryEvidenceIds == nil {
+		p.RegulatoryEvidenceIds = []string{}
 	}
 }
 
@@ -365,6 +414,30 @@ func (c *PassportContract) checkPassportAccess(ctx contractapi.TransactionContex
 	}
 
 	return fmt.Errorf("access denied: MSP %s cannot access passport %s", msp, passport.PassportID)
+}
+
+// checkCredentialAccess verifies caller can access a credential via its parent passport
+func (c *PassportContract) checkCredentialAccess(ctx contractapi.TransactionContextInterface, vc *VerifiableCredential) error {
+	passportJSON, err := ctx.GetStub().GetState(vc.PassportID)
+	if err != nil {
+		return fmt.Errorf("failed to read passport for credential access check: %v", err)
+	}
+	if passportJSON == nil {
+		// passport 삭제된 경우 — 발급자 MSP 또는 규제기관만 허용
+		msp, err := c.getClientMSP(ctx)
+		if err != nil {
+			return fmt.Errorf("failed to get client MSP: %v", err)
+		}
+		if msp == mspRegulator || msp == vc.IssuerMSP {
+			return nil
+		}
+		return fmt.Errorf("access denied: credential %s has no accessible passport", vc.CredentialID)
+	}
+	var passport BatteryPassport
+	if err := json.Unmarshal(passportJSON, &passport); err != nil {
+		return fmt.Errorf("failed to unmarshal passport: %v", err)
+	}
+	return c.checkPassportAccess(ctx, &passport)
 }
 
 // buildPassportQuery returns a CouchDB selector filtered by caller's MSP
@@ -545,11 +618,14 @@ func (c *PassportContract) CreateBatteryPassport(ctx contractapi.TransactionCont
 		CarbonFootprint:        carbonFootprintVal,
 		RawMaterials:           []string{},
 		RecyclingRates:         map[string]float64{},
+		RecycledElementContent: map[string]float64{},
+		ExtensionInfo:          map[string]string{},
 		CurrentSOH:             100,
 		Status:                 "MANUFACTURED",
 		MaintenanceLogs:        []MaintenanceLog{},
 		AccidentLogs:           []AccidentLog{},
 		CorrectionLogs:         []CorrectionLog{},
+		RegulatoryEvidenceIds:  []string{},
 		CreatedAt:              now,
 		UpdatedAt:              now,
 		CreatorMSP:             msp,
@@ -592,13 +668,20 @@ func (c *PassportContract) RecordBMUData(ctx contractapi.TransactionContextInter
 		return fmt.Errorf("BMU record %s already exists", recordId)
 	}
 
-	// Check passport exists
+	// Check passport exists and DID matches
 	passportJSON, err := ctx.GetStub().GetState(passportId)
 	if err != nil {
 		return fmt.Errorf("failed to read passport: %v", err)
 	}
 	if passportJSON == nil {
 		return fmt.Errorf("passport %s does not exist", passportId)
+	}
+	var passportCheck BatteryPassport
+	if err := json.Unmarshal(passportJSON, &passportCheck); err != nil {
+		return fmt.Errorf("failed to unmarshal passport for DID check: %v", err)
+	}
+	if passportCheck.DID != did {
+		return fmt.Errorf("DID mismatch: passport %s is registered to DID %s, not %s", passportId, passportCheck.DID, did)
 	}
 
 	// Parse fc and check monotonic increase per DID
@@ -757,6 +840,9 @@ func (c *PassportContract) BindToVehicle(ctx contractapi.TransactionContextInter
 	if passport.Status != "MANUFACTURED" && passport.Status != "ACTIVE" {
 		return fmt.Errorf("passport status must be MANUFACTURED or ACTIVE, current: %s", passport.Status)
 	}
+	if passport.Status == "ACTIVE" && passport.VIN != "" {
+		return fmt.Errorf("passport %s already bound to VIN %s; unbind first", passportId, passport.VIN)
+	}
 
 	msp, err := c.getClientMSP(ctx)
 	if err != nil {
@@ -857,6 +943,10 @@ func (c *PassportContract) AddMaintenanceLog(ctx contractapi.TransactionContextI
 		OrgMSP:      msp,
 	}
 
+	if passport.Status != "MAINTENANCE" && passport.Status != "ACTIVE" {
+		return fmt.Errorf("cannot add maintenance log: passport status must be MAINTENANCE or ACTIVE, current: %s", passport.Status)
+	}
+
 	passport.MaintenanceLogs = append(passport.MaintenanceLogs, log)
 	passport.Status = "ACTIVE"
 	passport.UpdatedAt = time.Now().UTC().Format(time.RFC3339)
@@ -943,6 +1033,10 @@ func (c *PassportContract) RequestAnalysis(ctx contractapi.TransactionContextInt
 		return fmt.Errorf("failed to unmarshal passport: %v", err)
 	}
 
+	if passport.Status != "ACTIVE" && passport.Status != "MAINTENANCE" {
+		return fmt.Errorf("passport status must be ACTIVE or MAINTENANCE for analysis request, current: %s", passport.Status)
+	}
+
 	passport.Status = "ANALYSIS"
 	passport.UpdatedAt = time.Now().UTC().Format(time.RFC3339)
 
@@ -978,6 +1072,10 @@ func (c *PassportContract) SubmitAnalysisResult(ctx contractapi.TransactionConte
 	err = json.Unmarshal(passportJSON, &passport)
 	if err != nil {
 		return fmt.Errorf("failed to unmarshal passport: %v", err)
+	}
+
+	if passport.Status != "ANALYSIS" {
+		return fmt.Errorf("passport status must be ANALYSIS for result submission, current: %s", passport.Status)
 	}
 
 	sohVal, err := strconv.ParseFloat(soh, 64)
@@ -1073,6 +1171,10 @@ func (c *PassportContract) ExtractMaterials(ctx contractapi.TransactionContextIn
 		return fmt.Errorf("failed to unmarshal passport: %v", err)
 	}
 
+	if passport.Status != "ACTIVE" && passport.Status != "ANALYSIS" {
+		return fmt.Errorf("extract requires ACTIVE or ANALYSIS status, current: %s", passport.Status)
+	}
+
 	var recyclingRates map[string]float64
 	err = json.Unmarshal([]byte(recyclingRatesJSON), &recyclingRates)
 	if err != nil {
@@ -1114,6 +1216,13 @@ func (c *PassportContract) DisposeBattery(ctx contractapi.TransactionContextInte
 	err = json.Unmarshal(passportJSON, &passport)
 	if err != nil {
 		return fmt.Errorf("failed to unmarshal passport: %v", err)
+	}
+
+	if passport.Status == "DISPOSED" {
+		return fmt.Errorf("passport %s is already disposed", passportId)
+	}
+	if passport.Status == "MANUFACTURED" {
+		return fmt.Errorf("passport %s has not been activated yet", passportId)
 	}
 
 	passport.Status = "DISPOSED"
@@ -1296,7 +1405,7 @@ func (c *PassportContract) QueryBMURecordsByPassport(ctx contractapi.Transaction
 		pageSize = maxPageSize
 	}
 
-	queryString := fmt.Sprintf(`{"selector":{"docType":"%s","passportId":"%s"},"sort":[{"timestamp":"desc"}]}`, docTypeBMURecord, passportId)
+	queryString := fmt.Sprintf(`{"selector":{"docType":"%s","passportId":"%s"},"sort":[{"timestamp":"desc"}]}`, docTypeBMURecord, sanitizeSelector(passportId))
 
 	resultsIterator, responseMetadata, err := ctx.GetStub().GetQueryResultWithPagination(queryString, pageSize, bookmark)
 	if err != nil {
@@ -1337,7 +1446,7 @@ func (c *PassportContract) QueryBatteryByDID(ctx contractapi.TransactionContextI
 		return nil, err
 	}
 
-	queryString := fmt.Sprintf(`{"selector":{"docType":"%s","did":"%s"}}`, docTypePassport, did)
+	queryString := fmt.Sprintf(`{"selector":{"docType":"%s","did":"%s"}}`, docTypePassport, sanitizeSelector(did))
 
 	resultsIterator, err := ctx.GetStub().GetQueryResult(queryString)
 	if err != nil {
@@ -1613,6 +1722,13 @@ func (c *PassportContract) QueryCredential(ctx contractapi.TransactionContextInt
 		return nil, fmt.Errorf("failed to unmarshal credential: %v", err)
 	}
 
+	// RBAC: credential의 연관 passport 접근 권한 확인
+	if vc.PassportID != "" {
+		if err := c.checkCredentialAccess(ctx, &vc); err != nil {
+			return nil, err
+		}
+	}
+
 	return &vc, nil
 }
 
@@ -1647,7 +1763,7 @@ func (c *PassportContract) QueryCredentialsByPassport(ctx contractapi.Transactio
 		pageSize = int64(maxPageSize)
 	}
 
-	queryString := fmt.Sprintf(`{"selector":{"docType":"%s","passportId":"%s"}}`, docTypeVC, passportId)
+	queryString := fmt.Sprintf(`{"selector":{"docType":"%s","passportId":"%s"}}`, docTypeVC, sanitizeSelector(passportId))
 
 	resultsIterator, responseMetadata, err := ctx.GetStub().GetQueryResultWithPagination(queryString, int32(pageSize), bookmark)
 	if err != nil {
@@ -1694,7 +1810,7 @@ func (c *PassportContract) QueryCredentialsByHolder(ctx contractapi.TransactionC
 		pageSize = int64(maxPageSize)
 	}
 
-	queryString := fmt.Sprintf(`{"selector":{"docType":"%s","holderDid":"%s"}}`, docTypeVC, holderDid)
+	queryString := fmt.Sprintf(`{"selector":{"docType":"%s","holderDid":"%s"}}`, docTypeVC, sanitizeSelector(holderDid))
 
 	resultsIterator, responseMetadata, err := ctx.GetStub().GetQueryResultWithPagination(queryString, int32(pageSize), bookmark)
 	if err != nil {
@@ -1748,9 +1864,9 @@ func (c *PassportContract) QueryCredentialsByType(ctx contractapi.TransactionCon
 
 	var queryString string
 	if msp == mspRegulator {
-		queryString = fmt.Sprintf(`{"selector":{"docType":"%s","credType":"%s"}}`, docTypeVC, credType)
+		queryString = fmt.Sprintf(`{"selector":{"docType":"%s","credType":"%s"}}`, docTypeVC, sanitizeSelector(credType))
 	} else {
-		queryString = fmt.Sprintf(`{"selector":{"docType":"%s","credType":"%s","issuerMsp":"%s"}}`, docTypeVC, credType, msp)
+		queryString = fmt.Sprintf(`{"selector":{"docType":"%s","credType":"%s","issuerMsp":"%s"}}`, docTypeVC, sanitizeSelector(credType), msp)
 	}
 
 	resultsIterator, responseMetadata, err := ctx.GetStub().GetQueryResultWithPagination(queryString, int32(pageSize), bookmark)
@@ -1799,19 +1915,31 @@ func (c *PassportContract) VerifyCredentialStatus(ctx contractapi.TransactionCon
 		return "", fmt.Errorf("failed to unmarshal credential: %v", err)
 	}
 
+	type verifyResult struct {
+		Valid            bool   `json:"valid"`
+		Reason           string `json:"reason,omitempty"`
+		RevokedAt        string `json:"revokedAt,omitempty"`
+		RevocationReason string `json:"revocationReason,omitempty"`
+		CredType         string `json:"credType,omitempty"`
+		IssuedAt         string `json:"issuedAt,omitempty"`
+		IssuerMSP        string `json:"issuerMsp,omitempty"`
+	}
+
 	if vc.Status == "REVOKED" {
-		result := fmt.Sprintf(`{"valid":false,"reason":"revoked","revokedAt":"%s","revocationReason":"%s"}`, vc.RevokedAt, vc.RevocationReason)
-		return result, nil
+		r, _ := json.Marshal(verifyResult{Valid: false, Reason: "revoked", RevokedAt: vc.RevokedAt, RevocationReason: vc.RevocationReason})
+		return string(r), nil
 	}
 
 	if vc.ExpiresAt != "" {
 		expiresAt, err := time.Parse(time.RFC3339, vc.ExpiresAt)
 		if err == nil && time.Now().UTC().After(expiresAt) {
-			return `{"valid":false,"reason":"expired"}`, nil
+			r, _ := json.Marshal(verifyResult{Valid: false, Reason: "expired"})
+			return string(r), nil
 		}
 	}
 
-	return fmt.Sprintf(`{"valid":true,"credType":"%s","issuedAt":"%s","issuerMsp":"%s"}`, vc.CredType, vc.IssuedAt, vc.IssuerMSP), nil
+	r, _ := json.Marshal(verifyResult{Valid: true, CredType: vc.CredType, IssuedAt: vc.IssuedAt, IssuerMSP: vc.IssuerMSP})
+	return string(r), nil
 }
 
 // ============================================================
@@ -1875,6 +2003,24 @@ func (c *PassportContract) LogCredentialVerification(ctx contractapi.Transaction
 
 func (c *PassportContract) GetCredentialHistory(ctx contractapi.TransactionContextInterface,
 	credentialId string) ([]string, error) {
+
+	// RBAC: credential 읽어서 연관 passport 접근 권한 확인
+	vcJSON, err := ctx.GetStub().GetState(credentialId)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read credential: %v", err)
+	}
+	if vcJSON == nil {
+		return nil, fmt.Errorf("credential %s does not exist", credentialId)
+	}
+	var vc VerifiableCredential
+	if err := json.Unmarshal(vcJSON, &vc); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal credential: %v", err)
+	}
+	if vc.PassportID != "" {
+		if err := c.checkCredentialAccess(ctx, &vc); err != nil {
+			return nil, err
+		}
+	}
 
 	historyIterator, err := ctx.GetStub().GetHistoryForKey(credentialId)
 	if err != nil {
@@ -2069,6 +2215,28 @@ func (c *PassportContract) CorrectPassportData(ctx contractapi.TransactionContex
 			return fmt.Errorf("invalid carbonFootprint value: %v", err)
 		}
 		passport.CarbonFootprint = val
+	case "manufacturingProcess":
+		originalValue = passport.ManufacturingProcess
+		passport.ManufacturingProcess = newValue
+	case "disposalMethod":
+		originalValue = passport.DisposalMethod
+		passport.DisposalMethod = newValue
+	case "recycledElementContent":
+		origJSON, _ := json.Marshal(passport.RecycledElementContent)
+		originalValue = string(origJSON)
+		var parsed map[string]float64
+		if err := json.Unmarshal([]byte(newValue), &parsed); err != nil {
+			return fmt.Errorf("invalid recycledElementContent JSON: %v", err)
+		}
+		passport.RecycledElementContent = parsed
+	case "extensionInfo":
+		origJSON, _ := json.Marshal(passport.ExtensionInfo)
+		originalValue = string(origJSON)
+		var parsed map[string]string
+		if err := json.Unmarshal([]byte(newValue), &parsed); err != nil {
+			return fmt.Errorf("invalid extensionInfo JSON: %v", err)
+		}
+		passport.ExtensionInfo = parsed
 	// EV Manufacturer fields
 	case "vin":
 		originalValue = passport.VIN
@@ -2167,7 +2335,7 @@ func (c *PassportContract) InvalidateBMURecord(ctx contractapi.TransactionContex
 		currentLastFc, _ := strconv.ParseUint(string(lastFcBytes), 10, 64)
 		if currentLastFc == record.FC {
 			// 다음 최신 유효 FC를 rich query로 조회 (희귀 연산이므로 허용)
-			fcReQuery := fmt.Sprintf(`{"selector":{"docType":"%s","did":"%s","status":"VALID"},"sort":[{"fc":"desc"}],"limit":1}`, docTypeBMURecord, record.DID)
+			fcReQuery := fmt.Sprintf(`{"selector":{"docType":"%s","did":"%s","status":"VALID"},"sort":[{"fc":"desc"}],"limit":1}`, docTypeBMURecord, sanitizeSelector(record.DID))
 			fcReIter, err := ctx.GetStub().GetQueryResult(fcReQuery)
 			if err == nil {
 				defer fcReIter.Close()
@@ -2191,7 +2359,7 @@ func (c *PassportContract) InvalidateBMURecord(ctx contractapi.TransactionContex
 		if err == nil && snapshotJSON != nil {
 			var snap BMUSnapshot
 			if json.Unmarshal(snapshotJSON, &snap) == nil && snap.LastBMUDataID == recordId {
-				reQuery := fmt.Sprintf(`{"selector":{"docType":"%s","passportId":"%s","status":"VALID"},"sort":[{"fc":"desc"}],"limit":1}`, docTypeBMURecord, record.PassportID)
+				reQuery := fmt.Sprintf(`{"selector":{"docType":"%s","passportId":"%s","status":"VALID"},"sort":[{"fc":"desc"}],"limit":1}`, docTypeBMURecord, sanitizeSelector(record.PassportID))
 				reIter, err := ctx.GetStub().GetQueryResult(reQuery)
 				if err == nil {
 					defer reIter.Close()
@@ -2200,11 +2368,15 @@ func (c *PassportContract) InvalidateBMURecord(ctx contractapi.TransactionContex
 						var latestValid BMURecord
 						if json.Unmarshal(entry.Value, &latestValid) == nil {
 							snap.CurrentSOC = float64(latestValid.SOC)
+							snap.Temperature = latestValid.Temperature
+							snap.StatusFlags = latestValid.StatusFlags
 							snap.TotalDischargeCycles = int(latestValid.DischargeCycles)
 							snap.LastBMUDataID = latestValid.RecordID
 						}
 					} else {
 						snap.CurrentSOC = 0
+						snap.Temperature = 0
+						snap.StatusFlags = 0
 						snap.TotalDischargeCycles = 0
 						snap.LastBMUDataID = ""
 					}
@@ -2301,7 +2473,7 @@ func (c *PassportContract) ResetFCForDID(ctx contractapi.TransactionContextInter
 	// 감사 로그 기록
 	msp, _ := c.getClientMSP(ctx)
 	now := time.Now().UTC().Format(time.RFC3339)
-	logID := fmt.Sprintf("FCRESET-%s-%s", did, now)
+	logID := fmt.Sprintf("FCRESET-%s-%s", did, ctx.GetStub().GetTxID())
 
 	resetLog := FCResetLog{
 		DocType:    docTypeFCReset,
@@ -2323,6 +2495,257 @@ func (c *PassportContract) ResetFCForDID(ctx contractapi.TransactionContextInter
 	}
 
 	return nil
+}
+
+// ============================================================
+// 35. QueryVerificationsByCredential — VC 검증 이력 조회 (credential별)
+// ============================================================
+
+func (c *PassportContract) QueryVerificationsByCredential(ctx contractapi.TransactionContextInterface,
+	credentialId string, pageSizeStr string, bookmark string) (*PaginatedVerificationResult, error) {
+
+	// RBAC: credential의 연관 passport 접근 권한 확인
+	vcJSON, err := ctx.GetStub().GetState(credentialId)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read credential: %v", err)
+	}
+	if vcJSON == nil {
+		return nil, fmt.Errorf("credential %s does not exist", credentialId)
+	}
+	var vc VerifiableCredential
+	if err := json.Unmarshal(vcJSON, &vc); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal credential: %v", err)
+	}
+	if vc.PassportID != "" {
+		if err := c.checkCredentialAccess(ctx, &vc); err != nil {
+			return nil, err
+		}
+	}
+
+	pageSize, err := strconv.ParseInt(pageSizeStr, 10, 32)
+	if err != nil || pageSize <= 0 {
+		pageSize = int64(defaultPageSize)
+	}
+	if int32(pageSize) > maxPageSize {
+		pageSize = int64(maxPageSize)
+	}
+
+	queryString := fmt.Sprintf(`{"selector":{"docType":"%s","credentialId":"%s"},"sort":[{"timestamp":"desc"}]}`, docTypeVerification, sanitizeSelector(credentialId))
+	resultsIterator, responseMetadata, err := ctx.GetStub().GetQueryResultWithPagination(queryString, int32(pageSize), bookmark)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query verifications: %v", err)
+	}
+	defer resultsIterator.Close()
+
+	var records []*CredentialVerification
+	for resultsIterator.HasNext() {
+		queryResponse, err := resultsIterator.Next()
+		if err != nil {
+			return nil, err
+		}
+		var v CredentialVerification
+		if err := json.Unmarshal(queryResponse.Value, &v); err != nil {
+			continue
+		}
+		records = append(records, &v)
+	}
+	if records == nil {
+		records = []*CredentialVerification{}
+	}
+
+	return &PaginatedVerificationResult{
+		Records:  records,
+		Bookmark: responseMetadata.GetBookmark(),
+		Count:    int(responseMetadata.GetFetchedRecordsCount()),
+	}, nil
+}
+
+// ============================================================
+// 36. QueryVerificationsByVerifier — 검증자별 검증 이력 조회 (RegulatorMSP only)
+// ============================================================
+
+func (c *PassportContract) QueryVerificationsByVerifier(ctx contractapi.TransactionContextInterface,
+	verifierDid string, pageSizeStr string, bookmark string) (*PaginatedVerificationResult, error) {
+
+	if err := c.requireMSP(ctx, mspRegulator); err != nil {
+		return nil, err
+	}
+
+	pageSize, err := strconv.ParseInt(pageSizeStr, 10, 32)
+	if err != nil || pageSize <= 0 {
+		pageSize = int64(defaultPageSize)
+	}
+	if int32(pageSize) > maxPageSize {
+		pageSize = int64(maxPageSize)
+	}
+
+	queryString := fmt.Sprintf(`{"selector":{"docType":"%s","verifierDid":"%s"},"sort":[{"timestamp":"desc"}]}`, docTypeVerification, sanitizeSelector(verifierDid))
+	resultsIterator, responseMetadata, err := ctx.GetStub().GetQueryResultWithPagination(queryString, int32(pageSize), bookmark)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query verifications: %v", err)
+	}
+	defer resultsIterator.Close()
+
+	var records []*CredentialVerification
+	for resultsIterator.HasNext() {
+		queryResponse, err := resultsIterator.Next()
+		if err != nil {
+			return nil, err
+		}
+		var v CredentialVerification
+		if err := json.Unmarshal(queryResponse.Value, &v); err != nil {
+			continue
+		}
+		records = append(records, &v)
+	}
+	if records == nil {
+		records = []*CredentialVerification{}
+	}
+
+	return &PaginatedVerificationResult{
+		Records:  records,
+		Bookmark: responseMetadata.GetBookmark(),
+		Count:    int(responseMetadata.GetFetchedRecordsCount()),
+	}, nil
+}
+
+// ============================================================
+// 37. UpdateRegulatoryVerification — 규제 검증 상태 업데이트 (RegulatorMSP only)
+// ============================================================
+
+func (c *PassportContract) UpdateRegulatoryVerification(ctx contractapi.TransactionContextInterface,
+	passportId string, status string, evidenceIdsJSON string) error {
+
+	if err := c.requireMSP(ctx, mspRegulator); err != nil {
+		return err
+	}
+
+	// status 값 제한
+	validStatuses := map[string]bool{"VERIFIED": true, "PARTIAL": true, "PENDING": true, "FAILED": true}
+	if !validStatuses[status] {
+		return fmt.Errorf("invalid regulatory status: %s (must be VERIFIED, PARTIAL, PENDING, or FAILED)", status)
+	}
+
+	passportJSON, err := ctx.GetStub().GetState(passportId)
+	if err != nil {
+		return fmt.Errorf("failed to read passport: %v", err)
+	}
+	if passportJSON == nil {
+		return fmt.Errorf("passport %s does not exist", passportId)
+	}
+
+	var passport BatteryPassport
+	if err := json.Unmarshal(passportJSON, &passport); err != nil {
+		return fmt.Errorf("failed to unmarshal passport: %v", err)
+	}
+
+	// evidenceIds 파싱 및 존재 확인
+	var evidenceIds []string
+	if err := json.Unmarshal([]byte(evidenceIdsJSON), &evidenceIds); err != nil {
+		return fmt.Errorf("invalid evidenceIds JSON: %v", err)
+	}
+	for _, eid := range evidenceIds {
+		vcJSON, err := ctx.GetStub().GetState(eid)
+		if err != nil {
+			return fmt.Errorf("failed to check evidence %s: %v", eid, err)
+		}
+		if vcJSON == nil {
+			return fmt.Errorf("evidence credential %s does not exist", eid)
+		}
+		var vcCheck VerifiableCredential
+		if err := json.Unmarshal(vcJSON, &vcCheck); err != nil || vcCheck.DocType != docTypeVC {
+			return fmt.Errorf("evidence %s is not a valid credential", eid)
+		}
+	}
+
+	msp, _ := c.getClientMSP(ctx)
+	passport.RegulatoryStatus = status
+	passport.RegulatoryVerifiedAt = time.Now().UTC().Format(time.RFC3339)
+	passport.RegulatoryVerifier = msp
+	passport.RegulatoryEvidenceIds = evidenceIds
+	passport.UpdatedAt = time.Now().UTC().Format(time.RFC3339)
+
+	updatedJSON, err := json.Marshal(passport)
+	if err != nil {
+		return fmt.Errorf("failed to marshal updated passport: %v", err)
+	}
+	return ctx.GetStub().PutState(passportId, updatedJSON)
+}
+
+// ============================================================
+// 38. VerifyPhysicalHistory — 실물-이력 일치 검증 (ManufacturerMSP, RegulatorMSP)
+// ============================================================
+
+// validSignalKeys defines the allowed signal keys for physical verification
+var validSignalKeys = map[string]bool{
+	"socMatched": true,
+	"didMatched": true,
+	"vinMatched": true,
+	"fcMatched":  true,
+}
+
+func (c *PassportContract) VerifyPhysicalHistory(ctx contractapi.TransactionContextInterface,
+	passportId string, signalsJSON string, reason string) error {
+
+	if err := c.requireMSP(ctx, mspManufacturer, mspRegulator); err != nil {
+		return err
+	}
+
+	if reason == "" {
+		return fmt.Errorf("reason must not be empty")
+	}
+
+	passportJSON, err := ctx.GetStub().GetState(passportId)
+	if err != nil {
+		return fmt.Errorf("failed to read passport: %v", err)
+	}
+	if passportJSON == nil {
+		return fmt.Errorf("passport %s does not exist", passportId)
+	}
+
+	var passport BatteryPassport
+	if err := json.Unmarshal(passportJSON, &passport); err != nil {
+		return fmt.Errorf("failed to unmarshal passport: %v", err)
+	}
+
+	// signals 파싱 및 키 검증
+	var signals map[string]bool
+	if err := json.Unmarshal([]byte(signalsJSON), &signals); err != nil {
+		return fmt.Errorf("invalid signals JSON: %v", err)
+	}
+	if len(signals) == 0 {
+		return fmt.Errorf("signals must not be empty")
+	}
+	for key := range signals {
+		if !validSignalKeys[key] {
+			return fmt.Errorf("unknown signal key: %s (valid: socMatched, didMatched, vinMatched, fcMatched)", key)
+		}
+	}
+
+	// 자동 status 판정: 모든 signal true → VERIFIED, 하나라도 false → MISMATCH
+	verifyStatus := "VERIFIED"
+	for _, matched := range signals {
+		if !matched {
+			verifyStatus = "MISMATCH"
+			break
+		}
+	}
+
+	msp, _ := c.getClientMSP(ctx)
+	passport.PhysicalVerification = &PhysicalVerification{
+		Status:      verifyStatus,
+		VerifiedAt:  time.Now().UTC().Format(time.RFC3339),
+		VerifierMSP: msp,
+		Reason:      reason,
+		Signals:     signals,
+	}
+	passport.UpdatedAt = time.Now().UTC().Format(time.RFC3339)
+
+	updatedJSON, err := json.Marshal(passport)
+	if err != nil {
+		return fmt.Errorf("failed to marshal updated passport: %v", err)
+	}
+	return ctx.GetStub().PutState(passportId, updatedJSON)
 }
 
 func main() {
