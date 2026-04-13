@@ -1,6 +1,7 @@
-require('dotenv').config();
 const express = require('express');
 const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '.env') });
+const fs = require('fs');
 const fabricService = require('./services/fabric.service');
 const fabricConfig = require('./config/fabric');
 const { createLogger } = require('./services/logger.service');
@@ -12,8 +13,15 @@ const app = express();
 app.use(express.json());
 app.use(auditMiddleware);
 
-// Static files — webapp frontend
-app.use(express.static(path.join(__dirname, '..', 'webapp', 'frontend')));
+const legacyFrontendDir = path.join(__dirname, '..', 'webapp', 'frontend');
+const reactFrontendDistDir = path.join(__dirname, '..', 'webapp', 'frontend-react', 'dist');
+const reactFrontendIndex = path.join(reactFrontendDistDir, 'index.html');
+const hasReactBuild = fs.existsSync(reactFrontendIndex);
+
+app.use('/legacy', express.static(legacyFrontendDir));
+if (hasReactBuild) {
+  app.use(express.static(reactFrontendDistDir));
+}
 
 // API routes
 const apiRouter = express.Router();
@@ -48,9 +56,15 @@ app.use('/api', (req, res) => {
   res.status(404).json({ error: 'API endpoint not found' });
 });
 
-// SPA fallback — serve index.html for non-API routes
+// SPA fallback — React at /, legacy Vue at /legacy
 app.use((req, res) => {
-  res.sendFile(path.join(__dirname, '..', 'webapp', 'frontend', 'index.html'));
+  if (req.path.startsWith('/legacy')) {
+    return res.sendFile(path.join(legacyFrontendDir, 'index.html'));
+  }
+  if (hasReactBuild) {
+    return res.sendFile(reactFrontendIndex);
+  }
+  return res.sendFile(path.join(legacyFrontendDir, 'index.html'));
 });
 
 // Central error handler — JSON parse, multer, 내부 에러 통합 처리
