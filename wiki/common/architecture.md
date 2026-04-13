@@ -87,7 +87,13 @@ tags: [architecture, overview]
 | 정비/분석 요청 | | O | | |
 | 분석 결과 제출 | | | O | |
 | 재활용/폐기 | | | | O |
-| 여권 조회 | 본인 생성분 | 본인 바인딩분 + MANUFACTURED | MAINTENANCE/ANALYSIS | 전체 |
+| BMU 데이터 기록 | O | O | | |
+| FC 리셋 | O | | | O |
+| 여권 조회 | 본인 생성분 | 본인 바인딩분 + MANUFACTURED | MAINTENANCE/ANALYSIS + 정비이력 | 전체 |
+| VC 검증 이력 조회 (credential별) | passport 접근 권한 | passport 접근 권한 | passport 접근 권한 | passport 접근 권한 |
+| VC 검증 이력 조회 (검증자별) | | | | O |
+| 규제 검증 상태 업데이트 | | | | O |
+| 실물-이력 검증 | O | | | O |
 
 ## API 엔드포인트 (bmu-agent, 포트 3001)
 
