@@ -1,5 +1,13 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 
+const TOKEN_KEY = 'auth_token';
+const USER_KEY = 'auth_userId';
+const ORG_KEY = 'auth_org';
+
+function readAuthValue(key: string): string | null {
+  return sessionStorage.getItem(key) || localStorage.getItem(key);
+}
+
 export interface AuthState {
   token: string | null;
   userId: string | null;
@@ -15,15 +23,33 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<AuthState>(() => ({
-    token: localStorage.getItem('auth_token'),
-    userId: localStorage.getItem('auth_userId'),
-    org: localStorage.getItem('auth_org'),
+    token: readAuthValue(TOKEN_KEY),
+    userId: readAuthValue(USER_KEY),
+    org: readAuthValue(ORG_KEY),
   }));
 
   useEffect(() => {
-    if (state.token) localStorage.setItem('auth_token', state.token); else localStorage.removeItem('auth_token');
-    if (state.userId) localStorage.setItem('auth_userId', state.userId); else localStorage.removeItem('auth_userId');
-    if (state.org) localStorage.setItem('auth_org', state.org); else localStorage.removeItem('auth_org');
+    if (state.token) {
+      sessionStorage.setItem(TOKEN_KEY, state.token);
+      localStorage.removeItem(TOKEN_KEY);
+    } else {
+      sessionStorage.removeItem(TOKEN_KEY);
+      localStorage.removeItem(TOKEN_KEY);
+    }
+    if (state.userId) {
+      sessionStorage.setItem(USER_KEY, state.userId);
+      localStorage.removeItem(USER_KEY);
+    } else {
+      sessionStorage.removeItem(USER_KEY);
+      localStorage.removeItem(USER_KEY);
+    }
+    if (state.org) {
+      sessionStorage.setItem(ORG_KEY, state.org);
+      localStorage.removeItem(ORG_KEY);
+    } else {
+      sessionStorage.removeItem(ORG_KEY);
+      localStorage.removeItem(ORG_KEY);
+    }
   }, [state]);
 
   const login = (userId: string, org: string, token: string) => {
