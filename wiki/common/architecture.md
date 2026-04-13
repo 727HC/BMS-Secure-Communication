@@ -94,6 +94,10 @@ tags: [architecture, overview]
 | VC 검증 이력 조회 (검증자별) | | | | O |
 | 규제 검증 상태 업데이트 | | | | O |
 | 실물-이력 검증 | O | | | O |
+| 발급기관 목록 조회 | | | | O |
+| 발급기관별 Credential 타입 | 본인 MSP | 본인 MSP | 본인 MSP | 전체 |
+| VC 발급 요청 | passport 접근 권한 | passport 접근 권한 | passport 접근 권한 | passport 접근 권한 |
+| VC 발급 승인/거부 | | | | O (+ 대상 IssuerMSP) |
 
 ## API 엔드포인트 (bmu-agent, 포트 3001)
 
