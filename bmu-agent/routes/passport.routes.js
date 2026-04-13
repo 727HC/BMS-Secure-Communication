@@ -25,8 +25,18 @@ const upload = multer({ storage, limits: { fileSize: 5 * 1024 * 1024 }, fileFilt
   else cb(new Error('이미지 파일만 업로드 가능합니다.'));
 }});
 
+const { createLogger } = require('../services/logger.service');
+const log = createLogger('passport');
+
 function parseResult(buffer) {
   return JSON.parse(buffer.toString());
+}
+
+function mapPassportErrorStatus(err) {
+  const msg = String(err?.message || '').toLowerCase();
+  if (msg.includes('does not exist') || msg.includes('not found')) return 404;
+  if (msg.includes('access denied') || msg.includes('not authorized') || msg.includes('permission')) return 403;
+  return 500;
 }
 
 // POST /api/passports — Create battery passport
@@ -58,7 +68,7 @@ router.post('/', authenticateToken, requireMSP(MSP.MANUFACTURER), async (req, re
     ], req.user);
     res.json({ success: true, passportId });
   } catch (err) {
-    console.error('CreateBatteryPassport failed:', err.message);
+    log.error('CreateBatteryPassport failed', { action: 'CreateBatteryPassport', error: err.message });
     res.status(500).json({ error: err.message });
   }
 });
@@ -86,7 +96,7 @@ router.get('/:id', authenticateToken, async (req, res) => {
     const result = await fabricService.evaluateTransaction('QueryPassport', [req.params.id], req.user);
     res.json(parseResult(result));
   } catch (err) {
-    res.status(404).json({ error: err.message });
+    res.status(mapPassportErrorStatus(err)).json({ error: err.message });
   }
 });
 
@@ -96,7 +106,7 @@ router.get('/:id/history', authenticateToken, async (req, res) => {
     const result = await fabricService.evaluateTransaction('GetPassportHistory', [req.params.id], req.user);
     res.json(parseResult(result));
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(mapPassportErrorStatus(err)).json({ error: err.message });
   }
 });
 
@@ -188,6 +198,38 @@ router.get('/:id/corrections', authenticateToken, async (req, res) => {
   try {
     const result = await fabricService.evaluateTransaction('QueryCorrectionHistory', [req.params.id], req.user);
     res.json(parseResult(result));
+  } catch (err) {
+    res.status(mapPassportErrorStatus(err)).json({ error: err.message });
+  }
+});
+
+// PUT /api/passports/:id/regulatory-verification — Update regulatory verification state
+router.put('/:id/regulatory-verification', authenticateToken, requireMSP(MSP.REGULATOR), async (req, res) => {
+  const { status, evidenceIds } = req.body;
+  if (!status) {
+    return res.status(400).json({ error: 'status required' });
+  }
+  try {
+    const result = await fabricService.submitTransaction(
+      'UpdateRegulatoryVerification', [req.params.id, status, JSON.stringify(evidenceIds || [])], req.user
+    );
+    res.json(result?.length ? parseResult(result) : { success: true, passportId: req.params.id, status });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// PUT /api/passports/:id/physical-verification — Verify physical-history match
+router.put('/:id/physical-verification', authenticateToken, requireMSP(MSP.MANUFACTURER, MSP.REGULATOR), async (req, res) => {
+  const { signals, reason } = req.body;
+  if (!signals || !reason) {
+    return res.status(400).json({ error: 'signals, reason required' });
+  }
+  try {
+    const result = await fabricService.submitTransaction(
+      'VerifyPhysicalHistory', [req.params.id, JSON.stringify(signals), reason], req.user
+    );
+    res.json(result?.length ? parseResult(result) : { success: true, passportId: req.params.id });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
