@@ -16,6 +16,14 @@ const log = createLogger('bmu');
 const BMU_RATE_LIMIT = parseInt(process.env.BMU_RATE_LIMIT || '200', 10); // max requests per window
 const BMU_RATE_WINDOW_MS = parseInt(process.env.BMU_RATE_WINDOW_MS || '60000', 10); // 1 min
 const rateBuckets = new Map();
+// Purge expired rate-limit buckets every 5 minutes
+setInterval(() => {
+  const now = Date.now();
+  for (const [key, bucket] of rateBuckets) {
+    if (now - bucket.start > BMU_RATE_WINDOW_MS) rateBuckets.delete(key);
+  }
+}, 5 * 60 * 1000).unref();
+
 function bmuRateLimit(req, res, next) {
   const key = req.ip;
   const now = Date.now();
@@ -33,8 +41,22 @@ function bmuRateLimit(req, res, next) {
 
 // P1-8: DID → passportId cache with TTL + Promise deduplication
 const CACHE_TTL = DID_CACHE_TTL_MS;
+const DID_CACHE_MAX = parseInt(process.env.DID_CACHE_MAX || '500', 10);
 const didPassportCache = new Map();
 const didPassportPending = new Map();
+
+// Evict expired + oldest entries when cache exceeds max size
+function evictCache() {
+  const now = Date.now();
+  for (const [key, val] of didPassportCache) {
+    if (now - val.ts >= CACHE_TTL) didPassportCache.delete(key);
+  }
+  if (didPassportCache.size > DID_CACHE_MAX) {
+    const excess = didPassportCache.size - DID_CACHE_MAX;
+    const keys = didPassportCache.keys();
+    for (let i = 0; i < excess; i++) didPassportCache.delete(keys.next().value);
+  }
+}
 
 async function resolvePassportId(did) {
   const cached = didPassportCache.get(did);
@@ -51,6 +73,7 @@ async function resolvePassportId(did) {
       const result = await fabricService.evaluateTransaction('QueryBatteryByDID', [did]);
       const passport = JSON.parse(result.toString());
       if (passport && passport.passportId) {
+        evictCache();
         didPassportCache.set(did, { passportId: passport.passportId, ts: Date.now() });
         return passport.passportId;
       }
@@ -65,7 +88,7 @@ async function resolvePassportId(did) {
 }
 
 // POST /api/bmu/data — Receive BMU data
-router.post('/data', bmuRateLimit, async (req, res) => {
+router.post('/data', authenticateToken, requireMSP(MSP.MANUFACTURER), bmuRateLimit, async (req, res) => {
   const { rawPayload, signature, did: reqDid } = req.body;
   const did = reqDid;
 
@@ -84,13 +107,11 @@ router.post('/data', bmuRateLimit, async (req, res) => {
   try {
     const parsed = parseRawPayload(rawPayload);
 
-    // Ed25519 서명 검증
-    if (signature && signature !== 'none') {
-      const verifyTarget = Buffer.from(rawPayload, 'hex');
-      const isValid = await didService.verifySignature(did, verifyTarget, signature);
-      if (!isValid) {
-        return res.status(401).json({ error: 'signature verification failed' });
-      }
+    // Ed25519 서명 검증 (P0-3: 위에서 signature 필수 검증 완료)
+    const verifyTarget = Buffer.from(rawPayload, 'hex');
+    const isValid = await didService.verifySignature(did, verifyTarget, signature);
+    if (!isValid) {
+      return res.status(401).json({ error: 'signature verification failed' });
     }
 
     const dataHash = crypto.createHash('sha256')
@@ -102,6 +123,11 @@ router.post('/data', bmuRateLimit, async (req, res) => {
       passportId = await resolvePassportId(did);
     } catch (err) {
       log.warn('DID->passport lookup failed', { did, error: err.message });
+      return res.status(502).json({ error: `failed to resolve passport for DID ${did}` });
+    }
+
+    if (!passportId) {
+      return res.status(404).json({ error: `no passport found for DID ${did}` });
     }
 
     const recordId = `BMU-${crypto.randomUUID()}`;
@@ -109,7 +135,7 @@ router.post('/data', bmuRateLimit, async (req, res) => {
 
     // BMU 데이터는 제조사 admin으로 기록 (M2M 통신)
     await fabricService.submitTransaction('RecordBMUData', [
-      recordId, passportId || '', did, dataHash,
+      recordId, passportId, did, dataHash,
       signature || 'none',
       String(parsed.freshnessCounter), String(parsed.soc),
       String(parsed.voltage), String(parsed.current),
@@ -119,7 +145,7 @@ router.post('/data', bmuRateLimit, async (req, res) => {
     ]);
 
     log.info('BMU recorded', {
-      action: 'RecordBMUData', recordId, passportId: passportId || null,
+      action: 'RecordBMUData', recordId, passportId,
       did, fc: parsed.freshnessCounter, soc: parsed.soc,
       voltage: parsed.voltage, temperature: parsed.temperature,
       statusFlags: parsed.statusFlags, dischargeCycles: parsed.dischargeCycles,
@@ -127,7 +153,7 @@ router.post('/data', bmuRateLimit, async (req, res) => {
     });
     res.json({
       success: true, recordId,
-      passportId: passportId || null,
+      passportId,
       parsed: {
         soc: parsed.soc, voltage: parsed.voltage, current: parsed.current,
         temperature: parsed.temperature, cellCount: parsed.cellCount,
@@ -136,7 +162,7 @@ router.post('/data', bmuRateLimit, async (req, res) => {
     });
   } catch (err) {
     log.error('BMU record failed', { action: 'RecordBMUData', did, error: err.message });
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -150,7 +176,7 @@ router.get('/records/:passportId', authenticateToken, async (req, res) => {
     );
     res.json(JSON.parse(result.toString()));
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -168,7 +194,7 @@ router.post('/invalidate/:recordId', authenticateToken, requireMSP(MSP.MANUFACTU
     res.json({ success: true, recordId: req.params.recordId, status: 'INVALIDATED' });
   } catch (err) {
     log.error('BMU invalidation failed', { action: 'InvalidateBMURecord', recordId: req.params.recordId, error: err.message });
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
