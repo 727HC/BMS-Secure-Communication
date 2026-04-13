@@ -24,6 +24,7 @@ const (
 	docTypeVC            = "verifiableCredential"
 	docTypeVerification  = "vcVerification"
 	docTypeFCReset       = "fcReset"
+	docTypeCredRequest   = "credentialRequest"
 	defaultPageSize int32 = 100
 	maxPageSize     int32 = 500
 )
@@ -291,6 +292,23 @@ type PaginatedVerificationResult struct {
 	Records  []*CredentialVerification `json:"records"`
 	Bookmark string                    `json:"bookmark"`
 	Count    int                       `json:"count"`
+}
+
+// CredentialRequest represents a credential issuance request (2차년도 #10-12)
+type CredentialRequest struct {
+	DocType         string `json:"docType"`
+	RequestID       string `json:"requestId"`
+	PassportID      string `json:"passportId"`
+	CredType        string `json:"credType"`
+	TargetIssuerMsp string `json:"targetIssuerMsp"`
+	RequesterMsp    string `json:"requesterMsp"`
+	Status          string `json:"status"` // PENDING | APPROVED | REJECTED
+	RequestedAt     string `json:"requestedAt"`
+	ApprovedAt      string `json:"approvedAt"`
+	ApproverMsp     string `json:"approverMsp"`
+	RejectedAt      string `json:"rejectedAt"`
+	RejectedBy      string `json:"rejectedBy"`
+	RejectionReason string `json:"rejectionReason"`
 }
 
 // PaginatedPassportResult for passport queries
@@ -2746,6 +2764,211 @@ func (c *PassportContract) VerifyPhysicalHistory(ctx contractapi.TransactionCont
 		return fmt.Errorf("failed to marshal updated passport: %v", err)
 	}
 	return ctx.GetStub().PutState(passportId, updatedJSON)
+}
+
+// ============================================================
+// 39. QueryIssuers — 발급기관 목록 조회 (RegulatorMSP only)
+// ============================================================
+
+func (c *PassportContract) QueryIssuers(ctx contractapi.TransactionContextInterface) ([]string, error) {
+	if err := c.requireMSP(ctx, mspRegulator); err != nil {
+		return nil, err
+	}
+	seen := map[string]bool{}
+	var issuers []string
+	for _, msps := range credTypeIssuers {
+		for _, msp := range msps {
+			if !seen[msp] {
+				seen[msp] = true
+				issuers = append(issuers, msp)
+			}
+		}
+	}
+	return issuers, nil
+}
+
+// ============================================================
+// 40. QueryCredentialTypesByIssuer — 발급기관별 Credential 타입 조회
+// ============================================================
+
+func (c *PassportContract) QueryCredentialTypesByIssuer(ctx contractapi.TransactionContextInterface,
+	issuerMsp string) ([]string, error) {
+
+	// RegulatorMSP는 전체 조회, 다른 MSP는 본인 조회만
+	msp, err := c.getClientMSP(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get client MSP: %v", err)
+	}
+	if msp != mspRegulator && msp != issuerMsp {
+		return nil, fmt.Errorf("access denied: can only query own issuer types or require RegulatorMSP")
+	}
+
+	var types []string
+	for credType, msps := range credTypeIssuers {
+		for _, m := range msps {
+			if m == issuerMsp {
+				types = append(types, credType)
+				break
+			}
+		}
+	}
+	return types, nil
+}
+
+// ============================================================
+// 41. RequestCredentialIssuance — VC 발급 요청 (모든 MSP)
+// ============================================================
+
+func (c *PassportContract) RequestCredentialIssuance(ctx contractapi.TransactionContextInterface,
+	requestId string, passportId string, credType string) error {
+
+	if requestId == "" || passportId == "" || credType == "" {
+		return fmt.Errorf("requestId, passportId, credType must not be empty")
+	}
+
+	// credType 유효성 검증
+	targetIssuers, ok := credTypeIssuers[credType]
+	if !ok {
+		return fmt.Errorf("invalid credential type: %s (allowed: BATTERY_PASSPORT, BATTERY_HEALTH, MAINTENANCE, COMPLIANCE, RECYCLING)", credType)
+	}
+
+	// 중복 체크
+	existing, err := ctx.GetStub().GetState(requestId)
+	if err != nil {
+		return fmt.Errorf("failed to check existing request: %v", err)
+	}
+	if existing != nil {
+		return fmt.Errorf("credential request %s already exists", requestId)
+	}
+
+	// passport 존재 및 접근 권한 확인
+	passportJSON, err := ctx.GetStub().GetState(passportId)
+	if err != nil {
+		return fmt.Errorf("failed to read passport: %v", err)
+	}
+	if passportJSON == nil {
+		return fmt.Errorf("passport %s does not exist", passportId)
+	}
+	var passport BatteryPassport
+	if err := json.Unmarshal(passportJSON, &passport); err != nil {
+		return fmt.Errorf("failed to unmarshal passport: %v", err)
+	}
+	if err := c.checkPassportAccess(ctx, &passport); err != nil {
+		return err
+	}
+
+	msp, _ := c.getClientMSP(ctx)
+	now := time.Now().UTC().Format(time.RFC3339)
+
+	request := CredentialRequest{
+		DocType:         docTypeCredRequest,
+		RequestID:       requestId,
+		PassportID:      passportId,
+		CredType:        credType,
+		TargetIssuerMsp: targetIssuers[0],
+		RequesterMsp:    msp,
+		Status:          "PENDING",
+		RequestedAt:     now,
+	}
+
+	requestJSON, err := json.Marshal(request)
+	if err != nil {
+		return fmt.Errorf("failed to marshal credential request: %v", err)
+	}
+	return ctx.GetStub().PutState(requestId, requestJSON)
+}
+
+// ============================================================
+// 42. ApproveCredentialIssuance — VC 발급 승인 (대상 IssuerMSP or RegulatorMSP)
+// ============================================================
+
+func (c *PassportContract) ApproveCredentialIssuance(ctx contractapi.TransactionContextInterface,
+	requestId string) error {
+
+	requestJSON, err := ctx.GetStub().GetState(requestId)
+	if err != nil {
+		return fmt.Errorf("failed to read credential request: %v", err)
+	}
+	if requestJSON == nil {
+		return fmt.Errorf("credential request %s does not exist", requestId)
+	}
+
+	var request CredentialRequest
+	if err := json.Unmarshal(requestJSON, &request); err != nil {
+		return fmt.Errorf("failed to unmarshal credential request: %v", err)
+	}
+
+	if request.Status != "PENDING" {
+		return fmt.Errorf("credential request %s is not pending, current status: %s", requestId, request.Status)
+	}
+
+	// RBAC: targetIssuerMsp 또는 RegulatorMSP만 승인 가능
+	msp, err := c.getClientMSP(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to get client MSP: %v", err)
+	}
+	if msp != request.TargetIssuerMsp && msp != mspRegulator {
+		return fmt.Errorf("access denied: only %s or RegulatorMSP can approve this request", request.TargetIssuerMsp)
+	}
+
+	request.Status = "APPROVED"
+	request.ApprovedAt = time.Now().UTC().Format(time.RFC3339)
+	request.ApproverMsp = msp
+
+	updatedJSON, err := json.Marshal(request)
+	if err != nil {
+		return fmt.Errorf("failed to marshal updated request: %v", err)
+	}
+	return ctx.GetStub().PutState(requestId, updatedJSON)
+}
+
+// ============================================================
+// 43. RejectCredentialIssuance — VC 발급 거부 (대상 IssuerMSP or RegulatorMSP)
+// ============================================================
+
+func (c *PassportContract) RejectCredentialIssuance(ctx contractapi.TransactionContextInterface,
+	requestId string, reason string) error {
+
+	if reason == "" {
+		return fmt.Errorf("rejection reason must not be empty")
+	}
+
+	requestJSON, err := ctx.GetStub().GetState(requestId)
+	if err != nil {
+		return fmt.Errorf("failed to read credential request: %v", err)
+	}
+	if requestJSON == nil {
+		return fmt.Errorf("credential request %s does not exist", requestId)
+	}
+
+	var request CredentialRequest
+	if err := json.Unmarshal(requestJSON, &request); err != nil {
+		return fmt.Errorf("failed to unmarshal credential request: %v", err)
+	}
+
+	if request.Status != "PENDING" {
+		return fmt.Errorf("credential request %s is not pending, current status: %s", requestId, request.Status)
+	}
+
+	// RBAC: targetIssuerMsp 또는 RegulatorMSP만 거부 가능
+	msp, err := c.getClientMSP(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to get client MSP: %v", err)
+	}
+	if msp != request.TargetIssuerMsp && msp != mspRegulator {
+		return fmt.Errorf("access denied: only %s or RegulatorMSP can reject this request", request.TargetIssuerMsp)
+	}
+
+	request.Status = "REJECTED"
+	request.RejectedAt = time.Now().UTC().Format(time.RFC3339)
+	request.RejectedBy = msp
+	request.RejectionReason = reason
+
+	updatedJSON, err := json.Marshal(request)
+	if err != nil {
+		return fmt.Errorf("failed to marshal updated request: %v", err)
+	}
+	return ctx.GetStub().PutState(requestId, updatedJSON)
 }
 
 func main() {

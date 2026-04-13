@@ -1,0 +1,8 @@
+{
+  "index": {
+    "fields": ["docType", "passportId", "status"]
+  },
+  "ddoc": "indexCredRequestByPassportDoc",
+  "name": "indexCredRequestByPassport",
+  "type": "json"
+}
