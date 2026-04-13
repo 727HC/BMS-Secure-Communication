@@ -80,7 +80,7 @@ router.get('/issuers/:issuerMsp/types', authenticateToken, async (req, res) => {
 });
 
 // POST /api/vc/request — Request credential issuance
-router.post('/request', authenticateToken, async (req, res) => {
+router.post('/request', authenticateToken, requireMSP(MSP.MANUFACTURER, MSP.EV_MANUFACTURER, MSP.SERVICE, MSP.REGULATOR), async (req, res) => {
   const { passportId, credType } = req.body;
   if (!passportId || !credType) {
     return res.status(400).json({ error: 'passportId, credType required' });
@@ -90,22 +90,22 @@ router.post('/request', authenticateToken, async (req, res) => {
     const result = await vcService.requestCredentialIssuance(fabricService, requestId, passportId, credType, req.user);
     res.json({ success: true, requestId, ...result });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
 // POST /api/vc/request/:requestId/approve — Approve credential issuance request
-router.post('/request/:requestId/approve', authenticateToken, async (req, res) => {
+router.post('/request/:requestId/approve', authenticateToken, requireMSP(MSP.MANUFACTURER, MSP.SERVICE, MSP.REGULATOR), async (req, res) => {
   try {
     const result = await vcService.approveCredentialIssuance(fabricService, req.params.requestId, req.user);
     res.json({ success: true, ...result });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
 // POST /api/vc/request/:requestId/reject — Reject credential issuance request
-router.post('/request/:requestId/reject', authenticateToken, async (req, res) => {
+router.post('/request/:requestId/reject', authenticateToken, requireMSP(MSP.MANUFACTURER, MSP.SERVICE, MSP.REGULATOR), async (req, res) => {
   const { reason } = req.body;
   if (!reason) {
     return res.status(400).json({ error: 'reason required' });
@@ -114,12 +114,12 @@ router.post('/request/:requestId/reject', authenticateToken, async (req, res) =>
     const result = await vcService.rejectCredentialIssuance(fabricService, req.params.requestId, reason, req.user);
     res.json({ success: true, ...result });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
 // POST /api/vc/issue — Issue a verifiable credential
-router.post('/issue', authenticateToken, async (req, res) => {
+router.post('/issue', authenticateToken, requireMSP(MSP.MANUFACTURER, MSP.SERVICE, MSP.REGULATOR), async (req, res) => {
   const {
     passportId, credType, issuerDid, holderDid,
     schemaId, credDefId, attributes, expiresAt,
@@ -149,7 +149,7 @@ router.post('/issue', authenticateToken, async (req, res) => {
     res.json({ success: true, ...result });
   } catch (err) {
     log.error('VC issue failed', { action: 'IssueCredential', credentialId, passportId, credType, error: err.message });
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -158,7 +158,7 @@ router.post('/issue', authenticateToken, async (req, res) => {
 // ============================================================
 
 // POST /api/vc/revoke — Revoke a credential
-router.post('/revoke', authenticateToken, async (req, res) => {
+router.post('/revoke', authenticateToken, requireMSP(MSP.MANUFACTURER, MSP.SERVICE, MSP.REGULATOR), async (req, res) => {
   const { credentialId, reason } = req.body;
   if (!credentialId) {
     return res.status(400).json({ error: 'credentialId required' });
@@ -171,7 +171,7 @@ router.post('/revoke', authenticateToken, async (req, res) => {
     res.json({ success: true, ...result });
   } catch (err) {
     log.error('VC revoke failed', { action: 'RevokeCredential', credentialId, error: err.message });
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 

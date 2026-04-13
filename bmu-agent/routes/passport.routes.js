@@ -69,7 +69,7 @@ router.post('/', authenticateToken, requireMSP(MSP.MANUFACTURER), async (req, re
     res.json({ success: true, passportId });
   } catch (err) {
     log.error('CreateBatteryPassport failed', { action: 'CreateBatteryPassport', error: err.message });
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -86,7 +86,7 @@ router.get('/', authenticateToken, async (req, res) => {
     );
     res.json(parseResult(result));
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -122,7 +122,7 @@ router.put('/:id/bind', authenticateToken, requireMSP(MSP.EV_MANUFACTURER), asyn
     ], req.user);
     res.json({ success: true, passportId: req.params.id, vin });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -173,7 +173,7 @@ router.post('/:id/materials', authenticateToken, requireMSP(MSP.MANUFACTURER), a
     ], req.user);
     res.json({ success: true, passportId: req.params.id, linked: materialIds });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -189,7 +189,7 @@ router.post('/:id/correct', authenticateToken, requireMSP(MSP.MANUFACTURER, MSP.
     ], req.user);
     res.json({ success: true, passportId: req.params.id, fieldName, newValue });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -215,7 +215,7 @@ router.put('/:id/regulatory-verification', authenticateToken, requireMSP(MSP.REG
     );
     res.json(result?.length ? parseResult(result) : { success: true, passportId: req.params.id, status });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -231,7 +231,7 @@ router.put('/:id/physical-verification', authenticateToken, requireMSP(MSP.MANUF
     );
     res.json(result?.length ? parseResult(result) : { success: true, passportId: req.params.id });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
