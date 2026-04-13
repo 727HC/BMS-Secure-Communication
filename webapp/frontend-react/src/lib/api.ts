@@ -1,3 +1,5 @@
+import { STATUS_LABELS, STATUS_LIST } from './helpers';
+
 const API_BASE = window.location.origin + '/api';
 
 function getToken(): string | null {
@@ -49,13 +51,4 @@ export const MSP_LABELS: Record<string, string> = {
   RegulatorMSP: '검증기관',
 };
 
-export const STATUS_LABELS: Record<string, string> = {
-  MANUFACTURED: '제조 완료',
-  ACTIVE: '운행 중',
-  MAINTENANCE: '정비 중',
-  ANALYSIS: '분석 중',
-  RECYCLING: '재활용 중',
-  DISPOSED: '폐기',
-};
-
-export const STATUS_LIST = ['MANUFACTURED', 'ACTIVE', 'MAINTENANCE', 'ANALYSIS', 'RECYCLING', 'DISPOSED'] as const;
+export { STATUS_LABELS, STATUS_LIST };
