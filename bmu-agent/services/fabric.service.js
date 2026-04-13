@@ -71,7 +71,7 @@ async function connectFabric() {
   log.info('Connected to Fabric', { channel: fabricConfig.channelName, contract: fabricConfig.contractName });
 
   // Gateway pool 정리 타이머 시작
-  setInterval(evictStaleGateways, GATEWAY_TTL_MS);
+  setInterval(evictStaleGateways, GATEWAY_TTL_MS).unref();
 }
 
 // Gateway pool TTL eviction — 미사용 연결 정리
