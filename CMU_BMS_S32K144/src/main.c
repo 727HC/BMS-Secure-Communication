@@ -73,6 +73,10 @@ static uint8 g_cmac_input[CMAC_INPUT_SIZE];
 static uint8 g_cmac_output[CMAC_TAG_SIZE];
 static uint8 g_kdf_input[KDF_INPUT_SIZE];
 static uint8 g_canfd_payload[CANFD_PAYLOAD_SIZE];
+#if PAYLOAD_ENCRYPTION_ENABLED
+static uint8 g_cbc_iv[AES_KEY_SIZE];
+static uint8 g_encrypted_data[BATTERY_DATA_SIZE];
+#endif
 
 #define CRYPTO_43_CSEC_STOP_SEC_VAR_CLEARED_8_NO_CACHEABLE
 #include "Crypto_43_CSEC_MemMap.h"
@@ -296,6 +300,16 @@ static Csec_Ip_ErrorCodeType CMU_AesEcbEncrypt(const uint8 *plain,
     return Csec_Ip_EncryptEcb(&g_csec_req, CSEC_IP_RAM_KEY, plain, len, cipher);
 }
 
+#if PAYLOAD_ENCRYPTION_ENABLED
+static Csec_Ip_ErrorCodeType CMU_AesCbcEncrypt(const uint8 *plain,
+                                                uint32 len,
+                                                const uint8 *iv,
+                                                uint8 *cipher)
+{
+    return Csec_Ip_EncryptCbc(&g_csec_req, CSEC_IP_RAM_KEY, plain, len, iv, cipher);
+}
+#endif /* PAYLOAD_ENCRYPTION_ENABLED */
+
 static Csec_Ip_ErrorCodeType CMU_GenerateCmac(const uint8 *input,
                                                uint32 bit_len,
                                                uint8 *cmac_out)
@@ -390,17 +404,31 @@ static boolean CMU_SendSecuredData(const uint8 *battery_data)
     /* 1. Increment freshness counter (anti-replay) */
     g_freshness_counter++;
 
-    /* 2. Build CAN-FD payload first, then compute CMAC on final data.
-     *    FC must be embedded in payload BEFORE CMAC calculation,
-     *    otherwise BMU verifies against different data. */
+    /* 2. Build plaintext payload with FC embedded */
     memcpy(&g_canfd_payload[0], battery_data, BATTERY_DATA_SIZE);
     {
         BatteryData_t *pFrame = (BatteryData_t *)&g_canfd_payload[0];
         pFrame->freshness_counter = g_freshness_counter;
     }
 
-    /* 3. Build CMAC input from finalized payload: FC(4B) || Data(48B) */
+#if PAYLOAD_ENCRYPTION_ENABLED
+    /* 3a. Encrypt-then-MAC: CBC encrypt payload, then CMAC over ciphertext */
+    BMS_BuildCbcIv(g_cbc_iv, g_freshness_counter);
+    result = CMU_AesCbcEncrypt(&g_canfd_payload[0], BATTERY_DATA_SIZE,
+                               g_cbc_iv, g_encrypted_data);
+    if (result != CSEC_IP_ERC_NO_ERROR)
+    {
+        return FALSE;
+    }
+    /* Replace plaintext with ciphertext in payload buffer */
+    memcpy(&g_canfd_payload[0], g_encrypted_data, BATTERY_DATA_SIZE);
+
+    /* CMAC over ciphertext: FC(4B) || Ciphertext(48B) */
     BMS_BuildCmacInput(g_cmac_input, g_freshness_counter, &g_canfd_payload[0]);
+#else
+    /* 3b. Plaintext + CMAC (legacy): FC(4B) || Plaintext(48B) */
+    BMS_BuildCmacInput(g_cmac_input, g_freshness_counter, &g_canfd_payload[0]);
+#endif
 
     /* 4. Generate AES-128 CMAC */
     result = CMU_GenerateCmac(g_cmac_input, CMAC_INPUT_BITS, g_cmac_output);
