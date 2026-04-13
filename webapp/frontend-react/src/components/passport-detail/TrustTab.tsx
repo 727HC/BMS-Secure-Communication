@@ -1,19 +1,58 @@
 import { formatDate } from './helpers';
-import type { Passport, Credential } from './types';
+import type { Passport, Credential, IssuerCatalogItem } from './types';
 
 interface Props {
   passport: Passport;
   vcList: Credential[];
   onVerify: (credentialId: string) => void;
   onRevoke: (credentialId: string) => void;
+  canRequest: boolean;
+  canApproveOrReject: boolean;
+  onRequest: () => void;
+  onApprove: () => void;
+  onReject: () => void;
+  issuers: IssuerCatalogItem[];
 }
 
-export default function TrustTab({ passport, vcList, onVerify, onRevoke }: Props) {
+export default function TrustTab({ passport, vcList, onVerify, onRevoke, canRequest, canApproveOrReject, onRequest, onApprove, onReject, issuers }: Props) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
       <div className="sn-detail-section-head">
         <h2 className="sn-detail-section-title">증빙 / 검증 문서</h2>
       </div>
+
+      {(canRequest || canApproveOrReject) && (
+        <div className="sn-detail-dossier">
+          <div className="sn-detail-dossier-head">
+            <h3 className="sn-detail-dossier-title">VC 요청 / 승인 흐름</h3>
+          </div>
+          <div style={{ padding: 18, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            {canRequest && <button onClick={onRequest} className="sn-btn sn-btn-accent">발급 요청</button>}
+            {canApproveOrReject && <button onClick={onApprove} className="sn-btn sn-btn-ghost">요청 승인</button>}
+            {canApproveOrReject && <button onClick={onReject} className="sn-btn sn-btn-danger">요청 거부</button>}
+          </div>
+        </div>
+      )}
+
+      {issuers.length > 0 && (
+        <div className="sn-detail-dossier">
+          <div className="sn-detail-dossier-head">
+            <h3 className="sn-detail-dossier-title">발급기관 / Credential 타입</h3>
+          </div>
+          <div style={{ padding: '16px 18px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+            {issuers.map((issuer) => (
+              <div key={issuer.issuerMsp} style={{ display: 'grid', gridTemplateColumns: '180px minmax(0,1fr)', gap: 12 }}>
+                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 13, color: '#94a3b8' }}>{issuer.issuerMsp}</div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                  {issuer.types.map((type) => (
+                    <span key={type} className="sn-detail-inline-stamp">{type}</span>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="sn-detail-dossier">
         <div className="sn-detail-dossier-head">
