@@ -117,10 +117,10 @@ router.post('/revoke', authenticateToken, async (req, res) => {
 // ============================================================
 
 // GET /api/vc/verify/:credentialId — Verify credential status
-router.get('/verify/:credentialId', async (req, res) => {
+router.get('/verify/:credentialId', authenticateToken, async (req, res) => {
   try {
     const result = await vcService.verifyCredentialStatus(
-      fabricService, req.params.credentialId
+      fabricService, req.params.credentialId, req.user
     );
     res.json(result);
   } catch (err) {
@@ -156,10 +156,10 @@ router.post('/verify-log', authenticateToken, async (req, res) => {
 // ============================================================
 
 // GET /api/vc/:credentialId — Get credential by ID
-router.get('/:credentialId', async (req, res) => {
+router.get('/:credentialId', authenticateToken, async (req, res) => {
   try {
     const result = await vcService.queryCredential(
-      fabricService, req.params.credentialId
+      fabricService, req.params.credentialId, req.user
     );
     res.json(result);
   } catch (err) {
@@ -224,10 +224,10 @@ router.get('/revoked/list', authenticateToken, requireMSP(MSP.REGULATOR), async 
 });
 
 // GET /api/vc/:credentialId/history — Get credential history
-router.get('/:credentialId/history', async (req, res) => {
+router.get('/:credentialId/history', authenticateToken, async (req, res) => {
   try {
     const result = await vcService.getCredentialHistory(
-      fabricService, req.params.credentialId
+      fabricService, req.params.credentialId, req.user
     );
     res.json(result);
   } catch (err) {
