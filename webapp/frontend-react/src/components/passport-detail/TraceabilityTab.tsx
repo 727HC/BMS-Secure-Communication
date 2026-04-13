@@ -3,7 +3,7 @@ import { formatDate } from './helpers';
 import { scaleSOC } from '../../lib/helpers';
 import type { Passport, BmuRecord } from './types';
 
-export default function TraceabilityTab({ passport, bmuRecords }: { passport: Passport; bmuRecords: BmuRecord[] }) {
+export default function TraceabilityTab({ passport, bmuRecords, canVerifyPhysical, onVerifyPhysical }: { passport: Passport; bmuRecords: BmuRecord[]; canVerifyPhysical: boolean; onVerifyPhysical: () => void; }) {
   const maintenanceLogs = passport.maintenanceLogs || [];
   const accidentLogs = passport.accidentLogs || [];
   const recyclingRates = passport.recyclingRates;
@@ -25,21 +25,28 @@ export default function TraceabilityTab({ passport, bmuRecords }: { passport: Pa
       <div className="sn-detail-dossier">
         <div className="sn-detail-dossier-head">
           <h3 className="sn-detail-dossier-title">물리적 이력 검증 (BMU)</h3>
-          <span
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              padding: '4px 8px',
-              borderRadius: 999,
-              fontSize: 12,
-              fontWeight: 600,
-              background: latestBmu ? '#eefaf3' : '#f1f5f9',
-              color: latestBmu ? '#059669' : '#64748b',
-              border: `1px solid ${latestBmu ? 'rgba(16,185,129,0.12)' : 'rgba(15,23,42,0.06)'}`,
-            }}
-          >
-            {latestBmu ? '수집 중' : '수집 이력 없음'}
-          </span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                padding: '4px 8px',
+                borderRadius: 999,
+                fontSize: 12,
+                fontWeight: 600,
+                background: latestBmu ? '#eefaf3' : '#f1f5f9',
+                color: latestBmu ? '#059669' : '#64748b',
+                border: `1px solid ${latestBmu ? 'rgba(16,185,129,0.12)' : 'rgba(15,23,42,0.06)'}`,
+              }}
+            >
+              {passport.physicalHistoryVerification?.status || (latestBmu ? '수집 중' : '수집 이력 없음')}
+            </span>
+            {canVerifyPhysical && (
+              <button onClick={onVerifyPhysical} className="sn-btn sn-btn-ghost" style={{ padding: '4px 8px', fontSize: 12, minHeight: 'auto' }}>
+                검증 저장
+              </button>
+            )}
+          </div>
         </div>
         <div className="sn-detail-spec-sheet">
           <div className="sn-detail-spec-row">
@@ -56,6 +63,10 @@ export default function TraceabilityTab({ passport, bmuRecords }: { passport: Pa
               } 
             />
             <SpecRow k="누적 방전 사이클" v={latestBmu?.dischargeCycles != null ? `${latestBmu.dischargeCycles}회` : '-'} />
+          </div>
+          <div className="sn-detail-spec-row">
+            <SpecRow k="백엔드 검증 상태" v={passport.physicalHistoryVerification?.status || '-'} />
+            <SpecRow k="검증 시각" v={passport.physicalHistoryVerification?.verifiedAt ? formatDate(passport.physicalHistoryVerification.verifiedAt) : '-'} />
           </div>
         </div>
       </div>

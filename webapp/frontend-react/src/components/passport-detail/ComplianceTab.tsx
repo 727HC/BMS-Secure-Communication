@@ -1,14 +1,17 @@
 import SpecRow from '../ui/SpecRow';
 import { formatDate } from './helpers';
-import type { GbaCompliance, GbaField, Credential } from './types';
+import type { GbaCompliance, GbaField, Credential, Passport } from './types';
 
 interface Props {
+  passport: Passport;
   gbaCompliance: GbaCompliance;
   complianceGrade: 'A' | 'B' | 'C' | 'D';
   vcList: Credential[];
+  canUpdateRegulatory: boolean;
+  onUpdateRegulatory: () => void;
 }
 
-export default function ComplianceTab({ gbaCompliance, complianceGrade, vcList }: Props) {
+export default function ComplianceTab({ passport, gbaCompliance, complianceGrade, vcList, canUpdateRegulatory, onUpdateRegulatory }: Props) {
   const missingFields: GbaField[] = gbaCompliance.groups
     .flatMap((g) => g.fields.filter((f) => !f.filled))
     .slice(0, 6);
@@ -28,21 +31,28 @@ export default function ComplianceTab({ gbaCompliance, complianceGrade, vcList }
       <div className="sn-detail-dossier">
         <div className="sn-detail-dossier-head">
           <h3 className="sn-detail-dossier-title">규제 증빙 (VC) 검증 상태</h3>
-          <span
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              padding: '4px 8px',
-              borderRadius: 999,
-              fontSize: 12,
-              fontWeight: 600,
-              background: isFullyVerified ? '#eefaf3' : (activeVcCount > 0 ? '#fff7ed' : '#f1f5f9'),
-              color: isFullyVerified ? '#059669' : (activeVcCount > 0 ? '#b45309' : '#64748b'),
-              border: `1px solid ${isFullyVerified ? 'rgba(16,185,129,0.12)' : (activeVcCount > 0 ? 'rgba(245,158,11,0.14)' : 'rgba(15,23,42,0.06)')}`,
-            }}
-          >
-            {isFullyVerified ? '검증 완료' : (activeVcCount > 0 ? '부분 검증' : '증빙 없음')}
-          </span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                padding: '4px 8px',
+                borderRadius: 999,
+                fontSize: 12,
+                fontWeight: 600,
+                background: isFullyVerified ? '#eefaf3' : (activeVcCount > 0 ? '#fff7ed' : '#f1f5f9'),
+                color: isFullyVerified ? '#059669' : (activeVcCount > 0 ? '#b45309' : '#64748b'),
+                border: `1px solid ${isFullyVerified ? 'rgba(16,185,129,0.12)' : (activeVcCount > 0 ? 'rgba(245,158,11,0.14)' : 'rgba(15,23,42,0.06)')}`,
+              }}
+            >
+              {passport.regulatoryVerificationStatus || (isFullyVerified ? '검증 완료' : (activeVcCount > 0 ? '부분 검증' : '증빙 없음'))}
+            </span>
+            {canUpdateRegulatory && (
+              <button onClick={onUpdateRegulatory} className="sn-btn sn-btn-ghost" style={{ padding: '4px 8px', fontSize: 12, minHeight: 'auto' }}>
+                상태 갱신
+              </button>
+            )}
+          </div>
         </div>
         <div className="sn-detail-spec-sheet">
           <div className="sn-detail-spec-row">
@@ -52,6 +62,10 @@ export default function ComplianceTab({ gbaCompliance, complianceGrade, vcList }
           <div className="sn-detail-spec-row">
             <SpecRow k="규제 요건 충족 여부" v={isFullyVerified ? '충족 (Verified)' : '미달 (Pending/Missing)'} />
             <SpecRow k="최근 증빙 발급일" v={latestVc ? formatDate(latestVc.issuedAt) : '-'} />
+          </div>
+          <div className="sn-detail-spec-row">
+            <SpecRow k="백엔드 검증 상태" v={passport.regulatoryVerificationStatus || '-'} />
+            <SpecRow k="검증 담당" v={passport.regulatoryVerifier || '-'} />
           </div>
         </div>
       </div>

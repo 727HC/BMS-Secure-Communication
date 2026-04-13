@@ -25,6 +25,11 @@ import {
   VcIssueModal,
   VcVerifyModal,
   VcRevokeModal,
+  VcRequestModal,
+  VcApproveModal,
+  VcRejectModal,
+  RegulatoryVerificationModal,
+  PhysicalVerificationModal,
   type BindFormData,
   type MaintenanceRequestFormData,
   type MaintenanceLogFormData,
@@ -32,7 +37,13 @@ import {
   type CorrectionFormData,
   type VcIssueFormData,
   type VcRevokeFormData,
+  type VcRequestFormData,
+  type VcApproveFormData,
+  type VcRejectFormData,
+  type RegulatoryVerificationFormData,
+  type PhysicalVerificationFormData,
 } from '../components/modals/passport-detail';
+import type { IssuerCatalogItem } from '../components/passport-detail/types';
 
 type Tab = 'identity' | 'compliance' | 'traceability' | 'data' | 'trust';
 
@@ -44,7 +55,7 @@ const TABS: { key: Tab; label: string }[] = [
   { key: 'trust', label: '증빙' },
 ];
 
-type ModalKey = 'bind' | 'mRequest' | 'mLog' | 'aRequest' | 'aResult' | 'dispose' | 'correct' | 'vcIssue' | 'vcVerify' | 'vcRevoke' | null;
+type ModalKey = 'bind' | 'mRequest' | 'mLog' | 'aRequest' | 'aResult' | 'dispose' | 'correct' | 'vcIssue' | 'vcVerify' | 'vcRevoke' | 'vcRequest' | 'vcApprove' | 'vcReject' | 'regVerify' | 'physicalVerify' | null;
 
 export default function PassportDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -64,6 +75,8 @@ export default function PassportDetailPage() {
   const [openModal, setOpenModal] = useState<ModalKey>(null);
   const [selectedVcId, setSelectedVcId] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [issuers, setIssuers] = useState<IssuerCatalogItem[]>([]);
 
   const fetchAll = async () => {
     if (!id) return;
@@ -98,9 +111,26 @@ export default function PassportDetailPage() {
       } catch {
         if (!cancelled) setVcList([]);
       }
+      if (org === 'RegulatorMSP') {
+        try {
+          const issuerData = await api.get<{ issuers: string[] }>('/vc/issuers');
+          const names = issuerData.issuers || [];
+          const catalog = await Promise.all(names.map(async (issuerMsp) => {
+            try {
+              const typeData = await api.get<{ issuerMsp: string; types: string[] }>(`/vc/issuers/${encodeURIComponent(issuerMsp)}/types`);
+              return { issuerMsp, types: typeData.types || [] };
+            } catch {
+              return { issuerMsp, types: [] };
+            }
+          }));
+          if (!cancelled) setIssuers(catalog);
+        } catch {
+          if (!cancelled) setIssuers([]);
+        }
+      }
     })();
     return () => { cancelled = true; };
-  }, [activeTab, id]);
+  }, [activeTab, id, org]);
 
   const gbaCompliance = useMemo(() => computeGbaCompliance(passport), [passport]);
   const grade = useMemo(() => complianceGrade(gbaCompliance.pct), [gbaCompliance]);
@@ -112,11 +142,15 @@ export default function PassportDetailPage() {
 
   const withSubmit = async (fn: () => Promise<unknown>) => {
     setSubmitting(true);
+    setSubmitError(null);
     try {
       await fn();
       closeAll();
       await fetchAll();
-    } catch { /* noop */ }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : '요청 처리 중 오류가 발생했습니다.';
+      setSubmitError(message);
+    }
     finally { setSubmitting(false); }
   };
 
@@ -143,8 +177,29 @@ export default function PassportDetailPage() {
     passport?.passportId && withSubmit(() => api.post(`/passports/${passport.passportId}/correct`, data));
   const handleVcIssue = (data: VcIssueFormData) =>
     passport?.passportId && withSubmit(() => api.post('/vc/issue', { passportId: passport.passportId, ...data }));
+  const handleVcRequest = (data: VcRequestFormData) =>
+    passport?.passportId && withSubmit(() => api.post('/vc/request', { passportId: passport.passportId, credType: data.credType }));
+  const handleVcApprove = (data: VcApproveFormData) =>
+    withSubmit(() => api.post(`/vc/request/${encodeURIComponent(data.requestId)}/approve`, {}));
+  const handleVcReject = (data: VcRejectFormData) =>
+    withSubmit(() => api.post(`/vc/request/${encodeURIComponent(data.requestId)}/reject`, { reason: data.reason }));
   const handleVcRevoke = (data: VcRevokeFormData) =>
     selectedVcId && withSubmit(() => api.post('/vc/revoke', { credentialId: selectedVcId, reason: data.reason }));
+  const handleRegulatoryVerification = (data: RegulatoryVerificationFormData) =>
+    passport?.passportId && withSubmit(() => api.put(`/passports/${passport.passportId}/regulatory-verification`, {
+      status: data.status,
+      evidenceIds: data.evidenceIds.split(',').map((v) => v.trim()).filter(Boolean),
+    }));
+  const handlePhysicalVerification = (data: PhysicalVerificationFormData) =>
+    passport?.passportId && withSubmit(() => api.put(`/passports/${passport.passportId}/physical-verification`, {
+      signals: {
+        socMatched: data.socMatched,
+        didMatched: data.didMatched,
+        vinMatched: data.vinMatched,
+        fcMatched: data.fcMatched,
+      },
+      reason: data.reason,
+    }));
 
   const openVerifyModal = (credentialId: string) => {
     setSelectedVcId(credentialId);
@@ -197,6 +252,12 @@ export default function PassportDetailPage() {
           </p>
         </div>
       </div>
+
+      {submitError && (
+        <div style={{ padding: '0.9rem 1rem', borderRadius: '0.85rem', background: '#fef2f2', color: '#b91c1c', border: '1px solid rgba(239,68,68,0.16)' }}>
+          <span style={{ fontSize: '0.9rem', lineHeight: 1.6 }}>{submitError}</span>
+        </div>
+      )}
 
       {/* CRITICAL SIGNALS */}
       <div style={{ display: 'flex', flexDirection: 'column', background: '#fff', padding: '1.25rem 1.5rem', borderRadius: '1rem', border: '1px solid var(--color-border)', boxShadow: '0 1px 3px rgba(0,0,0,0.02)', gap: '1rem' }}>
@@ -325,8 +386,8 @@ export default function PassportDetailPage() {
 
       <div className="sn-detail-tab-sheet">
         {activeTab === 'identity' && <IdentityTab passport={passport} />}
-        {activeTab === 'compliance' && <ComplianceTab gbaCompliance={gbaCompliance} complianceGrade={grade} vcList={vcList} />}
-        {activeTab === 'traceability' && <TraceabilityTab passport={passport} bmuRecords={bmuRecords} />}
+        {activeTab === 'compliance' && <ComplianceTab passport={passport} gbaCompliance={gbaCompliance} complianceGrade={grade} vcList={vcList} canUpdateRegulatory={isRegulator} onUpdateRegulatory={() => setOpenModal('regVerify')} />}
+        {activeTab === 'traceability' && <TraceabilityTab passport={passport} bmuRecords={bmuRecords} canVerifyPhysical={isManufacturer || isRegulator} onVerifyPhysical={() => setOpenModal('physicalVerify')} />}
         {activeTab === 'data' && <DataTab bmuRecords={bmuRecords} />}
         {activeTab === 'trust' && (
           <TrustTab 
@@ -334,6 +395,12 @@ export default function PassportDetailPage() {
             vcList={vcList} 
             onVerify={openVerifyModal}
             onRevoke={openRevokeModal}
+            canRequest={isManufacturer || isEV || isService}
+            canApproveOrReject={isRegulator || org === 'ManufacturerMSP'}
+            onRequest={() => setOpenModal('vcRequest')}
+            onApprove={() => setOpenModal('vcApprove')}
+            onReject={() => setOpenModal('vcReject')}
+            issuers={issuers}
           />
         )}
       </div>
@@ -347,8 +414,13 @@ export default function PassportDetailPage() {
       <DisposeModal open={openModal === 'dispose'} submitting={submitting} onClose={closeAll} onSubmit={handleDispose} />
       <CorrectionModal open={openModal === 'correct'} submitting={submitting} onClose={closeAll} onSubmit={handleCorrect} />
       <VcIssueModal open={openModal === 'vcIssue'} submitting={submitting} onClose={closeAll} onSubmit={handleVcIssue} />
+      <VcRequestModal open={openModal === 'vcRequest'} submitting={submitting} onClose={closeAll} onSubmit={handleVcRequest} />
+      <VcApproveModal open={openModal === 'vcApprove'} submitting={submitting} onClose={closeAll} onSubmit={handleVcApprove} />
+      <VcRejectModal open={openModal === 'vcReject'} submitting={submitting} onClose={closeAll} onSubmit={handleVcReject} />
       <VcVerifyModal open={openModal === 'vcVerify'} credentialId={selectedVcId} onClose={closeAll} />
       <VcRevokeModal open={openModal === 'vcRevoke'} submitting={submitting} credentialId={selectedVcId} onClose={closeAll} onSubmit={handleVcRevoke} />
+      <RegulatoryVerificationModal open={openModal === 'regVerify'} submitting={submitting} onClose={closeAll} onSubmit={handleRegulatoryVerification} />
+      <PhysicalVerificationModal open={openModal === 'physicalVerify'} submitting={submitting} onClose={closeAll} onSubmit={handlePhysicalVerification} />
     </div>
   );
 }

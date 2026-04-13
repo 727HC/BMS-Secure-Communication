@@ -30,6 +30,24 @@ export interface Credential {
   issuedAt?: string;
   expiresAt?: string;
   holderDid?: string;
+  issuerMsp?: string;
+}
+
+export interface IssuerCatalogItem {
+  issuerMsp: string;
+  types: string[];
+}
+
+export interface PhysicalHistoryVerification {
+  status?: 'VERIFIED' | 'MISMATCH' | 'PENDING';
+  verifiedAt?: string;
+  reason?: string;
+  signals?: {
+    socMatched?: boolean;
+    didMatched?: boolean;
+    vinMatched?: boolean;
+    fcMatched?: boolean;
+  };
 }
 
 export interface Passport {
@@ -71,6 +89,11 @@ export interface Passport {
   carbonFootprint?: string;
   recycledElementContent?: string;
   extensionInfo?: string;
+  regulatoryVerificationStatus?: 'VERIFIED' | 'PARTIAL' | 'PENDING' | 'FAILED' | string;
+  regulatoryVerifiedAt?: string;
+  regulatoryVerifier?: string;
+  regulatoryEvidenceIds?: string[];
+  physicalHistoryVerification?: PhysicalHistoryVerification | null;
   maintenanceLogs?: MaintenanceLog[];
   accidentLogs?: AccidentLog[];
   [key: string]: unknown;
