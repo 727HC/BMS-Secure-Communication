@@ -6,6 +6,17 @@ import type { Passport } from './types';
 export default function IdentityTab({ passport }: { passport: Passport }) {
   const voltage = parseVoltageRange(passport.voltageRange);
   const temp = parseTempRange(passport.temperatureRange);
+  const formatExtraValue = (value: unknown) => {
+    if (value == null || value === '') return '정보 없음';
+    if (typeof value === 'object') {
+      try {
+        return JSON.stringify(value);
+      } catch {
+        return '정보 없음';
+      }
+    }
+    return String(value);
+  };
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
@@ -96,11 +107,11 @@ export default function IdentityTab({ passport }: { passport: Passport }) {
             <SpecRow k="폐기 방법" v={passport.disposalMethod || '정보 없음'} />
           </div>
           <div className="sn-detail-spec-row">
-            <SpecRow k="탄소 발자국" v={passport.carbonFootprint || '정보 없음'} />
-            <SpecRow k="재활용 원료 비율" v={passport.recycledElementContent || '정보 없음'} />
+            <SpecRow k="탄소 발자국" v={formatExtraValue(passport.carbonFootprint)} />
+            <SpecRow k="재활용 원료 비율" v={formatExtraValue(passport.recycledElementContent)} />
           </div>
           <div className="sn-detail-spec-row">
-            <SpecRow k="확장 정보" v={passport.extensionInfo || '정보 없음'} />
+            <SpecRow k="확장 정보" v={formatExtraValue(passport.extensionInfo)} />
             <div style={{ flex: 1 }} />
           </div>
         </div>
