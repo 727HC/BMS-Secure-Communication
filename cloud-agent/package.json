@@ -1,0 +1,16 @@
+{
+  "name": "cloud-agent",
+  "version": "1.0.0",
+  "description": "Cloud Agent — MongoDB 기반 오프체인 데이터 저장 및 고속 조회 (논문 6장 Cloud Agent)",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.21.0",
+    "mongodb": "^6.12.0",
+    "fabric-network": "^2.2.20",
+    "fabric-ca-client": "^2.2.20",
+    "dotenv": "^16.4.0"
+  }
+}
