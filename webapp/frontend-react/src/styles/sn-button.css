@@ -1,0 +1,57 @@
+.sn-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-family: var(--font-body);
+  font-size: 0.875rem;
+  font-weight: 500;
+  padding: 0.625rem 1.25rem;
+  border-radius: 9999px;
+  border: none;
+  cursor: pointer;
+}
+.sn-btn:active { transform: scale(0.98); }
+.sn-btn-primary { background: var(--color-primary); color: #fff; }
+.sn-btn-primary:hover { background: #333; }
+.sn-btn-ghost {
+  background: transparent;
+  color: var(--color-text-2);
+  box-shadow: inset 0 0 0 1px var(--color-border);
+}
+.sn-btn-ghost:hover { background: var(--color-surface); }
+.sn-btn-accent { background: var(--color-accent); color: #fff; }
+.sn-btn-accent:hover { background: #1255c0; }
+.sn-btn-danger { background: #dc2626; color: #fff; }
+
+.sn-btn-sm-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 12px;
+  border: none;
+  border-radius: 10px;
+  background: #0f172a;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.sn-btn-sm-primary:hover { background: #1e293b; }
+
+.sn-btn-sm-secondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 12px;
+  border: none;
+  border-radius: 10px;
+  background: #eef5ff;
+  color: #1769e0;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.sn-btn-sm-secondary:hover { background: #dbeafe; }
+
+.sn-icon-btn { display: inline-flex; align-items: center; gap: 6px; }

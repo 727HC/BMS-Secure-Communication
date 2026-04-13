@@ -1,0 +1,71 @@
+.sn-page-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--color-border);
+}
+.sn-page-head-main { min-width: 0; }
+.sn-page-title {
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  font-weight: 600;
+  letter-spacing: -0.04em;
+  line-height: 1.1;
+  color: var(--color-text-1);
+  margin: 0;
+}
+.sn-page-subtitle {
+  margin-top: 0.125rem;
+  font-size: 0.9375rem;
+  line-height: 1.6;
+  color: var(--color-text-3);
+}
+.sn-page-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.sn-toolbar {
+  padding: 8px 12px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+.sn-filter-tabs {
+  display: flex;
+  gap: 4px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+}
+.sn-filter-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  border: none;
+  background: none;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  transition: all 0.2s;
+}
+.sn-filter-tab-chip {
+  font-size: 0.8125rem;
+  font-family: 'JetBrains Mono', monospace;
+  padding: 1px 7px;
+  border-radius: 12px;
+  background: #f5f5f5;
+}
+.sn-empty-dashed {
+  padding: 3rem;
+  text-align: center;
+  border: 1px dashed var(--color-border);
+  border-radius: 0.5rem;
+}

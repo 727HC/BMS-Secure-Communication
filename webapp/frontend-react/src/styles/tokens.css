@@ -1,0 +1,16 @@
+:root {
+  --font-display: 'Outfit', 'Pretendard Variable', sans-serif;
+  --font-body: 'Pretendard Variable', -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+  --color-primary: #171717;
+  --color-accent: #1769e0;
+  --color-bg: #f5f6f8;
+  --color-surface: #ffffff;
+  --color-text-1: #1e293b;
+  --color-text-2: #64748b;
+  --color-text-3: #9ca3af;
+  --color-border: rgba(0, 0, 0, 0.06);
+  --ease-spring: cubic-bezier(0.16, 1, 0.3, 1);
+  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.04);
+  --shadow-elevated: 0 4px 16px rgba(0, 0, 0, 0.08);
+}
