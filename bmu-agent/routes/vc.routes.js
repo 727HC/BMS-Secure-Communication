@@ -9,6 +9,10 @@ const { MSP, DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE } = require('../config/constants')
 const { createLogger } = require('../services/logger.service');
 const log = createLogger('vc');
 
+function makeRequestId() {
+  return `VCREQ-${Date.now()}-${crypto.randomBytes(4).toString('hex')}`;
+}
+
 // ============================================================
 // Schema / Credential Definition 관리
 // ============================================================
@@ -54,6 +58,65 @@ router.post('/schemas/init', authenticateToken, requireMSP(MSP.MANUFACTURER), as
 // ============================================================
 // Credential 발급
 // ============================================================
+
+// GET /api/vc/issuers — List issuers (RegulatorMSP only)
+router.get('/issuers', authenticateToken, requireMSP(MSP.REGULATOR), async (req, res) => {
+  try {
+    const issuers = await vcService.queryIssuers(fabricService, req.user);
+    res.json({ issuers });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// GET /api/vc/issuers/:issuerMsp/types — List credential types by issuer
+router.get('/issuers/:issuerMsp/types', authenticateToken, async (req, res) => {
+  try {
+    const types = await vcService.queryCredentialTypesByIssuer(fabricService, req.params.issuerMsp, req.user);
+    res.json({ issuerMsp: req.params.issuerMsp, types });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// POST /api/vc/request — Request credential issuance
+router.post('/request', authenticateToken, async (req, res) => {
+  const { passportId, credType } = req.body;
+  if (!passportId || !credType) {
+    return res.status(400).json({ error: 'passportId, credType required' });
+  }
+  const requestId = makeRequestId();
+  try {
+    const result = await vcService.requestCredentialIssuance(fabricService, requestId, passportId, credType, req.user);
+    res.json({ success: true, requestId, ...result });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// POST /api/vc/request/:requestId/approve — Approve credential issuance request
+router.post('/request/:requestId/approve', authenticateToken, async (req, res) => {
+  try {
+    const result = await vcService.approveCredentialIssuance(fabricService, req.params.requestId, req.user);
+    res.json({ success: true, ...result });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// POST /api/vc/request/:requestId/reject — Reject credential issuance request
+router.post('/request/:requestId/reject', authenticateToken, async (req, res) => {
+  const { reason } = req.body;
+  if (!reason) {
+    return res.status(400).json({ error: 'reason required' });
+  }
+  try {
+    const result = await vcService.rejectCredentialIssuance(fabricService, req.params.requestId, reason, req.user);
+    res.json({ success: true, ...result });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 
 // POST /api/vc/issue — Issue a verifiable credential
 router.post('/issue', authenticateToken, async (req, res) => {
@@ -146,6 +209,34 @@ router.post('/verify-log', authenticateToken, async (req, res) => {
       userCtx: req.user,
     });
     res.json({ success: true, ...logResult });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// GET /api/vc/verify-log/:credentialId — Query verification history by credential
+router.get('/verify-log/:credentialId', authenticateToken, async (req, res) => {
+  try {
+    const pageSize = Math.min(parseInt(req.query.pageSize || String(DEFAULT_PAGE_SIZE), 10), MAX_PAGE_SIZE);
+    const bookmark = req.query.bookmark || '';
+    const result = await vcService.queryVerificationsByCredential(
+      fabricService, req.params.credentialId, pageSize, bookmark, req.user
+    );
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// GET /api/vc/verifier/:verifierDid/history — Query verification history by verifier
+router.get('/verifier/:verifierDid/history', authenticateToken, requireMSP(MSP.REGULATOR), async (req, res) => {
+  try {
+    const pageSize = Math.min(parseInt(req.query.pageSize || String(DEFAULT_PAGE_SIZE), 10), MAX_PAGE_SIZE);
+    const bookmark = req.query.bookmark || '';
+    const result = await vcService.queryVerificationsByVerifier(
+      fabricService, req.params.verifierDid, pageSize, bookmark, req.user
+    );
+    res.json(result);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

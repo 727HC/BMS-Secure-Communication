@@ -95,8 +95,8 @@ async function revokeCredential(fabricService, credentialId, reason, userCtx) {
 // Credential 검증
 // ============================================================
 
-async function verifyCredentialStatus(fabricService, credentialId) {
-  const result = await fabricService.evaluateTransaction('VerifyCredentialStatus', [credentialId]);
+async function verifyCredentialStatus(fabricService, credentialId, userCtx) {
+  const result = await fabricService.evaluateTransaction('VerifyCredentialStatus', [credentialId], userCtx);
   return JSON.parse(result.toString());
 }
 
@@ -113,8 +113,8 @@ async function logVerification(fabricService, {
 // Credential 조회
 // ============================================================
 
-async function queryCredential(fabricService, credentialId) {
-  const result = await fabricService.evaluateTransaction('QueryCredential', [credentialId]);
+async function queryCredential(fabricService, credentialId, userCtx) {
+  const result = await fabricService.evaluateTransaction('QueryCredential', [credentialId], userCtx);
   return JSON.parse(result.toString());
 }
 
@@ -146,9 +146,62 @@ async function queryRevokedCredentials(fabricService, pageSize, bookmark, userCt
   return JSON.parse(result.toString());
 }
 
-async function getCredentialHistory(fabricService, credentialId) {
-  const result = await fabricService.evaluateTransaction('GetCredentialHistory', [credentialId]);
+async function queryIssuers(fabricService, userCtx) {
+  const result = await fabricService.evaluateTransaction('QueryIssuers', [], userCtx);
   return JSON.parse(result.toString());
+}
+
+async function queryCredentialTypesByIssuer(fabricService, issuerMsp, userCtx) {
+  const result = await fabricService.evaluateTransaction('QueryCredentialTypesByIssuer', [issuerMsp], userCtx);
+  return JSON.parse(result.toString());
+}
+
+async function requestCredentialIssuance(fabricService, requestId, passportId, credType, userCtx) {
+  const result = await fabricService.submitTransaction('RequestCredentialIssuance', [requestId, passportId, credType], userCtx);
+  return result?.length ? JSON.parse(result.toString()) : { requestId, passportId, credType, status: 'PENDING' };
+}
+
+async function approveCredentialIssuance(fabricService, requestId, userCtx) {
+  const result = await fabricService.submitTransaction('ApproveCredentialIssuance', [requestId], userCtx);
+  return result?.length ? JSON.parse(result.toString()) : { requestId, status: 'APPROVED' };
+}
+
+async function rejectCredentialIssuance(fabricService, requestId, reason, userCtx) {
+  const result = await fabricService.submitTransaction('RejectCredentialIssuance', [requestId, reason], userCtx);
+  return result?.length ? JSON.parse(result.toString()) : { requestId, status: 'REJECTED', reason };
+}
+
+async function getCredentialHistory(fabricService, credentialId, userCtx) {
+  const result = await fabricService.evaluateTransaction('GetCredentialHistory', [credentialId], userCtx);
+  return JSON.parse(result.toString());
+}
+
+async function queryVerificationsByCredential(fabricService, credentialId, pageSize, bookmark, userCtx) {
+  const result = await fabricService.evaluateTransaction(
+    'QueryVerificationsByCredential', [credentialId, String(pageSize || 100), bookmark || ''], userCtx
+  );
+  return JSON.parse(result.toString());
+}
+
+async function queryVerificationsByVerifier(fabricService, verifierDid, pageSize, bookmark, userCtx) {
+  const result = await fabricService.evaluateTransaction(
+    'QueryVerificationsByVerifier', [verifierDid, String(pageSize || 100), bookmark || ''], userCtx
+  );
+  return JSON.parse(result.toString());
+}
+
+async function updateRegulatoryVerification(fabricService, passportId, status, evidenceIds, userCtx) {
+  const result = await fabricService.submitTransaction(
+    'UpdateRegulatoryVerification', [passportId, status, JSON.stringify(evidenceIds || [])], userCtx
+  );
+  return result?.length ? JSON.parse(result.toString()) : { success: true };
+}
+
+async function verifyPhysicalHistory(fabricService, passportId, signals, reason, userCtx) {
+  const result = await fabricService.submitTransaction(
+    'VerifyPhysicalHistory', [passportId, JSON.stringify(signals || {}), reason], userCtx
+  );
+  return result?.length ? JSON.parse(result.toString()) : { success: true };
 }
 
 // ============================================================
@@ -230,7 +283,16 @@ module.exports = {
   queryCredentialsByHolder,
   queryCredentialsByType,
   queryRevokedCredentials,
+  queryIssuers,
+  queryCredentialTypesByIssuer,
+  requestCredentialIssuance,
+  approveCredentialIssuance,
+  rejectCredentialIssuance,
   getCredentialHistory,
+  queryVerificationsByCredential,
+  queryVerificationsByVerifier,
+  updateRegulatoryVerification,
+  verifyPhysicalHistory,
   initializeSchemas,
   BATTERY_SCHEMAS,
 };
