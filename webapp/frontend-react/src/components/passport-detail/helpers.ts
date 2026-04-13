@@ -27,7 +27,7 @@ export const GBA_21_FIELDS: { idx: number; key: keyof Passport; label: string; g
 export function fieldFilled(p: Passport | null, key: keyof Passport): boolean {
   if (!p) return false;
   const v = p[key];
-  if (v == null || v === '' || v === 0) return false;
+  if (v == null || v === '') return false;
   if (typeof v === 'object' && Object.keys(v as object).length === 0) return false;
   if (Array.isArray(v) && v.length === 0) return false;
   return true;
