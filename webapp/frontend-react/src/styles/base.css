@@ -1,0 +1,18 @@
+* { box-sizing: border-box; }
+
+body {
+  font-family: var(--font-body);
+  background: var(--color-bg);
+  color: var(--color-text-1);
+  -webkit-font-smoothing: antialiased;
+  word-break: keep-all;
+  margin: 0;
+}
+
+button, a, input, select, textarea { transition: all 0.2s ease; }
+
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(0, 0, 0, 0.08); border-radius: 3px; }
+
+@keyframes spin { to { transform: rotate(360deg); } }
