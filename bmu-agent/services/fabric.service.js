@@ -79,7 +79,11 @@ function evictStaleGateways() {
   const now = Date.now();
   for (const [label, entry] of gatewayPool) {
     if (now - entry.lastUsed > GATEWAY_TTL_MS) {
-      try { entry.gateway.disconnect(); } catch { /* ignore */ }
+      try {
+        entry.gateway.disconnect();
+      } catch (err) {
+        console.warn('[fabric] gateway disconnect during eviction failed:', err.message);
+      }
       gatewayPool.delete(label);
       log.info('Gateway evicted (TTL)', { label });
     }
@@ -185,7 +189,11 @@ function isConnected() {
 
 async function disconnect() {
   for (const [label, entry] of gatewayPool) {
-    try { await entry.gateway.disconnect(); } catch (e) { /* ignore */ }
+    try {
+      await entry.gateway.disconnect();
+    } catch (err) {
+      console.warn('[fabric] gateway disconnect during shutdown failed:', err.message, { label });
+    }
   }
   gatewayPool.clear();
   defaultContract = null;
@@ -301,7 +309,11 @@ async function loginUser(userId, userSecret, orgConfig) {
     });
     // 기존 gateway pool에서 제거 (새 인증서로 재연결하도록)
     if (gatewayPool.has(label)) {
-      try { gatewayPool.get(label).gateway.disconnect(); } catch { /* ignore */ }
+      try {
+        gatewayPool.get(label).gateway.disconnect();
+      } catch (err) {
+        console.warn('[fabric] gateway disconnect during login refresh failed:', err.message, { label });
+      }
       gatewayPool.delete(label);
     }
     return { mspId: org.mspId, userId };

@@ -30,10 +30,16 @@ try {
     const lines = fs.readFileSync(AUDIT_FILE, 'utf-8').trim().split('\n').filter(Boolean);
     const tail = lines.slice(-MEMORY_BUFFER_SIZE);
     for (const line of tail) {
-      try { recentLogs.push(JSON.parse(line)); } catch { /* skip malformed */ }
+      try {
+        recentLogs.push(JSON.parse(line));
+      } catch (err) {
+        console.warn('[audit] malformed audit log skipped:', err.message);
+      }
     }
   }
-} catch { /* ignore startup read errors */ }
+} catch (err) {
+  console.warn('[audit] startup read failed:', err.message);
+}
 
 function ensureAuditStream() {
   if (!auditStream) {
@@ -53,7 +59,9 @@ function rotateIfNeeded() {
       fs.renameSync(AUDIT_FILE, rotated);
       currentAuditSize = 0;
     }
-  } catch { /* ignore rotation errors */ }
+  } catch (err) {
+    console.warn('[audit] log rotation failed:', err.message);
+  }
 }
 
 function persistEntry(entry) {
@@ -62,7 +70,9 @@ function persistEntry(entry) {
     rotateIfNeeded();
     ensureAuditStream().write(line);
     currentAuditSize += Buffer.byteLength(line);
-  } catch { /* ignore file write errors */ }
+  } catch (err) {
+    console.warn('[audit] log write failed:', err.message);
+  }
 }
 
 function auditMiddleware(req, res, next) {
