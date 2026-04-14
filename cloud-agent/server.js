@@ -53,7 +53,7 @@ let mongoClient = null;
 function authMiddleware(req, res, next) {
   if (req.path === '/health') return next();
   if (API_KEY) {
-    const token = req.headers['x-api-key'] || req.query.apiKey;
+    const token = req.headers['x-api-key'];
     if (token !== API_KEY) {
       return res.status(401).json({ error: 'unauthorized: invalid or missing API key' });
     }

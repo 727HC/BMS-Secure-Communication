@@ -15,7 +15,11 @@ const CONTRACT = process.env.FABRIC_CONTRACT || 'passport-contract';
 const WALLET_PATH = process.env.FABRIC_WALLET_PATH || path.join(__dirname, '..', 'wallet');
 const MSP = process.env.FABRIC_MSP || 'ManufacturerMSP';
 const IDENTITY = process.env.FABRIC_IDENTITY || 'admin';
-const ADMIN_SECRET = process.env.FABRIC_ADMIN_SECRET || 'REMOVED_SECRET_ROTATED_2026_04_18';
+const ADMIN_SECRET = process.env.FABRIC_ADMIN_SECRET;
+if (!ADMIN_SECRET) {
+  console.error('[listener] FATAL: FABRIC_ADMIN_SECRET must be set');
+  process.exit(1);
+}
 
 function loadCCP() {
   const ccpPath = process.env.FABRIC_CCP_PATH ||

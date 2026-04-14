@@ -32,11 +32,14 @@ async function getContract() {
   const existing = await wallet.get(IDENTITY);
   if (!existing) {
     const caURL = `https://localhost:${process.env.FABRIC_CA_PORT || '7054'}`;
-    const ca = new FabricCAServices(caURL, { verify: process.env.NODE_ENV === 'production' },
+    const ca = new FabricCAServices(caURL, { verify: process.env.FABRIC_CA_TLS_VERIFY !== 'false' },
       process.env.FABRIC_CA_NAME || 'ca-manufacturer');
+    if (!process.env.FABRIC_ADMIN_SECRET) {
+      throw new Error('FABRIC_ADMIN_SECRET must be set');
+    }
     const enrollment = await ca.enroll({
       enrollmentID: IDENTITY,
-      enrollmentSecret: process.env.FABRIC_ADMIN_SECRET || 'REMOVED_SECRET_ROTATED_2026_04_18',
+      enrollmentSecret: process.env.FABRIC_ADMIN_SECRET,
     });
     await wallet.put(IDENTITY, {
       credentials: { certificate: enrollment.certificate, privateKey: enrollment.key.toBytes() },
