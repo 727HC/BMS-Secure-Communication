@@ -14,24 +14,44 @@
 
 require('dotenv').config();
 const express = require('express');
+const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
 const { MongoClient } = require('mongodb');
 const { connectGateway, startBlockListener } = require('./services/fabric-listener');
 
 const app = express();
-app.use(express.json());
+app.use(express.json({ limit: '64kb' })); // M-5: body size 명시
+app.use(helmet());                         // H-1: 보안 헤더
+
+// H-2: rate limiting
+app.use(rateLimit({
+  windowMs: 60 * 1000,
+  max: 300,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'too many requests' },
+}));
 
 const PORT = parseInt(process.env.PORT || '3002', 10);
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017';
 const MONGODB_DB = process.env.MONGODB_DB || 'battery_passport';
 const API_KEY = process.env.CLOUD_AGENT_API_KEY || '';
 
-let db = null;
+// C-1: API_KEY 미설정 시 dev에서만 허용, production에서는 기동 거부
+if (!API_KEY && process.env.NODE_ENV === 'production') {
+  console.error('[cloud-agent] FATAL: CLOUD_AGENT_API_KEY must be set in production');
+  process.exit(1);
+}
+if (!API_KEY) {
+  console.warn('[cloud-agent] WARNING: CLOUD_AGENT_API_KEY not set — API auth disabled (dev mode)');
+}
 
-// C-2: API 인증 미들웨어
+let db = null;
+let mongoClient = null;
+
+// API 인증 미들웨어
 function authMiddleware(req, res, next) {
-  // /health는 인증 없이 허용
   if (req.path === '/health') return next();
-  // API 키 설정되어 있으면 검증
   if (API_KEY) {
     const token = req.headers['x-api-key'] || req.query.apiKey;
     if (token !== API_KEY) {
@@ -205,9 +225,9 @@ async function createIndexes() {
 
 async function main() {
   // 1. MongoDB 연결
-  const client = new MongoClient(MONGODB_URI);
-  await client.connect();
-  db = client.db(MONGODB_DB);
+  mongoClient = new MongoClient(MONGODB_URI);
+  await mongoClient.connect();
+  db = mongoClient.db(MONGODB_DB);
   console.log(`[cloud-agent] MongoDB connected: ${MONGODB_DB}`);
 
   // 2. 인덱스 생성
@@ -234,3 +254,18 @@ main().catch(err => {
   console.error('[cloud-agent] Fatal:', err);
   process.exit(1);
 });
+
+// H-3: graceful shutdown
+function shutdown(signal) {
+  console.log(`[cloud-agent] ${signal} received, shutting down...`);
+  if (mongoClient) {
+    mongoClient.close().then(() => {
+      console.log('[cloud-agent] MongoDB disconnected');
+      process.exit(0);
+    }).catch(() => process.exit(1));
+  } else {
+    process.exit(0);
+  }
+}
+process.on('SIGINT', () => shutdown('SIGINT'));
+process.on('SIGTERM', () => shutdown('SIGTERM'));
