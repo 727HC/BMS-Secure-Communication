@@ -35,7 +35,7 @@ async function enrollAdmin(wallet, ccp) {
 
   const ca = new FabricCAServices(caURL, {
     trustedRoots: [],
-    verify: process.env.NODE_ENV === 'production',
+    verify: process.env.FABRIC_CA_TLS_VERIFY !== 'false',
   }, process.env.FABRIC_CA_NAME || 'ca-manufacturer');
 
   const enrollment = await ca.enroll({
@@ -189,12 +189,6 @@ async function startBlockListener(gateway, db) {
   }, { startBlock: startBlock > 0 ? Long.fromNumber(startBlock) : undefined });
 }
 
-// fabric-network Long 타입 지원
-let Long;
-try {
-  Long = require('long');
-} catch {
-  Long = { fromNumber: (n) => n };
-}
+const Long = require('long');
 
 module.exports = { connectGateway, startBlockListener };

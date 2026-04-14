@@ -2,7 +2,7 @@ test:
   name: Battery Passport TPS Benchmark
   description: KPI measurement - Write 150+ TPS, Read 1500+ TPS
   workers:
-    number: 10
+    number: 15
   rounds:
     - label: write-bmu-data
       description: RecordBMUData write - Target 150+ TPS
