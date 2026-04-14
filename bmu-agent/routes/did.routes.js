@@ -4,6 +4,9 @@ const didService = require('../services/did.service');
 const { authenticateToken } = require('../middleware/auth');
 const { requireMSP } = require('../middleware/rbac');
 const { MSP } = require('../config/constants');
+const { createLogger } = require('../services/logger.service');
+
+const log = createLogger('did');
 
 // POST /api/did/register — Register DID on Indy ledger (JWT+RBAC or admin API key)
 // x-api-key fallback is dev-only; production requires JWT+RBAC
@@ -28,7 +31,21 @@ router.post('/register', (req, res, next) => {
     const result = await didService.registerDID(did, verkey, role);
     res.json({ success: true, ledgerResult: result });
   } catch (err) {
-    res.status(500).json({ error: err.response?.data || err.message });
+    log.error('DID register failed', {
+      action: 'registerDID',
+      did,
+      error: err.message,
+      responseData: err.response?.data,
+    });
+
+    if (process.env.NODE_ENV === 'production') {
+      return res.status(500).json({ error: 'Internal server error' });
+    }
+
+    const detail = typeof err.response?.data === 'string'
+      ? err.response.data
+      : err.message;
+    res.status(500).json({ error: detail });
   }
 });
 

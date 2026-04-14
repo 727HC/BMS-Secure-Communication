@@ -136,7 +136,7 @@ router.post('/data', authenticateToken, requireMSP(MSP.MANUFACTURER), bmuRateLim
     // BMU 데이터는 제조사 admin으로 기록 (M2M 통신)
     await fabricService.submitTransaction('RecordBMUData', [
       recordId, passportId, did, dataHash,
-      signature || 'none',
+      signature,
       String(parsed.freshnessCounter), String(parsed.soc),
       String(parsed.voltage), String(parsed.current),
       String(parsed.temperature), String(parsed.cellCount),
