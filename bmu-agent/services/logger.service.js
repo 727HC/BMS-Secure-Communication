@@ -18,7 +18,9 @@ try {
   if (fs.existsSync(LOG_FILE)) {
     currentLogSize = fs.statSync(LOG_FILE).size;
   }
-} catch { /* ignore startup stat errors */ }
+} catch (err) {
+  console.warn('[logger] startup stat check failed:', err.message);
+}
 
 function ensureLogStream() {
   if (!logStream) {
@@ -38,7 +40,9 @@ function rotateIfNeeded() {
       fs.renameSync(LOG_FILE, rotated);
       currentLogSize = 0;
     }
-  } catch { /* ignore rotation errors */ }
+  } catch (err) {
+    console.warn('[logger] log rotation failed:', err.message);
+  }
 }
 
 function writeLog(entry) {
@@ -59,7 +63,9 @@ function writeLog(entry) {
     rotateIfNeeded();
     ensureLogStream().write(payload);
     currentLogSize += Buffer.byteLength(payload);
-  } catch { /* ignore file write errors */ }
+  } catch (err) {
+    console.warn('[logger] log write failed:', err.message);
+  }
 }
 
 function createLogger(category) {
