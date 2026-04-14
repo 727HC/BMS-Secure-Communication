@@ -1,5 +1,5 @@
 """
-serial_to_agent.py — BMU Serial → BMS Agent Bridge
+serial_to_agent.py - BMU Serial -> BMS Agent Bridge
 Reads EDDSA signatures from BMU serial output and sends to blockchain agent.
 
 BMU output format:
@@ -7,7 +7,8 @@ BMU output format:
   [SIGN] FC=N R=<64hex> S=<64hex> DATA=<96hex>
 
 Usage:
-  python serial_to_agent.py --port COM4 --baud 28800 --agent http://localhost:3001 --did <DID>
+  python serial_to_agent.py --port COM4 --baud 28800 --agent http://localhost:3001 --did <DID> \
+    --user admin --password REMOVED_SECRET_ROTATED_2026_04_18 --org 1
 """
 
 import serial
@@ -17,6 +18,7 @@ import os
 import sqlite3
 import json
 import argparse
+import time
 
 
 def parse_bmu_line(line):
@@ -83,18 +85,74 @@ def build_payload(sign_record, data_record=None, did=None):
     return payload
 
 
-def post_to_agent(agent_url, payload):
+class AgentAuth:
+    """JWT authentication for BMS Agent API."""
+
+    def __init__(self, agent_url, user, password, org):
+        self.agent_url = agent_url
+        self.user = user
+        self.password = password
+        self.org = org
+        self.token = None
+        self.token_time = 0
+        self.token_ttl = 23 * 3600  # refresh before 24h expiry
+
+    def get_token(self):
+        """Get valid JWT token, logging in if needed."""
+        if self.token and (time.time() - self.token_time) < self.token_ttl:
+            return self.token
+        return self._login()
+
+    def _login(self):
+        """Login to agent and get JWT token."""
+        try:
+            resp = requests.post(f"{self.agent_url}/api/auth/login", json={
+                "userId": self.user,
+                "password": self.password,
+                "orgNum": self.org,
+            }, timeout=10)
+            if resp.status_code == 200:
+                data = resp.json()
+                self.token = data.get("token")
+                self.token_time = time.time()
+                print(f"  [AUTH] Login OK (user={self.user}, org={self.org})", flush=True)
+                return self.token
+            else:
+                print(f"  [AUTH] Login failed: {resp.status_code} {resp.text[:100]}")
+                return None
+        except Exception as e:
+            print(f"  [AUTH] Login error: {e}")
+            return None
+
+    def headers(self):
+        """Get Authorization headers."""
+        token = self.get_token()
+        if token:
+            return {"Authorization": f"Bearer {token}"}
+        return {}
+
+
+def post_to_agent(agent_url, payload, auth=None):
     """POST payload to agent. Returns True on success."""
     try:
         api_url = f"{agent_url}/api/bmu/data"
-        resp = requests.post(api_url, json=payload, timeout=5)
+        hdrs = auth.headers() if auth else {}
+        resp = requests.post(api_url, json=payload, headers=hdrs, timeout=5)
         if resp.status_code == 200:
             result = resp.json()
             print(f"  -> Blockchain: {result.get('id', result.get('recordId', 'ok'))} OK", flush=True)
             return True
-        else:
-            print(f"  -> Agent error: {resp.status_code} {resp.text[:100]}")
-            return False
+        elif resp.status_code == 401 and auth:
+            # Token expired, force re-login
+            auth.token = None
+            hdrs = auth.headers()
+            resp = requests.post(api_url, json=payload, headers=hdrs, timeout=5)
+            if resp.status_code == 200:
+                result = resp.json()
+                print(f"  -> Blockchain: {result.get('id', result.get('recordId', 'ok'))} OK (re-auth)", flush=True)
+                return True
+        print(f"  -> Agent error: {resp.status_code} {resp.text[:100]}")
+        return False
     except requests.exceptions.ConnectionError:
         print(f"  -> Agent not reachable at {agent_url}")
         return False
@@ -112,7 +170,7 @@ def spool_insert(conn, fc, payload):
     conn.commit()
 
 
-def spool_retry(conn, agent_url, max_batch=10):
+def spool_retry(conn, agent_url, auth=None, max_batch=10):
     """Retry pending payloads from spool. Returns number of successful sends."""
     rows = conn.execute(
         "SELECT id, fc, payload_json, retry_count FROM pending "
@@ -126,7 +184,7 @@ def spool_retry(conn, agent_url, max_batch=10):
     success = 0
     for row_id, fc, payload_json, retry_count in rows:
         payload = json.loads(payload_json)
-        if post_to_agent(agent_url, payload):
+        if post_to_agent(agent_url, payload, auth=auth):
             conn.execute("DELETE FROM pending WHERE id = ?", (row_id,))
             success += 1
         else:
@@ -154,13 +212,22 @@ def main():
                         help="BMS Agent URL (default: http://localhost:3001)")
     parser.add_argument("--did", default=None,
                         help="BMU DID for signature verification (e.g. MPGsQGEaPz9qcySnxfFt4B)")
+    parser.add_argument("--user", default=None, help="Agent login user ID")
+    parser.add_argument("--password", default=None, help="Agent login password")
+    parser.add_argument("--org", type=int, default=1, help="Agent org number (default: 1=Manufacturer)")
     args = parser.parse_args()
 
     spool_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "spool.db")
 
+    # JWT auth (required if agent enforces authentication)
+    auth = None
+    if args.user and args.password:
+        auth = AgentAuth(args.agent, args.user, args.password, args.org)
+
     print(f"BMU Serial -> Agent Bridge")
     print(f"  Serial: {args.port} @ {args.baud}")
     print(f"  Agent:  {args.agent}")
+    print(f"  Auth:   {'JWT (' + args.user + ')' if auth else 'none'}")
     print(f"  Spool:  {spool_path}")
     print(f"  Press Ctrl+C to stop\n", flush=True)
 
@@ -175,7 +242,7 @@ def main():
             # Retry spooled payloads every 20 loops (~20s at 1s serial timeout)
             loop_count += 1
             if loop_count % 20 == 0:
-                retried = spool_retry(spool, args.agent)
+                retried = spool_retry(spool, args.agent, auth=auth)
                 if retried > 0:
                     print(f"  [SPOOL] Retried {retried} pending records", flush=True)
 
@@ -206,7 +273,7 @@ def main():
                 print(f"[SIGN] FC={fc} R={parsed['signR'][:16]}... S={parsed['signS'][:16]}...", flush=True)
 
                 payload = build_payload(parsed, data_record=data_record, did=args.did)
-                if post_to_agent(args.agent, payload):
+                if post_to_agent(args.agent, payload, auth=auth):
                     sent_count += 1
                 else:
                     spool_insert(spool, fc, payload)
