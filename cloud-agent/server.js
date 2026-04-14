@@ -26,7 +26,7 @@ app.use(helmet());                         // H-1: 보안 헤더
 // H-2: rate limiting
 app.use(rateLimit({
   windowMs: 60 * 1000,
-  max: 300,
+  max: parseInt(process.env.RATE_LIMIT_MAX || '300', 10),
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: 'too many requests' },

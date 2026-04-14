@@ -148,9 +148,9 @@ Orderer: &OrdererDefaults
     - orderer.battery.com:7050
   BatchTimeout: 0.5s
   BatchSize:
-    MaxMessageCount: 100
+    MaxMessageCount: 250
     AbsoluteMaxBytes: 10 MB
-    PreferredMaxBytes: 2 MB
+    PreferredMaxBytes: 1 MB
   Organizations:
   Policies:
     Readers:

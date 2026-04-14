@@ -157,27 +157,8 @@ func (c *PassportContract) RecordBMUData(ctx contractapi.TransactionContextInter
 		return fmt.Errorf("failed to update lastFc: %v", err)
 	}
 
-	// Update BMU snapshot (separate key to avoid MVCC conflicts on passport key)
-	snapshotKey, err := ctx.GetStub().CreateCompositeKey("snapshot", []string{passportId})
-	if err != nil {
-		return fmt.Errorf("failed to create snapshot key: %v", err)
-	}
-	snapshot := BMUSnapshot{
-		DocType:              docTypeBMUSnapshot,
-		PassportID:           passportId,
-		CurrentSOC:           float64(uint16(socVal)),
-		Temperature:          uint16(temperatureVal),
-		StatusFlags:          uint8(statusFlagsVal),
-		TotalDischargeCycles: int(dischargeCyclesVal),
-		LastBMUDataID:        recordId,
-		UpdatedAt:            now,
-	}
-	snapshotJSON, err := json.Marshal(snapshot)
-	if err != nil {
-		return fmt.Errorf("failed to marshal snapshot: %v", err)
-	}
-
-	return ctx.GetStub().PutState(snapshotKey, snapshotJSON)
+	// Snapshot은 cloud-agent block event에서 오프체인 생성 (TPS 최적화: 3 PutState → 2)
+	return nil
 }
 
 // ============================================================
