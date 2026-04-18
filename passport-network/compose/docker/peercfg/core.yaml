@@ -273,7 +273,8 @@ peer:
     # TLS Settings
     tls:
         # Require server-side TLS
-        enabled:  false
+        # H-11: base config default true (compose에서 CORE_PEER_TLS_ENABLED로 override 가능)
+        enabled:  true
         # Require client certificates / mutual TLS for inbound connections.
         # Note that clients that are not configured to use a certificate will
         # fail to connect to the peer.

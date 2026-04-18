@@ -24,6 +24,20 @@ const app = express();
 app.use(express.json({ limit: '64kb' })); // M-5: body size 명시
 app.use(helmet());                         // H-1: 보안 헤더
 
+// M-2: CORS — ALLOWED_ORIGINS 환경변수로 허용 오리진 제한, 미설정 시 모두 차단
+const allowedOrigins = (process.env.ALLOWED_ORIGINS || '').split(',').map(s => s.trim()).filter(Boolean);
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
+  if (origin && allowedOrigins.includes(origin)) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+    res.setHeader('Vary', 'Origin');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, x-api-key');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+    if (req.method === 'OPTIONS') return res.sendStatus(204);
+  }
+  next();
+});
+
 // H-2: rate limiting
 app.use(rateLimit({
   windowMs: 60 * 1000,
@@ -37,6 +51,15 @@ const PORT = parseInt(process.env.PORT || '3002', 10);
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017';
 const MONGODB_DB = process.env.MONGODB_DB || 'battery_passport';
 const API_KEY = process.env.CLOUD_AGENT_API_KEY || '';
+
+// H-8: production에서 MongoDB 인증 없는 URI 거부
+if (process.env.NODE_ENV === 'production' && !MONGODB_URI.includes('@')) {
+  console.error('[cloud-agent] FATAL: MongoDB URI must include credentials in production');
+  process.exit(1);
+}
+if (!MONGODB_URI.includes('@')) {
+  console.warn('[cloud-agent] WARNING: MongoDB URI has no authentication (dev mode)');
+}
 
 // C-1: API_KEY 미설정 시 dev에서만 허용, production에서는 기동 거부
 if (!API_KEY && process.env.NODE_ENV === 'production') {
@@ -253,15 +276,21 @@ async function main() {
     // 리스너 실패해도 API는 동작 — 기존 데이터 조회 가능
   }
 
-  // 4. Express 서버 시작
-  app.listen(PORT, () => {
-    console.log(`[cloud-agent] Cloud Agent started: http://localhost:${PORT}`);
+  // 4. Express 서버 시작 — LOW: 기본 127.0.0.1 바인딩 (공개 시 BIND_HOST=0.0.0.0)
+  const host = process.env.BIND_HOST || '127.0.0.1';
+  app.listen(PORT, host, () => {
+    console.log(`[cloud-agent] Cloud Agent started: http://${host}:${PORT}`);
     console.log('[cloud-agent] Architecture: Fabric → Block Event → MongoDB → REST API');
   });
 }
 
 main().catch(err => {
-  console.error('[cloud-agent] Fatal:', err);
+  // M-2: production에서 스택 노출 차단
+  if (process.env.NODE_ENV === 'production') {
+    console.error('[cloud-agent] Fatal:', err.message);
+  } else {
+    console.error('[cloud-agent] Fatal:', err);
+  }
   process.exit(1);
 });
 

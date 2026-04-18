@@ -30,6 +30,23 @@ func sanitizeSelector(s string) string {
 	return s
 }
 
+// buildQuery safely constructs a CouchDB Mango query from a selector map
+// and optional top-level fields (like "sort", "limit"). Uses json.Marshal
+// to guarantee proper escaping, preventing injection via string interpolation.
+func buildQuery(selector map[string]interface{}, extras ...map[string]interface{}) (string, error) {
+	query := map[string]interface{}{"selector": selector}
+	for _, extra := range extras {
+		for k, v := range extra {
+			query[k] = v
+		}
+	}
+	b, err := json.Marshal(query)
+	if err != nil {
+		return "", fmt.Errorf("failed to build query: %v", err)
+	}
+	return string(b), nil
+}
+
 // ============================================================
 // RBAC Helpers
 // ============================================================
