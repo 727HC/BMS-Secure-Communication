@@ -1,15 +1,8 @@
 const { test, expect } = require('@playwright/test');
+const { E2E_ADMIN_USER, E2E_ADMIN_PASSWORD, ORGS } = require('../auth-fixture');
 
 const BASE = 'http://localhost:3001';
 const API = `${BASE}/api`;
-
-// 4-org 로그인 정보
-const ORGS = [
-  { userId: 'admin', password: 'REMOVED_SECRET_ROTATED_2026_04_18', orgNum: 1, msp: 'ManufacturerMSP', label: 'Manufacturer' },
-  { userId: 'admin', password: 'REMOVED_SECRET_ROTATED_2026_04_18', orgNum: 2, msp: 'EVManufacturerMSP', label: 'EVManufacturer' },
-  { userId: 'admin', password: 'REMOVED_SECRET_ROTATED_2026_04_18', orgNum: 3, msp: 'ServiceMSP', label: 'Service' },
-  { userId: 'admin', password: 'REMOVED_SECRET_ROTATED_2026_04_18', orgNum: 4, msp: 'RegulatorMSP', label: 'Regulator' },
-];
 
 // API helper
 async function apiLogin(request, org) {
@@ -67,9 +60,9 @@ test.describe('2. 인증', () => {
   });
 
   test('orgNum 누락 시 400', async ({ request }) => {
-    const res = await request.post(`${API}/auth/login`, {
-      data: { userId: 'admin', password: 'REMOVED_SECRET_ROTATED_2026_04_18' },
-    });
+      const res = await request.post(`${API}/auth/login`, {
+        data: { userId: E2E_ADMIN_USER, password: E2E_ADMIN_PASSWORD },
+      });
     expect(res.status()).toBe(400);
   });
 });
@@ -90,8 +83,8 @@ test.describe('3. 프론트엔드 로그인', () => {
     await expect(passwordInput).toBeVisible();
 
     await page.getByRole('button', { name: '제조사 여권 발급 · 원자재 등록 · 데이터 정정' }).click();
-    await userInput.fill('admin');
-    await passwordInput.fill('REMOVED_SECRET_ROTATED_2026_04_18');
+    await userInput.fill(E2E_ADMIN_USER);
+    await passwordInput.fill(E2E_ADMIN_PASSWORD);
     await page.locator('form').getByRole('button', { name: '로그인' }).click();
 
     await expect(page).toHaveURL(/#dashboard/);
@@ -106,7 +99,7 @@ test.describe('4. 대시보드', () => {
   test('대시보드 로드 및 통계 표시', async ({ page }) => {
     // API 로그인
     const res = await page.request.post(`${API}/auth/login`, {
-      data: { userId: 'admin', password: 'REMOVED_SECRET_ROTATED_2026_04_18', orgNum: 1 },
+      data: { userId: E2E_ADMIN_USER, password: E2E_ADMIN_PASSWORD, orgNum: 1 },
     });
     const data = await res.json();
 
@@ -380,7 +373,7 @@ test.describe('10. 정비', () => {
 test.describe('11. 프론트엔드 네비게이션', () => {
   test.beforeEach(async ({ page }) => {
     const res = await page.request.post(`${API}/auth/login`, {
-      data: { userId: 'admin', password: 'REMOVED_SECRET_ROTATED_2026_04_18', orgNum: 1 },
+      data: { userId: E2E_ADMIN_USER, password: E2E_ADMIN_PASSWORD, orgNum: 1 },
     });
     const data = await res.json();
     await page.goto(BASE);
