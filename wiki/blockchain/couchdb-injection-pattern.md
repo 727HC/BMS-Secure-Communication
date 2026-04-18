@@ -50,4 +50,4 @@ selectorJSON, _ := json.Marshal(map[string]interface{}{"selector": selector})
 - `fmt.Sprintf`로 JSON 응답 구성도 금지 → `json.Marshal` 사용
 
 ## 참고
-- [[chaincode-security-fixes]] — 전체 수정 이력
+- [[blockchain/chaincode-security-fixes|전체 수정 이력]]
