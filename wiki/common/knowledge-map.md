@@ -23,6 +23,7 @@ doc_type: index
 ## 3. 작업할 때 같이 보는 문서
 - [[common/agent-entrypoints|Agent별 시작점]]
 - [[common/wiki-writing-guide|위키 작성 가이드]]
+- [[common/agent-wiki-writing-guide|Agent wiki writing guide]]
 - [[handoffs/README|handoff 폴더 안내]]
 - [[handoffs/blockchain/passport-handoff-2026-04-13|대표 handoff 예시]]
 - [[reviews/README|review 폴더 안내]]

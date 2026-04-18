@@ -15,6 +15,7 @@ doc_type: index
 
 ## 운영 / 작성 기준
 - [[common/wiki-writing-guide|위키 작성 가이드]]
+- [[common/agent-wiki-writing-guide|Agent wiki writing guide]]
 - [[common/agent-entrypoints|Agent별 위키 시작점]]
 - [[common/task-packet-template|Task Packet 템플릿]]
 

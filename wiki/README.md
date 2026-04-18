@@ -41,6 +41,7 @@ xEV BMS 보안 플랫폼용 공용 Obsidian vault다.
 - [[common/architecture|시스템 아키텍처]]
 - [[common/terminology|용어 사전]]
 - [[common/wiki-writing-guide|위키 작성 가이드]]
+- [[common/agent-wiki-writing-guide|Agent wiki writing guide]]
 - [[common/agent-entrypoints|Agent별 시작점]]
 - [[decisions/README|ADR 허브]]
 
