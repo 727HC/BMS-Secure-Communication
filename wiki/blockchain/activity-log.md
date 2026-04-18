@@ -1,9 +1,9 @@
 ---
-title: 블록체인 세션 활동 로그
+title: "블록체인 세션 활동 로그"
 date: 2026-04-06
 tags: [blockchain, log]
+doc_type: log
 ---
-
 # 블록체인 세션 — 활동 로그
 
 > 세션(컨텍스트) 단위로 기록. 컨텍스트가 차서 다음 세션으로 넘어갈 때 작성.
@@ -253,9 +253,42 @@ tags: [blockchain, log]
 - 백업: `master-backup-pre-filterrepo`
 
 ### 미완료 / 후속 작업
-- 시크릿 실제 로테이션 (각 세션이 .env 재생성)
 - Risk-acceptance 4건 (C6 namespace, H9 Docker socket, H11 base TLS, 컨테이너 root)
-- 배터리여권 세션 C3 history 정리 외 항목은 완료 (Oracle VERIFIED)
+- 배터리여권 세션이 bmu-agent/.env 재생성 후 E2E 재검증 (block 아닌 후속)
+
+### 추가 수행 — 같은 세션 내 2차 사이클 (2026-04-18 후반)
+
+#### filter-repo 부작용 복구 (전 세션 합동)
+
+filter-repo가 `LEGACY_DEFAULT_SECRET`, `LEGACY_PLACEHOLDER_SECRET` 등을 `REMOVED_SECRET_ROTATED_2026_04_18`로 자동 치환한 부작용을 전 세션이 협업하여 복구:
+
+- **블록체인 세션**: `start_all.sh` ACAPY_SEED/ACAPY_WALLET_KEY fallback 제거, `docs/ARCHITECTURE.md` 표 정정, `wiki/decisions/003-mcp-monitor-read-only.md` 맥락 정리 (커밋 `5308b11`)
+- **임베디드 세션**: `firmware/tools/serial_to_agent.py:11` docstring 예시 복구 (커밋 `c913f37`)
+- **MCP 세션**: `mcp-monitor/.env.example:10` dead var `FABRIC_ADMIN_SECRET` 완전 삭제 (ADR 003 read-only 원칙에 맞춰 삭제 채택) (커밋 `20e676b`)
+- **배터리여권 세션**: `bmu-agent/config/fabric.js` fallback 제거, `.env.example` placeholder 정리, `e2e-tests/auth-fixture.js` 신규로 e2e 14개 파일 env 기반 credential 전환 (커밋 `f118767`, `98a3801`, `51a98b2`, `c72ba9b`, `7b7bf69`)
+
+검증: `REMOVED_SECRET_ROTATED_2026_04_18` 등 3종 치환 문자열 잔존 0건 (activity-log 제외)
+
+#### 시크릿 실제 로테이션 완료
+
+- `passport-network/.env`, `cloud-agent/.env` 생성 (git-ignored)
+- `openssl rand -hex 24/32`로 강력한 랜덤 값 생성
+- 네트워크 재기동 + 5개 Fabric CA에 `fabric-ca-client identity modify`로 admin 비밀번호 실제 변경
+- 검증: 옛 `admin:LEGACY_DEFAULT_SECRET` enroll 시도 → Error Code 20 (Authentication failure)로 거부 확인
+- 새 크레덴셜로 `testmfg / testpass123` 테스트 사용자 등록 완료 (ManufacturerMSP)
+- 세션 간 공유는 `.omc/secrets-rotation-2026-04-18/shared-secrets.txt` (chmod 600, gitignored) 파일 경유 패턴 확립
+
+#### 원격 브랜치 정리
+
+- `origin/master-backup-pre-filterrepo` 삭제 (롤백 불필요 확정)
+- 원격 브랜치 `master` 단일화
+
+### 교훈 추가
+
+- CA 비밀번호 로테이션은 `identity modify`가 DB 재생성보다 안전 — 기존 peer MSP/orderer MSP 인증서 영향 없음
+- 평문 시크릿을 채팅에 노출하는 건 나중에 발견해도 되돌릴 수 없음 — 처음부터 gitignored 파일 경유 패턴 사용 권장 (배터리여권 세션 지적이 옳았음)
+- filter-repo는 "과거에 시크릿이었던 문자열"을 치환하므로, 해당 문자열이 **코드 fallback, 테스트 값, 문서 예시**에 참조돼 있으면 실제 동작을 깨뜨림 — 사전에 grep으로 참조 위치 식별 필요
+- MCP 세션의 "adversarial probe" (단순 가이드 수용이 아닌 실제 코드 사용 여부 검증) 패턴이 전 세션에 확산되면 리뷰 품질 향상
 
 ### 교훈
 - filter-repo는 `--refs master` 로 특정 브랜치만 재작성하고 백업 브랜치 보존 가능 — 롤백 안전성 확보
