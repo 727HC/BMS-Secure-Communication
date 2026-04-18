@@ -62,6 +62,26 @@ doc_type: guide
 - 이미지: 가까운 `assets/`
 - 외부 자료: `Object/`
 
+## 허브 체크리스트
+위키 구조를 바꾸거나 새 문서를 추가할 때는 아래 허브가 계속 유효한지 함께 확인한다.
+
+- 루트 허브: `wiki/README.md`
+- 공통 허브: `wiki/common/knowledge-map.md`
+- 도메인 허브: `passport/README.md`, `blockchain/README.md`, `embedded/README.md`, `mcp/README.md`
+- 도메인 개요: `passport/overview.md`, `blockchain/overview.md`, `embedded/overview.md`, `mcp/overview.md`
+- 운영 허브: `handoffs/README.md`, `reviews/README.md`
+- 참고 자료 허브: `Object/README.md`
+
+새 문서가 특정 허브에서만 발견 가능하다면 링크를 추가하거나, 허브가 이미 같은 역할의 문서를 충분히 가리키는지 확인한다.
+
+## source ↔ mirror parity 확인
+- canonical source: `/path/to/bms-blockchain/wiki`
+- mirror vault: `/path/to/BMS-Knowledge`
+- parity 확인 명령:
+  - `rsync -aunv --delete --exclude='.obsidian' --exclude='.trash' wiki/ /path/to/BMS-Knowledge/`
+- `.obsidian/`, `.trash/`는 사용자별 상태 폴더라 parity 비교에서 제외한다.
+- dry-run 출력이 비어 있으면 관리 대상 문서는 source와 mirror가 같은 상태다.
+
 ## 운영 메모
 source는 `/path/to/bms-blockchain/wiki`다.  
 Windows Obsidian vault는 mirror 결과로 본다.

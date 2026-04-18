@@ -30,5 +30,5 @@ doc_type: reference
 - 조회 전용 함수는 `query.go`
 
 ## 참고
-- [[chaincode-security-fixes]] — 보안 수정 이력
-- [[couchdb-injection-pattern]] — CouchDB injection 방지
+- [[blockchain/chaincode-security-fixes|보안 수정 이력]]
+- [[blockchain/couchdb-injection-pattern|CouchDB injection 방지]]

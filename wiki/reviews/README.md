@@ -11,12 +11,14 @@ doc_type: index
 ## 현재 구조
 - `reviews/passport/` — Passport QA 체크리스트와 결과
 - `reviews/blockchain/` — Blockchain 리뷰 판정과 리스크 수용 기록
+- `reviews/` 루트 — 위키 운영/통합 점검처럼 도메인 공통 review
 
 ## 현재 문서
 - [[reviews/passport/manual-qa-checklist|BATP 수동 QA 체크리스트]]
 - [[reviews/passport/manual-qa-report-2026-04-07|BATP 실사용 QA 결과]]
 - [[reviews/blockchain/review-findings-summary|코드 리뷰 사실/거짓 판별 결과]]
 - [[reviews/blockchain/risk-acceptance|리스크 수용 기록]]
+- [[reviews/wiki-consolidation-review-2026-04-18|위키 통합 점검 기록]]
 
 ## 추천 형식
 - review scope
