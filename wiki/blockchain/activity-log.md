@@ -218,6 +218,51 @@ tags: [blockchain, log]
 - omitempty 컨벤션은 struct 전체에서 일관성 유지해야 — 혼용 시 프론트에서 필드 존재/부재 혼동
 - Architect 리뷰에서 PhysicalVerification nil 초기화 금지 지적이 실제 함정 방지에 유효
 
+## Session 2026-04-18: Sentinel 3차 리뷰 대응 + C3 git history 정리
+
+### 작업 내용
+- Sentinel 3차 리뷰 블록체인 범위 16건 전부 수정 (P0~LOW)
+- 3차 리뷰 C3 git history 정리: filter-repo로 시크릿 제거
+- 전 세션(블록체인/배터리여권/임베디드/MCP) 합동 작업
+
+### 변경 파일
+**P0 (크레덴셜 env화)**
+- `passport-network/compose/compose-couch.yaml`, `compose-ca.yaml`
+- `passport-network/network.sh`, `.env.template`
+- `start_passport_network.sh`
+- `scripts/tps-benchmark*.js`
+- `.gitignore`
+
+**P1 (결정성 + timing-safe)**
+- `chaincode/passport-contract/helpers.go` (txTimestamp 시그니처 변경)
+- `chaincode/passport-contract/{bmu_tx,passport_tx,vc_tx,query}.go` (30개 호출자 수정)
+- `cloud-agent/server.js` (timingSafeEqual)
+
+**P2+MEDIUM+LOW**
+- `cloud-agent/server.js` (CORS, 127.0.0.1 bind, fatal sanitize)
+- `cloud-agent/services/fabric-listener.js`, `initial-sync.js` (TLS 강제, trustedRoots 파일)
+- `passport-network/compose/docker/peercfg/core.yaml` (TLS 기본 true)
+- chaincode `sanitizeSelector` → `buildQuery` (json.Marshal) 10곳 전환
+- `.env.example` 템플릿 (cloud-agent)
+
+### 커밋 + history 정리
+- 3개 커밋으로 보안 수정 완료
+- `git filter-repo`로 `LEGACY_DEFAULT_SECRET`, `LEGACY_PLACEHOLDER_SECRET`, DID seed, wallet key 전 history 제거
+- `cloud-agent/.env` 파일 history 완전 제거
+- 불필요 브랜치 4개 원격 삭제 (feature/react-rebuild, fix/sentinel-review-round1 등)
+- 백업: `master-backup-pre-filterrepo`
+
+### 미완료 / 후속 작업
+- 시크릿 실제 로테이션 (각 세션이 .env 재생성)
+- Risk-acceptance 4건 (C6 namespace, H9 Docker socket, H11 base TLS, 컨테이너 root)
+- 배터리여권 세션 C3 history 정리 외 항목은 완료 (Oracle VERIFIED)
+
+### 교훈
+- filter-repo는 `--refs master` 로 특정 브랜치만 재작성하고 백업 브랜치 보존 가능 — 롤백 안전성 확보
+- LevelDB → CouchDB 전환 시 write TPS 급락은 snapshot PutState 제거 + 보증 정책 완화로 회복 가능 (93.8 → 173.1 TPS)
+- 여러 세션이 병렬 작업하는 monorepo에서는 lock-and-coordinate 절차가 필수 (한 명이 history 재작성 시 다른 세션 push 일시 중지)
+- Risk acceptance 문서화가 리뷰 사이클 축소에 유효 — "이미 평가됨" 표시
+
 <!--
 ## Session N 템플릿
 
