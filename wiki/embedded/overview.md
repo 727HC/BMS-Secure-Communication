@@ -1,9 +1,9 @@
 ---
-title: 임베디드 세션 개요
+title: "임베디드 세션 개요"
 date: 2026-04-06
 tags: [embedded, overview]
+doc_type: overview
 ---
-
 # 임베디드 세션
 
 ## 담당 범위

@@ -1,9 +1,9 @@
 ---
-title: 배터리 여권 백엔드 요청사항
+title: "배터리 여권 백엔드 요청사항"
 date: 2026-04-13
 tags: [passport, backend, handoff]
+doc_type: handoff
 ---
-
 # 배터리 여권 백엔드 요청사항
 
 ## 목적

@@ -1,3 +1,9 @@
+---
+title: "BATP 실사용 QA 결과"
+date: 2026-04-07
+tags: [passport, qa, report]
+doc_type: review
+---
 # BATP 실사용 QA 결과
 
 - 최초 점검 시각: 2026. 4. 7. AM 10:45:09

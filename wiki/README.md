@@ -1,28 +1,76 @@
+---
+title: "BMS-Blockchain Knowledge Base"
+date: 2026-04-18
+tags: [wiki, index, common]
+doc_type: index
+---
+
 # BMS-Blockchain Knowledge Base
 
-xEV BMS 보안 플랫폼 — 전 세션 공유 지식 베이스
+xEV BMS 보안 플랫폼용 공용 Obsidian vault다.  
+지금은 **도메인 노트 / 결정 기록 / 작업 운영 문서 / 참고 자료**를 분리해서 관리한다.
 
-## 구조
+## 빠른 시작
 
-| 폴더 | 용도 | 담당 |
+1. [[common/knowledge-map|지식 맵]]
+2. [[common/architecture|시스템 아키텍처]]
+3. [[common/terminology|용어 사전]]
+4. 도메인별 overview
+   - [[passport/overview|Passport]]
+   - [[blockchain/overview|Blockchain]]
+   - [[embedded/overview|Embedded]]
+   - [[mcp/overview|MCP]]
+
+## 폴더 구조
+
+| 구역 | 경로 | 용도 |
 |------|------|------|
-| `common/` | 프로젝트 전체 공통 (아키텍처, 용어, 규칙) | 전체 |
-| `passport/` | API 서버, 프론트엔드, 디자인 토큰, UI 레퍼런스 | Passport 세션 |
-| `blockchain/` | Fabric 인프라, 체인코드, 채널, 피어, CA | Blockchain 세션 |
-| `embedded/` | BMU/CMU, S32K, CAN-FD, HSE, 펌웨어 | Embedded 세션 |
-| `mcp/` | MCP 모니터링 서버, 도구 | MCP 세션 |
-| `decisions/` | 기술 결정 기록 (ADR) | 전체 |
+| 공통 기준 | `common/` | 아키텍처, 용어, 지식 맵, 작성 규칙 |
+| 결정 기록 | `decisions/` | ADR, 세션 간 공통 결정 |
+| 도메인 노트 | `passport/`, `blockchain/`, `embedded/`, `mcp/` | 세션/기능별 상세 맥락 |
+| 작업 운영 | `handoffs/`, `reviews/` | handoff, QA, review 기준, 실행 패킷 |
+| 참고 자료 | `Object/` | PDF, 외부 기준 문서, 원본 자료 |
 
-## 사용 규칙
+> `Object/`는 기존 Obsidian 링크 호환성을 위해 이름을 유지한다.
 
-1. 각 세션은 자기 폴더 + `common/`만 수정
-2. `decisions/`는 모든 세션이 작성 가능 (ADR 번호 충돌 주의)
-3. 이미지/레퍼런스는 각 폴더 내 `assets/`에 저장
-4. 파일명: `kebab-case.md`
-5. 프론트매터 필수: `title`, `date`, `tags`
+## 자주 찾는 문서
 
-## 도구 연동
+### 공통
+- [[common/knowledge-map|지식 맵]]
+- [[common/architecture|시스템 아키텍처]]
+- [[common/terminology|용어 사전]]
+- [[common/wiki-writing-guide|위키 작성 가이드]]
+- [[common/agent-entrypoints|Agent별 시작점]]
 
-- **Obsidian**: `\\wsl$\Ubuntu\home\heechan\bms-blockchain\wiki\`로 vault 열기
-- **Claude Code**: `/home/heechan/bms-blockchain/wiki/` 직접 Read
-- **Codex CLI**: 프로젝트 내 `wiki/` 경로로 자동 접근
+### Passport
+- [[passport/overview|세션 개요]]
+- [[passport/frontend|프론트엔드 구조]]
+- [[passport/design-tokens|디자인 토큰]]
+- [[passport/activity-log|활동 로그 인덱스]]
+- [[reviews/passport/manual-qa-checklist|수동 QA 체크리스트]]
+
+### Blockchain
+- [[blockchain/overview|세션 개요]]
+- [[blockchain/kpi-targets|KPI 목표]]
+- [[blockchain/chaincode-security-fixes|체인코드 보안 수정 이력]]
+- [[handoffs/blockchain/passport-handoff-2026-04-13|Passport 세션 handoff]]
+
+### 운영 문서
+- [[handoffs/README|handoff 작성 위치]]
+- [[reviews/README|review / QA 문서 위치]]
+
+## 정리 원칙
+
+1. 새 공통 기준은 `common/`에 둔다.
+2. 세션/도메인 상세는 각 도메인 폴더에 둔다.
+3. handoff / review / task packet은 루트 운영 폴더(`handoffs/`, `reviews/`)에 둔다.
+4. 이미지와 첨부는 해당 폴더의 `assets/` 또는 `Object/`에 둔다.
+5. 파일명은 `kebab-case.md`, frontmatter는 `title`, `date`, `tags`, `doc_type`를 기본으로 맞춘다.
+
+## 동기화 규칙
+
+- **Canonical source**: `/home/heechan/bms-blockchain/wiki`
+- **Windows Obsidian vault**: `C:\Users\heechan\Documents\BMS-Knowledge`
+- **자동 미러링**: `scripts/wiki-mirror.sh` (`wiki/` → Windows vault)
+
+새 문서는 가능하면 source 쪽(`wiki/`)에 먼저 정리하고, Windows vault는 mirror 결과를 사용한다.

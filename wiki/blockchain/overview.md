@@ -1,9 +1,9 @@
 ---
-title: 블록체인 세션 개요
+title: "블록체인 세션 개요"
 date: 2026-04-06
 tags: [blockchain, overview]
+doc_type: overview
 ---
-
 # 블록체인 세션
 
 ## 담당 범위

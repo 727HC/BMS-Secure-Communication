@@ -1,9 +1,10 @@
 ---
-title: Passport 세션 handoff — 체인코드 v1.8 변경사항
+title: "Passport 세션 handoff — 체인코드 v1.8 변경사항"
+aliases: [passport-session-handoff]
 date: 2026-04-13
 tags: [handoff, passport, chaincode, v1.8]
+doc_type: handoff
 ---
-
 # Passport 세션 handoff — 체인코드 v1.8
 
 ## 개요

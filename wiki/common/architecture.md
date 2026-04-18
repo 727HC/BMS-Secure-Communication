@@ -1,9 +1,9 @@
 ---
-title: 시스템 아키텍처
+title: "시스템 아키텍처"
 date: 2026-04-06
 tags: [architecture, overview]
+doc_type: reference
 ---
-
 # BMS-Blockchain 시스템 아키텍처
 
 ## 전체 구성

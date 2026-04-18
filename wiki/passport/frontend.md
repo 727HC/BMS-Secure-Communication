@@ -1,9 +1,9 @@
 ---
-title: 프론트엔드 구조
+title: "프론트엔드 구조"
 date: 2026-04-06
 tags: [passport, frontend, ui]
+doc_type: reference
 ---
-
 # 프론트엔드 구조
 
 ## 기술 스택
@@ -59,26 +59,26 @@ webapp/frontend/
 - 대문 페이지, 히어로 섹션
 - 색상: `#1769e0`, `#00a8ff`, `#f5f6f8`
 - `solar-ev-station.png` 일러스트 사용
-- ![[assets/page-landing.png]]
+- ![[passport/assets/page-landing.png]]
 
 ### 로그인 (login.js — `login-page`)
 - 로그인 / 회원가입 탭 전환
 - 4개 조직 선택 (제조사, EV제조사, 정비/분석, 검증기관)
-- ![[assets/page-login.png]]
+- ![[passport/assets/page-login.png]]
 
 ### 대시보드 (dashboard.js)
 - KPI 카드 4개 (전체, 운행중, 바인딩 대기, 원자재)
 - 보조 스탯 3개 (SOC, 온도, 후속확인)
 - 상태 분포 가로 바 차트
 - 최근 등록 여권 피드 (8건)
-- ![[assets/page-dashboard.png]]
+- ![[passport/assets/page-dashboard.png]]
 
 ### 배터리 여권 목록 (passports.js)
 - 등록부 헤더 + 바인딩/검토 건수
 - 검색 + 상태 필터 + 정렬
 - 여권 카드 리스트 (모델, 제조사, 상태 배지, GBA 진행률)
 - 여권 발급 모달 (제조사만)
-- ![[assets/page-passports.png]]
+- ![[passport/assets/page-passports.png]]
 
 ### 여권 상세 (passport-detail.js)
 - 기술 문서 형태 — 단일 스크롤
@@ -90,36 +90,36 @@ webapp/frontend/
 ### 원자재 (materials.js)
 - 원자재 목록 테이블
 - 등록 모달 (소재명, 종류, 공급업체, 인증, 무게)
-- ![[assets/page-materials.png]]
+- ![[passport/assets/page-materials.png]]
 
 ### BMU 데이터 (bmu-data.js)
 - BMU 원천 데이터 조회
 - 여권 선택 → 레코드 목록 → 상세
 - SOC/온도 스케일링 표시
-- ![[assets/page-bmu-data.png]]
+- ![[passport/assets/page-bmu-data.png]]
 
 ### 정비 운영 (maintenance.js)
 - 정비 대기 여권 필터
 - 정비 완료 / 사고 기록 등록
 - 상태별 분류 (MAINTENANCE, ANALYSIS)
-- ![[assets/page-maintenance.png]]
+- ![[passport/assets/page-maintenance.png]]
 
 ### 재활용 (recycling.js)
 - 재활용 대상 여권 관리
 - 분석 요청 → 재활용 판정 → 추출 → 폐기 흐름
 - 조직별 액션 분리
-- ![[assets/page-recycling.png]]
+- ![[passport/assets/page-recycling.png]]
 
 ### QR 스캔 (qr-scan.js)
 - QR 코드 스캐너 (html5-qrcode)
 - 수동 ID 입력
 - 스캔 → 여권 상세로 이동
-- ![[assets/page-qr-scan.png]]
+- ![[passport/assets/page-qr-scan.png]]
 
 ### 감사 로그 (audit-log.js)
 - 블록체인 트랜잭션 이력 조회
 - 시간순 정렬, 유형별 필터
-- ![[assets/page-audit-log.png]]
+- ![[passport/assets/page-audit-log.png]]
 
 ## 공유 상수 (app.js)
 
