@@ -1,4 +1,5 @@
 const { test } = require('@playwright/test');
+const { E2E_ADMIN_USER, E2E_ADMIN_PASSWORD } = require('../auth-fixture');
 const BASE = 'http://localhost:3001';
 
 async function login(page, hash) {
@@ -7,7 +8,7 @@ async function login(page, hash) {
   await page.evaluate(async () => {
     const res = await fetch('/api/auth/login', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userId: 'admin', password: 'REMOVED_SECRET_ROTATED_2026_04_18', orgNum: 1 }),
+      body: JSON.stringify({ userId: E2E_ADMIN_USER, password: E2E_ADMIN_PASSWORD, orgNum: 1 }),
     });
     const d = await res.json();
     if (d.token) { localStorage.setItem('bp_token', d.token); localStorage.setItem('bp_userId', d.userId); localStorage.setItem('bp_orgMsp', d.mspId); }
