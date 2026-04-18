@@ -82,6 +82,11 @@ doc_type: guide
 - `.obsidian/`, `.trash/`는 사용자별 상태 폴더라 parity 비교에서 제외한다.
 - dry-run 출력이 비어 있으면 관리 대상 문서는 source와 mirror가 같은 상태다.
 
+## agent 적용 규칙
+- agent용 자동 적용 surface: `wiki/AGENTS.md`
+- agent용 정본 가이드: [[common/agent-wiki-writing-guide|Agent wiki writing guide]]
+- `wiki/AGENTS.md`는 짧은 강제 규칙만 두고, 예시/설명은 정본 가이드에 둔다.
+
 ## 운영 메모
 source는 `/path/to/bms-blockchain/wiki`다.  
 Windows Obsidian vault는 mirror 결과로 본다.

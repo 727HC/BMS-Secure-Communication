@@ -42,6 +42,7 @@ REQUIRED_DOCS = [
     "common/architecture.md",
     "common/terminology.md",
     "common/wiki-writing-guide.md",
+    "common/agent-wiki-writing-guide.md",
     "common/agent-entrypoints.md",
     "decisions/README.md",
     "passport/README.md",
@@ -55,6 +56,9 @@ REQUIRED_DOCS = [
     "blockchain/overview.md",
     "embedded/overview.md",
     "mcp/overview.md",
+]
+REQUIRED_NON_MARKDOWN_FILES = [
+    "AGENTS.md",
 ]
 EXPECTED_HUB_LINKS = {
     "README.md": [
@@ -79,11 +83,31 @@ EXPECTED_HUB_LINKS = {
         "mcp/README",
         "common/agent-entrypoints",
         "common/wiki-writing-guide",
+        "common/agent-wiki-writing-guide",
         "handoffs/README",
         "reviews/README",
         "Object/README",
     ],
+    "common/README.md": [
+        "common/wiki-writing-guide",
+        "common/agent-wiki-writing-guide",
+        "common/agent-entrypoints",
+        "common/task-packet-template",
+    ],
+    "common/wiki-writing-guide.md": [
+        "common/agent-wiki-writing-guide",
+    ],
 }
+AGENTS_REQUIRED_SNIPPETS = [
+    "wiki/common/agent-wiki-writing-guide.md",
+    "wiki/common/wiki-writing-guide.md",
+    "wiki/common/",
+    "wiki/decisions/",
+    "wiki/handoffs/",
+    "wiki/reviews/",
+    "activity-log",
+    "python3 scripts/verify_wiki.py",
+]
 IGNORE_PARITY_PATHS = {
     ".obsidian/app.json",
     ".obsidian/appearance.json",
@@ -194,6 +218,7 @@ def resolve_markdown_link(raw_target: str, current_file: Path, wiki_root: Path) 
 def verify_taxonomy(root: Path, result: VerificationResult) -> None:
     missing_dirs = [item for item in REQUIRED_DIRS if not (root / item).is_dir()]
     missing_docs = [item for item in REQUIRED_DOCS if not (root / item).is_file()]
+    missing_files = [item for item in REQUIRED_NON_MARKDOWN_FILES if not (root / item).is_file()]
     if missing_dirs:
         result.add("failed", f"Missing taxonomy directories: {', '.join(missing_dirs)}")
     else:
@@ -202,13 +227,19 @@ def verify_taxonomy(root: Path, result: VerificationResult) -> None:
         result.add("failed", f"Missing hub/reference docs: {', '.join(missing_docs)}")
     else:
         result.add("passed", "Required hub/reference docs exist")
+    if missing_files:
+        result.add("failed", f"Missing required support files: {', '.join(missing_files)}")
+    else:
+        result.add("passed", "Required support files exist")
 
 
 def verify_frontmatter(root: Path, result: VerificationResult) -> None:
     issues: list[str] = []
     for path in sorted(root.rglob("*.md")):
-        frontmatter = parse_frontmatter(path.read_text(encoding="utf-8"))
         rel = path.relative_to(root).as_posix()
+        if rel == "AGENTS.md":
+            continue
+        frontmatter = parse_frontmatter(path.read_text(encoding="utf-8"))
         if frontmatter is None:
             issues.append(f"{rel}: missing or malformed frontmatter")
             continue
@@ -280,6 +311,21 @@ def compare_trees(source: Path, target: Path) -> tuple[list[str], list[str], lis
     return only_in_source, only_in_target, differing
 
 
+def verify_agent_guidance(root: Path, result: VerificationResult) -> None:
+    agents_path = root / "AGENTS.md"
+    if not agents_path.exists():
+        result.add("failed", "Agent guidance issues:\n  - AGENTS.md is missing")
+        return
+    text = agents_path.read_text(encoding="utf-8")
+    missing = [snippet for snippet in AGENTS_REQUIRED_SNIPPETS if snippet not in text]
+    if missing:
+        result.add(
+            "failed",
+            "Agent guidance issues:\n  - AGENTS.md missing required snippets: " + ", ".join(missing),
+        )
+    else:
+        result.add("passed", "Scoped wiki AGENTS guidance exists and points to the canonical agent guide")
+
 def verify_parity(label: str, source: Path, target: Path, result: VerificationResult) -> None:
     if not source.exists():
         result.add("skipped", f"{label}: source path not found ({source})")
@@ -344,6 +390,7 @@ def main() -> int:
     verify_frontmatter(wiki_root, result)
     verify_hub_links(wiki_root, result)
     verify_links(wiki_root, result)
+    verify_agent_guidance(wiki_root, result)
 
     if not args.skip_source_parity:
         verify_parity("Canonical source parity", wiki_root, Path(args.canonical_source).resolve(), result)
