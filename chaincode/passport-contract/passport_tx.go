@@ -203,6 +203,14 @@ func (c *PassportContract) BindToVehicle(ctx contractapi.TransactionContextInter
 		return err
 	}
 
+	// M-3: VIN/passportId 필수 입력 검증
+	if passportId == "" {
+		return fmt.Errorf("passportId must not be empty")
+	}
+	if vin == "" {
+		return fmt.Errorf("vin must not be empty")
+	}
+
 	passportJSON, err := ctx.GetStub().GetState(passportId)
 	if err != nil {
 		return fmt.Errorf("failed to read passport: %v", err)

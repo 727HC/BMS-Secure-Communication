@@ -32,7 +32,23 @@ async function getContract() {
   const existing = await wallet.get(IDENTITY);
   if (!existing) {
     const caURL = `https://localhost:${process.env.FABRIC_CA_PORT || '7054'}`;
-    const ca = new FabricCAServices(caURL, { verify: process.env.FABRIC_CA_TLS_VERIFY !== 'false' },
+
+    // H-7: TLS verify 기본 true, production에서는 비활성 불가
+    const tlsVerify = process.env.NODE_ENV === 'production'
+      ? true
+      : process.env.FABRIC_CA_TLS_VERIFY !== 'false';
+
+    // H-7: trustedRoots CA 인증서 파일에서 로드
+    const caCertPath = process.env.FABRIC_CA_CERT_PATH;
+    let trustedRoots = [];
+    if (caCertPath) {
+      trustedRoots = [fs.readFileSync(caCertPath)];
+    } else if (tlsVerify) {
+      throw new Error('FABRIC_CA_CERT_PATH must be set when TLS verification is enabled');
+    }
+
+    const ca = new FabricCAServices(caURL,
+      { trustedRoots, verify: tlsVerify },
       process.env.FABRIC_CA_NAME || 'ca-manufacturer');
     if (!process.env.FABRIC_ADMIN_SECRET) {
       throw new Error('FABRIC_ADMIN_SECRET must be set');

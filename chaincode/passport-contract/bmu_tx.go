@@ -226,7 +226,17 @@ func (c *PassportContract) InvalidateBMURecord(ctx contractapi.TransactionContex
 		currentLastFc, _ := strconv.ParseUint(string(lastFcBytes), 10, 64)
 		if currentLastFc == record.FC {
 			// 다음 최신 유효 FC를 rich query로 조회 (희귀 연산이므로 허용)
-			fcReQuery := fmt.Sprintf(`{"selector":{"docType":"%s","did":"%s","status":"VALID"},"sort":[{"fc":"desc"}],"limit":1}`, docTypeBMURecord, sanitizeSelector(record.DID))
+			fcReQuery, _ := buildQuery(
+				map[string]interface{}{
+					"docType": docTypeBMURecord,
+					"did":     record.DID,
+					"status":  "VALID",
+				},
+				map[string]interface{}{
+					"sort":  []map[string]string{{"fc": "desc"}},
+					"limit": 1,
+				},
+			)
 			fcReIter, err := ctx.GetStub().GetQueryResult(fcReQuery)
 			if err == nil {
 				defer fcReIter.Close()
@@ -250,7 +260,17 @@ func (c *PassportContract) InvalidateBMURecord(ctx contractapi.TransactionContex
 		if err == nil && snapshotJSON != nil {
 			var snap BMUSnapshot
 			if json.Unmarshal(snapshotJSON, &snap) == nil && snap.LastBMUDataID == recordId {
-				reQuery := fmt.Sprintf(`{"selector":{"docType":"%s","passportId":"%s","status":"VALID"},"sort":[{"fc":"desc"}],"limit":1}`, docTypeBMURecord, sanitizeSelector(record.PassportID))
+				reQuery, _ := buildQuery(
+					map[string]interface{}{
+						"docType":    docTypeBMURecord,
+						"passportId": record.PassportID,
+						"status":     "VALID",
+					},
+					map[string]interface{}{
+						"sort":  []map[string]string{{"fc": "desc"}},
+						"limit": 1,
+					},
+				)
 				reIter, err := ctx.GetStub().GetQueryResult(reQuery)
 				if err == nil {
 					defer reIter.Close()

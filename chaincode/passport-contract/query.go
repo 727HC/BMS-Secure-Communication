@@ -177,7 +177,18 @@ func (c *PassportContract) QueryBMURecordsByPassport(ctx contractapi.Transaction
 		pageSize = maxPageSize
 	}
 
-	queryString := fmt.Sprintf(`{"selector":{"docType":"%s","passportId":"%s"},"sort":[{"timestamp":"desc"}]}`, docTypeBMURecord, sanitizeSelector(passportId))
+	queryString, err := buildQuery(
+		map[string]interface{}{
+			"docType":    docTypeBMURecord,
+			"passportId": passportId,
+		},
+		map[string]interface{}{
+			"sort": []map[string]string{{"timestamp": "desc"}},
+		},
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to build query: %v", err)
+	}
 
 	resultsIterator, responseMetadata, err := ctx.GetStub().GetQueryResultWithPagination(queryString, pageSize, bookmark)
 	if err != nil {
@@ -218,7 +229,13 @@ func (c *PassportContract) QueryBatteryByDID(ctx contractapi.TransactionContextI
 		return nil, err
 	}
 
-	queryString := fmt.Sprintf(`{"selector":{"docType":"%s","did":"%s"}}`, docTypePassport, sanitizeSelector(did))
+	queryString, err := buildQuery(map[string]interface{}{
+		"docType": docTypePassport,
+		"did":     did,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to build query: %v", err)
+	}
 
 	resultsIterator, err := ctx.GetStub().GetQueryResult(queryString)
 	if err != nil {
@@ -257,13 +274,14 @@ func (c *PassportContract) QueryRawMaterials(ctx contractapi.TransactionContextI
 
 	queryString := fmt.Sprintf(`{"selector":{"docType":"%s"}}`, docTypeRawMaterial)
 
-	resultsIterator, err := ctx.GetStub().GetQueryResult(queryString)
+	// M-3: 페이지네이션 없는 전체 조회는 기본 상한 적용 (상태 비대화 방어)
+	resultsIterator, _, err := ctx.GetStub().GetQueryResultWithPagination(queryString, defaultPageSize, "")
 	if err != nil {
 		return nil, fmt.Errorf("failed to query raw materials: %v", err)
 	}
 	defer resultsIterator.Close()
 
-	var materials []*RawMaterial
+	materials := []*RawMaterial{}
 	for resultsIterator.HasNext() {
 		queryResponse, err := resultsIterator.Next()
 		if err != nil {
@@ -361,7 +379,13 @@ func (c *PassportContract) QueryCredentialsByPassport(ctx contractapi.Transactio
 		pageSize = int64(maxPageSize)
 	}
 
-	queryString := fmt.Sprintf(`{"selector":{"docType":"%s","passportId":"%s"}}`, docTypeVC, sanitizeSelector(passportId))
+	queryString, err := buildQuery(map[string]interface{}{
+		"docType":    docTypeVC,
+		"passportId": passportId,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to build query: %v", err)
+	}
 
 	resultsIterator, responseMetadata, err := ctx.GetStub().GetQueryResultWithPagination(queryString, int32(pageSize), bookmark)
 	if err != nil {
@@ -408,7 +432,13 @@ func (c *PassportContract) QueryCredentialsByHolder(ctx contractapi.TransactionC
 		pageSize = int64(maxPageSize)
 	}
 
-	queryString := fmt.Sprintf(`{"selector":{"docType":"%s","holderDid":"%s"}}`, docTypeVC, sanitizeSelector(holderDid))
+	queryString, err := buildQuery(map[string]interface{}{
+		"docType":   docTypeVC,
+		"holderDid": holderDid,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to build query: %v", err)
+	}
 
 	resultsIterator, responseMetadata, err := ctx.GetStub().GetQueryResultWithPagination(queryString, int32(pageSize), bookmark)
 	if err != nil {
@@ -462,9 +492,24 @@ func (c *PassportContract) QueryCredentialsByType(ctx contractapi.TransactionCon
 
 	var queryString string
 	if msp == mspRegulator {
-		queryString = fmt.Sprintf(`{"selector":{"docType":"%s","credType":"%s"}}`, docTypeVC, sanitizeSelector(credType))
+		qs, qErr := buildQuery(map[string]interface{}{
+			"docType":  docTypeVC,
+			"credType": credType,
+		})
+		if qErr != nil {
+			return nil, fmt.Errorf("failed to build query: %v", qErr)
+		}
+		queryString = qs
 	} else {
-		queryString = fmt.Sprintf(`{"selector":{"docType":"%s","credType":"%s","issuerMsp":"%s"}}`, docTypeVC, sanitizeSelector(credType), msp)
+		qs, qErr := buildQuery(map[string]interface{}{
+			"docType":   docTypeVC,
+			"credType":  credType,
+			"issuerMsp": msp,
+		})
+		if qErr != nil {
+			return nil, fmt.Errorf("failed to build query: %v", qErr)
+		}
+		queryString = qs
 	}
 
 	resultsIterator, responseMetadata, err := ctx.GetStub().GetQueryResultWithPagination(queryString, int32(pageSize), bookmark)
@@ -600,7 +645,18 @@ func (c *PassportContract) QueryVerificationsByCredential(ctx contractapi.Transa
 		pageSize = int64(maxPageSize)
 	}
 
-	queryString := fmt.Sprintf(`{"selector":{"docType":"%s","credentialId":"%s"},"sort":[{"timestamp":"desc"}]}`, docTypeVerification, sanitizeSelector(credentialId))
+	queryString, err := buildQuery(
+		map[string]interface{}{
+			"docType":      docTypeVerification,
+			"credentialId": credentialId,
+		},
+		map[string]interface{}{
+			"sort": []map[string]string{{"timestamp": "desc"}},
+		},
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to build query: %v", err)
+	}
 	resultsIterator, responseMetadata, err := ctx.GetStub().GetQueryResultWithPagination(queryString, int32(pageSize), bookmark)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query verifications: %v", err)
@@ -649,7 +705,18 @@ func (c *PassportContract) QueryVerificationsByVerifier(ctx contractapi.Transact
 		pageSize = int64(maxPageSize)
 	}
 
-	queryString := fmt.Sprintf(`{"selector":{"docType":"%s","verifierDid":"%s"},"sort":[{"timestamp":"desc"}]}`, docTypeVerification, sanitizeSelector(verifierDid))
+	queryString, err := buildQuery(
+		map[string]interface{}{
+			"docType":     docTypeVerification,
+			"verifierDid": verifierDid,
+		},
+		map[string]interface{}{
+			"sort": []map[string]string{{"timestamp": "desc"}},
+		},
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to build query: %v", err)
+	}
 	resultsIterator, responseMetadata, err := ctx.GetStub().GetQueryResultWithPagination(queryString, int32(pageSize), bookmark)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query verifications: %v", err)
