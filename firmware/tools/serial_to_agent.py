@@ -8,7 +8,7 @@ BMU output format:
 
 Usage:
   python serial_to_agent.py --port COM4 --baud 28800 --agent http://localhost:3001 --did <DID> \
-    --user admin --password REMOVED_SECRET_ROTATED_2026_04_18 --org 1
+    --user <USER> --password <PASSWORD> --org 1
 """
 
 import serial
