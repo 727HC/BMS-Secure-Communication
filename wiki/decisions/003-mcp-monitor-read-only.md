@@ -11,7 +11,8 @@ status: accepted
 Accepted
 
 ## 맥락
-MCP Monitor가 Fabric admin identity를 공유하면서 자동 CA enrollment(`REMOVED_SECRET_ROTATED_2026_04_18`)까지 수행하고 있었음. 모니터링 서버가 wallet을 변경하고 특권 identity를 생성하는 것은 보안 위험.
+MCP Monitor가 Fabric admin identity를 공유하면서 자동 CA enrollment(하드코딩된 admin 비밀번호 사용)까지 수행하고 있었음. 모니터링 서버가 wallet을 변경하고 특권 identity를 생성하는 것은 보안 위험.
+> 참고: 해당 시크릿은 2026-04-18 `git filter-repo`로 history에서 전부 제거됨.
 
 ## 결정
 MCP Monitor를 **완전한 읽기 전용 서비스**로 제한:

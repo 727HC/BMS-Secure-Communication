@@ -484,7 +484,7 @@ cd passport-network && ./network.sh down
 | `FABRIC_CHANNEL` | `passportchannel` | Fabric 채널명 |
 | `FABRIC_CONTRACT` | `passport-contract` | 체인코드명 |
 | `FABRIC_IDENTITY` | `admin` | Fabric 사용자 ID |
-| `FABRIC_ADMIN_SECRET` | `REMOVED_SECRET_ROTATED_2026_04_18` | CA 관리자 비밀번호 |
+| `FABRIC_ADMIN_SECRET` | (필수, 기본값 없음) | CA 관리자 비밀번호 — `passport-network/.env`의 `CA_ADMIN_PASSWORD`와 동일해야 함 |
 | `ACA_PY_URL` | `http://localhost:8031` | ACA-Py Admin API URL |
 | `DEFAULT_BMU_DID` | (없음) | BMU 기본 DID |
 | `PORT` | `3001` | Agent 서버 포트 |
