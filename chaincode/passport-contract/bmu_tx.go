@@ -119,7 +119,10 @@ func (c *PassportContract) RecordBMUData(ctx contractapi.TransactionContextInter
 		return fmt.Errorf("failed to get client MSP: %v", err)
 	}
 
-	now := txTimestamp(ctx)
+	now, tsErr := txTimestamp(ctx)
+	if tsErr != nil {
+		return fmt.Errorf("failed to get timestamp: %v", tsErr)
+	}
 
 	record := BMURecord{
 		DocType:         docTypeBMURecord,
@@ -198,7 +201,10 @@ func (c *PassportContract) InvalidateBMURecord(ctx contractapi.TransactionContex
 		return fmt.Errorf("failed to get client MSP: %v", err)
 	}
 
-	now := txTimestamp(ctx)
+	now, tsErr := txTimestamp(ctx)
+	if tsErr != nil {
+		return fmt.Errorf("failed to get timestamp: %v", tsErr)
+	}
 	record.Status = "INVALIDATED"
 	record.InvalidatedBy = msp
 	record.InvalidatedAt = now
@@ -318,8 +324,14 @@ func (c *PassportContract) ResetFCForDID(ctx contractapi.TransactionContextInter
 	}
 
 	// 감사 로그 기록
-	msp, _ := c.getClientMSP(ctx)
-	now := txTimestamp(ctx)
+	msp, mspErr := c.getClientMSP(ctx)
+	if mspErr != nil {
+		return fmt.Errorf("failed to get client MSP: %v", mspErr)
+	}
+	now, tsErr := txTimestamp(ctx)
+	if tsErr != nil {
+		return fmt.Errorf("failed to get timestamp: %v", tsErr)
+	}
 	logID := fmt.Sprintf("FCRESET-%s-%s", did, ctx.GetStub().GetTxID())
 
 	resetLog := FCResetLog{

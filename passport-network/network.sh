@@ -114,7 +114,9 @@ function createOrgs() {
     while [[ $rc -ne 0 && $COUNTER -lt $MAX_RETRY ]]; do
       sleep 1
       set -x
-      fabric-ca-client getcainfo -u https://admin:REMOVED_SECRET_ROTATED_2026_04_18@localhost:7054 --caname ca-manufacturer --tls.certfiles "${PWD}/organizations/fabric-ca/manufacturer/ca-cert.pem"
+      : "${CA_ADMIN_USER:?CA_ADMIN_USER must be set}"
+      : "${CA_ADMIN_PASSWORD:?CA_ADMIN_PASSWORD must be set}"
+      fabric-ca-client getcainfo -u "https://${CA_ADMIN_USER}:${CA_ADMIN_PASSWORD}@localhost:7054" --caname ca-manufacturer --tls.certfiles "${PWD}/organizations/fabric-ca/manufacturer/ca-cert.pem"
       res=$?
       { set +x; } 2>/dev/null
       rc=$res

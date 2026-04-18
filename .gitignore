@@ -3,6 +3,9 @@
 !**/secrets.h.example
 config.env
 !config.env.example
+**/.env
+!**/.env.example
+!**/.env.template
 
 # Agent runtime data
 bmu-agent/data/

@@ -13,6 +13,19 @@ export FABRIC_CFG_PATH="${PASSPORT_NET}/configtx"
 
 cd "$PASSPORT_NET" || { echo "passport-network directory not found"; exit 1; }
 
+# .env 로드 (CA_ADMIN_USER, CA_ADMIN_PASSWORD, COUCHDB_USER, COUCHDB_PASSWORD)
+if [ -f "${PASSPORT_NET}/.env" ]; then
+  set -a
+  source "${PASSPORT_NET}/.env"
+  set +a
+fi
+
+# 필수 크레덴셜 검증
+: "${CA_ADMIN_USER:?CA_ADMIN_USER must be set in passport-network/.env}"
+: "${CA_ADMIN_PASSWORD:?CA_ADMIN_PASSWORD must be set in passport-network/.env}"
+: "${COUCHDB_USER:?COUCHDB_USER must be set in passport-network/.env}"
+: "${COUCHDB_PASSWORD:?COUCHDB_PASSWORD must be set in passport-network/.env}"
+
 echo "=== Battery Passport Network ==="
 
 # Parse arguments

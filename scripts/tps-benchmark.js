@@ -15,11 +15,15 @@ const WRITE_TOTAL = 200;       // 총 쓰기 요청 수
 let token = null;
 
 async function login() {
-  const res = await axios.post(`${BASE}/api/auth/login`, {
-    userId: 'admin', password: 'REMOVED_SECRET_ROTATED_2026_04_18', orgNum: 1,
-  });
+  const userId = process.env.BENCH_USER;
+  const password = process.env.BENCH_PASSWORD;
+  const orgNum = parseInt(process.env.BENCH_ORG || '1', 10);
+  if (!userId || !password) {
+    throw new Error('BENCH_USER and BENCH_PASSWORD env vars must be set');
+  }
+  const res = await axios.post(`${BASE}/api/auth/login`, { userId, password, orgNum });
   token = res.data.token;
-  console.log('Logged in as admin (ManufacturerMSP)');
+  console.log(`Logged in as ${userId}`);
 }
 
 function headers() {
