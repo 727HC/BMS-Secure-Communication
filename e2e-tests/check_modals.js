@@ -1,4 +1,5 @@
 const { chromium } = require('playwright');
+const { E2E_ADMIN_USER, E2E_ADMIN_PASSWORD } = require('./auth-fixture');
 (async () => {
   const browser = await chromium.launch();
   const page = await browser.newPage();
@@ -13,8 +14,8 @@ const { chromium } = require('playwright');
   await page.waitForTimeout(1000);
   
   // Login
-  await page.locator('input[type="text"]').fill('admin');
-  await page.locator('input[type="password"]').fill('REMOVED_SECRET_ROTATED_2026_04_18');
+  await page.locator('input[type="text"]').fill(E2E_ADMIN_USER);
+  await page.locator('input[type="password"]').fill(E2E_ADMIN_PASSWORD);
   await page.locator('button[type="submit"]').click();
   await page.waitForTimeout(2000);
   
