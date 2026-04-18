@@ -1,10 +1,8 @@
 const path = require('path');
 
-const isDev = process.env.NODE_ENV !== 'production';
-
-// P1-5: production에서는 FABRIC_ADMIN_SECRET 필수
-if (!isDev && !process.env.FABRIC_ADMIN_SECRET) {
-  throw new Error('FABRIC_ADMIN_SECRET is required in production.');
+// 모든 환경에서 명시적인 Fabric admin secret 필요
+if (!process.env.FABRIC_ADMIN_SECRET) {
+  throw new Error('FABRIC_ADMIN_SECRET is required. Set it explicitly in bmu-agent/.env.');
 }
 
 const NETWORK_BASE = path.resolve(__dirname, '..', '..', 'passport-network');
@@ -49,7 +47,7 @@ const config = {
   channelName: process.env.FABRIC_CHANNEL || 'passportchannel',
   contractName: process.env.FABRIC_CONTRACT || 'passport-contract',
   identity: process.env.FABRIC_IDENTITY || 'admin',
-  adminSecret: process.env.FABRIC_ADMIN_SECRET || (isDev ? 'REMOVED_SECRET_ROTATED_2026_04_18' : undefined),
+  adminSecret: process.env.FABRIC_ADMIN_SECRET,
   walletPath: process.env.FABRIC_WALLET_PATH || path.join(__dirname, '..', 'wallet'),
 
   // P1-7: TLS 검증 (기본 true, dev에서만 false 허용)
