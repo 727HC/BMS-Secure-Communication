@@ -1,5 +1,6 @@
 -DINIT_STDBY_RAM
 -DARMCM7_SP
+-DBMS_WHITELIST_DISCOVERY
 -I../RTD/include
 -I../FreeRTOS/Source/include
 -I../FreeRTOS/Source/portable/GCC/ARM_CM7/r0p1

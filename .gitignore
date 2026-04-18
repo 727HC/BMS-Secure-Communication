@@ -69,6 +69,7 @@ chaincode/passport-contract/passport-contract
 # Python
 __pycache__/
 *.pyc
+spool.db
 
 # OS
 Thumbs.db
