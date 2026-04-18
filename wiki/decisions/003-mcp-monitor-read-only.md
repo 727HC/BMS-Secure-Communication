@@ -1,10 +1,10 @@
 ---
-title: "ADR-003: MCP Monitor 읽기 전용 원칙"
+title: "\"ADR-003: MCP Monitor 읽기 전용 원칙\""
 date: 2026-04-06
 tags: [adr, mcp, security]
+doc_type: adr
 status: accepted
 ---
-
 # ADR-003: MCP Monitor 읽기 전용 원칙
 
 ## 상태

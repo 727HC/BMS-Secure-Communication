@@ -1,9 +1,9 @@
 ---
-title: 디자인 토큰
+title: "디자인 토큰"
 date: 2026-04-06
 tags: [design, tokens, ui]
+doc_type: reference
 ---
-
 # 디자인 토큰
 
 ## 색상

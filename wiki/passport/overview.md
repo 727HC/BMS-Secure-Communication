@@ -1,9 +1,9 @@
 ---
-title: 배터리 여권 세션 개요
+title: "배터리 여권 세션 개요"
 date: 2026-04-06
 tags: [passport, overview]
+doc_type: overview
 ---
-
 # 배터리 여권 세션
 
 ## 담당 범위

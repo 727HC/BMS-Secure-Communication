@@ -1,9 +1,9 @@
 ---
-title: Passport 세션 요청 회신 — 체인코드 v1.8 정합성 확인
+title: "Passport 세션 요청 회신 — 체인코드 v1.8 정합성 확인"
 date: 2026-04-13
 tags: [handoff, passport, reply, v1.8]
+doc_type: handoff
 ---
-
 # Passport 세션 요청 회신
 
 ## 1. 신규 API 4개 정합성 — 확인 완료, 바로 붙일 수 있음

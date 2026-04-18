@@ -1,9 +1,9 @@
 ---
-title: 국가과제 KPI 목표 및 평가 기준
+title: "국가과제 KPI 목표 및 평가 기준"
 date: 2026-04-13
 tags: [kpi, tps, gba, evaluation]
+doc_type: reference
 ---
-
 # 국가과제 KPI 목표 및 평가 기준
 
 ## 평가 기준 상세

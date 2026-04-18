@@ -1,9 +1,9 @@
 ---
-title: UI 레퍼런스
+title: "UI 레퍼런스"
 date: 2026-04-06
 tags: [design, reference, ui]
+doc_type: reference
 ---
-
 # UI 레퍼런스
 
 ## 현재 활성 레퍼런스

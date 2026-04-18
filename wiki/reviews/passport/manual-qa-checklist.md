@@ -1,3 +1,9 @@
+---
+title: "BATP 수동 QA 체크리스트"
+date: 2026-04-07
+tags: [passport, qa, checklist]
+doc_type: review
+---
 # BATP 수동 QA 체크리스트
 
 ## 1. 공통 진입

@@ -1,9 +1,9 @@
 ---
-title: MCP 세션 개요
+title: "MCP 세션 개요"
 date: 2026-04-06
 tags: [mcp, overview]
+doc_type: overview
 ---
-
 # MCP 모니터링 세션
 
 ## 담당 범위
