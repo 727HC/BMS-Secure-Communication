@@ -34,10 +34,16 @@ function request(url, options = {}) {
 }
 
 async function login() {
+  const userId = process.env.BENCH_USER;
+  const password = process.env.BENCH_PASSWORD;
+  const orgNum = parseInt(process.env.BENCH_ORG || '1', 10);
+  if (!userId || !password) {
+    throw new Error('BENCH_USER and BENCH_PASSWORD env vars must be set');
+  }
   const res = await request(`${FABRIC_BASE}/api/auth/login`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ userId: 'admin', password: 'REMOVED_SECRET_ROTATED_2026_04_18', orgNum: 1 }),
+    body: JSON.stringify({ userId, password, orgNum }),
   });
   return JSON.parse(res.data).token;
 }

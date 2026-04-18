@@ -59,7 +59,10 @@ func (c *PassportContract) IssueCredential(ctx contractapi.TransactionContextInt
 		return fmt.Errorf("passport %s does not exist", passportId)
 	}
 
-	now := txTimestamp(ctx)
+	now, tsErr := txTimestamp(ctx)
+	if tsErr != nil {
+		return fmt.Errorf("failed to get timestamp: %v", tsErr)
+	}
 
 	vc := VerifiableCredential{
 		DocType:      docTypeVC,
@@ -119,7 +122,10 @@ func (c *PassportContract) RevokeCredential(ctx contractapi.TransactionContextIn
 		return fmt.Errorf("access denied: only issuer (%s) or RegulatorMSP can revoke", vc.IssuerMSP)
 	}
 
-	now := txTimestamp(ctx)
+	now, tsErr := txTimestamp(ctx)
+	if tsErr != nil {
+		return fmt.Errorf("failed to get timestamp: %v", tsErr)
+	}
 	vc.Status = "REVOKED"
 	vc.RevokedAt = now
 	vc.RevocationReason = reason
@@ -169,7 +175,11 @@ func (c *PassportContract) VerifyCredentialStatus(ctx contractapi.TransactionCon
 
 	if vc.ExpiresAt != "" {
 		expiresAt, err := time.Parse(time.RFC3339, vc.ExpiresAt)
-		txNow, _ := time.Parse(time.RFC3339, txTimestamp(ctx))
+		tsStr, tsErr := txTimestamp(ctx)
+		if tsErr != nil {
+			return "", fmt.Errorf("failed to get timestamp: %v", tsErr)
+		}
+		txNow, _ := time.Parse(time.RFC3339, tsStr)
 		if err == nil && txNow.After(expiresAt) {
 			r, _ := json.Marshal(verifyResult{Valid: false, Reason: "expired"})
 			return string(r), nil
@@ -215,7 +225,10 @@ func (c *PassportContract) LogCredentialVerification(ctx contractapi.Transaction
 	}
 
 	result := strings.ToLower(resultStr) == "true"
-	now := txTimestamp(ctx)
+	now, tsErr := txTimestamp(ctx)
+	if tsErr != nil {
+		return fmt.Errorf("failed to get timestamp: %v", tsErr)
+	}
 
 	verification := CredentialVerification{
 		DocType:        docTypeVerification,
@@ -284,12 +297,19 @@ func (c *PassportContract) UpdateRegulatoryVerification(ctx contractapi.Transact
 		}
 	}
 
-	msp, _ := c.getClientMSP(ctx)
+	msp, mspErr := c.getClientMSP(ctx)
+	if mspErr != nil {
+		return fmt.Errorf("failed to get client MSP: %v", mspErr)
+	}
+	now, tsErr := txTimestamp(ctx)
+	if tsErr != nil {
+		return fmt.Errorf("failed to get timestamp: %v", tsErr)
+	}
 	passport.RegulatoryStatus = status
-	passport.RegulatoryVerifiedAt = txTimestamp(ctx)
+	passport.RegulatoryVerifiedAt = now
 	passport.RegulatoryVerifier = msp
 	passport.RegulatoryEvidenceIds = evidenceIds
-	passport.UpdatedAt = txTimestamp(ctx)
+	passport.UpdatedAt = now
 
 	updatedJSON, err := json.Marshal(passport)
 	if err != nil {
@@ -349,15 +369,22 @@ func (c *PassportContract) VerifyPhysicalHistory(ctx contractapi.TransactionCont
 		}
 	}
 
-	msp, _ := c.getClientMSP(ctx)
+	msp, mspErr := c.getClientMSP(ctx)
+	if mspErr != nil {
+		return fmt.Errorf("failed to get client MSP: %v", mspErr)
+	}
+	now, tsErr := txTimestamp(ctx)
+	if tsErr != nil {
+		return fmt.Errorf("failed to get timestamp: %v", tsErr)
+	}
 	passport.PhysicalVerification = &PhysicalVerification{
 		Status:      verifyStatus,
-		VerifiedAt:  txTimestamp(ctx),
+		VerifiedAt:  now,
 		VerifierMSP: msp,
 		Reason:      reason,
 		Signals:     signals,
 	}
-	passport.UpdatedAt = txTimestamp(ctx)
+	passport.UpdatedAt = now
 
 	updatedJSON, err := json.Marshal(passport)
 	if err != nil {
@@ -457,8 +484,14 @@ func (c *PassportContract) RequestCredentialIssuance(ctx contractapi.Transaction
 		return err
 	}
 
-	msp, _ := c.getClientMSP(ctx)
-	now := txTimestamp(ctx)
+	msp, mspErr := c.getClientMSP(ctx)
+	if mspErr != nil {
+		return fmt.Errorf("failed to get client MSP: %v", mspErr)
+	}
+	now, tsErr := txTimestamp(ctx)
+	if tsErr != nil {
+		return fmt.Errorf("failed to get timestamp: %v", tsErr)
+	}
 
 	request := CredentialRequest{
 		DocType:         docTypeCredRequest,
@@ -511,8 +544,12 @@ func (c *PassportContract) ApproveCredentialIssuance(ctx contractapi.Transaction
 		return fmt.Errorf("access denied: only %s or RegulatorMSP can approve this request", request.TargetIssuerMsp)
 	}
 
+	now, tsErr := txTimestamp(ctx)
+	if tsErr != nil {
+		return fmt.Errorf("failed to get timestamp: %v", tsErr)
+	}
 	request.Status = "APPROVED"
-	request.ApprovedAt = txTimestamp(ctx)
+	request.ApprovedAt = now
 	request.ApproverMsp = msp
 
 	updatedJSON, err := json.Marshal(request)
@@ -559,8 +596,12 @@ func (c *PassportContract) RejectCredentialIssuance(ctx contractapi.TransactionC
 		return fmt.Errorf("access denied: only %s or RegulatorMSP can reject this request", request.TargetIssuerMsp)
 	}
 
+	now, tsErr := txTimestamp(ctx)
+	if tsErr != nil {
+		return fmt.Errorf("failed to get timestamp: %v", tsErr)
+	}
 	request.Status = "REJECTED"
-	request.RejectedAt = txTimestamp(ctx)
+	request.RejectedAt = now
 	request.RejectedBy = msp
 	request.RejectionReason = reason
 

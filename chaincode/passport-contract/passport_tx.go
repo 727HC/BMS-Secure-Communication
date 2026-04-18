@@ -43,7 +43,10 @@ func (c *PassportContract) RegisterRawMaterial(ctx contractapi.TransactionContex
 		return fmt.Errorf("failed to get client MSP: %v", err)
 	}
 
-	now := txTimestamp(ctx)
+	now, tsErr := txTimestamp(ctx)
+	if tsErr != nil {
+		return fmt.Errorf("failed to get timestamp: %v", tsErr)
+	}
 
 	material := RawMaterial{
 		DocType:         docTypeRawMaterial,
@@ -137,7 +140,10 @@ func (c *PassportContract) CreateBatteryPassport(ctx contractapi.TransactionCont
 		return fmt.Errorf("failed to get client MSP: %v", err)
 	}
 
-	now := txTimestamp(ctx)
+	now, tsErr := txTimestamp(ctx)
+	if tsErr != nil {
+		return fmt.Errorf("failed to get timestamp: %v", tsErr)
+	}
 
 	passport := BatteryPassport{
 		DocType:                docTypePassport,
@@ -223,13 +229,17 @@ func (c *PassportContract) BindToVehicle(ctx contractapi.TransactionContextInter
 		return fmt.Errorf("failed to get client MSP: %v", err)
 	}
 
+	now, tsErr := txTimestamp(ctx)
+	if tsErr != nil {
+		return fmt.Errorf("failed to get timestamp: %v", tsErr)
+	}
 	passport.VIN = vin
 	passport.InstallDate = installDate
 	passport.EVManufacturer = evManufacturer
 	passport.EVAssemblyCountry = evAssemblyCountry
 	passport.EvBinderMSP = msp
 	passport.Status = "ACTIVE"
-	passport.UpdatedAt = txTimestamp(ctx)
+	passport.UpdatedAt = now
 
 	updatedJSON, err := json.Marshal(passport)
 	if err != nil {
@@ -268,16 +278,23 @@ func (c *PassportContract) RequestMaintenance(ctx contractapi.TransactionContext
 		return fmt.Errorf("passport status must be ACTIVE for maintenance request, current: %s", passport.Status)
 	}
 
-	msp, _ := c.getClientMSP(ctx)
+	msp, mspErr := c.getClientMSP(ctx)
+	if mspErr != nil {
+		return fmt.Errorf("failed to get client MSP: %v", mspErr)
+	}
+	now, tsErr := txTimestamp(ctx)
+	if tsErr != nil {
+		return fmt.Errorf("failed to get timestamp: %v", tsErr)
+	}
 	requestLog := MaintenanceLog{
-		Date:        txTimestamp(ctx),
+		Date:        now,
 		Type:        maintenanceType,
 		Description: description,
 		OrgMSP:      msp,
 	}
 	passport.MaintenanceLogs = append(passport.MaintenanceLogs, requestLog)
 	passport.Status = "MAINTENANCE"
-	passport.UpdatedAt = txTimestamp(ctx)
+	passport.UpdatedAt = now
 
 	updatedJSON, err := json.Marshal(passport)
 	if err != nil {
@@ -317,8 +334,12 @@ func (c *PassportContract) AddMaintenanceLog(ctx contractapi.TransactionContextI
 		return fmt.Errorf("failed to get client MSP: %v", err)
 	}
 
+	now, tsErr := txTimestamp(ctx)
+	if tsErr != nil {
+		return fmt.Errorf("failed to get timestamp: %v", tsErr)
+	}
 	log := MaintenanceLog{
-		Date:        txTimestamp(ctx),
+		Date:        now,
 		Type:        maintenanceType,
 		Description: description,
 		Technician:  technician,
@@ -331,7 +352,7 @@ func (c *PassportContract) AddMaintenanceLog(ctx contractapi.TransactionContextI
 
 	passport.MaintenanceLogs = append(passport.MaintenanceLogs, log)
 	passport.Status = "ACTIVE"
-	passport.UpdatedAt = txTimestamp(ctx)
+	passport.UpdatedAt = now
 
 	updatedJSON, err := json.Marshal(passport)
 	if err != nil {
@@ -371,8 +392,12 @@ func (c *PassportContract) AddAccidentLog(ctx contractapi.TransactionContextInte
 		return fmt.Errorf("failed to get client MSP: %v", err)
 	}
 
+	now, tsErr := txTimestamp(ctx)
+	if tsErr != nil {
+		return fmt.Errorf("failed to get timestamp: %v", tsErr)
+	}
 	accidentLog := AccidentLog{
-		Date:        txTimestamp(ctx),
+		Date:        now,
 		Severity:    severity,
 		Description: description,
 		Reporter:    reporter,
@@ -380,7 +405,7 @@ func (c *PassportContract) AddAccidentLog(ctx contractapi.TransactionContextInte
 	}
 
 	passport.AccidentLogs = append(passport.AccidentLogs, accidentLog)
-	passport.UpdatedAt = txTimestamp(ctx)
+	passport.UpdatedAt = now
 
 	updatedJSON, err := json.Marshal(passport)
 	if err != nil {
@@ -419,8 +444,12 @@ func (c *PassportContract) RequestAnalysis(ctx contractapi.TransactionContextInt
 		return fmt.Errorf("passport status must be ACTIVE or MAINTENANCE for analysis request, current: %s", passport.Status)
 	}
 
+	now, tsErr := txTimestamp(ctx)
+	if tsErr != nil {
+		return fmt.Errorf("failed to get timestamp: %v", tsErr)
+	}
 	passport.Status = "ANALYSIS"
-	passport.UpdatedAt = txTimestamp(ctx)
+	passport.UpdatedAt = now
 
 	updatedJSON, err := json.Marshal(passport)
 	if err != nil {
@@ -477,12 +506,16 @@ func (c *PassportContract) SubmitAnalysisResult(ctx contractapi.TransactionConte
 
 	recycleAvailableVal := strings.ToLower(recycleAvailable) == "true"
 
+	now, tsErr := txTimestamp(ctx)
+	if tsErr != nil {
+		return fmt.Errorf("failed to get timestamp: %v", tsErr)
+	}
 	passport.CurrentSOH = sohVal
 	passport.SOCE = soceVal
 	passport.RemainingLifeCycle = remainingLifeCycleVal
 	passport.RecycleAvailable = recycleAvailableVal
 	passport.Status = "ACTIVE"
-	passport.UpdatedAt = txTimestamp(ctx)
+	passport.UpdatedAt = now
 
 	updatedJSON, err := json.Marshal(passport)
 	if err != nil {
@@ -517,8 +550,12 @@ func (c *PassportContract) SetRecycleAvailability(ctx contractapi.TransactionCon
 		return fmt.Errorf("failed to unmarshal passport: %v", err)
 	}
 
+	now, tsErr := txTimestamp(ctx)
+	if tsErr != nil {
+		return fmt.Errorf("failed to get timestamp: %v", tsErr)
+	}
 	passport.RecycleAvailable = strings.ToLower(available) == "true"
-	passport.UpdatedAt = txTimestamp(ctx)
+	passport.UpdatedAt = now
 
 	updatedJSON, err := json.Marshal(passport)
 	if err != nil {
@@ -563,9 +600,13 @@ func (c *PassportContract) ExtractMaterials(ctx contractapi.TransactionContextIn
 		return fmt.Errorf("failed to unmarshal recycling rates: %v", err)
 	}
 
+	now, tsErr := txTimestamp(ctx)
+	if tsErr != nil {
+		return fmt.Errorf("failed to get timestamp: %v", tsErr)
+	}
 	passport.RecyclingRates = recyclingRates
 	passport.Status = "RECYCLING"
-	passport.UpdatedAt = txTimestamp(ctx)
+	passport.UpdatedAt = now
 
 	updatedJSON, err := json.Marshal(passport)
 	if err != nil {
@@ -607,8 +648,12 @@ func (c *PassportContract) DisposeBattery(ctx contractapi.TransactionContextInte
 		return fmt.Errorf("passport %s has not been activated yet", passportId)
 	}
 
+	now, tsErr := txTimestamp(ctx)
+	if tsErr != nil {
+		return fmt.Errorf("failed to get timestamp: %v", tsErr)
+	}
 	passport.Status = "DISPOSED"
-	passport.UpdatedAt = txTimestamp(ctx)
+	passport.UpdatedAt = now
 
 	updatedJSON, err := json.Marshal(passport)
 	if err != nil {
@@ -781,7 +826,10 @@ func (c *PassportContract) CorrectPassportData(ctx contractapi.TransactionContex
 		return fmt.Errorf("field '%s' is not correctable", fieldName)
 	}
 
-	now := txTimestamp(ctx)
+	now, tsErr := txTimestamp(ctx)
+	if tsErr != nil {
+		return fmt.Errorf("failed to get timestamp: %v", tsErr)
+	}
 
 	correction := CorrectionLog{
 		Date:          now,
@@ -863,7 +911,11 @@ func (c *PassportContract) LinkRawMaterials(ctx contractapi.TransactionContextIn
 		return fmt.Errorf("no new materials to link (all already linked or empty)")
 	}
 
-	passport.UpdatedAt = txTimestamp(ctx)
+	now, tsErr := txTimestamp(ctx)
+	if tsErr != nil {
+		return fmt.Errorf("failed to get timestamp: %v", tsErr)
+	}
+	passport.UpdatedAt = now
 
 	updatedJSON, err := json.Marshal(passport)
 	if err != nil {

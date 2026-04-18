@@ -10,13 +10,17 @@ import (
 )
 
 // txTimestamp returns the transaction timestamp as RFC3339 string.
-// Uses GetTxTimestamp() instead of time.Now() for deterministic endorsement across peers.
-func txTimestamp(ctx contractapi.TransactionContextInterface) string {
+// Uses GetTxTimestamp() for deterministic endorsement across peers.
+// Returns error instead of time.Now() fallback to prevent non-deterministic state.
+func txTimestamp(ctx contractapi.TransactionContextInterface) (string, error) {
 	ts, err := ctx.GetStub().GetTxTimestamp()
-	if err != nil || ts == nil {
-		return time.Now().UTC().Format(time.RFC3339)
+	if err != nil {
+		return "", fmt.Errorf("failed to get tx timestamp: %v", err)
 	}
-	return time.Unix(ts.Seconds, int64(ts.Nanos)).UTC().Format(time.RFC3339)
+	if ts == nil {
+		return "", fmt.Errorf("tx timestamp is nil")
+	}
+	return time.Unix(ts.Seconds, int64(ts.Nanos)).UTC().Format(time.RFC3339), nil
 }
 
 // sanitizeSelector escapes characters that could break CouchDB JSON selectors

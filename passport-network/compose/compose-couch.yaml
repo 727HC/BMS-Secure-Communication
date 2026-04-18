@@ -1,6 +1,10 @@
 # CouchDB for Battery Passport 4-org Network
 # LevelDB에서는 rich query(GetQueryResult)를 지원하지 않으므로
 # DID→passport 조회 등에 CouchDB가 필수
+#
+# 크레덴셜은 .env 또는 셸 환경변수로 주입해야 함:
+#   COUCHDB_USER, COUCHDB_PASSWORD
+# 포트는 호스트에 노출하지 않음 (peer 컨테이너에서만 접근)
 
 networks:
   passport:
@@ -14,10 +18,8 @@ services:
     labels:
       service: hyperledger-fabric
     environment:
-      - COUCHDB_USER=admin
-      - COUCHDB_PASSWORD=REMOVED_SECRET_ROTATED_2026_04_18
-    ports:
-      - "5984:5984"
+      - COUCHDB_USER=${COUCHDB_USER:?COUCHDB_USER must be set}
+      - COUCHDB_PASSWORD=${COUCHDB_PASSWORD:?COUCHDB_PASSWORD must be set}
     networks:
       - passport
 
@@ -25,8 +27,8 @@ services:
     environment:
       - CORE_LEDGER_STATE_STATEDATABASE=CouchDB
       - CORE_LEDGER_STATE_COUCHDBCONFIG_COUCHDBADDRESS=couchdb0:5984
-      - CORE_LEDGER_STATE_COUCHDBCONFIG_USERNAME=admin
-      - CORE_LEDGER_STATE_COUCHDBCONFIG_PASSWORD=REMOVED_SECRET_ROTATED_2026_04_18
+      - CORE_LEDGER_STATE_COUCHDBCONFIG_USERNAME=${COUCHDB_USER:?COUCHDB_USER must be set}
+      - CORE_LEDGER_STATE_COUCHDBCONFIG_PASSWORD=${COUCHDB_PASSWORD:?COUCHDB_PASSWORD must be set}
     depends_on:
       - couchdb0
 
@@ -36,10 +38,8 @@ services:
     labels:
       service: hyperledger-fabric
     environment:
-      - COUCHDB_USER=admin
-      - COUCHDB_PASSWORD=REMOVED_SECRET_ROTATED_2026_04_18
-    ports:
-      - "7984:5984"
+      - COUCHDB_USER=${COUCHDB_USER:?COUCHDB_USER must be set}
+      - COUCHDB_PASSWORD=${COUCHDB_PASSWORD:?COUCHDB_PASSWORD must be set}
     networks:
       - passport
 
@@ -47,8 +47,8 @@ services:
     environment:
       - CORE_LEDGER_STATE_STATEDATABASE=CouchDB
       - CORE_LEDGER_STATE_COUCHDBCONFIG_COUCHDBADDRESS=couchdb1:5984
-      - CORE_LEDGER_STATE_COUCHDBCONFIG_USERNAME=admin
-      - CORE_LEDGER_STATE_COUCHDBCONFIG_PASSWORD=REMOVED_SECRET_ROTATED_2026_04_18
+      - CORE_LEDGER_STATE_COUCHDBCONFIG_USERNAME=${COUCHDB_USER:?COUCHDB_USER must be set}
+      - CORE_LEDGER_STATE_COUCHDBCONFIG_PASSWORD=${COUCHDB_PASSWORD:?COUCHDB_PASSWORD must be set}
     depends_on:
       - couchdb1
 
@@ -58,10 +58,8 @@ services:
     labels:
       service: hyperledger-fabric
     environment:
-      - COUCHDB_USER=admin
-      - COUCHDB_PASSWORD=REMOVED_SECRET_ROTATED_2026_04_18
-    ports:
-      - "9984:5984"
+      - COUCHDB_USER=${COUCHDB_USER:?COUCHDB_USER must be set}
+      - COUCHDB_PASSWORD=${COUCHDB_PASSWORD:?COUCHDB_PASSWORD must be set}
     networks:
       - passport
 
@@ -69,8 +67,8 @@ services:
     environment:
       - CORE_LEDGER_STATE_STATEDATABASE=CouchDB
       - CORE_LEDGER_STATE_COUCHDBCONFIG_COUCHDBADDRESS=couchdb2:5984
-      - CORE_LEDGER_STATE_COUCHDBCONFIG_USERNAME=admin
-      - CORE_LEDGER_STATE_COUCHDBCONFIG_PASSWORD=REMOVED_SECRET_ROTATED_2026_04_18
+      - CORE_LEDGER_STATE_COUCHDBCONFIG_USERNAME=${COUCHDB_USER:?COUCHDB_USER must be set}
+      - CORE_LEDGER_STATE_COUCHDBCONFIG_PASSWORD=${COUCHDB_PASSWORD:?COUCHDB_PASSWORD must be set}
     depends_on:
       - couchdb2
 
@@ -80,10 +78,8 @@ services:
     labels:
       service: hyperledger-fabric
     environment:
-      - COUCHDB_USER=admin
-      - COUCHDB_PASSWORD=REMOVED_SECRET_ROTATED_2026_04_18
-    ports:
-      - "11984:5984"
+      - COUCHDB_USER=${COUCHDB_USER:?COUCHDB_USER must be set}
+      - COUCHDB_PASSWORD=${COUCHDB_PASSWORD:?COUCHDB_PASSWORD must be set}
     networks:
       - passport
 
@@ -91,7 +87,7 @@ services:
     environment:
       - CORE_LEDGER_STATE_STATEDATABASE=CouchDB
       - CORE_LEDGER_STATE_COUCHDBCONFIG_COUCHDBADDRESS=couchdb3:5984
-      - CORE_LEDGER_STATE_COUCHDBCONFIG_USERNAME=admin
-      - CORE_LEDGER_STATE_COUCHDBCONFIG_PASSWORD=REMOVED_SECRET_ROTATED_2026_04_18
+      - CORE_LEDGER_STATE_COUCHDBCONFIG_USERNAME=${COUCHDB_USER:?COUCHDB_USER must be set}
+      - CORE_LEDGER_STATE_COUCHDBCONFIG_PASSWORD=${COUCHDB_PASSWORD:?COUCHDB_PASSWORD must be set}
     depends_on:
       - couchdb3

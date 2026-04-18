@@ -16,6 +16,7 @@ require('dotenv').config();
 const express = require('express');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
+const crypto = require('crypto');
 const { MongoClient } = require('mongodb');
 const { connectGateway, startBlockListener } = require('./services/fabric-listener');
 
@@ -49,12 +50,21 @@ if (!API_KEY) {
 let db = null;
 let mongoClient = null;
 
+// H-6: timing-safe API key 비교 (timing attack 방지)
+function safeApiKeyMatch(provided, expected) {
+  if (typeof provided !== 'string' || typeof expected !== 'string') return false;
+  const a = Buffer.from(provided);
+  const b = Buffer.from(expected);
+  if (a.length !== b.length) return false;
+  return crypto.timingSafeEqual(a, b);
+}
+
 // API 인증 미들웨어
 function authMiddleware(req, res, next) {
   if (req.path === '/health') return next();
   if (API_KEY) {
     const token = req.headers['x-api-key'];
-    if (token !== API_KEY) {
+    if (!safeApiKeyMatch(token, API_KEY)) {
       return res.status(401).json({ error: 'unauthorized: invalid or missing API key' });
     }
   }
