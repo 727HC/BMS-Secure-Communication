@@ -71,7 +71,7 @@ func (c *PassportContract) QueryPassportsWithPagination(ctx contractapi.Transact
 	}
 	defer resultsIterator.Close()
 
-	var records []*BatteryPassport
+	records := []*BatteryPassport{}
 	for resultsIterator.HasNext() {
 		queryResponse, err := resultsIterator.Next()
 		if err != nil {
@@ -196,7 +196,7 @@ func (c *PassportContract) QueryBMURecordsByPassport(ctx contractapi.Transaction
 	}
 	defer resultsIterator.Close()
 
-	var records []*BMURecord
+	records := []*BMURecord{}
 	for resultsIterator.HasNext() {
 		queryResponse, err := resultsIterator.Next()
 		if err != nil {
@@ -325,7 +325,7 @@ func (c *PassportContract) QueryRawMaterialsWithPagination(ctx contractapi.Trans
 	}
 	defer resultsIterator.Close()
 
-	var materials []*RawMaterial
+	materials := []*RawMaterial{}
 	for resultsIterator.HasNext() {
 		queryResponse, err := resultsIterator.Next()
 		if err != nil {
@@ -393,7 +393,7 @@ func (c *PassportContract) QueryCredentialsByPassport(ctx contractapi.Transactio
 	}
 	defer resultsIterator.Close()
 
-	var records []*VerifiableCredential
+	records := []*VerifiableCredential{}
 	for resultsIterator.HasNext() {
 		queryResponse, err := resultsIterator.Next()
 		if err != nil {
@@ -446,7 +446,7 @@ func (c *PassportContract) QueryCredentialsByHolder(ctx contractapi.TransactionC
 	}
 	defer resultsIterator.Close()
 
-	var records []*VerifiableCredential
+	records := []*VerifiableCredential{}
 	for resultsIterator.HasNext() {
 		queryResponse, err := resultsIterator.Next()
 		if err != nil {
@@ -518,7 +518,7 @@ func (c *PassportContract) QueryCredentialsByType(ctx contractapi.TransactionCon
 	}
 	defer resultsIterator.Close()
 
-	var records []*VerifiableCredential
+	records := []*VerifiableCredential{}
 	for resultsIterator.HasNext() {
 		queryResponse, err := resultsIterator.Next()
 		if err != nil {
@@ -565,7 +565,7 @@ func (c *PassportContract) QueryRevokedCredentials(ctx contractapi.TransactionCo
 	}
 	defer resultsIterator.Close()
 
-	var records []*VerifiableCredential
+	records := []*VerifiableCredential{}
 	for resultsIterator.HasNext() {
 		queryResponse, err := resultsIterator.Next()
 		if err != nil {
@@ -663,7 +663,7 @@ func (c *PassportContract) QueryVerificationsByCredential(ctx contractapi.Transa
 	}
 	defer resultsIterator.Close()
 
-	var records []*CredentialVerification
+	records := []*CredentialVerification{}
 	for resultsIterator.HasNext() {
 		queryResponse, err := resultsIterator.Next()
 		if err != nil {
@@ -723,7 +723,7 @@ func (c *PassportContract) QueryVerificationsByVerifier(ctx contractapi.Transact
 	}
 	defer resultsIterator.Close()
 
-	var records []*CredentialVerification
+	records := []*CredentialVerification{}
 	for resultsIterator.HasNext() {
 		queryResponse, err := resultsIterator.Next()
 		if err != nil {
