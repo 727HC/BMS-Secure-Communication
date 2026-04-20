@@ -41,7 +41,9 @@ doc_type: index
 
 ## 5. archive / 상세 로그
 - [[passport/_archive/README|Passport archive 허브]]
+- [[passport/activity-log/README|Passport 날짜별 활동 로그 허브]]
 - [[passport/_archive/activity-log-codex|Codex 상세 로그 인덱스]]
+- [[passport/_archive/activity-log-codex-files/README|Codex 날짜별 로그 허브]]
 
 ## 6. 참고 자료
 - [[Object/README|참고 자료 안내]]

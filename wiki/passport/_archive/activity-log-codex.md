@@ -11,6 +11,9 @@ doc_type: index
 > 공통 타임라인은 `activity-log.md`를 함께 참고한다.
 > 이 트랙은 Codex 전용 상세 로그로 유지하며, 공통 로그에 억지로 병합하지 않는다.
 
+## 하위 허브
+- [[passport/_archive/activity-log-codex-files/README|Codex 날짜별 로그 허브]]
+
 ## 날짜별 기록
 - [[passport/_archive/activity-log-codex-files/2026-04-09|2026-04-09]]
 - [[passport/_archive/activity-log-codex-files/2026-04-07|2026-04-07]]

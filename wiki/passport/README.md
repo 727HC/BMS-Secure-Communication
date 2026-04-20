@@ -17,6 +17,7 @@ doc_type: index
 
 ## 운영 기록
 - [[passport/activity-log|활동 로그 인덱스]]
+- [[passport/activity-log/README|날짜별 활동 로그 허브]]
 - [[passport/_archive/README|archive 허브]]
 - [[passport/_archive/activity-log-codex|Codex 상세 로그 인덱스]]
 - [[reviews/passport/README|Passport review 허브]]

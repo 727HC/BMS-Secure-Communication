@@ -11,6 +11,9 @@ doc_type: index
 > 협업 세션이면 `작업 주체`를 반드시 남긴다.
 > Codex/OpenCode 상세 로그는 archive 트랙에 별도로 유지한다.
 
+## 하위 허브
+- [[passport/activity-log/README|날짜별 활동 로그 허브]]
+
 ## 날짜별 기록
 - [[passport/activity-log/2026-04-20|2026-04-20]]
 - [[passport/activity-log/2026-04-18|2026-04-18]]
