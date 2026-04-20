@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Html5Qrcode } from 'html5-qrcode';
 import { api } from '../lib/api';
 import { getStatusBadge, STATUS_LABELS } from '../lib/helpers';
 import Spinner from '../components/ui/Spinner';
@@ -20,6 +19,11 @@ interface Passport {
 
 const NFC_SUPPORTED = typeof window !== 'undefined' && 'NDEFReader' in window;
 
+type QrScannerInstance = {
+  stop: () => Promise<unknown>;
+  clear: () => void;
+};
+
 export default function QrScanPage() {
   const navigate = useNavigate();
   const [scanning, setScanning] = useState(false);
@@ -28,7 +32,15 @@ export default function QrScanPage() {
   const [loadingPassport, setLoadingPassport] = useState(false);
   const [manualId, setManualId] = useState('');
   const [nfcScanning, setNfcScanning] = useState(false);
-  const scannerRef = useRef<Html5Qrcode | null>(null);
+  const scannerRef = useRef<QrScannerInstance | null>(null);
+  const scannerModuleRef = useRef<Promise<typeof import('html5-qrcode')> | null>(null);
+
+  const loadScannerModule = () => {
+    if (!scannerModuleRef.current) {
+      scannerModuleRef.current = import('html5-qrcode');
+    }
+    return scannerModuleRef.current;
+  };
 
   const lookupPassport = async (passportId: string) => {
     const id = passportId.trim();
@@ -66,9 +78,9 @@ export default function QrScanPage() {
     setScanning(true);
     setScanResult(null);
     setPassportData(null);
-    // Wait for DOM element
     requestAnimationFrame(async () => {
       try {
+        const { Html5Qrcode } = await loadScannerModule();
         const html5QrCode = new Html5Qrcode('qr-reader');
         scannerRef.current = html5QrCode;
         await html5QrCode.start(
@@ -177,16 +189,21 @@ export default function QrScanPage() {
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 16 }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          {/* Camera Scanner */}
           <div className="sn-panel" style={{ overflow: 'hidden' }}>
             <div style={{ padding: '14px 20px', borderBottom: '1px solid rgba(0,0,0,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <span style={{ fontSize: '0.875rem', fontWeight: 600, color: '#171717' }}>카메라 스캔</span>
+              <span style={{ fontSize: '0.875rem', fontWeight: 600, color: '#171717' }}>카메라 스캔</span>
               {!scanning ? (
-                  <button onClick={startScan} className="sn-btn sn-btn-accent" style={{ fontSize: '0.875rem', padding: '6px 12px' }}>
+                <button
+                  onClick={startScan}
+                  onMouseEnter={loadScannerModule}
+                  onFocus={loadScannerModule}
+                  className="sn-btn sn-btn-accent"
+                  style={{ fontSize: '0.875rem', padding: '6px 12px' }}
+                >
                   카메라 열기
                 </button>
               ) : (
-                  <button onClick={stopScan} className="sn-btn sn-btn-danger" style={{ fontSize: '0.875rem', padding: '6px 12px' }}>
+                <button onClick={stopScan} className="sn-btn sn-btn-danger" style={{ fontSize: '0.875rem', padding: '6px 12px' }}>
                   카메라 닫기
                 </button>
               )}
@@ -218,7 +235,6 @@ export default function QrScanPage() {
             </div>
           </div>
 
-          {/* NFC Scanner */}
           <div className="sn-panel" style={{ overflow: 'hidden' }}>
             <div style={{ padding: '14px 20px', borderBottom: '1px solid rgba(0,0,0,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -254,7 +270,6 @@ export default function QrScanPage() {
             </div>
           </div>
 
-          {/* Manual Input */}
           <div className="sn-panel" style={{ padding: '12px 16px' }}>
             <h2 style={{ fontSize: '0.875rem', fontWeight: 600, color: '#171717', margin: '0 0 12px' }}>수동 입력</h2>
             <div style={{ display: 'flex', gap: 8 }}>
@@ -283,7 +298,6 @@ export default function QrScanPage() {
           </div>
         </div>
 
-        {/* RESULT AREA */}
         <div>
           {loadingPassport ? (
             <Spinner />
@@ -333,7 +347,7 @@ export default function QrScanPage() {
                 {passportData.did && (
                   <div style={{ background: '#f0fdf4', boxShadow: 'inset 0 0 0 1px rgba(22,163,74,0.2)', borderRadius: 8, padding: '10px 12px' }}>
                     <p className="sn-eyebrow" style={{ color: '#16a34a', margin: 0 }}>DID</p>
-                <p style={{ fontFamily: 'var(--font-mono)', fontSize: '0.8125rem', color: '#16a34a', margin: '4px 0 0', wordBreak: 'break-all' }}>
+                    <p style={{ fontFamily: 'var(--font-mono)', fontSize: '0.8125rem', color: '#16a34a', margin: '4px 0 0', wordBreak: 'break-all' }}>
                       {passportData.did}
                     </p>
                   </div>
