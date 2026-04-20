@@ -21,13 +21,19 @@ import type { PhysicalVerificationFormData } from '../components/modals/passport
 
 type Tab = 'identity' | 'compliance' | 'traceability' | 'data' | 'trust';
 
-const TABS: { key: Tab; label: string }[] = [
-  { key: 'identity', label: '개요' },
-  { key: 'compliance', label: '규제·소재' },
-  { key: 'traceability', label: '운영 이력' },
-  { key: 'data', label: '진단 데이터' },
-  { key: 'trust', label: '증빙' },
+const TABS: { key: Tab; label: string; year: 1 | 2 | 3 }[] = [
+  { key: 'identity', label: '개요', year: 1 },
+  { key: 'compliance', label: '규제·소재', year: 3 },
+  { key: 'traceability', label: '운영 이력', year: 3 },
+  { key: 'data', label: '진단 데이터', year: 3 },
+  { key: 'trust', label: '증빙', year: 2 },
 ];
+
+const YEAR_BADGE: Record<1 | 2 | 3, { label: string; color: string }> = {
+  1: { label: 'Y01', color: 'var(--color-accent)' },
+  2: { label: 'Y02', color: 'var(--color-warning)' },
+  3: { label: 'Y03', color: 'var(--color-success)' },
+};
 
 type ModalKey = 'bind' | 'mRequest' | 'mLog' | 'aRequest' | 'aResult' | 'dispose' | 'correct' | 'vcIssue' | 'vcVerify' | 'vcRevoke' | 'vcRequest' | 'vcApprove' | 'vcReject' | 'regVerify' | 'physicalVerify' | null;
 
@@ -453,15 +459,33 @@ export default function PassportDetailPage() {
 
       <div className="sn-detail-index">
         <div className="sn-detail-index-track">
-          {TABS.map((t) => (
-            <button
-              key={t.key}
-              onClick={() => setActiveTab(t.key)}
-              className={`sn-detail-index-tab${activeTab === t.key ? ' active' : ''}`}
-            >
-              {t.label}
-            </button>
-          ))}
+          {TABS.map((t) => {
+            const meta = YEAR_BADGE[t.year];
+            return (
+              <button
+                key={t.key}
+                onClick={() => setActiveTab(t.key)}
+                className={`sn-detail-index-tab${activeTab === t.key ? ' active' : ''}`}
+                style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}
+              >
+                <span
+                  style={{
+                    fontFamily: 'var(--font-mono)',
+                    fontSize: 10,
+                    fontWeight: 700,
+                    padding: '2px 6px',
+                    borderRadius: 4,
+                    background: 'var(--color-surface-alt)',
+                    color: meta.color,
+                    letterSpacing: '0.05em',
+                  }}
+                >
+                  {meta.label}
+                </span>
+                {t.label}
+              </button>
+            );
+          })}
         </div>
       </div>
 
