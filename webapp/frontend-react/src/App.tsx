@@ -1,65 +1,51 @@
+import { lazy, Suspense } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import Layout from './components/layout/Layout';
 import RequireAuth from './components/layout/RequireAuth';
-import LandingPage from './pages/LandingPage';
-import LoginPage from './pages/LoginPage';
-import DashboardPage from './pages/DashboardPage';
-import PassportsPage from './pages/PassportsPage';
-import PassportDetailPage from './pages/PassportDetailPage';
-import MaterialsPage from './pages/MaterialsPage';
-import BmuDataPage from './pages/BmuDataPage';
-import MaintenancePage from './pages/MaintenancePage';
-import RecyclingPage from './pages/RecyclingPage';
-import QrScanPage from './pages/QrScanPage';
-import AuditLogPage from './pages/AuditLogPage';
+import Spinner from './components/ui/Spinner';
+
+const LandingPage = lazy(() => import('./pages/LandingPage'));
+const LoginPage = lazy(() => import('./pages/LoginPage'));
+const DashboardPage = lazy(() => import('./pages/DashboardPage'));
+const PassportsPage = lazy(() => import('./pages/PassportsPage'));
+const PassportDetailPage = lazy(() => import('./pages/PassportDetailPage'));
+const MaterialsPage = lazy(() => import('./pages/MaterialsPage'));
+const BmuDataPage = lazy(() => import('./pages/BmuDataPage'));
+const MaintenancePage = lazy(() => import('./pages/MaintenancePage'));
+const RecyclingPage = lazy(() => import('./pages/RecyclingPage'));
+const QrScanPage = lazy(() => import('./pages/QrScanPage'));
+const AuditLogPage = lazy(() => import('./pages/AuditLogPage'));
+
+function ProtectedPage({ children }: { children: React.ReactNode }) {
+  return (
+    <RequireAuth>
+      <Layout>{children}</Layout>
+    </RequireAuth>
+  );
+}
 
 export default function App() {
   return (
     <AuthProvider>
-      <Routes>
-        <Route path="/" element={<LandingPage />} />
-        <Route path="/login" element={<LoginPage />} />
+      <Suspense fallback={<Spinner minHeight="52vh" />}>
+        <Routes>
+          <Route path="/" element={<LandingPage />} />
+          <Route path="/login" element={<LoginPage />} />
 
-        <Route
-          path="/dashboard"
-          element={<RequireAuth><Layout><DashboardPage /></Layout></RequireAuth>}
-        />
-        <Route
-          path="/passports"
-          element={<RequireAuth><Layout><PassportsPage /></Layout></RequireAuth>}
-        />
-        <Route
-          path="/passports/:id"
-          element={<RequireAuth><Layout><PassportDetailPage /></Layout></RequireAuth>}
-        />
-        <Route
-          path="/materials"
-          element={<RequireAuth><Layout><MaterialsPage /></Layout></RequireAuth>}
-        />
-        <Route
-          path="/bmu-data"
-          element={<RequireAuth><Layout><BmuDataPage /></Layout></RequireAuth>}
-        />
-        <Route
-          path="/maintenance"
-          element={<RequireAuth><Layout><MaintenancePage /></Layout></RequireAuth>}
-        />
-        <Route
-          path="/recycling"
-          element={<RequireAuth><Layout><RecyclingPage /></Layout></RequireAuth>}
-        />
-        <Route
-          path="/qr-scan"
-          element={<RequireAuth><Layout><QrScanPage /></Layout></RequireAuth>}
-        />
-        <Route
-          path="/audit-log"
-          element={<RequireAuth><Layout><AuditLogPage /></Layout></RequireAuth>}
-        />
+          <Route path="/dashboard" element={<ProtectedPage><DashboardPage /></ProtectedPage>} />
+          <Route path="/passports" element={<ProtectedPage><PassportsPage /></ProtectedPage>} />
+          <Route path="/passports/:id" element={<ProtectedPage><PassportDetailPage /></ProtectedPage>} />
+          <Route path="/materials" element={<ProtectedPage><MaterialsPage /></ProtectedPage>} />
+          <Route path="/bmu-data" element={<ProtectedPage><BmuDataPage /></ProtectedPage>} />
+          <Route path="/maintenance" element={<ProtectedPage><MaintenancePage /></ProtectedPage>} />
+          <Route path="/recycling" element={<ProtectedPage><RecyclingPage /></ProtectedPage>} />
+          <Route path="/qr-scan" element={<ProtectedPage><QrScanPage /></ProtectedPage>} />
+          <Route path="/audit-log" element={<ProtectedPage><AuditLogPage /></ProtectedPage>} />
 
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </Suspense>
     </AuthProvider>
   );
 }
