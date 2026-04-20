@@ -49,6 +49,7 @@ status: current
 
 ## 6. 참고 자료
 - [[Object/README|참고 자료 안내]]
+- [[common/claude-design-prompt-reference|Claude 디자인 프롬프트 참조]]
 - [[passport/assets/README|Passport UI asset 허브]]
 - [[blockchain/assets/README|Blockchain KPI asset 허브]]
 
