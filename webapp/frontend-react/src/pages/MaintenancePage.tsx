@@ -178,7 +178,7 @@ export default function MaintenancePage() {
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
       <div className="sn-page-head">
         <div className="sn-page-head-main">
-          <p className="sn-eyebrow" style={{ margin: '0 0 0.35rem', color: '#a16207' }}>정비 관리</p>
+          <p className="sn-eyebrow" style={{ margin: '0 0 0.35rem', color: 'var(--color-warning)' }}>정비 관리</p>
           <h1 className="sn-page-title">정비 관리</h1>
           <p className="sn-page-subtitle">정비 요청, 현장 처리, 사고 기록을 한 화면에서 관리합니다.</p>
         </div>
@@ -204,13 +204,13 @@ export default function MaintenancePage() {
           <p className="sn-stat-note">확인할 항목</p>
         </div>
         <div>
-          <p className="sn-eyebrow sn-stat-card-title" style={{ color: '#d97706' }}>정비·분석</p>
-          <p className="sn-stat-count" style={{ color: '#d97706' }}>{tabCounts.maintenance}</p>
+          <p className="sn-eyebrow sn-stat-card-title" style={{ color: 'var(--color-warning)' }}>정비·분석</p>
+          <p className="sn-stat-count" style={{ color: 'var(--color-warning)' }}>{tabCounts.maintenance}</p>
           <p className="sn-stat-note">현재 확인 대상</p>
         </div>
         <div>
-          <p className="sn-eyebrow sn-stat-card-title" style={{ color: '#dc2626' }}>사고기록</p>
-          <p className="sn-stat-count" style={{ color: '#dc2626' }}>{tabCounts.accident}</p>
+          <p className="sn-eyebrow sn-stat-card-title" style={{ color: 'var(--color-danger)' }}>사고기록</p>
+          <p className="sn-stat-count" style={{ color: 'var(--color-danger)' }}>{tabCounts.accident}</p>
           <p className="sn-stat-note">사고 기록</p>
         </div>
       </div>
@@ -224,8 +224,8 @@ export default function MaintenancePage() {
               onClick={() => setActiveTab(tab.key)}
               className="sn-filter-tab"
               style={{
-                color: active ? '#171717' : '#a3a3a3',
-                borderBottomColor: active ? '#171717' : 'transparent',
+                color: active ? 'var(--color-text-1)' : 'var(--color-text-3)',
+                borderBottomColor: active ? 'var(--color-text-1)' : 'transparent',
               }}
             >
               {tab.label}
@@ -265,24 +265,24 @@ export default function MaintenancePage() {
                     style={{ cursor: 'pointer' }}
                   >
                     <td>
-                    <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: '0.8125rem', color: '#525252' }}>
+                      <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: '0.8125rem', color: 'var(--color-text-2)' }}>
                         {p.passportId}
                       </span>
                     </td>
                     <td>{p.model || '-'}</td>
-                    <td style={{ color: '#a3a3a3' }}>{p.manufacturerName || '-'}</td>
+                    <td style={{ color: 'var(--color-text-3)' }}>{p.manufacturerName || '-'}</td>
                     <td>
-                    <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: '0.8125rem', color: '#a3a3a3' }}>
+                      <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: '0.8125rem', color: 'var(--color-text-3)' }}>
                         {p.vin || '미바인딩'}
                       </span>
                     </td>
                     <td>
                       <span className={`bp-stamp ${badge.bg} ${badge.text} ${badge.border}`}>{badge.label}</span>
                     </td>
-                    <td style={{ fontSize: '0.8125rem', color: '#525252' }}>
+                    <td style={{ fontSize: '0.8125rem', color: 'var(--color-text-2)' }}>
                       {mCount > 0 && <span>정비 {mCount}건 </span>}
-                      {aCount > 0 && <span style={{ color: '#dc2626' }}>사고 {aCount}건</span>}
-                      {mCount === 0 && aCount === 0 && <span style={{ color: '#a3a3a3' }}>-</span>}
+                      {aCount > 0 && <span style={{ color: 'var(--color-danger)' }}>사고 {aCount}건</span>}
+                      {mCount === 0 && aCount === 0 && <span style={{ color: 'var(--color-text-3)' }}>-</span>}
                     </td>
                     <td style={{ textAlign: 'right' }}>
                       <div style={{ display: 'inline-flex', gap: 6 }} onClick={(e) => e.stopPropagation()}>
@@ -299,7 +299,7 @@ export default function MaintenancePage() {
                         {canLogAccident && (
                           <button
                             onClick={() => openAccident(p)}
-                    style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '6px 10px', fontSize: 13, fontWeight: 700, background: '#fef2f2', color: '#dc2626', border: 'none', borderRadius: 8, cursor: 'pointer' }}
+                        style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '6px 10px', fontSize: 13, fontWeight: 700, background: 'var(--color-danger-soft)', color: 'var(--color-danger)', border: 'none', borderRadius: 8, cursor: 'pointer' }}
                           >
                             사고
                           </button>

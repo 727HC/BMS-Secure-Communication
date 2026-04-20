@@ -148,7 +148,7 @@ export default function AuditLogPage() {
       {/* HEADER */}
       <div className="sn-page-head">
         <div className="sn-page-head-main">
-          <p className="sn-eyebrow" style={{ margin: '0 0 0.35rem', color: '#4338ca' }}>감사 기록</p>
+          <p className="sn-eyebrow" style={{ margin: '0 0 0.35rem', color: 'var(--color-accent)' }}>감사 기록</p>
           <h1 className="sn-page-title">감사 기록</h1>
           <p className="sn-page-subtitle">총 {total}건의 작업 기록을 시간순으로 확인합니다.</p>
         </div>
@@ -161,10 +161,10 @@ export default function AuditLogPage() {
                 onChange={(e) => setAutoRefresh(e.target.checked)}
                 style={{ position: 'absolute', opacity: 0, width: 0, height: 0 }}
               />
-              <div style={{ width: 36, height: 20, borderRadius: 10, background: autoRefresh ? '#171717' : '#e5e5e5', transition: 'background 0.2s' }} />
-              <div style={{ position: 'absolute', top: 2, left: autoRefresh ? 18 : 2, width: 16, height: 16, borderRadius: '50%', background: '#fff', boxShadow: '0 1px 3px rgba(0,0,0,0.2)', transition: 'left 0.2s' }} />
+              <div style={{ width: 36, height: 20, borderRadius: 10, background: autoRefresh ? 'var(--color-primary)' : 'var(--color-border)', transition: 'background 0.2s' }} />
+              <div style={{ position: 'absolute', top: 2, left: autoRefresh ? 18 : 2, width: 16, height: 16, borderRadius: '50%', background: 'var(--color-surface)', boxShadow: 'var(--shadow-card)', transition: 'left 0.2s' }} />
             </div>
-            <span style={{ fontSize: '0.8125rem', fontWeight: 500, color: '#525252' }}>실시간</span>
+            <span style={{ fontSize: '0.8125rem', fontWeight: 500, color: 'var(--color-text-2)' }}>실시간</span>
           </label>
           <button onClick={fetchLogs} className="sn-btn sn-btn-ghost" style={{ fontSize: '0.8125rem' }}>
             <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
@@ -213,9 +213,9 @@ export default function AuditLogPage() {
             onChange={(e) => setFilterWriteOnly(e.target.checked)}
             style={{ width: 16, height: 16, accentColor: '#171717', borderRadius: 4 }}
           />
-          <span style={{ fontSize: '0.875rem', color: '#525252' }}>쓰기 작업만</span>
+          <span style={{ fontSize: '0.875rem', color: 'var(--color-text-2)' }}>쓰기 작업만</span>
         </label>
-          <span style={{ marginLeft: 'auto', fontFamily: "'JetBrains Mono',monospace", fontSize: '0.8125rem', color: '#a3a3a3' }}>
+          <span style={{ marginLeft: 'auto', fontFamily: "'JetBrains Mono',monospace", fontSize: '0.8125rem', color: 'var(--color-text-3)' }}>
           총 {total}건
         </span>
       </div>
@@ -224,7 +224,7 @@ export default function AuditLogPage() {
         <div className="sn-panel" style={{ padding: '10px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div>
             <p className="sn-eyebrow" style={{ margin: '0 0 4px' }}>활성 필터</p>
-            <p style={{ margin: 0, fontSize: '0.9rem', fontWeight: 700, color: '#171717' }}>{activeActionLabel}</p>
+            <p style={{ margin: 0, fontSize: '0.9rem', fontWeight: 700, color: 'var(--color-text-1)' }}>{activeActionLabel}</p>
           </div>
           <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: '0.8125rem', color: '#6b7280' }}>{total}건</span>
         </div>
