@@ -40,7 +40,7 @@
 .sn-filter-tabs {
   display: flex;
   gap: 4px;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  border-bottom: 1px solid var(--color-border);
 }
 .sn-filter-tab {
   display: inline-flex;
@@ -61,7 +61,7 @@
   font-family: 'JetBrains Mono', monospace;
   padding: 1px 7px;
   border-radius: 12px;
-  background: #f5f5f5;
+  background: var(--color-surface-alt);
 }
 .sn-empty-dashed {
   padding: 3rem;
