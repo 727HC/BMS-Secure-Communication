@@ -1,7 +1,0 @@
-{
-  "tool_name": "Bash",
-  "tool_input_preview": "{\"command\":\"node initial-sync.js 2>&1\",\"timeout\":120000,\"description\":\"Run initial sync from Fabric to MongoDB\"}",
-  "error": "Exit code 1\n[sync] MongoDB connected\n[sync] Fabric connected\n[sync] Syncing passports...\n[sync] passports: 100 synced (bookmark: more)\n[sync] passports: 200 synced (bookmark: more)\n[sync] passports: 300 synced (bookmark: more)\n[sync] passports: 400 synced (bookmark: more)\n[sync] passports: 500 synced (bookmark: more)\n[sync] passports: 600 synced (bookmark: more)\n[sync] passports: 700 synced (bookmark: more)\n[sync] passports: 800 synced (bookmark: more)\n[sync] passports: 862 synced (bookmark: mor...",
-  "timestamp": "2026-04-13T09:33:34.094Z",
-  "retry_count": 2
-}
