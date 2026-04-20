@@ -29,6 +29,7 @@ xEV BMS 보안 플랫폼용 공용 Obsidian vault다.
 | 결정 기록 | `decisions/` | ADR, 세션 간 공통 결정 |
 | 도메인 노트 | `passport/`, `blockchain/`, `embedded/`, `mcp/` | 세션/기능별 상세 맥락 |
 | 작업 운영 | `handoffs/`, `reviews/` | handoff, QA, review 기준, 실행 패킷 |
+| 세부 보관 | `passport/_archive/` | 공통 로그에 바로 올리지 않는 상세 시행착오 / Codex 기록 |
 | 참고 자료 | `Object/` | PDF, 외부 기준 문서, 원본 자료 |
 
 > `Object/`는 기존 Obsidian 링크 호환성을 위해 이름을 유지한다.
@@ -66,7 +67,11 @@ xEV BMS 보안 플랫폼용 공용 Obsidian vault다.
 
 ### 운영 문서
 - [[handoffs/README|handoff 작성 위치]]
+- [[handoffs/passport/README|Passport handoff 허브]]
+- [[handoffs/blockchain/README|Blockchain handoff 허브]]
 - [[reviews/README|review / QA 문서 위치]]
+- [[reviews/passport/README|Passport review 허브]]
+- [[reviews/blockchain/README|Blockchain review 허브]]
 
 ## 정리 원칙
 
