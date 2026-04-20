@@ -199,7 +199,7 @@ export default function RecyclingPage() {
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
       <div className="sn-page-head">
         <div className="sn-page-head-main">
-          <p className="sn-eyebrow" style={{ margin: '0 0 0.35rem', color: '#0f766e' }}>재활용 처리</p>
+          <p className="sn-eyebrow" style={{ margin: '0 0 0.35rem', color: 'var(--color-accent)' }}>재활용 처리</p>
           <h1 className="sn-page-title">재활용 처리</h1>
           <p className="sn-page-subtitle">분석 요청부터 추출·폐기까지 단계별로 관리합니다.</p>
         </div>
@@ -220,13 +220,13 @@ export default function RecyclingPage() {
           <p className="sn-stat-note">재활용 관련</p>
         </div>
         <div>
-          <p className="sn-eyebrow sn-stat-card-title" style={{ color: '#0891b2' }}>재활용중</p>
-          <p className="sn-stat-count" style={{ color: '#0891b2' }}>{tabCounts.recycling}</p>
+          <p className="sn-eyebrow sn-stat-card-title" style={{ color: 'var(--color-accent)' }}>재활용중</p>
+          <p className="sn-stat-count" style={{ color: 'var(--color-accent)' }}>{tabCounts.recycling}</p>
           <p className="sn-stat-note">현재 처리 중</p>
         </div>
         <div>
-          <p className="sn-eyebrow sn-stat-card-title" style={{ color: '#6b7280' }}>폐기</p>
-          <p className="sn-stat-count" style={{ color: '#6b7280' }}>{tabCounts.disposed}</p>
+          <p className="sn-eyebrow sn-stat-card-title" style={{ color: 'var(--color-text-2)' }}>폐기</p>
+          <p className="sn-stat-count" style={{ color: 'var(--color-text-2)' }}>{tabCounts.disposed}</p>
           <p className="sn-stat-note">누적</p>
         </div>
       </div>
@@ -240,8 +240,8 @@ export default function RecyclingPage() {
               onClick={() => setActiveTab(tab.key)}
               className="sn-filter-tab"
               style={{
-                color: active ? '#171717' : '#a3a3a3',
-                borderBottomColor: active ? '#171717' : 'transparent',
+                color: active ? 'var(--color-text-1)' : 'var(--color-text-3)',
+                borderBottomColor: active ? 'var(--color-text-1)' : 'transparent',
               }}
             >
               {tab.label}
@@ -279,7 +279,7 @@ export default function RecyclingPage() {
                     style={{ cursor: 'pointer' }}
                   >
                     <td>
-                      <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: '0.8125rem', color: '#525252' }}>
+                      <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: '0.8125rem', color: 'var(--color-text-2)' }}>
                         {p.passportId}
                       </span>
                     </td>
@@ -294,7 +294,7 @@ export default function RecyclingPage() {
                       {p.recycleAvailable ? (
                         <span className="bp-stamp bp-status-recycling">가능</span>
                       ) : (
-                        <span style={{ fontSize: '0.8125rem', color: '#a3a3a3' }}>미판정</span>
+                          <span style={{ fontSize: '0.8125rem', color: 'var(--color-text-3)' }}>미판정</span>
                       )}
                     </td>
                     <td style={{ textAlign: 'right' }}>
@@ -314,7 +314,7 @@ export default function RecyclingPage() {
                         {canDispose && p.status !== 'DISPOSED' && (
                           <button
                             onClick={() => openDispose(p)}
-                            style={{ display: 'inline-flex', padding: '6px 10px', fontSize: 13, fontWeight: 700, background: '#fef2f2', color: '#dc2626', border: 'none', borderRadius: 8, cursor: 'pointer' }}
+                            style={{ display: 'inline-flex', padding: '6px 10px', fontSize: 13, fontWeight: 700, background: 'var(--color-danger-soft)', color: 'var(--color-danger)', border: 'none', borderRadius: 8, cursor: 'pointer' }}
                           >
                             폐기
                           </button>
@@ -361,7 +361,7 @@ export default function RecyclingPage() {
               className="sn-input"
             />
           </div>
-          <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14, color: '#475569' }}>
+          <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14, color: 'var(--color-text-2)' }}>
             <input
               type="checkbox"
               checked={analysisForm.recycleAvailable}
@@ -398,7 +398,7 @@ export default function RecyclingPage() {
       {/* Dispose Confirm Modal */}
       <BaseModal open={showDispose} onClose={closeAll} title="폐기 처리 확인">
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-          <p style={{ fontSize: 15, color: '#475569' }}>
+          <p style={{ fontSize: 15, color: 'var(--color-text-2)' }}>
             이 여권을 폐기 상태로 전환합니다. 이 작업은 되돌릴 수 없습니다.
           </p>
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>

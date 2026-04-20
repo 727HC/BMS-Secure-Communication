@@ -141,7 +141,7 @@ export default function BmuDataPage() {
         <div className="sn-page-head-main">
           <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem' }}>
             <div>
-              <p className="sn-eyebrow" style={{ margin: '0 0 0.35rem', color: '#0f766e' }}>현장 점검</p>
+              <p className="sn-eyebrow" style={{ margin: '0 0 0.35rem', color: 'var(--color-accent)' }}>현장 점검</p>
               <h1 className="sn-page-title">BMU 판독 콘솔</h1>
             </div>
             {autoRefresh && (
@@ -151,16 +151,16 @@ export default function BmuDataPage() {
                   alignItems: 'center',
                   gap: '0.375rem',
                   padding: '0.25rem 0.625rem',
-                  background: '#f0fdf4',
+                  background: 'var(--color-success-soft)',
                   border: '1px solid #bbf7d0',
                   borderRadius: 9999,
                   fontSize: '0.75rem',
                   fontWeight: 600,
-                  color: '#16a34a',
+                  color: 'var(--color-success)',
                   marginLeft: '0.75rem',
                 }}
               >
-                <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#16a34a' }} />
+                  <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--color-success)' }} />
                 실시간
               </span>
             )}
@@ -177,10 +177,10 @@ export default function BmuDataPage() {
                 onChange={(e) => setAutoRefresh(e.target.checked)}
                 style={{ position: 'absolute', opacity: 0, width: 0, height: 0 }}
               />
-              <div style={{ width: 40, height: 22, borderRadius: 11, background: autoRefresh ? '#059669' : '#e2e8f0', transition: 'background 0.2s' }} />
-              <div style={{ position: 'absolute', top: 3, left: autoRefresh ? 21 : 3, width: 16, height: 16, borderRadius: '50%', background: '#fff', boxShadow: '0 1px 3px rgba(0,0,0,0.2)', transition: 'left 0.2s' }} />
+              <div style={{ width: 40, height: 22, borderRadius: 11, background: autoRefresh ? 'var(--color-success)' : 'var(--color-border)', transition: 'background 0.2s' }} />
+              <div style={{ position: 'absolute', top: 3, left: autoRefresh ? 21 : 3, width: 16, height: 16, borderRadius: '50%', background: 'var(--color-surface)', boxShadow: 'var(--shadow-card)', transition: 'left 0.2s' }} />
             </div>
-            <span style={{ fontSize: '0.875rem', fontWeight: 500, color: '#374151' }}>자동 새로고침</span>
+            <span style={{ fontSize: '0.875rem', fontWeight: 500, color: 'var(--color-text-2)' }}>자동 새로고침</span>
           </label>
           {autoRefresh && (
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '3px 10px', borderRadius: 20, fontFamily: "'JetBrains Mono',monospace", fontSize: '0.8125rem', fontWeight: 600, color: '#059669', background: 'rgba(52,211,153,0.1)' }}>
