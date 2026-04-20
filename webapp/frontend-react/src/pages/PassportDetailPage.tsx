@@ -343,38 +343,39 @@ export default function PassportDetailPage() {
         </div>
       )}
 
-      <div style={{ display: 'flex', flexDirection: 'column', background: 'var(--color-surface)', padding: '1.25rem 1.5rem', borderRadius: '1rem', border: '1px solid var(--color-border)', boxShadow: 'var(--shadow-card)', gap: '1rem' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem' }}>
-          <div style={{ display: 'flex', gap: '2.5rem', flexWrap: 'wrap' }}>
-            <div>
-              <p className="sn-eyebrow" style={{ marginBottom: '0.35rem' }}>SOH (건강 상태)</p>
-              <p style={{ fontFamily: 'var(--font-mono)', fontSize: '1.5rem', fontWeight: 700, color: passport.currentSoh && passport.currentSoh < 80 ? 'var(--color-danger)' : 'var(--color-text-1)' }}>
-                {passport.currentSoh != null ? `${passport.currentSoh}%` : '--'}
+      <div style={{ display: 'flex', flexDirection: 'column', background: 'var(--color-surface)', padding: '1.5rem 1.75rem', borderRadius: '1rem', border: '1px solid var(--color-border)', boxShadow: 'var(--shadow-card)', gap: '1.25rem' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr)) auto', alignItems: 'end', gap: '1.25rem', flexWrap: 'wrap' }}>
+          <div>
+            <p className="sn-eyebrow" style={{ marginBottom: '0.45rem' }}>SOH · 건강 상태</p>
+            <p className="sn-metric sn-metric-md" style={{ color: passport.currentSoh != null && passport.currentSoh < 80 ? 'var(--color-danger)' : 'var(--color-text-1)' }}>
+              {passport.currentSoh != null ? `${passport.currentSoh}` : '--'}
+              {passport.currentSoh != null && <span className="sn-metric-unit">%</span>}
+            </p>
+          </div>
+          <div>
+            <p className="sn-eyebrow" style={{ marginBottom: '0.45rem' }}>SOC · 충전 상태</p>
+            <p className="sn-metric sn-metric-md">
+              {passport.currentSoc != null ? `${scaleSOC(passport.currentSoc)}` : '--'}
+              {passport.currentSoc != null && <span className="sn-metric-unit">%</span>}
+            </p>
+          </div>
+          <div>
+            <p className="sn-eyebrow" style={{ marginBottom: '0.45rem' }}>GBA 규제 준수</p>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.6rem', flexWrap: 'wrap' }}>
+              <p className="sn-metric sn-metric-md" style={{ color: gbaCompliance.pct === 100 ? 'var(--color-success)' : 'var(--color-warning)' }}>
+                {gbaCompliance.pct}
+                <span className="sn-metric-unit">%</span>
               </p>
-            </div>
-            <div>
-              <p className="sn-eyebrow" style={{ marginBottom: '0.35rem' }}>SOC (충전 상태)</p>
-              <p style={{ fontFamily: 'var(--font-mono)', fontSize: '1.5rem', fontWeight: 700, color: 'var(--color-text-1)' }}>
-                {passport.currentSoc != null ? `${scaleSOC(passport.currentSoc)}%` : '--'}
-              </p>
-            </div>
-            <div>
-              <p className="sn-eyebrow" style={{ marginBottom: '0.35rem' }}>GBA 규제 준수</p>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <p style={{ fontFamily: 'var(--font-mono)', fontSize: '1.5rem', fontWeight: 700, color: gbaCompliance.pct === 100 ? '#10b981' : '#f59e0b' }}>
-                  {gbaCompliance.pct}%
-                </p>
-                <span className="bp-stamp" style={{ fontSize: '0.75rem', background: 'var(--color-surface-accent)', color: 'var(--color-accent)', border: '1px solid rgba(23,105,224,0.12)' }}>Grade {grade}</span>
-              </div>
-            </div>
-            <div>
-              <p className="sn-eyebrow" style={{ marginBottom: '0.35rem' }}>라이프사이클</p>
-              <p style={{ fontSize: '1.1rem', fontWeight: 600, color: 'var(--color-text-1)', marginTop: '0.2rem' }}>
-                {lifecycleLabel}
-              </p>
+              <span className="bp-stamp" style={{ fontSize: '0.8125rem', fontWeight: 700, padding: '3px 10px', background: 'var(--color-surface-accent)', color: 'var(--color-accent)', border: '1px solid var(--color-border)' }}>Grade {grade}</span>
             </div>
           </div>
-          <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+          <div>
+            <p className="sn-eyebrow" style={{ marginBottom: '0.45rem' }}>라이프사이클</p>
+            <p style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--color-text-1)', margin: 0, lineHeight: 1.2 }}>
+              {lifecycleLabel}
+            </p>
+          </div>
+          <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
             {isManufacturer && (
               <button onClick={() => setOpenModal('correct')} className="sn-btn sn-btn-ghost">데이터 정정</button>
             )}
@@ -402,11 +403,11 @@ export default function PassportDetailPage() {
           </div>
         </div>
         {warningMessages.length > 0 && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem', paddingTop: '0.75rem', borderTop: '1px solid rgba(15,23,42,0.06)' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem', paddingTop: '1rem', borderTop: '1px solid var(--color-border)' }}>
             {warningMessages.map((message) => (
-              <div key={message} style={{ display: 'flex', alignItems: 'flex-start', gap: '0.65rem', padding: '0.9rem 1rem', borderRadius: '0.85rem', background: 'var(--color-warning-soft)', color: 'var(--color-warning)', border: '1px solid rgba(245,158,11,0.16)' }}>
-                <span style={{ fontSize: 14, fontWeight: 800, lineHeight: 1.4 }}>!</span>
-                <span style={{ fontSize: '0.9rem', lineHeight: 1.6 }}>{message}</span>
+              <div key={message} style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem', padding: '0.9rem 1.1rem', borderRadius: '0.85rem', background: 'var(--color-warning-soft)', color: 'var(--color-warning)', border: '1px solid var(--color-border)' }}>
+                <span style={{ fontSize: '1rem', fontWeight: 800, lineHeight: 1.4 }}>!</span>
+                <span style={{ fontSize: '0.9375rem', lineHeight: 1.6 }}>{message}</span>
               </div>
             ))}
           </div>
