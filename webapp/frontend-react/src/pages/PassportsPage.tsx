@@ -4,6 +4,7 @@ import { api } from '../lib/api';
 import { getStatusBadge, scaleSOC } from '../lib/helpers';
 import { useAuth } from '../contexts/AuthContext';
 import PassportCreateModal, { type PassportCreateFormData } from '../components/modals/passports/PassportCreateModal';
+import { DonutChart, BarRows, LegendStack } from '../components/ui';
 
 interface Passport {
   passportId?: string;
@@ -55,6 +56,23 @@ const STATUS_OPTIONS = [
   { value: 'RECYCLING', label: '재활용' },
   { value: 'DISPOSED', label: '폐기' },
 ];
+
+const STATUS_COLORS: Record<string, string> = {
+  MANUFACTURED: '#1769e0',
+  ACTIVE: '#0ea5e9',
+  MAINTENANCE: '#f59e0b',
+  ANALYSIS: '#8b5cf6',
+  RECYCLING: '#0f766e',
+  DISPOSED: '#94a3b8',
+};
+
+const CHEMISTRY_COLORS: Record<string, string> = {
+  NCM: '#1769e0',
+  LFP: '#0ea5e9',
+  NCA: '#8b5cf6',
+  LMO: '#f59e0b',
+  기타: '#94a3b8',
+};
 
 const GBA_FIELDS: (keyof Passport)[] = [
   'passportId', 'model', 'serialNumber', 'status', 'evManufacturer', 'evAssemblyCountry',
@@ -153,6 +171,59 @@ export default function PassportsPage() {
   const vinPendingCount = passports.filter((p) => !p.vin).length;
   const reviewReadyCount = passports.filter((p) => getGbaPct(p) === 100 && !!p.vin).length;
 
+  /* 분포 대시보드 데이터 */
+  const statusDistSegments = useMemo(() => {
+    const STATUS_KEYS = ['MANUFACTURED', 'ACTIVE', 'MAINTENANCE', 'ANALYSIS', 'RECYCLING', 'DISPOSED'];
+    const STATUS_LABELS: Record<string, string> = {
+      MANUFACTURED: '제조완료', ACTIVE: '운행중', MAINTENANCE: '정비중',
+      ANALYSIS: '분석중', RECYCLING: '회수 검토', DISPOSED: '폐기',
+    };
+    return STATUS_KEYS
+      .map((key) => ({
+        label: STATUS_LABELS[key],
+        value: passports.filter((p) => p.status === key).length,
+        color: STATUS_COLORS[key],
+      }))
+      .filter((s) => s.value > 0);
+  }, [passports]);
+
+  const statusLegendItems = useMemo(() => {
+    const STATUS_KEYS = ['MANUFACTURED', 'ACTIVE', 'MAINTENANCE', 'ANALYSIS', 'RECYCLING', 'DISPOSED'];
+    const STATUS_LABELS: Record<string, string> = {
+      MANUFACTURED: '제조완료', ACTIVE: '운행중', MAINTENANCE: '정비중',
+      ANALYSIS: '분석중', RECYCLING: '회수 검토', DISPOSED: '폐기',
+    };
+    return STATUS_KEYS.map((key) => ({
+      label: STATUS_LABELS[key],
+      value: passports.filter((p) => p.status === key).length,
+      color: STATUS_COLORS[key],
+    }));
+  }, [passports]);
+
+  const manufacturerBarItems = useMemo(() => {
+    const counts: Record<string, number> = {};
+    for (const p of passports) {
+      const name = p.manufacturerName || '미등록';
+      counts[name] = (counts[name] || 0) + 1;
+    }
+    return Object.entries(counts)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5)
+      .map(([label, value]) => ({ label, value }));
+  }, [passports]);
+
+  const chemistryBarItems = useMemo(() => {
+    const counts: Record<string, number> = {};
+    for (const p of passports) {
+      const chem = p.chemistry || '기타';
+      const key = ['NCM', 'LFP', 'NCA', 'LMO'].includes(chem) ? chem : '기타';
+      counts[key] = (counts[key] || 0) + 1;
+    }
+    return Object.entries(counts)
+      .sort((a, b) => b[1] - a[1])
+      .map(([label, value]) => ({ label, value, color: CHEMISTRY_COLORS[label] || '#94a3b8' }));
+  }, [passports]);
+
   const registerEnglishTitle = isManufacturer ? '발급 목록' : isRegulator ? '검토 목록' : '배터리 여권';
   const registerSummary = isManufacturer
     ? '발급 대기, 차량 연결, 제출 준비 상태를 한눈에 확인합니다.'
@@ -219,50 +290,74 @@ export default function PassportsPage() {
         </div>
       </div>
 
-      {/* COVER */}
+      {/* 분포 대시보드 패널 */}
+      <section className="sn-section-card" style={{ padding: '20px 22px' }}>
+        <p className="sn-eyebrow" style={{ margin: '0 0 16px', color: 'var(--color-text-3)' }}>분포 대시보드</p>
+        <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: 32, alignItems: 'start' }}>
+          {/* 좌: 도넛 + 범례 */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
+            <DonutChart
+              segments={statusDistSegments.length ? statusDistSegments : [{ label: '없음', value: 1, color: 'var(--color-border)' }]}
+              size={150}
+              thickness={18}
+              centerLabel="전체"
+              centerValue={String(totalCount)}
+            />
+            <LegendStack items={statusLegendItems} />
+          </div>
+
+          {/* 우: 제조사 top5 + chemistry 분포 */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 28 }}>
+            <div>
+              <p className="sn-eyebrow" style={{ margin: '0 0 12px', color: 'var(--color-text-3)' }}>제조사 상위 5</p>
+              {manufacturerBarItems.length > 0
+                ? <BarRows items={manufacturerBarItems} />
+                : <p className="sn-caption" style={{ margin: 0 }}>데이터 없음</p>}
+            </div>
+            <div>
+              <p className="sn-eyebrow" style={{ margin: '0 0 12px', color: 'var(--color-text-3)' }}>화학 종류 분포</p>
+              {chemistryBarItems.length > 0
+                ? <BarRows items={chemistryBarItems} />
+                : <p className="sn-caption" style={{ margin: 0 }}>데이터 없음</p>}
+            </div>
+          </div>
+        </div>
+
+        {/* 인라인 보조 지표 row */}
+        <div style={{ display: 'flex', gap: 32, flexWrap: 'wrap', marginTop: 20, paddingTop: 16, borderTop: '1px solid var(--color-border)' }}>
+          <div>
+            <p className="sn-eyebrow" style={{ margin: '0 0 4px', color: 'var(--color-text-3)' }}>평균 GBA 21</p>
+            <span className="sn-metric sn-metric-md">{avgGba}<span style={{ fontSize: '1rem', fontWeight: 600, marginLeft: 3 }}>%</span></span>
+          </div>
+          <div>
+            <p className="sn-eyebrow" style={{ margin: '0 0 4px', color: 'var(--color-text-3)' }}>VIN 연결 대기</p>
+            <span className="sn-metric sn-metric-md">{vinPendingCount}<span style={{ fontSize: '1rem', fontWeight: 600, marginLeft: 3 }}>건</span></span>
+          </div>
+          <div>
+            <p className="sn-eyebrow" style={{ margin: '0 0 4px', color: 'var(--color-text-3)' }}>즉시 검토 가능</p>
+            <span className="sn-metric sn-metric-md">{reviewReadyCount}<span style={{ fontSize: '1rem', fontWeight: 600, marginLeft: 3 }}>건</span></span>
+          </div>
+        </div>
+      </section>
+
+      {/* COVER — 4 info-tile */}
       <section className="sn-section-card">
         <div className="sn-info-grid sn-info-grid-auto">
           <div className="sn-info-tile">
-            <p className="sn-eyebrow" style={{ marginBottom: '0.35rem' }}>전체 등록</p>
-            <p style={{ fontFamily: 'var(--font-mono)', fontSize: '1.25rem', fontWeight: 700, color: 'var(--color-text-1)' }}>
-              {totalCount}
-            </p>
+            <p className="sn-eyebrow" style={{ marginBottom: '0.5rem' }}>전체 등록</p>
+            <p className="sn-info-tile-value">{totalCount}</p>
           </div>
           <div className="sn-info-tile">
-            <p className="sn-eyebrow" style={{ marginBottom: '0.35rem' }}>운행 중</p>
-            <p style={{ fontFamily: 'var(--font-mono)', fontSize: '1.25rem', fontWeight: 700, color: 'var(--color-text-1)' }}>
-              {activeCount}
-            </p>
+            <p className="sn-eyebrow" style={{ marginBottom: '0.5rem' }}>운행 중</p>
+            <p className="sn-info-tile-value">{activeCount}</p>
           </div>
           <div className="sn-info-tile">
-            <p className="sn-eyebrow" style={{ marginBottom: '0.35rem' }}>정비·분석 중</p>
-            <p style={{ fontFamily: 'var(--font-mono)', fontSize: '1.25rem', fontWeight: 700, color: 'var(--color-text-1)' }}>
-              {maintenanceCount}
-            </p>
+            <p className="sn-eyebrow" style={{ marginBottom: '0.5rem' }}>정비·분석 중</p>
+            <p className="sn-info-tile-value">{maintenanceCount}</p>
           </div>
           <div className="sn-info-tile">
-            <p className="sn-eyebrow" style={{ marginBottom: '0.35rem' }}>회수·폐기</p>
-            <p style={{ fontFamily: 'var(--font-mono)', fontSize: '1.25rem', fontWeight: 700, color: 'var(--color-text-1)' }}>
-              {endOfLifeCount}
-            </p>
-          </div>
-          <div className="sn-info-tile">
-            <p className="sn-eyebrow" style={{ marginBottom: '0.35rem' }}>평균 GBA 21</p>
-            <p style={{ fontFamily: 'var(--font-mono)', fontSize: '1.25rem', fontWeight: 700, color: 'var(--color-text-1)' }}>
-              {avgGba}%
-            </p>
-          </div>
-          <div className="sn-info-tile">
-            <p className="sn-eyebrow" style={{ marginBottom: '0.35rem' }}>VIN 연결 대기</p>
-            <p style={{ fontFamily: 'var(--font-mono)', fontSize: '1.25rem', fontWeight: 700, color: 'var(--color-text-1)' }}>
-              {vinPendingCount}
-            </p>
-          </div>
-          <div className="sn-info-tile">
-            <p className="sn-eyebrow" style={{ marginBottom: '0.35rem' }}>즉시 검토 가능</p>
-            <p style={{ fontFamily: 'var(--font-mono)', fontSize: '1.25rem', fontWeight: 700, color: 'var(--color-text-1)' }}>
-              {reviewReadyCount}
-            </p>
+            <p className="sn-eyebrow" style={{ marginBottom: '0.5rem' }}>회수·폐기</p>
+            <p className="sn-info-tile-value">{endOfLifeCount}</p>
           </div>
         </div>
 
@@ -273,13 +368,13 @@ export default function PassportsPage() {
             type="text"
             placeholder="여권 ID, 배터리 ID, DID, 시리얼, 모델, 제조사, VIN 검색..."
             className="sn-input"
-            style={{ flex: 1, minWidth: 220, fontSize: '0.875rem' }}
+            style={{ flex: 1, minWidth: 220 }}
           />
           <select
             value={filterStatus}
             onChange={(e) => setFilterStatus(e.target.value)}
             className="sn-input"
-            style={{ width: 'auto', minWidth: 140, fontSize: '0.875rem' }}
+            style={{ width: 'auto', minWidth: 140 }}
           >
             {STATUS_OPTIONS.map((opt) => (
               <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -289,7 +384,7 @@ export default function PassportsPage() {
             value={gbaFilter}
             onChange={(e) => setGbaFilter(e.target.value as GbaFilter)}
             className="sn-input"
-            style={{ width: 'auto', minWidth: 150, fontSize: '0.875rem' }}
+            style={{ width: 'auto', minWidth: 150 }}
           >
             <option value="all">규제 준수 전체</option>
             <option value="complete">필수 항목 충족</option>
@@ -305,7 +400,7 @@ export default function PassportsPage() {
                   onClick={() => setSortBy(s.v)}
                   type="button"
                   style={{
-                  fontSize: '0.8125rem',
+                    fontSize: '0.8125rem',
                     padding: '0.3rem 0.55rem',
                     background: active ? 'rgba(0,0,0,0.04)' : 'none',
                     border: 'none',
@@ -350,29 +445,29 @@ export default function PassportsPage() {
               >
                 <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.05fr) minmax(0, 1.25fr) minmax(0, 0.9fr) minmax(0, 0.95fr) minmax(0, 0.8fr)', gap: '1rem', alignItems: 'start' }}>
                   <div>
-                    <p style={{ fontFamily: 'var(--font-mono)', fontSize: '0.875rem', fontWeight: 700, color: 'var(--color-text-1)' }}>{p.passportId}</p>
-                    <p style={{ marginTop: '0.35rem', fontSize: '0.875rem', color: 'var(--color-text-3)' }}>{p.serialNumber || '시리얼 정보 없음'}</p>
+                    <p style={{ fontFamily: 'var(--font-mono)', fontSize: '0.9375rem', fontWeight: 700, color: 'var(--color-text-1)' }}>{p.passportId}</p>
+                    <p style={{ marginTop: '0.35rem', fontSize: '0.9375rem', color: 'var(--color-text-3)' }}>{p.serialNumber || '시리얼 정보 없음'}</p>
                   </div>
                   <div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
-                      <p style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--color-text-1)' }}>{p.model || '미등록 모델'}</p>
-                      <span className={`bp-stamp ${badge.bg} ${badge.text} ${badge.border}`} style={{ fontSize: '0.75rem' }}>
+                      <p style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--color-text-1)' }}>{p.model || '미등록 모델'}</p>
+                      <span className={`bp-stamp ${badge.bg} ${badge.text} ${badge.border}`} style={{ fontSize: '0.8125rem' }}>
                         {badge.label}
                       </span>
                     </div>
-                    <p style={{ marginTop: '0.35rem', fontSize: '0.875rem', color: 'var(--color-text-2)' }}>
+                    <p style={{ marginTop: '0.35rem', fontSize: '0.9375rem', color: 'var(--color-text-2)' }}>
                       {p.manufacturerName || '제조사 미기록'} · {p.chemistry || '화학 정보 없음'}
                     </p>
                   </div>
                   <div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
-                      <span style={{ fontSize: '0.875rem', color: 'var(--color-text-2)' }}>
+                      <span style={{ fontSize: '0.9375rem', color: 'var(--color-text-2)' }}>
                         SOH <strong style={{ color: 'var(--color-text-1)', fontFamily: 'var(--font-mono)' }}>{p.currentSoh != null ? `${p.currentSoh}%` : '--'}</strong>
                       </span>
-                      <span style={{ fontSize: '0.875rem', color: 'var(--color-text-2)' }}>
+                      <span style={{ fontSize: '0.9375rem', color: 'var(--color-text-2)' }}>
                         SOC <strong style={{ color: 'var(--color-text-1)', fontFamily: 'var(--font-mono)' }}>{p.currentSoc != null ? `${scaleSOC(p.currentSoc)}%` : '--'}</strong>
                       </span>
-                    <span style={{ fontSize: '0.8125rem', color: 'var(--color-text-3)' }}>
+                      <span style={{ fontSize: '0.875rem', color: 'var(--color-text-3)' }}>
                         {p.currentSoh != null && p.currentSoh < 80 ? '우선 점검 필요' : '기본 상태 확인됨'}
                       </span>
                     </div>
@@ -382,17 +477,17 @@ export default function PassportsPage() {
                       <div style={{ flex: 1, height: 6, background: 'var(--color-border)', borderRadius: 3, overflow: 'hidden' }}>
                         <div style={{ height: '100%', width: `${getGbaPct(p)}%`, background: getGbaPct(p) === 100 ? '#10b981' : '#f59e0b' }} />
                       </div>
-                      <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.875rem', fontWeight: 600, color: 'var(--color-text-1)' }}>{getGbaPct(p)}%</span>
+                      <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.9375rem', fontWeight: 600, color: 'var(--color-text-1)' }}>{getGbaPct(p)}%</span>
                     </div>
-                    <p style={{ marginTop: '0.35rem', fontSize: '0.8125rem', color: 'var(--color-text-3)' }}>
+                    <p style={{ marginTop: '0.35rem', fontSize: '0.9375rem', color: 'var(--color-text-3)' }}>
                       {getGbaPct(p) === 100 ? '필수 항목 충족' : '문서 보완 필요'}
                     </p>
                   </div>
                   <div>
-                    <p style={{ fontFamily: 'var(--font-mono)', fontSize: '0.875rem', fontWeight: 600, color: 'var(--color-text-1)' }}>
+                    <p style={{ fontFamily: 'var(--font-mono)', fontSize: '0.9375rem', fontWeight: 600, color: 'var(--color-text-1)' }}>
                       {new Date(p.updatedAt || p.createdAt || '').toString() !== 'Invalid Date' ? new Date(p.updatedAt || p.createdAt || '').toLocaleDateString('ko-KR') : '-'}
                     </p>
-                    <p style={{ marginTop: '0.35rem', fontSize: '0.8125rem', color: 'var(--color-text-3)' }}>
+                    <p style={{ marginTop: '0.35rem', fontSize: '0.875rem', color: 'var(--color-text-3)' }}>
                       {p.recycleAvailable ? '회수 검토 대상' : !p.vin ? 'VIN 등록 대기' : '상세 검토 가능'}
                     </p>
                   </div>
@@ -429,7 +524,7 @@ export default function PassportsPage() {
         </div>
       ) : (
         <div style={{ padding: '3rem', textAlign: 'center', border: '1px dashed var(--color-border)', borderRadius: '0.5rem' }}>
-          <p style={{ fontSize: '0.875rem', color: 'var(--color-text-3)', marginBottom: '0.75rem' }}>
+          <p style={{ fontSize: '1rem', color: 'var(--color-text-3)', marginBottom: '0.75rem' }}>
             {searchQuery || filterStatus
               ? '검색 조건에 맞는 여권이 없습니다. 검색어나 필터를 다시 확인하세요.'
               : '등록된 여권이 없습니다. 검색 조건을 변경하거나 새 여권을 발급하세요.'}
