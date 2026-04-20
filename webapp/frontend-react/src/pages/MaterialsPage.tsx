@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from 'react';
 import { api } from '../lib/api';
 import { useAuth } from '../contexts/AuthContext';
 import Spinner from '../components/ui/Spinner';
-import { RnDContextChip } from '../components/ui';
 import {
   MaterialCreateModal,
   MaterialDetailModal,
@@ -136,7 +135,6 @@ export default function MaterialsPage() {
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
       <div className="sn-page-head">
         <div className="sn-page-head-main">
-          <RnDContextChip year={1} focus="1년차 — 원자재 공급망 추적" />
           <p className="sn-eyebrow" style={{ margin: '0.5rem 0 0.35rem', color: 'var(--color-accent)' }}>원자재 관리</p>
           <h1 className="sn-page-title">원자재 관리</h1>
           <p className="sn-page-subtitle">총 {materials.length}건의 원자재가 등록되어 있습니다</p>
@@ -239,8 +237,8 @@ export default function MaterialsPage() {
             등록된 원자재가 없습니다
           </p>
           <p style={{ fontSize: '0.875rem', color: 'var(--color-text-3)', marginBottom: '0.75rem', lineHeight: 1.6 }}>
-            1년차 연구과제 요건상 배터리 핵심 광물(리튬·니켈·코발트·망간 등)의 원산지와 공급망 정보를 블록체인에 기록해야 합니다.
-            원자재를 등록하면 공급망 투명성 지표 추적이 시작됩니다.
+            배터리 핵심 광물(리튬·니켈·코발트·망간 등)의 원산지와 공급망 정보를 블록체인에 기록합니다.
+            원자재를 등록하면 공급망 투명성 추적이 시작됩니다.
           </p>
           {isManufacturer && (
             <button onClick={openCreateModal} className="sn-btn sn-btn-accent">원자재 등록</button>

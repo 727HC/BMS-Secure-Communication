@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { api } from '../lib/api';
 import Spinner from '../components/ui/Spinner';
-import { RnDContextChip } from '../components/ui';
 
 interface LogRecord {
   id: string;
@@ -185,9 +184,6 @@ export default function AuditLogPage() {
       {/* HEADER */}
       <div className="sn-page-head">
         <div className="sn-page-head-main">
-          <div style={{ marginBottom: '0.6rem' }}>
-            <RnDContextChip year={2} focus="2-3년차 — 체인 이벤트 불변성" />
-          </div>
           <p className="sn-eyebrow" style={{ margin: '0 0 0.35rem', color: 'var(--color-accent)' }}>감사 기록</p>
           <h1 className="sn-page-title">감사 기록</h1>
           <p className="sn-page-subtitle">총 {total}건의 작업 기록을 시간순으로 확인합니다.</p>

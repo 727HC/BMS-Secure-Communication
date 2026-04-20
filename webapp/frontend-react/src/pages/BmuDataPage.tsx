@@ -2,7 +2,6 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { api } from '../lib/api';
 import { scaleSOC, scaleTemp } from '../lib/helpers';
 import Spinner from '../components/ui/Spinner';
-import { RnDContextChip } from '../components/ui';
 
 interface BmuRecord {
   recordId?: string;
@@ -158,9 +157,6 @@ export default function BmuDataPage() {
       {/* HEADER */}
       <div className="sn-page-head">
         <div className="sn-page-head-main">
-          <div style={{ marginBottom: '0.5rem' }}>
-            <RnDContextChip year={3} focus="3년차 — 물리적 이력 검증" />
-          </div>
           <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem' }}>
             <div>
               <p className="sn-eyebrow" style={{ margin: '0 0 0.35rem', color: 'var(--color-accent)' }}>현장 점검</p>
@@ -285,10 +281,10 @@ export default function BmuDataPage() {
               배터리 여권 ID를 입력하면 SOC, 전압, 전류, 온도 등 센서 데이터를 확인할 수 있습니다.
             </p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxWidth: '32rem', width: '100%', padding: '16px', background: 'var(--color-surface-alt)', borderRadius: 10, border: '1px solid var(--color-border)' }}>
-              <p style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--color-text-2)', margin: 0 }}>3년차 연구 목표 — 물리적 이력 검증</p>
+              <p style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--color-text-2)', margin: 0 }}>물리적 이력 검증</p>
               <p style={{ fontSize: '0.8125rem', color: 'var(--color-text-3)', margin: 0, lineHeight: 1.6 }}>
-                국가과제 3차년도에서는 배터리 물리 이력(SOC 추이, 전압·전류·온도 패턴, 방전 사이클)을 블록체인에 기록하여 신뢰 가능한 상태 검증 근거를 확보합니다.
-                이 화면은 현장 점검 시 여권 ID 기반으로 실시간 센서 기록을 조회하고 이상 플래그를 즉시 확인할 수 있도록 설계되었습니다.
+                배터리 물리 이력(SOC 추이, 전압·전류·온도 패턴, 방전 사이클)을 블록체인에 기록하여 신뢰 가능한 상태 검증을 제공합니다.
+                현장 점검 시 여권 ID 기반으로 실시간 센서 기록을 조회하고 이상 플래그를 즉시 확인할 수 있습니다.
               </p>
             </div>
           </div>

@@ -4,7 +4,6 @@ import { api } from '../lib/api';
 import { useAuth } from '../contexts/AuthContext';
 import { getStatusBadge } from '../lib/helpers';
 import Spinner from '../components/ui/Spinner';
-import { RnDContextChip } from '../components/ui';
 import BaseModal from '../components/modals/BaseModal';
 import { ExtractModal, RecycleToggleModal, type ExtractEntry } from '../components/modals/recycling';
 
@@ -231,7 +230,6 @@ export default function RecyclingPage() {
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
       <div className="sn-page-head">
         <div className="sn-page-head-main">
-          <RnDContextChip year={3} focus="3년차 — 회수·재활용 lifecycle" />
           <p className="sn-eyebrow" style={{ margin: '0.5rem 0 0.35rem', color: 'var(--color-accent)' }}>재활용 처리</p>
           <h1 className="sn-page-title">재활용 처리</h1>
           <p className="sn-page-subtitle">분석 요청부터 추출·폐기까지 단계별로 관리합니다.</p>

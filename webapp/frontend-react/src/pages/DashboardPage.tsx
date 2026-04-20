@@ -16,27 +16,7 @@ interface Passport {
   createdAt?: string;
   updatedAt?: string;
   timestamp?: string;
-  manufacturingProcess?: string;
-  disposalMethod?: string;
-  carbonFootprint?: unknown;
-  recycledElementContent?: unknown;
-  extensionInfo?: unknown;
-  installDate?: string;
-  regulatoryVerificationStatus?: string;
-  physicalHistoryVerification?: { status?: string } | null;
   [key: string]: unknown;
-}
-
-const YEAR1_FIELDS = ['weight', 'carbonFootprint', 'manufacturingProcess', 'disposalMethod', 'recycledElementContent', 'extensionInfo'] as const;
-
-function year1Filled(p: Passport): number {
-  return YEAR1_FIELDS.reduce((n, k) => {
-    const v = p[k];
-    if (v == null) return n;
-    if (typeof v === 'string' && v.trim() === '') return n;
-    if (typeof v === 'object' && !Array.isArray(v) && Object.keys(v as object).length === 0) return n;
-    return n + 1;
-  }, 0);
 }
 
 interface ApiListResponse<T> {
@@ -129,30 +109,6 @@ export default function DashboardPage() {
   const urgentQueue = recent.slice(0, 8);
   const totalCount = passports.length || 1;
 
-  // 국가과제 연차별 진행 지표 (실제 여권 데이터에서 파생)
-  const year1Avg = useMemo(() => {
-    if (passports.length === 0) return 0;
-    const sum = passports.reduce((acc, p) => acc + year1Filled(p), 0);
-    return Math.round((sum / (passports.length * YEAR1_FIELDS.length)) * 100);
-  }, [passports]);
-
-  const year2Issued = useMemo(
-    () => passports.filter((p) => {
-      const vc = p.credentials as unknown;
-      return Array.isArray(vc) && vc.length > 0;
-    }).length,
-    [passports]
-  );
-  const year2Pct = Math.round((year2Issued / totalCount) * 100);
-
-  const year3Verified = useMemo(
-    () => passports.filter((p) =>
-      p.regulatoryVerificationStatus === 'VERIFIED' ||
-      p.physicalHistoryVerification?.status === 'VERIFIED'
-    ).length,
-    [passports]
-  );
-  const year3Pct = Math.round((year3Verified / totalCount) * 100);
   const statusRows = STATUS_BARS.map((row) => {
     const value = passports.filter((p) => p.status === row.key).length;
     return {
@@ -219,66 +175,6 @@ export default function DashboardPage() {
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
             여권 만들기
           </button>
-        </div>
-      </div>
-
-      {/* 국가과제 연차별 진행 현황 */}
-      <div className="sn-panel" style={{ borderRadius: 20, padding: '22px 24px', border: '1px solid var(--color-border)', background: 'var(--color-surface)' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 14, marginBottom: 18, flexWrap: 'wrap' }}>
-          <div>
-            <p className="sn-eyebrow" style={{ margin: 0, color: 'var(--color-text-3)' }}>국가과제 배터리 여권</p>
-            <p style={{ margin: '4px 0 0', fontSize: 16, fontWeight: 700, color: 'var(--color-text-1)' }}>3개년 요구사항 누적 진행도</p>
-          </div>
-          <span style={{ fontSize: 12, color: 'var(--color-text-3)', fontFamily: 'var(--font-mono)' }}>
-            등록 여권 {passports.length}건 기준
-          </span>
-        </div>
-
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 16 }}>
-          {/* 1년차 */}
-          <div style={{ padding: '18px 18px 16px', borderRadius: 14, background: 'var(--color-surface-accent)', border: '1px solid var(--color-border)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-              <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--color-accent)', fontFamily: 'var(--font-mono)', letterSpacing: '0.05em' }}>YEAR 01</span>
-              <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--color-accent)' }}>{year1Avg}%</span>
-            </div>
-            <p style={{ fontSize: 14, fontWeight: 700, color: 'var(--color-text-1)', margin: '0 0 4px' }}>기초 메타 필드</p>
-            <p style={{ fontSize: 12, color: 'var(--color-text-2)', lineHeight: 1.55, margin: '0 0 12px' }}>
-              제조정보·중량·탄소발자국·재활용 소재 함량·폐기방법 등 기본 GBA 필드 작성률
-            </p>
-            <div style={{ height: 6, borderRadius: 999, background: 'var(--color-border)', overflow: 'hidden' }}>
-              <div style={{ width: `${year1Avg}%`, height: '100%', background: 'var(--color-accent)', borderRadius: 999 }} />
-            </div>
-          </div>
-
-          {/* 2년차 */}
-          <div style={{ padding: '18px 18px 16px', borderRadius: 14, background: 'var(--color-surface-warm)', border: '1px solid var(--color-border)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-              <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--color-warning)', fontFamily: 'var(--font-mono)', letterSpacing: '0.05em' }}>YEAR 02</span>
-              <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--color-warning)' }}>{year2Issued}/{passports.length}</span>
-            </div>
-            <p style={{ fontSize: 14, fontWeight: 700, color: 'var(--color-text-1)', margin: '0 0 4px' }}>DID · VC 신원</p>
-            <p style={{ fontSize: 12, color: 'var(--color-text-2)', lineHeight: 1.55, margin: '0 0 12px' }}>
-              VC 발급·검증·폐기 lifecycle을 구비한 여권 비율. 규제 대응의 전제
-            </p>
-            <div style={{ height: 6, borderRadius: 999, background: 'var(--color-border)', overflow: 'hidden' }}>
-              <div style={{ width: `${year2Pct}%`, height: '100%', background: 'var(--color-warning)', borderRadius: 999 }} />
-            </div>
-          </div>
-
-          {/* 3년차 */}
-          <div style={{ padding: '18px 18px 16px', borderRadius: 14, background: 'var(--color-surface-teal)', border: '1px solid var(--color-border)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-              <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--color-success)', fontFamily: 'var(--font-mono)', letterSpacing: '0.05em' }}>YEAR 03</span>
-              <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--color-success)' }}>{year3Verified}/{passports.length}</span>
-            </div>
-            <p style={{ fontSize: 14, fontWeight: 700, color: 'var(--color-text-1)', margin: '0 0 4px' }}>규제·물리 이력 검증</p>
-            <p style={{ fontSize: 12, color: 'var(--color-text-2)', lineHeight: 1.55, margin: '0 0 12px' }}>
-              규제기관 승인 또는 BMU 기반 물리적 일치 검증이 통과된 여권 비율
-            </p>
-            <div style={{ height: 6, borderRadius: 999, background: 'var(--color-border)', overflow: 'hidden' }}>
-              <div style={{ width: `${year3Pct}%`, height: '100%', background: 'var(--color-success)', borderRadius: 999 }} />
-            </div>
-          </div>
         </div>
       </div>
 
