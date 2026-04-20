@@ -3,8 +3,14 @@ title: "블록체인 세션 활동 로그"
 date: 2026-04-06
 tags: [blockchain, log]
 doc_type: log
+status: historical
 ---
 # 블록체인 세션 — 활동 로그
+
+> 과거 기준 기록
+>
+> 이 문서는 블록체인 세션의 시계열 작업 로그를 보존한다.
+> 현재 구조/정책 설명은 [[blockchain/overview|세션 개요]]와 [[blockchain/README|Blockchain 허브]]를 먼저 본다.
 
 > 세션(컨텍스트) 단위로 기록. 컨텍스트가 차서 다음 세션으로 넘어갈 때 작성.
 

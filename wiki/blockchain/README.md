@@ -1,14 +1,15 @@
 ---
 title: "blockchain/ 폴더 허브"
-date: 2026-04-18
+date: 2026-04-20
 tags: [blockchain, index, hub]
 doc_type: index
+status: current
 ---
 # blockchain/
 
-Fabric 네트워크, 체인코드, 보안 수정, KPI 근거를 모아두는 허브다.
+Fabric 네트워크, 체인코드, KPI 근거의 현재 기준 문서와 기록성 문서를 구분해서 안내하는 허브다.
 
-## 핵심 진입점
+## 현재 기준 문서
 - [[blockchain/overview|세션 개요]]
 - [[blockchain/kpi-targets|KPI 목표]]
 - [[blockchain/assets/README|KPI asset 허브]]
@@ -17,12 +18,18 @@ Fabric 네트워크, 체인코드, 보안 수정, KPI 근거를 모아두는 허
 - [[blockchain/couchdb-injection-pattern|CouchDB JSON Injection 방지 패턴]]
 - [[blockchain/cloud-agent-architecture|Cloud Agent 아키텍처]]
 
-## 운영 기록
+## 기록성 문서
 - [[blockchain/activity-log|활동 로그]]
+- [[handoffs/blockchain/README|Blockchain handoff 허브]]
+- [[reviews/blockchain/README|Blockchain review 허브]]
 - [[handoffs/blockchain/passport-handoff-2026-04-13|대표 handoff]]
 - [[reviews/blockchain/review-findings-summary|리뷰 판정 요약]]
 
 ## 이 폴더에 두는 것
-- 네트워크/체인코드 구조
-- 성능 목표와 근거
-- 블록체인 보안 수정 내역
+- 네트워크/체인코드의 현재 구조
+- KPI와 평가 기준 근거
+- 블록체인 보안 수정과 운영 패턴
+
+## 주의
+- 현재 onboarding은 위 **현재 기준 문서**부터 시작한다.
+- 활동 로그, handoff, review는 배경 맥락과 이력 추적용이다.
