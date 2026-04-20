@@ -163,7 +163,7 @@ export default function PassportsPage() {
   if (loading) {
     return (
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '40vh' }}>
-        <div style={{ width: 28, height: 28, border: '2px solid rgba(0,0,0,0.06)', borderTopColor: 'var(--color-accent)', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+        <div style={{ width: 28, height: 28, border: '2px solid var(--color-border)', borderTopColor: 'var(--color-accent)', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
       </div>
     );
   }
@@ -242,7 +242,7 @@ export default function PassportsPage() {
           </div>
         </div>
 
-        <div className="sn-toolbar" style={{ padding: '0.9rem 1.25rem', background: '#fff' }}>
+        <div className="sn-toolbar" style={{ padding: '0.9rem 1.25rem', background: 'var(--color-surface)' }}>
           <input
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
@@ -296,7 +296,7 @@ export default function PassportsPage() {
             })}
           </div>
         </div>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', padding: '0 1.25rem 1rem', background: '#fff' }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', padding: '0 1.25rem 1rem', background: 'var(--color-surface)' }}>
           <span className="sn-detail-inline-stamp">검색으로 후보 좁히기</span>
           <span className="sn-detail-inline-stamp">규제 준수 상태 먼저 확인</span>
           <span className="sn-detail-inline-stamp">VIN 연결 여부 검토</span>
@@ -305,8 +305,8 @@ export default function PassportsPage() {
 
       {/* LIST */}
       {filteredPassports.length > 0 ? (
-        <div style={{ border: '1px solid var(--color-border)', borderRadius: '1.25rem', overflow: 'hidden', background: '#fff', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.05fr) minmax(0, 1.25fr) minmax(0, 0.9fr) minmax(0, 0.95fr) minmax(0, 0.8fr)', gap: '1rem', padding: '0.9rem 1.1rem', borderBottom: '1px solid var(--color-border)', background: '#fbfdff' }}>
+        <div style={{ border: '1px solid var(--color-border)', borderRadius: '1.25rem', overflow: 'hidden', background: 'var(--color-surface)', boxShadow: 'var(--shadow-card)' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.05fr) minmax(0, 1.25fr) minmax(0, 0.9fr) minmax(0, 0.95fr) minmax(0, 0.8fr)', gap: '1rem', padding: '0.9rem 1.1rem', borderBottom: '1px solid var(--color-border)', background: 'var(--color-surface-alt)' }}>
             <span className="sn-eyebrow">여권 ID</span>
             <span className="sn-eyebrow">모델 및 상태</span>
             <span className="sn-eyebrow">배터리 상태</span>
@@ -322,7 +322,7 @@ export default function PassportsPage() {
                 onClick={() => viewDetail(p.passportId)}
                 style={{ padding: '1rem 1.1rem', borderBottom: '1px solid var(--color-border)', cursor: 'pointer', transition: 'background 0.2s' }}
                 onMouseEnter={(e) => (e.currentTarget.style.background = '#f8fbff')}
-                onMouseLeave={(e) => (e.currentTarget.style.background = '#fff')}
+                    onMouseLeave={(e) => (e.currentTarget.style.background = 'var(--color-surface)')}
               >
                 <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.05fr) minmax(0, 1.25fr) minmax(0, 0.9fr) minmax(0, 0.95fr) minmax(0, 0.8fr)', gap: '1rem', alignItems: 'start' }}>
                   <div>
@@ -377,7 +377,7 @@ export default function PassportsPage() {
             );
           })}
 
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: '0.9rem 1.1rem', borderTop: '1px solid var(--color-border)', background: '#fcfdff' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: '0.9rem 1.1rem', borderTop: '1px solid var(--color-border)', background: 'var(--color-surface-alt)' }}>
             <span className="sn-caption">
               {filteredPassports.length}개 중 {filteredPassports.length ? (currentPage - 1) * PAGE_SIZE + 1 : 0}-
               {Math.min(currentPage * PAGE_SIZE, filteredPassports.length)} 표시

@@ -1,7 +1,7 @@
 .sn-input {
   width: 100%;
   padding: 0.625rem 0.875rem;
-  background: #fff;
+  background: var(--color-surface);
   border: none;
   border-radius: 0.625rem;
   box-shadow: inset 0 0 0 1px var(--color-border);
@@ -34,13 +34,13 @@ select.sn-input { appearance: none; padding-right: 2.25rem; }
   text-transform: uppercase;
   letter-spacing: 0.1em;
   color: var(--color-text-3);
-  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  border-bottom: 1px solid var(--color-border);
 }
 .sn-table tbody td {
   padding: 0.75rem 1rem;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.03);
+  border-bottom: 1px solid var(--color-border);
   color: var(--color-text-1);
   line-height: 1.55;
 }
 .sn-table tbody tr { transition: background 0.2s; }
-.sn-table tbody tr:hover { background: #f8f9fa; }
+.sn-table tbody tr:hover { background: var(--color-surface-alt); }

@@ -1,6 +1,6 @@
 ---
 title: "배터리 여권 세션 활동 로그"
-date: 2026-04-18
+date: 2026-04-20
 tags: [passport, log]
 doc_type: index
 ---
@@ -12,6 +12,7 @@ doc_type: index
 > Codex/OpenCode 상세 로그는 archive 트랙에 별도로 유지한다.
 
 ## 날짜별 기록
+- [[passport/activity-log/2026-04-20|2026-04-20]]
 - [[passport/activity-log/2026-04-18|2026-04-18]]
 - [[passport/activity-log/2026-04-17|2026-04-17]]
 - [[passport/activity-log/2026-04-14|2026-04-14]]
