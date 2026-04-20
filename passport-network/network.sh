@@ -152,7 +152,8 @@ function networkUp() {
     createOrgs
   fi
 
-  COMPOSE_FILES="-f compose/${COMPOSE_FILE_BASE}"
+  # rich query(GetQueryResult) 지원을 위해 CouchDB를 항상 포함
+  COMPOSE_FILES="-f compose/${COMPOSE_FILE_BASE} -f compose/${COMPOSE_FILE_COUCH}"
 
   ${CONTAINER_CLI_COMPOSE} ${COMPOSE_FILES} up -d 2>&1
 
@@ -204,8 +205,9 @@ function deployCC() {
 # Tear down running network
 function networkDown() {
   COMPOSE_BASE_FILES="-f compose/${COMPOSE_FILE_BASE}"
+  COMPOSE_COUCH_FILES="-f compose/${COMPOSE_FILE_COUCH}"
   COMPOSE_CA_FILES="-f compose/${COMPOSE_FILE_CA}"
-  COMPOSE_FILES="${COMPOSE_BASE_FILES} ${COMPOSE_CA_FILES}"
+  COMPOSE_FILES="${COMPOSE_BASE_FILES} ${COMPOSE_COUCH_FILES} ${COMPOSE_CA_FILES}"
 
   ${CONTAINER_CLI_COMPOSE} ${COMPOSE_FILES} down --volumes --remove-orphans 2>/dev/null
 
@@ -228,6 +230,8 @@ function networkDown() {
 
 # use this as the default docker-compose yaml definition
 COMPOSE_FILE_BASE=compose-net.yaml
+# CouchDB는 DID rich query 지원에 필수 — 기본 포함
+COMPOSE_FILE_COUCH=compose-couch.yaml
 # certificate authorities compose file
 COMPOSE_FILE_CA=compose-ca.yaml
 
