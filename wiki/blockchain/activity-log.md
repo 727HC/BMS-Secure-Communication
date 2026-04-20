@@ -296,6 +296,47 @@ filter-repo가 `adminpw`, `change-me-in-production` 등을 `REMOVED_SECRET_ROTAT
 - 여러 세션이 병렬 작업하는 monorepo에서는 lock-and-coordinate 절차가 필수 (한 명이 history 재작성 시 다른 세션 push 일시 중지)
 - Risk acceptance 문서화가 리뷰 사이클 축소에 유효 — "이미 평가됨" 표시
 
+## Session 2026-04-20: 네트워크 재기동 + /api/passports 500 디버깅 2계층
+
+### 작업 내용
+- Docker Desktop WSL hang 재발 → taskkill + 재기동 playbook 반복 적용 (이전 세션과 동일 증상)
+- 전체 Fabric 네트워크 재기동 (compose-net + **compose-couch** + compose-ca)
+- VON Network 재기동 (Indy 4노드 + webserver)
+- 배터리여권 세션이 보고한 `GET /api/passports` 500 간헐적 에러 2계층 디버깅 + 수정
+- Docker 대청소 (컨테이너 57→24, 이미지 64→52, 구버전 체인코드 16종 삭제)
+
+### 변경 파일
+- `passport-network/network.sh` (`COMPOSE_FILE_COUCH` 상수 추가, networkUp/networkDown 양쪽에 CouchDB 포함)
+- `chaincode/passport-contract/query.go` (9개 Query 함수의 nil slice → empty slice 초기화)
+
+### 커밋
+- `d0956a6` — fix(blockchain): network.sh에 compose-couch.yaml 기본 포함
+- `1f02568` — fix(chaincode): Query 함수 nil slice → empty slice 초기화 (체인코드 v2.0 업그레이드)
+
+### 핵심 발견
+
+**Layer 1: peer가 LevelDB로 떠 있었음**
+- 증상: `ExecuteQueryWithMetadata not supported for leveldb` (peer 로그)
+- 원인: `start_passport_network.sh` → `network.sh up` 흐름에서 compose-couch.yaml 누락. peer가 기본 LevelDB로 가동 → rich query 실패
+- 수정: network.sh에 compose-couch 기본 포함
+- 검증: `docker exec peer0.* env | grep CORE_LEDGER_STATE_STATEDATABASE` 로 CouchDB 확인
+
+**Layer 2: Go nil slice 버그**
+- 증상: peer가 CouchDB로 전환돼도 500 유지
+- 실제 에러 메시지 (구조화 로그 추가 후): `"return.records: Invalid type. Expected: array, given: null"`
+- 원인: Query 함수들이 `var records []*Type`(nil slice)를 반환 → 빈 결과 시 JSON `null` → Fabric contract-api-go response schema validation 실패
+- 수정: 9개 함수 일괄 `records := []*Type{}` (sed 치환)
+- 체인코드 v2.0 배포 후 `GET /api/passports?pageSize=5` → 200 `{"records":[],"bookmark":"nil","count":0}`
+
+### 미완료 / 후속
+- 없음 (blockchain 세션 범위는 완료)
+
+### 교훈
+- **배터리여권 세션의 구조화 에러 로그 추가가 결정적** — 라우트 catch에서 에러 swallow하면 원인 추적 불가
+- **Fabric contract API JSON schema는 런타임 검증** — Go에선 문제없던 nil slice가 JSON 직렬화 경계에서 터짐
+- **network.sh는 compose 파일 리스트 전수 확인** — networkUp/networkDown 양쪽 모두 수정해야 down -v 시 CouchDB 볼륨도 정리됨
+- WSL2 Docker Desktop hang은 재발 가능 — playbook 기록해두면 다음에 빠르게 복구
+
 <!--
 ## Session N 템플릿
 
