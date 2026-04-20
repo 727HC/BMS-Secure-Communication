@@ -83,6 +83,8 @@ workspaceS32DS.3.6.0.zip
 .omx/
 **/.env
 
+# BEGIN runtime-artifact-policy
+# Keep this block in sync with scripts/runtime_artifact_policy.py
 # OpenClaw / OMX runtime artifacts
 .omc/
 **/.omc/
@@ -101,3 +103,4 @@ workspaceS32DS.3.6.0.zip
 /caliper-workspace/report.html
 /passport-network/*.tar.gz
 /passport-network/log.txt
+# END runtime-artifact-policy
