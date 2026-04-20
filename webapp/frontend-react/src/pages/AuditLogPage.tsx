@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { api } from '../lib/api';
 import Spinner from '../components/ui/Spinner';
+import { RnDContextChip } from '../components/ui';
 
 interface LogRecord {
   id: string;
@@ -80,6 +81,11 @@ function getStatusStyle(code?: number): { color: string; bg: string } {
   return { color: '#ef4444', bg: 'rgba(239,68,68,0.1)' };
 }
 
+function isWithinHours(ts: string | undefined, hours: number): boolean {
+  if (!ts) return false;
+  return Date.now() - new Date(ts).getTime() < hours * 3600 * 1000;
+}
+
 export default function AuditLogPage() {
   const [logs, setLogs] = useState<LogRecord[]>([]);
   const [total, setTotal] = useState(0);
@@ -139,6 +145,37 @@ export default function AuditLogPage() {
     return found ? found.label : '전체';
   }, [filterAction]);
 
+  // 활동 분류 분포 — 현재 페이지 기반 top 5
+  const actionDistribution = useMemo(() => {
+    const counts: Record<string, number> = {};
+    for (const log of logs) {
+      const key = log.action || 'OTHER';
+      counts[key] = (counts[key] || 0) + 1;
+    }
+    const sorted = Object.entries(counts)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5);
+    const max = sorted[0]?.[1] || 1;
+    return sorted.map(([action, count]) => ({ action, count, pct: Math.round((count / max) * 100) }));
+  }, [logs]);
+
+  // 시간 요약
+  const timeSummary = useMemo(() => {
+    const last24h = logs.filter((l) => isWithinHours(l.timestamp, 24)).length;
+    const last7d = logs.filter((l) => isWithinHours(l.timestamp, 168)).length;
+    return { last24h, last7d };
+  }, [logs]);
+
+  // 성공/실패 비율
+  const statusSummary = useMemo(() => {
+    const withCode = logs.filter((l) => l.statusCode);
+    if (withCode.length === 0) return null;
+    const success = withCode.filter((l) => (l.statusCode || 0) < 400).length;
+    const fail = withCode.length - success;
+    const successPct = Math.round((success / withCode.length) * 100);
+    return { success, fail, successPct, total: withCode.length };
+  }, [logs]);
+
   const toggleDetail = (id: string) => {
     setExpandedId((cur) => (cur === id ? null : id));
   };
@@ -148,6 +185,9 @@ export default function AuditLogPage() {
       {/* HEADER */}
       <div className="sn-page-head">
         <div className="sn-page-head-main">
+          <div style={{ marginBottom: '0.6rem' }}>
+            <RnDContextChip year={2} focus="2-3년차 — 체인 이벤트 불변성" />
+          </div>
           <p className="sn-eyebrow" style={{ margin: '0 0 0.35rem', color: 'var(--color-accent)' }}>감사 기록</p>
           <h1 className="sn-page-title">감사 기록</h1>
           <p className="sn-page-subtitle">총 {total}건의 작업 기록을 시간순으로 확인합니다.</p>
@@ -194,6 +234,90 @@ export default function AuditLogPage() {
         </div>
       </div>
 
+      {/* TIME SUMMARY + STATUS BAR */}
+      {logs.length > 0 && (
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+          {/* 시간별 요약 */}
+          <div className="sn-panel" style={{ padding: '14px 18px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <p className="sn-eyebrow" style={{ margin: 0 }}>시간 기준 집계</p>
+            <div style={{ display: 'flex', gap: 24 }}>
+              <div>
+                <p style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--color-text-1)', margin: 0, fontVariantNumeric: 'tabular-nums' }}>
+                  {timeSummary.last24h}
+                </p>
+                <p style={{ fontSize: '0.75rem', color: 'var(--color-text-3)', margin: '2px 0 0' }}>지난 24시간</p>
+              </div>
+              <div style={{ width: 1, background: 'var(--color-border)', alignSelf: 'stretch' }} />
+              <div>
+                <p style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--color-text-1)', margin: 0, fontVariantNumeric: 'tabular-nums' }}>
+                  {timeSummary.last7d}
+                </p>
+                <p style={{ fontSize: '0.75rem', color: 'var(--color-text-3)', margin: '2px 0 0' }}>지난 7일</p>
+              </div>
+            </div>
+            <p style={{ fontSize: '0.75rem', color: 'var(--color-text-3)', margin: 0 }}>현재 페이지 기록 기준</p>
+          </div>
+
+          {/* 성공/실패 비율 */}
+          <div className="sn-panel" style={{ padding: '14px 18px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <p className="sn-eyebrow" style={{ margin: 0 }}>응답 상태 비율</p>
+            {statusSummary ? (
+              <>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.8125rem' }}>
+                  <span style={{ color: '#10b981', fontWeight: 600 }}>성공 {statusSummary.success}건</span>
+                  <span style={{ color: 'var(--color-text-3)' }}>{statusSummary.successPct}%</span>
+                  <span style={{ color: '#ef4444', fontWeight: 600 }}>실패 {statusSummary.fail}건</span>
+                </div>
+                <div style={{ height: 8, borderRadius: 4, background: 'var(--color-surface-alt)', overflow: 'hidden' }}>
+                  <div
+                    style={{
+                      height: '100%',
+                      width: `${statusSummary.successPct}%`,
+                      background: '#10b981',
+                      borderRadius: 4,
+                      transition: 'width 0.4s ease',
+                    }}
+                  />
+                </div>
+                <p style={{ fontSize: '0.75rem', color: 'var(--color-text-3)', margin: 0 }}>2xx 성공 / 4xx·5xx 실패</p>
+              </>
+            ) : (
+              <p style={{ fontSize: '0.8125rem', color: 'var(--color-text-3)', margin: 0 }}>상태 코드 정보 없음</p>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* 활동 분류 분포 */}
+      {actionDistribution.length > 0 && (
+        <div className="sn-panel" style={{ padding: '16px 18px' }}>
+          <p className="sn-eyebrow" style={{ margin: '0 0 12px' }}>활동 분류 분포 — 현재 페이지 top {actionDistribution.length}</p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {actionDistribution.map(({ action, count, pct }) => (
+              <div key={action} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <span style={{ width: 100, fontSize: '0.8125rem', color: 'var(--color-text-2)', flexShrink: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  {ACTION_LABELS[action] || action}
+                </span>
+                <div style={{ flex: 1, height: 6, borderRadius: 3, background: 'var(--color-surface-alt)', overflow: 'hidden' }}>
+                  <div
+                    style={{
+                      height: '100%',
+                      width: `${pct}%`,
+                      background: 'var(--color-accent)',
+                      borderRadius: 3,
+                      transition: 'width 0.4s ease',
+                    }}
+                  />
+                </div>
+                <span style={{ width: 32, fontSize: '0.75rem', color: 'var(--color-text-3)', textAlign: 'right', fontVariantNumeric: 'tabular-nums', flexShrink: 0 }}>
+                  {count}건
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* FILTERS */}
       <div className="sn-panel sn-toolbar">
         <select
@@ -234,9 +358,19 @@ export default function AuditLogPage() {
       {loading && logs.length === 0 ? (
         <Spinner />
       ) : logs.length === 0 ? (
-        <div style={{ padding: '3rem', textAlign: 'center', border: '1px dashed var(--color-border)', borderRadius: '0.5rem' }}>
-          <p style={{ fontSize: '0.875rem', color: 'var(--color-text-3)', margin: 0 }}>
-            {filterAction ? `${activeActionLabel} 필터에 해당하는 증빙이 없습니다.` : '표시할 증빙 항목이 없습니다.'}
+        <div style={{ padding: '3rem 2rem', textAlign: 'center', border: '1px dashed var(--color-border)', borderRadius: '0.5rem' }}>
+          <div style={{ width: 44, height: 44, borderRadius: 10, background: 'var(--color-surface-alt)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 14px' }}>
+            <svg width="22" height="22" fill="none" stroke="var(--color-text-3)" strokeWidth="1.5" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+          </div>
+          <p style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--color-text-2)', margin: '0 0 6px' }}>
+            {filterAction ? `${activeActionLabel} 작업 기록이 없습니다` : '아직 기록된 작업이 없습니다'}
+          </p>
+          <p style={{ fontSize: '0.8125rem', color: 'var(--color-text-3)', margin: 0 }}>
+            {filterAction
+              ? `현재 필터(${activeActionLabel})와 일치하는 감사 증빙이 없습니다. 필터를 해제하거나 다른 조건을 선택하세요.`
+              : '체인 이벤트가 발생하면 여기에 표시됩니다. 실시간 모드를 켜 두면 자동으로 갱신됩니다.'}
           </p>
         </div>
       ) : (
