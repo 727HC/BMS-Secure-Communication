@@ -23,6 +23,7 @@ status: current
 - [[reviews/passport/manual-qa-checklist|수동 QA 체크리스트]]
 - [[reviews/passport/manual-qa-report-2026-04-07|수동 QA 리포트]]
 - [[handoffs/passport/README|Passport handoff 허브]]
+- [[passport/frontend-legacy-vue|레거시 프론트엔드 개요 (Vue)]]
 
 ## archive / 보관
 - [[passport/_archive/README|archive 허브]]

@@ -34,6 +34,7 @@ status: current
 
 ## 4. 기록성 문서
 - [[passport/activity-log|Passport 활동 로그 인덱스]]
+- [[passport/frontend-legacy-vue|레거시 프론트엔드 개요 (Vue)]]
 - [[blockchain/activity-log|Blockchain 활동 로그]]
 - [[embedded/activity-log|Embedded 활동 로그]]
 - [[mcp/activity-log|MCP 활동 로그]]
