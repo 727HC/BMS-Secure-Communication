@@ -11,6 +11,7 @@ Fabric 네트워크, 체인코드, 보안 수정, KPI 근거를 모아두는 허
 ## 핵심 진입점
 - [[blockchain/overview|세션 개요]]
 - [[blockchain/kpi-targets|KPI 목표]]
+- [[blockchain/assets/README|KPI asset 허브]]
 - [[blockchain/chaincode-file-structure|체인코드 파일 구조]]
 - [[blockchain/chaincode-security-fixes|체인코드 보안 수정 이력]]
 - [[blockchain/couchdb-injection-pattern|CouchDB JSON Injection 방지 패턴]]
