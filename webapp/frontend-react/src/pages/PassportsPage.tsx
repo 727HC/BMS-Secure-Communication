@@ -346,8 +346,8 @@ export default function PassportsPage() {
                 key={p.passportId}
                 onClick={() => viewDetail(p.passportId)}
                 style={{ padding: '1rem 1.1rem', borderBottom: '1px solid var(--color-border)', cursor: 'pointer', transition: 'background 0.2s' }}
-                onMouseEnter={(e) => (e.currentTarget.style.background = '#f8fbff')}
-                    onMouseLeave={(e) => (e.currentTarget.style.background = 'var(--color-surface)')}
+                onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--color-surface-accent)')}
+                onMouseLeave={(e) => (e.currentTarget.style.background = 'var(--color-surface)')}
               >
                 <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.05fr) minmax(0, 1.25fr) minmax(0, 0.9fr) minmax(0, 0.95fr) minmax(0, 0.8fr)', gap: '1rem', alignItems: 'start' }}>
                   <div>
