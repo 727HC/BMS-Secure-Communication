@@ -239,7 +239,7 @@ export default function PassportDetailPage() {
         <div className="sn-page-head-main">
           <button
             onClick={() => navigate('/passports')}
-            style={{ fontSize: 13, color: '#64748b', background: 'none', border: 'none', cursor: 'pointer', padding: 0, marginBottom: 6 }}
+            style={{ fontSize: 13, color: 'var(--color-text-2)', background: 'none', border: 'none', cursor: 'pointer', padding: 0, marginBottom: 6 }}
           >
             ← 여권 목록
           </button>
@@ -254,18 +254,18 @@ export default function PassportDetailPage() {
       </div>
 
       {submitError && (
-        <div style={{ padding: '0.9rem 1rem', borderRadius: '0.85rem', background: '#fef2f2', color: '#b91c1c', border: '1px solid rgba(239,68,68,0.16)' }}>
+        <div style={{ padding: '0.9rem 1rem', borderRadius: '0.85rem', background: 'var(--color-danger-soft)', color: 'var(--color-danger)', border: '1px solid rgba(239,68,68,0.16)' }}>
           <span style={{ fontSize: '0.9rem', lineHeight: 1.6 }}>{submitError}</span>
         </div>
       )}
 
       {/* CRITICAL SIGNALS */}
-      <div style={{ display: 'flex', flexDirection: 'column', background: '#fff', padding: '1.25rem 1.5rem', borderRadius: '1rem', border: '1px solid var(--color-border)', boxShadow: '0 1px 3px rgba(0,0,0,0.02)', gap: '1rem' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', background: 'var(--color-surface)', padding: '1.25rem 1.5rem', borderRadius: '1rem', border: '1px solid var(--color-border)', boxShadow: 'var(--shadow-card)', gap: '1rem' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem' }}>
         <div style={{ display: 'flex', gap: '2.5rem', flexWrap: 'wrap' }}>
           <div>
             <p className="sn-eyebrow" style={{ marginBottom: '0.35rem' }}>SOH (건강 상태)</p>
-            <p style={{ fontFamily: 'var(--font-mono)', fontSize: '1.5rem', fontWeight: 700, color: passport.currentSoh && passport.currentSoh < 80 ? '#ef4444' : 'var(--color-text-1)' }}>
+              <p style={{ fontFamily: 'var(--font-mono)', fontSize: '1.5rem', fontWeight: 700, color: passport.currentSoh && passport.currentSoh < 80 ? 'var(--color-danger)' : 'var(--color-text-1)' }}>
               {passport.currentSoh != null ? `${passport.currentSoh}%` : '--'}
             </p>
           </div>
@@ -281,7 +281,7 @@ export default function PassportDetailPage() {
               <p style={{ fontFamily: 'var(--font-mono)', fontSize: '1.5rem', fontWeight: 700, color: gbaCompliance.pct === 100 ? '#10b981' : '#f59e0b' }}>
                 {gbaCompliance.pct}%
               </p>
-              <span className="bp-stamp" style={{ fontSize: '0.75rem', background: '#f8fbff', color: '#1769e0', border: '1px solid rgba(23,105,224,0.12)' }}>Grade {grade}</span>
+                <span className="bp-stamp" style={{ fontSize: '0.75rem', background: 'var(--color-surface-accent)', color: 'var(--color-accent)', border: '1px solid rgba(23,105,224,0.12)' }}>Grade {grade}</span>
             </div>
           </div>
           <div>
@@ -321,7 +321,7 @@ export default function PassportDetailPage() {
         {warningMessages.length > 0 && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem', paddingTop: '0.75rem', borderTop: '1px solid rgba(15,23,42,0.06)' }}>
             {warningMessages.map((message) => (
-              <div key={message} style={{ display: 'flex', alignItems: 'flex-start', gap: '0.65rem', padding: '0.9rem 1rem', borderRadius: '0.85rem', background: '#fff7ed', color: '#9a3412', border: '1px solid rgba(245,158,11,0.16)' }}>
+        <div key={message} style={{ display: 'flex', alignItems: 'flex-start', gap: '0.65rem', padding: '0.9rem 1rem', borderRadius: '0.85rem', background: 'var(--color-warning-soft)', color: 'var(--color-warning)', border: '1px solid rgba(245,158,11,0.16)' }}>
                 <span style={{ fontSize: 14, fontWeight: 800, lineHeight: 1.4 }}>!</span>
                 <span style={{ fontSize: '0.9rem', lineHeight: 1.6 }}>{message}</span>
               </div>
@@ -352,7 +352,7 @@ export default function PassportDetailPage() {
         </div>
       </div>
 
-      <div className="sn-panel" style={{ padding: '1rem 1.2rem', background: '#fbfdff', borderStyle: 'dashed' }}>
+        <div className="sn-panel" style={{ padding: '1rem 1.2rem', background: 'var(--color-surface-alt)', borderStyle: 'dashed' }}>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: '1rem' }}>
           <div>
             <p className="sn-eyebrow" style={{ marginBottom: '0.35rem' }}>먼저 볼 항목</p>
