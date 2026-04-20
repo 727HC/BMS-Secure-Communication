@@ -13,6 +13,10 @@ doc_type: index
 - `reviews/blockchain/` — Blockchain 리뷰 판정과 리스크 수용 기록
 - `reviews/` 루트 — 위키 운영/통합 점검처럼 도메인 공통 review
 
+## 하위 허브
+- [[reviews/passport/README|Passport review 허브]]
+- [[reviews/blockchain/README|Blockchain review 허브]]
+
 ## 현재 문서
 - [[reviews/passport/manual-qa-checklist|BATP 수동 QA 체크리스트]]
 - [[reviews/passport/manual-qa-report-2026-04-07|BATP 실사용 QA 결과]]

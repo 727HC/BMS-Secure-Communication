@@ -70,6 +70,8 @@ doc_type: guide
 - 도메인 허브: `passport/README.md`, `blockchain/README.md`, `embedded/README.md`, `mcp/README.md`
 - 도메인 개요: `passport/overview.md`, `blockchain/overview.md`, `embedded/overview.md`, `mcp/overview.md`
 - 운영 허브: `handoffs/README.md`, `reviews/README.md`
+- 운영 하위 허브: `handoffs/passport/README.md`, `handoffs/blockchain/README.md`, `reviews/passport/README.md`, `reviews/blockchain/README.md`
+- archive 허브: `passport/_archive/README.md`
 - 참고 자료 허브: `Object/README.md`
 
 새 문서가 특정 허브에서만 발견 가능하다면 링크를 추가하거나, 허브가 이미 같은 역할의 문서를 충분히 가리키는지 확인한다.

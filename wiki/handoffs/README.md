@@ -12,6 +12,10 @@ doc_type: index
 - `handoffs/passport/` — Passport가 보낸/받은 handoff
 - `handoffs/blockchain/` — Blockchain 관련 handoff
 
+## 하위 허브
+- [[handoffs/passport/README|Passport handoff 허브]]
+- [[handoffs/blockchain/README|Blockchain handoff 허브]]
+
 ## 현재 문서
 - [[handoffs/passport/backend-handoff-2026-04-13|Passport 백엔드 요청사항]]
 - [[handoffs/blockchain/passport-handoff-2026-04-13|Blockchain → Passport handoff]]

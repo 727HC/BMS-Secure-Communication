@@ -16,6 +16,9 @@ doc_type: index
 
 ## 운영 기록
 - [[passport/activity-log|활동 로그 인덱스]]
+- [[passport/_archive/README|archive 허브]]
+- [[passport/_archive/activity-log-codex|Codex 상세 로그 인덱스]]
+- [[reviews/passport/README|Passport review 허브]]
 - [[reviews/passport/manual-qa-checklist|수동 QA 체크리스트]]
 - [[reviews/passport/manual-qa-report-2026-04-07|수동 QA 리포트]]
 

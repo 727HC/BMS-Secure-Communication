@@ -25,8 +25,12 @@ doc_type: index
 - [[common/wiki-writing-guide|위키 작성 가이드]]
 - [[common/agent-wiki-writing-guide|Agent wiki writing guide]]
 - [[handoffs/README|handoff 폴더 안내]]
+- [[handoffs/passport/README|Passport handoff 허브]]
+- [[handoffs/blockchain/README|Blockchain handoff 허브]]
 - [[handoffs/blockchain/passport-handoff-2026-04-13|대표 handoff 예시]]
 - [[reviews/README|review 폴더 안내]]
+- [[reviews/passport/README|Passport review 허브]]
+- [[reviews/blockchain/README|Blockchain review 허브]]
 - [[reviews/passport/manual-qa-checklist|대표 QA 체크리스트]]
 
 ## 4. 운영 기록
@@ -35,11 +39,15 @@ doc_type: index
 - [[embedded/activity-log|Embedded 활동 로그]]
 - [[mcp/activity-log|MCP 활동 로그]]
 
-## 5. 참고 자료
+## 5. archive / 상세 로그
+- [[passport/_archive/README|Passport archive 허브]]
+- [[passport/_archive/activity-log-codex|Codex 상세 로그 인덱스]]
+
+## 6. 참고 자료
 - [[Object/README|참고 자료 안내]]
 - `Object/*.pdf`
 
-## 6. 추천 탐색 순서
+## 7. 추천 탐색 순서
 1. 공통 문서로 전체 구조 파악
 2. 담당 도메인의 허브(`README.md`)와 `overview.md` 확인
 3. 관련 ADR / handoff / review note 확인
