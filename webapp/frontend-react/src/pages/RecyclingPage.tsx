@@ -4,6 +4,7 @@ import { api } from '../lib/api';
 import { useAuth } from '../contexts/AuthContext';
 import { getStatusBadge } from '../lib/helpers';
 import Spinner from '../components/ui/Spinner';
+import { RnDContextChip } from '../components/ui';
 import BaseModal from '../components/modals/BaseModal';
 import { ExtractModal, RecycleToggleModal, type ExtractEntry } from '../components/modals/recycling';
 
@@ -32,6 +33,11 @@ function isRecyclingRelated(p: Passport): boolean {
     p.status === 'DISPOSED' ||
     (p.recyclingRates != null && Object.keys(p.recyclingRates).length > 0)
   );
+}
+
+function avg(nums: number[]): number | null {
+  if (nums.length === 0) return null;
+  return Math.round(nums.reduce((a, b) => a + b, 0) / nums.length);
 }
 
 export default function RecyclingPage() {
@@ -101,6 +107,32 @@ export default function RecyclingPage() {
     { key: 'recycling', label: '재활용중' },
     { key: 'disposed', label: '폐기완료' },
   ];
+
+  // 평균 SOH / 잔존수명
+  const avgSoh = useMemo(() => {
+    const vals = passports.filter(isRecyclingRelated).map((p) => p.soh).filter((v): v is number => v != null);
+    return avg(vals);
+  }, [passports]);
+
+  const avgRemaining = useMemo(() => {
+    const vals = passports.filter(isRecyclingRelated).map((p) => p.remainingLifeCycle).filter((v): v is number => v != null);
+    return avg(vals);
+  }, [passports]);
+
+  // 전체 recyclingRates 원소별 평균
+  const avgRates = useMemo(() => {
+    const totals: Record<string, number[]> = {};
+    for (const p of passports) {
+      if (!p.recyclingRates) continue;
+      for (const [k, v] of Object.entries(p.recyclingRates)) {
+        if (!totals[k]) totals[k] = [];
+        totals[k].push(v);
+      }
+    }
+    return Object.entries(totals)
+      .map(([k, vs]) => ({ element: k, avg: Math.round(vs.reduce((a, b) => a + b, 0) / vs.length) }))
+      .sort((a, b) => b.avg - a.avg);
+  }, [passports]);
 
   const closeAll = () => {
     setShowAnalysis(false);
@@ -199,7 +231,8 @@ export default function RecyclingPage() {
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
       <div className="sn-page-head">
         <div className="sn-page-head-main">
-          <p className="sn-eyebrow" style={{ margin: '0 0 0.35rem', color: 'var(--color-accent)' }}>재활용 처리</p>
+          <RnDContextChip year={3} focus="3년차 — 회수·재활용 lifecycle" />
+          <p className="sn-eyebrow" style={{ margin: '0.5rem 0 0.35rem', color: 'var(--color-accent)' }}>재활용 처리</p>
           <h1 className="sn-page-title">재활용 처리</h1>
           <p className="sn-page-subtitle">분석 요청부터 추출·폐기까지 단계별로 관리합니다.</p>
         </div>
@@ -208,28 +241,63 @@ export default function RecyclingPage() {
         </button>
       </div>
 
-      <div className="sn-panel sn-summary-grid sn-summary-grid-4">
-        <div className="sn-summary-lead">
-          <p className="sn-eyebrow sn-summary-title">요약</p>
-          <p className="sn-summary-copy-strong">분석 → 판정 → 추출 → 폐기</p>
-          <p className="sn-summary-copy">단계별 조치를 기록하고 최종 폐기까지 감사 이력을 남깁니다.</p>
+      {/* 확장 summary grid: 5 카드 */}
+      <div className="sn-panel" style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '0.75rem', padding: '0.9rem 1rem' }}>
+        <div style={{ padding: '0.75rem', background: 'var(--color-surface-alt)', borderRadius: '0.5rem' }}>
+          <p className="sn-eyebrow sn-stat-card-title" style={{ margin: '0 0 0.25rem' }}>재활용 가능</p>
+          <p className="sn-stat-count" style={{ color: 'var(--color-success)' }}>{tabCounts.recyclable}</p>
+          <p className="sn-stat-note">판정 완료</p>
         </div>
-        <div>
-          <p className="sn-eyebrow sn-stat-card-title">관리 대상</p>
-          <p className="sn-stat-count">{tabCounts.all}</p>
-          <p className="sn-stat-note">재활용 관련</p>
-        </div>
-        <div>
-          <p className="sn-eyebrow sn-stat-card-title" style={{ color: 'var(--color-accent)' }}>재활용중</p>
+        <div style={{ padding: '0.75rem', background: 'var(--color-surface-alt)', borderRadius: '0.5rem' }}>
+          <p className="sn-eyebrow sn-stat-card-title" style={{ margin: '0 0 0.25rem', color: 'var(--color-accent)' }}>재활용 중</p>
           <p className="sn-stat-count" style={{ color: 'var(--color-accent)' }}>{tabCounts.recycling}</p>
           <p className="sn-stat-note">현재 처리 중</p>
         </div>
-        <div>
-          <p className="sn-eyebrow sn-stat-card-title" style={{ color: 'var(--color-text-2)' }}>폐기</p>
+        <div style={{ padding: '0.75rem', background: 'var(--color-surface-alt)', borderRadius: '0.5rem' }}>
+          <p className="sn-eyebrow sn-stat-card-title" style={{ margin: '0 0 0.25rem', color: 'var(--color-text-2)' }}>폐기 완료</p>
           <p className="sn-stat-count" style={{ color: 'var(--color-text-2)' }}>{tabCounts.disposed}</p>
           <p className="sn-stat-note">누적</p>
         </div>
+        <div style={{ padding: '0.75rem', background: 'var(--color-surface-alt)', borderRadius: '0.5rem' }}>
+          <p className="sn-eyebrow sn-stat-card-title" style={{ margin: '0 0 0.25rem' }}>평균 SOH</p>
+          <p className="sn-stat-count">{avgSoh != null ? `${avgSoh}%` : '-'}</p>
+          <p className="sn-stat-note">관리 대상 기준</p>
+        </div>
+        <div style={{ padding: '0.75rem', background: 'var(--color-surface-alt)', borderRadius: '0.5rem' }}>
+          <p className="sn-eyebrow sn-stat-card-title" style={{ margin: '0 0 0.25rem' }}>평균 잔존수명</p>
+          <p className="sn-stat-count">{avgRemaining != null ? `${avgRemaining}사이클` : '-'}</p>
+          <p className="sn-stat-note">관리 대상 기준</p>
+        </div>
       </div>
+
+      {/* 재활용률 구성 분석 */}
+      {avgRates.length > 0 && (
+        <div className="sn-panel" style={{ padding: '0.9rem 1rem' }}>
+          <p className="sn-eyebrow" style={{ margin: '0 0 0.6rem' }}>재활용률 구성 분석 — 전체 여권 원소별 평균</p>
+          <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
+            {avgRates.map(({ element, avg: rate }) => (
+              <span
+                key={element}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 4,
+                  padding: '4px 12px',
+                  borderRadius: 20,
+                  background: 'var(--color-surface-alt)',
+                  border: '1px solid var(--color-border)',
+                  fontSize: '0.8125rem',
+                  color: 'var(--color-text-1)',
+                  fontWeight: 600,
+                }}
+              >
+                {element}
+                <span style={{ fontSize: '0.75rem', color: 'var(--color-text-3)', fontWeight: 400 }}>{rate}%</span>
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="sn-filter-tabs" style={{ paddingBottom: 0 }}>
         {tabs.map((tab) => {
@@ -265,6 +333,7 @@ export default function RecyclingPage() {
                 <th>상태</th>
                 <th style={{ textAlign: 'right' }}>SOH</th>
                 <th>재활용</th>
+                <th>재활용률</th>
                 <th style={{ textAlign: 'right' }}>조치</th>
               </tr>
             </thead>
@@ -272,6 +341,7 @@ export default function RecyclingPage() {
               {filteredPassports.map((p) => {
                 const badge = getStatusBadge(p.status || 'DISPOSED');
                 const sohColor = p.soh == null ? 'var(--color-text-3)' : p.soh > 80 ? '#059669' : p.soh >= 50 ? '#d97706' : '#dc2626';
+                const rateEntries = p.recyclingRates ? Object.entries(p.recyclingRates).slice(0, 4) : [];
                 return (
                   <tr
                     key={p.passportId}
@@ -294,7 +364,35 @@ export default function RecyclingPage() {
                       {p.recycleAvailable ? (
                         <span className="bp-stamp bp-status-recycling">가능</span>
                       ) : (
-                          <span style={{ fontSize: '0.8125rem', color: 'var(--color-text-3)' }}>미판정</span>
+                        <span style={{ fontSize: '0.8125rem', color: 'var(--color-text-3)' }}>미판정</span>
+                      )}
+                    </td>
+                    <td>
+                      {rateEntries.length > 0 ? (
+                        <span style={{ display: 'inline-flex', flexWrap: 'wrap', gap: 4 }}>
+                          {rateEntries.map(([el, rate]) => (
+                            <span
+                              key={el}
+                              style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: 2,
+                                padding: '2px 7px',
+                                borderRadius: 12,
+                                background: 'var(--color-surface-alt)',
+                                border: '1px solid var(--color-border)',
+                                fontSize: '0.75rem',
+                                color: 'var(--color-text-2)',
+                                whiteSpace: 'nowrap',
+                              }}
+                            >
+                              <span style={{ fontWeight: 600, color: 'var(--color-text-1)' }}>{el}</span>
+                              {rate}%
+                            </span>
+                          ))}
+                        </span>
+                      ) : (
+                        <span style={{ fontSize: '0.8125rem', color: 'var(--color-text-3)' }}>-</span>
                       )}
                     </td>
                     <td style={{ textAlign: 'right' }}>
