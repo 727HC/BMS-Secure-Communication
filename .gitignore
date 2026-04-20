@@ -82,3 +82,22 @@ outputs/
 workspaceS32DS.3.6.0.zip
 .omx/
 **/.env
+
+# OpenClaw / OMX runtime artifacts
+.omc/
+**/.omc/
+.playwright-mcp/
+
+# Test and visual review outputs
+/batp-*.png
+/e2e-tests/screenshots/
+/e2e-tests/test-results/
+
+# Frontend local build outputs
+/webapp/frontend-react/dist/
+/webapp/frontend-react/*.tsbuildinfo
+
+# Local network / benchmark outputs
+/caliper-workspace/report.html
+/passport-network/*.tar.gz
+/passport-network/log.txt

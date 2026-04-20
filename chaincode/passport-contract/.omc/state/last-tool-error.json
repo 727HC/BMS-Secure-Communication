@@ -1,7 +1,0 @@
-{
-  "tool_name": "Bash",
-  "tool_input_preview": "{\"command\":\"git add chaincode/passport-contract/passport_contract.go wiki/common/architecture.md\",\"description\":\"Stage chaincode and wiki changes\"}",
-  "error": "Exit code 128\nfatal: pathspec 'chaincode/passport-contract/passport_contract.go' did not match any files",
-  "timestamp": "2026-04-07T06:07:49.873Z",
-  "retry_count": 1
-}
