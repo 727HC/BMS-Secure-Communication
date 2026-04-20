@@ -75,13 +75,13 @@ export default function Layout({ children }: { children: ReactNode }) {
           style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '8px 8px 18px', cursor: 'pointer' }}
           onClick={() => navigate('/dashboard')}
         >
-          <div style={{ width: 40, height: 40, background: '#1769e0', borderRadius: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, boxShadow: '0 10px 22px rgba(23,105,224,0.18)' }}>
+          <div style={{ width: 40, height: 40, background: 'var(--color-accent)', borderRadius: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, boxShadow: 'var(--shadow-elevated)' }}>
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.3"><rect x="6" y="2" width="12" height="20" rx="2"/><line x1="6" y1="7" x2="18" y2="7"/><line x1="6" y1="17" x2="18" y2="17"/></svg>
           </div>
           <div>
-            <p style={{ fontSize: 13, fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: '#1769e0', margin: '0 0 2px' }}>BATP</p>
-            <p style={{ fontSize: 18, fontWeight: 700, letterSpacing: '-0.03em', color: '#0f172a', margin: 0 }}>BatteryPass</p>
-            <p style={{ fontSize: 13, color: '#94a3b8', margin: '2px 0 0' }}>배터리 여권 작업 공간</p>
+            <p style={{ fontSize: 13, fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--color-accent)', margin: '0 0 2px' }}>BATP</p>
+            <p style={{ fontSize: 18, fontWeight: 700, letterSpacing: '-0.03em', color: 'var(--color-text-1)', margin: 0 }}>BatteryPass</p>
+            <p style={{ fontSize: 13, color: 'var(--color-text-3)', margin: '2px 0 0' }}>배터리 여권 작업 공간</p>
           </div>
         </div>
 
@@ -105,16 +105,16 @@ export default function Layout({ children }: { children: ReactNode }) {
           })}
         </div>
 
-        <div style={{ paddingTop: 16, borderTop: '1px solid rgba(0,0,0,0.06)', display: 'flex', flexDirection: 'column', gap: 4 }}>
+        <div style={{ paddingTop: 16, borderTop: '1px solid var(--color-border)', display: 'flex', flexDirection: 'column', gap: 4 }}>
           <div className="ev-sidebar-profile" style={{ marginTop: 10 }}>
-            <div style={{ width: 38, height: 38, borderRadius: 999, background: '#bbf7d0', color: '#166534', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 700, flexShrink: 0 }}>
+            <div style={{ width: 38, height: 38, borderRadius: 999, background: 'var(--color-avatar-bg)', color: 'var(--color-avatar-text)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 700, flexShrink: 0 }}>
               {userInitials(userId)}
             </div>
             <div style={{ minWidth: 0, flex: 1 }}>
-              <p style={{ fontSize: 14, fontWeight: 700, color: '#0f172a', margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{userId}</p>
-              <p style={{ fontSize: 13, color: '#94a3b8', margin: '2px 0 0', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{orgLabel}</p>
+              <p style={{ fontSize: 14, fontWeight: 700, color: 'var(--color-text-1)', margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{userId}</p>
+              <p style={{ fontSize: 13, color: 'var(--color-text-3)', margin: '2px 0 0', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{orgLabel}</p>
             </div>
-            <button onClick={handleLogout} title="로그아웃" style={{ width: 34, height: 34, border: 'none', background: 'transparent', borderRadius: 10, color: '#64748b', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <button onClick={handleLogout} title="로그아웃" style={{ width: 34, height: 34, border: 'none', background: 'transparent', borderRadius: 10, color: 'var(--color-text-2)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
             </button>
           </div>
@@ -122,20 +122,20 @@ export default function Layout({ children }: { children: ReactNode }) {
       </aside>
 
       <div className="ev-main" style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
-        <header style={{ height: 52, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 32px', background: '#fff', borderBottom: '1px solid rgba(0,0,0,0.04)', flexShrink: 0 }}>
+        <header style={{ height: 52, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 32px', background: 'var(--color-surface)', borderBottom: '1px solid var(--color-border)', flexShrink: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               className="lg:hidden"
-              style={{ padding: 6, background: 'none', border: 'none', color: '#64748b', cursor: 'pointer' }}
+              style={{ padding: 6, background: 'none', border: 'none', color: 'var(--color-text-2)', cursor: 'pointer' }}
             >
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
             </button>
-            <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: 600, color: '#1e293b', margin: 0 }}>{pageTitle}</h2>
+            <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: 600, color: 'var(--color-text-1)', margin: 0 }}>{pageTitle}</h2>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <span style={{ fontSize: 13, color: '#64748b' }}>{userId}</span>
-            <span style={{ fontSize: 12, fontWeight: 600, padding: '2px 8px', borderRadius: 4, background: 'rgba(23,105,224,0.08)', color: '#1769e0' }}>{orgLabel}</span>
+            <span style={{ fontSize: 13, color: 'var(--color-text-2)' }}>{userId}</span>
+            <span style={{ fontSize: 12, fontWeight: 600, padding: '2px 8px', borderRadius: 4, background: 'rgba(23,105,224,0.12)', color: 'var(--color-accent)' }}>{orgLabel}</span>
           </div>
         </header>
 
