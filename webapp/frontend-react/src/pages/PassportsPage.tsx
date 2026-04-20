@@ -63,6 +63,9 @@ const GBA_FIELDS: (keyof Passport)[] = [
   'energyDensity', 'ratedCapacity', 'expectedLifespan', 'voltageRange', 'temperatureRange',
 ];
 
+// 1년차 메타 필드 (R&D project handoff 기준)
+const YEAR1_META = ['manufacturingProcess', 'disposalMethod', 'carbonFootprint', 'recycledElementContent', 'extensionInfo', 'weight'] as const;
+
 function getGbaPct(p: Passport): number {
   let filled = 0;
   GBA_FIELDS.forEach((k) => {
@@ -70,6 +73,29 @@ function getGbaPct(p: Passport): number {
     if (v != null && v !== '' && v !== 0 && !(Array.isArray(v) && v.length === 0)) filled++;
   });
   return Math.round((filled / 21) * 100);
+}
+
+function getYear1Pct(p: Passport): number {
+  let n = 0;
+  YEAR1_META.forEach((k) => {
+    const v = p[k];
+    if (v == null) return;
+    if (typeof v === 'string' && v.trim() === '') return;
+    if (typeof v === 'object' && !Array.isArray(v) && Object.keys(v as object).length === 0) return;
+    n++;
+  });
+  return Math.round((n / YEAR1_META.length) * 100);
+}
+
+function hasYear2(p: Passport): boolean {
+  const vc = p.credentials as unknown;
+  return Array.isArray(vc) && vc.length > 0;
+}
+
+function hasYear3(p: Passport): boolean {
+  if (p.regulatoryVerificationStatus === 'VERIFIED') return true;
+  const phv = p.physicalHistoryVerification as { status?: string } | null | undefined;
+  return phv?.status === 'VERIFIED';
 }
 
 export default function PassportsPage() {
@@ -151,7 +177,13 @@ export default function PassportsPage() {
   const endOfLifeCount = passports.filter((p) => p.status === 'RECYCLING' || p.status === 'DISPOSED').length;
   const avgGba = passports.length ? Math.round(passports.reduce((acc, p) => acc + getGbaPct(p), 0) / passports.length) : 0;
   const vinPendingCount = passports.filter((p) => !p.vin).length;
-  const reviewReadyCount = passports.filter((p) => getGbaPct(p) === 100 && !!p.vin).length;
+
+  // R&D 연차 지표
+  const year1Avg = passports.length
+    ? Math.round(passports.reduce((acc, p) => acc + getYear1Pct(p), 0) / passports.length)
+    : 0;
+  const year2Count = passports.filter(hasYear2).length;
+  const year3Count = passports.filter(hasYear3).length;
 
   const registerEnglishTitle = isManufacturer ? '발급 목록' : isRegulator ? '검토 목록' : '배터리 여권';
   const registerSummary = isManufacturer
@@ -221,6 +253,39 @@ export default function PassportsPage() {
 
       {/* COVER */}
       <section className="sn-section-card">
+        {/* 국가과제 연차별 요약 */}
+        <div style={{ padding: '18px 20px 14px', display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 12, borderBottom: '1px solid var(--color-border)' }}>
+          <div style={{ padding: '14px 16px', borderRadius: 12, background: 'var(--color-surface-accent)', border: '1px solid var(--color-border)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+              <span style={{ fontSize: 10.5, fontWeight: 700, color: 'var(--color-accent)', fontFamily: 'var(--font-mono)', letterSpacing: '0.06em' }}>YEAR 01 · META</span>
+              <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--color-accent)' }}>{year1Avg}%</span>
+            </div>
+            <p style={{ fontSize: 13, fontWeight: 700, color: 'var(--color-text-1)', margin: '0 0 4px' }}>GBA 기초 필드 평균</p>
+            <p style={{ fontSize: 11.5, color: 'var(--color-text-2)', margin: 0, lineHeight: 1.5 }}>
+              제조·중량·탄소·재활용 소재·폐기 방법
+            </p>
+          </div>
+          <div style={{ padding: '14px 16px', borderRadius: 12, background: 'var(--color-surface-warm)', border: '1px solid var(--color-border)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+              <span style={{ fontSize: 10.5, fontWeight: 700, color: 'var(--color-warning)', fontFamily: 'var(--font-mono)', letterSpacing: '0.06em' }}>YEAR 02 · IDENTITY</span>
+              <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--color-warning)' }}>{year2Count}/{totalCount}</span>
+            </div>
+            <p style={{ fontSize: 13, fontWeight: 700, color: 'var(--color-text-1)', margin: '0 0 4px' }}>DID·VC 발급 완료</p>
+            <p style={{ fontSize: 11.5, color: 'var(--color-text-2)', margin: 0, lineHeight: 1.5 }}>
+              규제 대응 신원·증빙 보유 여권
+            </p>
+          </div>
+          <div style={{ padding: '14px 16px', borderRadius: 12, background: 'var(--color-surface-teal)', border: '1px solid var(--color-border)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+              <span style={{ fontSize: 10.5, fontWeight: 700, color: 'var(--color-success)', fontFamily: 'var(--font-mono)', letterSpacing: '0.06em' }}>YEAR 03 · AUDIT</span>
+              <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--color-success)' }}>{year3Count}/{totalCount}</span>
+            </div>
+            <p style={{ fontSize: 13, fontWeight: 700, color: 'var(--color-text-1)', margin: '0 0 4px' }}>규제·물리 검증 완료</p>
+            <p style={{ fontSize: 11.5, color: 'var(--color-text-2)', margin: 0, lineHeight: 1.5 }}>
+              규제 VERIFIED 또는 BMU 일치 검증 통과
+            </p>
+          </div>
+        </div>
 
         <div className="sn-info-grid sn-info-grid-auto">
           <div className="sn-info-tile">
@@ -248,7 +313,7 @@ export default function PassportsPage() {
             </p>
           </div>
           <div className="sn-info-tile">
-            <p className="sn-eyebrow" style={{ marginBottom: '0.35rem' }}>평균 규제 준수</p>
+            <p className="sn-eyebrow" style={{ marginBottom: '0.35rem' }}>평균 GBA 21</p>
             <p style={{ fontFamily: 'var(--font-mono)', fontSize: '1.25rem', fontWeight: 700, color: 'var(--color-text-1)' }}>
               {avgGba}%
             </p>
@@ -257,12 +322,6 @@ export default function PassportsPage() {
             <p className="sn-eyebrow" style={{ marginBottom: '0.35rem' }}>VIN 연결 대기</p>
             <p style={{ fontFamily: 'var(--font-mono)', fontSize: '1.25rem', fontWeight: 700, color: 'var(--color-text-1)' }}>
               {vinPendingCount}
-            </p>
-          </div>
-          <div className="sn-info-tile">
-            <p className="sn-eyebrow" style={{ marginBottom: '0.35rem' }}>즉시 검토 가능</p>
-            <p style={{ fontFamily: 'var(--font-mono)', fontSize: '1.25rem', fontWeight: 700, color: 'var(--color-text-1)' }}>
-              {reviewReadyCount}
             </p>
           </div>
         </div>
