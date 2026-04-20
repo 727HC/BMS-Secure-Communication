@@ -24,7 +24,14 @@ doc_type: index
 - agent 공통 운영 기준
 - 재사용 가능한 템플릿
 
+## 함께 보는 폴더
+- [[decisions/README|ADR 허브]]
+- [[handoffs/README|handoff 허브]]
+- [[reviews/README|review 허브]]
+- [[Object/README|참고 자료 허브]]
+
 ## 다른 폴더로 보내야 하는 것
 - 기술 결정 → [[decisions/README|decisions/]]
 - 도메인별 상세 맥락 → 각 도메인 허브
 - handoff / review 산출물 → [[handoffs/README|handoffs/]], [[reviews/README|reviews/]]
+- 외부 PDF / 원문 자료 → [[Object/README|Object/]]

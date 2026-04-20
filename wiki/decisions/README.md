@@ -21,6 +21,17 @@ doc_type: index
 - 여러 세션/도메인에 영향을 주는 결정을 굳혀야 할 때
 - 다음 작업자가 되풀이 판단하지 않게 해야 할 때
 
+## 이 폴더에 두는 것
+- 세션 간 유지해야 하는 기술 / 운영 결정
+- 보안 원칙, 구조 경계, 제약 합의
+- 이후 handoff / review에서 반복 참조할 기준
+
+## 함께 보는 문서
+- [[common/architecture|시스템 아키텍처]]
+- [[common/terminology|용어 사전]]
+- [[handoffs/README|handoff 허브]]
+- [[reviews/README|review 허브]]
+
 ## 작성 메모
 - 제목은 `ADR-xxx:` 형식을 유지한다.
 - 배경 / 결정 / 영향 / 후속 액션을 함께 남긴다.

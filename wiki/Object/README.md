@@ -9,12 +9,23 @@ doc_type: index
 외부 PDF, 원문 자료, 발표/과제 기준 문서를 두는 폴더다.
 
 ## 현재 자료
-- `BMS__.pdf`
-- `gba-bp-pilot-master ko 한글판.pdf`
+- `BMS__.pdf` — BMS 관련 원문/참고 PDF
+- `gba-bp-pilot-master ko 한글판.pdf` — GBA 배터리 여권 파일럿 기준 한글판
+
+## 이 폴더에 두는 것
+- 외부 PDF, 발표 자료, 원문 스캔본
+- markdown으로 재가공하지 않은 참고 원본
+- 도메인 노트의 근거가 되는 첨부 자료
 
 ## 운영 원칙
 - markdown 지식 노트로 풀어쓴 내용은 각 도메인 폴더에 둔다.
 - 원문 자체는 `Object/`에 둔다.
 - 새 PDF를 추가하면 이 README에 한 줄 설명을 같이 남긴다.
+
+## 함께 보는 문서
+- [[common/knowledge-map|지식 맵]]
+- [[common/wiki-writing-guide|위키 작성 가이드]]
+- [[passport/README|Passport 허브]]
+- [[blockchain/README|Blockchain 허브]]
 
 > 폴더명 `Object/`는 기존 링크 호환성을 위해 유지한다.
