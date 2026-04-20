@@ -1,39 +1,69 @@
 .sn-display {
   font-family: var(--font-display);
-  font-weight: 600;
+  font-weight: 700;
   letter-spacing: -0.04em;
-  line-height: 1.1;
+  line-height: 1.05;
   color: var(--color-text-1);
 }
 .sn-heading {
   font-family: var(--font-display);
-  font-weight: 600;
+  font-weight: 700;
   letter-spacing: -0.02em;
   line-height: 1.2;
   color: var(--color-text-1);
 }
 .sn-body {
   font-family: var(--font-body);
-  font-size: 0.9375rem;
+  font-size: 1rem;
   font-weight: 400;
-  line-height: 1.6;
+  line-height: 1.65;
   color: var(--color-text-2);
 }
 .sn-caption {
   font-family: var(--font-body);
-  font-size: 0.875rem;
+  font-size: 0.9375rem;
   line-height: 1.55;
-  color: var(--color-text-3);
+  color: var(--color-text-2);
 }
 .sn-mono {
   font-family: var(--font-mono);
-  font-size: 0.875rem;
-  letter-spacing: -0.02em;
+  font-size: 0.9375rem;
+  letter-spacing: -0.01em;
+  font-feature-settings: 'zero' 1, 'tnum' 1;
 }
 .sn-eyebrow {
+  font-family: var(--font-body);
   font-size: 0.8125rem;
-  font-weight: 600;
+  font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.08em;
   color: var(--color-text-3);
+}
+
+/* KPI / metric number display — 이전까지 inline 로 흩어져 있던 것을 토큰화 */
+.sn-metric {
+  font-family: var(--font-display);
+  font-weight: 800;
+  color: var(--color-text-1);
+  letter-spacing: -0.03em;
+  line-height: 1;
+  font-feature-settings: 'tnum' 1;
+}
+.sn-metric-sm { font-size: 1.75rem; }
+.sn-metric-md { font-size: 2.25rem; }
+.sn-metric-lg { font-size: 2.75rem; }
+.sn-metric-xl { font-size: 3.25rem; }
+
+.sn-metric-unit {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--color-text-3);
+  margin-left: 0.35rem;
+  letter-spacing: 0;
+}
+
+/* 테이블 본문 — 기본 14px -> 15px 로 상향해 가독성 회복 */
+.sn-table tbody td,
+.sn-table thead th {
+  font-size: 0.9375rem;
 }
