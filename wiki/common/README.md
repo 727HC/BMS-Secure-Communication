@@ -24,6 +24,9 @@ status: current
 - [[reviews/README|review 기록 허브]]
 - [[Object/README|참고 자료 허브]]
 
+## 배경 참조
+- [[common/claude-design-prompt-reference|Claude 디자인 프롬프트 참조]] *(외부/과거 참고 자료)*
+
 ## 이 폴더에 두는 것
 - 여러 도메인에서 반복 참조하는 현재 기준 구조/용어/규칙
 - agent 공통 운영 기준
