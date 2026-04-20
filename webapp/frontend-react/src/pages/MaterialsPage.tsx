@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { api } from '../lib/api';
 import { useAuth } from '../contexts/AuthContext';
 import Spinner from '../components/ui/Spinner';
+import { RnDContextChip } from '../components/ui';
 import {
   MaterialCreateModal,
   MaterialDetailModal,
@@ -13,6 +14,21 @@ function formatDate(dateStr?: string): string {
   if (!dateStr) return '-';
   try { return new Date(dateStr).toLocaleString('ko-KR'); }
   catch { return dateStr; }
+}
+
+const CATEGORY_KEYWORDS: { label: string; keywords: string[] }[] = [
+  { label: '리튬', keywords: ['리튬', 'lithium', 'li'] },
+  { label: '니켈', keywords: ['니켈', 'nickel', 'ni'] },
+  { label: '코발트', keywords: ['코발트', 'cobalt', 'co'] },
+  { label: '망간', keywords: ['망간', 'manganese', 'mn'] },
+];
+
+function categorize(name: string): string {
+  const lower = name.toLowerCase();
+  for (const cat of CATEGORY_KEYWORDS) {
+    if (cat.keywords.some((k) => lower.includes(k))) return cat.label;
+  }
+  return '기타';
 }
 
 export default function MaterialsPage() {
@@ -73,9 +89,20 @@ export default function MaterialsPage() {
   }, [currentPage, totalPages]);
 
   const certifiedCount = filteredMaterials.filter((m) => m.certificationId).length;
-  const certifiedPct = filteredMaterials.length > 0
-    ? (certifiedCount / filteredMaterials.length) * 100
-    : 0;
+
+  const originUniqueCount = useMemo(() => {
+    const origins = filteredMaterials.map((m) => m.origin).filter(Boolean);
+    return new Set(origins).size;
+  }, [filteredMaterials]);
+
+  const categoryDist = useMemo(() => {
+    const counts: Record<string, number> = {};
+    for (const m of materials) {
+      const cat = categorize(m.name || '');
+      counts[cat] = (counts[cat] || 0) + 1;
+    }
+    return counts;
+  }, [materials]);
 
   const openCreateModal = () => setShowCreateModal(true);
   const closeCreateModal = () => setShowCreateModal(false);
@@ -103,11 +130,14 @@ export default function MaterialsPage() {
     }
   };
 
+  const catLabels = ['리튬', '니켈', '코발트', '망간', '기타'];
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
       <div className="sn-page-head">
         <div className="sn-page-head-main">
-          <p className="sn-eyebrow" style={{ margin: '0 0 0.35rem', color: 'var(--color-accent)' }}>원자재 관리</p>
+          <RnDContextChip year={1} focus="1년차 — 원자재 공급망 추적" />
+          <p className="sn-eyebrow" style={{ margin: '0.5rem 0 0.35rem', color: 'var(--color-accent)' }}>원자재 관리</p>
           <h1 className="sn-page-title">원자재 관리</h1>
           <p className="sn-page-subtitle">총 {materials.length}건의 원자재가 등록되어 있습니다</p>
         </div>
@@ -133,22 +163,70 @@ export default function MaterialsPage() {
       </div>
 
       {!loading && filteredMaterials.length > 0 && (
-        <div className="sn-panel" style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '0.9rem 1rem', marginBottom: '1rem' }}>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--color-success)" strokeWidth="2">
-            <path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71" />
-            <path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71" />
-          </svg>
-          <div style={{ flex: 1 }}>
-            <p className="sn-eyebrow" style={{ margin: '0 0 0.25rem' }}>추적 요약</p>
-            <span style={{ fontSize: '0.875rem', color: 'var(--color-success)', fontWeight: 600 }}>블록체인 인증 공급망 추적</span>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.5rem' }}>
-              <div style={{ flex: 1, maxWidth: 120, height: 4, background: 'var(--color-border)', borderRadius: 2, overflow: 'hidden' }}>
-                <div style={{ height: '100%', background: 'var(--color-success)', borderRadius: 2, width: `${certifiedPct}%` }} />
+        <div
+          className="sn-panel"
+          style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.75rem', padding: '0.9rem 1rem', marginBottom: '0' }}
+        >
+          <div style={{ padding: '0.75rem', background: 'var(--color-surface-alt)', borderRadius: '0.5rem' }}>
+            <p className="sn-eyebrow" style={{ margin: '0 0 0.3rem' }}>전체 등록</p>
+            <p style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--color-text-1)', margin: 0, fontVariantNumeric: 'tabular-nums' }}>
+              {filteredMaterials.length}
+            </p>
+            <p style={{ fontSize: '0.75rem', color: 'var(--color-text-3)', margin: '0.25rem 0 0' }}>검색 결과 기준</p>
+          </div>
+          <div style={{ padding: '0.75rem', background: 'var(--color-surface-alt)', borderRadius: '0.5rem' }}>
+            <p className="sn-eyebrow" style={{ margin: '0 0 0.3rem', color: 'var(--color-success)' }}>인증 자재</p>
+            <p style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--color-success)', margin: 0, fontVariantNumeric: 'tabular-nums' }}>
+              {certifiedCount}
+            </p>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginTop: '0.35rem' }}>
+              <div style={{ flex: 1, height: 4, background: 'var(--color-border)', borderRadius: 2, overflow: 'hidden' }}>
+                <div style={{ height: '100%', background: 'var(--color-success)', borderRadius: 2, width: `${filteredMaterials.length > 0 ? (certifiedCount / filteredMaterials.length) * 100 : 0}%` }} />
               </div>
-              <span style={{ fontSize: '0.8125rem', color: 'var(--color-success)', fontWeight: 600 }}>
-                {certifiedCount}/{filteredMaterials.length} 인증
+              <span style={{ fontSize: '0.75rem', color: 'var(--color-text-3)', whiteSpace: 'nowrap' }}>
+                {filteredMaterials.length > 0 ? Math.round((certifiedCount / filteredMaterials.length) * 100) : 0}%
               </span>
             </div>
+          </div>
+          <div style={{ padding: '0.75rem', background: 'var(--color-surface-alt)', borderRadius: '0.5rem' }}>
+            <p className="sn-eyebrow" style={{ margin: '0 0 0.3rem', color: 'var(--color-accent)' }}>원산지 다양성</p>
+            <p style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--color-accent)', margin: 0, fontVariantNumeric: 'tabular-nums' }}>
+              {originUniqueCount}
+            </p>
+            <p style={{ fontSize: '0.75rem', color: 'var(--color-text-3)', margin: '0.25rem 0 0' }}>고유 원산지 수</p>
+          </div>
+        </div>
+      )}
+
+      {!loading && materials.length > 0 && (
+        <div className="sn-panel" style={{ padding: '0.9rem 1rem' }}>
+          <p className="sn-eyebrow" style={{ margin: '0 0 0.6rem' }}>자재 카테고리별 분포</p>
+          <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+            {catLabels.map((cat) => {
+              const count = categoryDist[cat] || 0;
+              return (
+                <span
+                  key={cat}
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 5,
+                    padding: '4px 12px',
+                    borderRadius: 20,
+                    background: 'var(--color-surface-alt)',
+                    border: '1px solid var(--color-border)',
+                    fontSize: '0.8125rem',
+                    color: count > 0 ? 'var(--color-text-1)' : 'var(--color-text-3)',
+                    fontWeight: count > 0 ? 600 : 400,
+                  }}
+                >
+                  {cat}
+                  <span style={{ fontVariantNumeric: 'tabular-nums', fontSize: '0.75rem', color: 'var(--color-text-3)' }}>
+                    {count}
+                  </span>
+                </span>
+              );
+            })}
           </div>
         </div>
       )}
@@ -157,8 +235,12 @@ export default function MaterialsPage() {
         <Spinner />
       ) : filteredMaterials.length === 0 ? (
         <div style={{ padding: '3rem', textAlign: 'center', border: '1px dashed var(--color-border)', borderRadius: '0.5rem' }}>
-          <p style={{ fontSize: '0.875rem', color: 'var(--color-text-3)', marginBottom: '0.75rem' }}>
-            등록된 원자재가 없습니다. 원자재를 등록하여 공급망을 투명하게 추적하세요.
+          <p style={{ fontSize: '0.9375rem', color: 'var(--color-text-2)', marginBottom: '0.5rem', fontWeight: 600 }}>
+            등록된 원자재가 없습니다
+          </p>
+          <p style={{ fontSize: '0.875rem', color: 'var(--color-text-3)', marginBottom: '0.75rem', lineHeight: 1.6 }}>
+            1년차 연구과제 요건상 배터리 핵심 광물(리튬·니켈·코발트·망간 등)의 원산지와 공급망 정보를 블록체인에 기록해야 합니다.
+            원자재를 등록하면 공급망 투명성 지표 추적이 시작됩니다.
           </p>
           {isManufacturer && (
             <button onClick={openCreateModal} className="sn-btn sn-btn-accent">원자재 등록</button>
