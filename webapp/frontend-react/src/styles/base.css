@@ -10,6 +10,10 @@ body {
   color-scheme: light;
 }
 
+:root.dark body {
+  color-scheme: dark;
+}
+
 
 button, a, input, select, textarea { transition: all 0.2s ease; }
 

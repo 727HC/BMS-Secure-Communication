@@ -60,11 +60,11 @@ export default function DataTab({ bmuRecords }: Props) {
             </thead>
             <tbody>
               {bmuRecords.length === 0 ? (
-                <tr><td colSpan={5} style={{ textAlign: 'center', padding: 32, color: '#a3a3a3' }}>기록 없음</td></tr>
+                <tr><td colSpan={5} style={{ textAlign: 'center', padding: 32, color: 'var(--color-text-3)' }}>기록 없음</td></tr>
               ) : (
                 bmuRecords.slice(0, 20).map((r, idx) => (
                   <tr key={r.recordId || idx}>
-                    <td style={{ fontFamily: 'var(--font-mono)', fontSize: '0.8125rem', color: '#525252' }}>{formatDate(r.timestamp)}</td>
+                    <td style={{ fontFamily: 'var(--font-mono)', fontSize: '0.8125rem', color: 'var(--color-text-2)' }}>{formatDate(r.timestamp)}</td>
                     <td style={{ textAlign: 'right', fontFamily: 'var(--font-mono)' }}>{scaleSOC(r.soc)}%</td>
                     <td style={{ textAlign: 'right', fontFamily: 'var(--font-mono)' }}>{r.voltage ?? '-'}V</td>
                     <td style={{ textAlign: 'right', fontFamily: 'var(--font-mono)' }}>{r.current ?? '-'}A</td>

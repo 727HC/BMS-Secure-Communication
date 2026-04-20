@@ -271,7 +271,7 @@ export default function RecyclingPage() {
             <tbody>
               {filteredPassports.map((p) => {
                 const badge = getStatusBadge(p.status || 'DISPOSED');
-                const sohColor = p.soh == null ? '#a3a3a3' : p.soh > 80 ? '#059669' : p.soh >= 50 ? '#d97706' : '#dc2626';
+                const sohColor = p.soh == null ? 'var(--color-text-3)' : p.soh > 80 ? '#059669' : p.soh >= 50 ? '#d97706' : '#dc2626';
                 return (
                   <tr
                     key={p.passportId}
