@@ -6,6 +6,9 @@ doc_type: reference
 ---
 # UI 레퍼런스
 
+## 관련 자산
+- [[passport/assets/README|Passport UI asset 허브]]
+
 ## 현재 활성 레퍼런스
 
 ### EV Data Interface (Envato)

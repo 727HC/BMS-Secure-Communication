@@ -51,6 +51,7 @@ xEV BMS 보안 플랫폼용 공용 Obsidian vault다.
 - [[passport/overview|세션 개요]]
 - [[passport/frontend|프론트엔드 구조]]
 - [[passport/design-tokens|디자인 토큰]]
+- [[passport/assets/README|UI asset 허브]]
 - [[passport/activity-log|활동 로그 인덱스]]
 - [[reviews/passport/manual-qa-checklist|수동 QA 체크리스트]]
 
@@ -58,6 +59,7 @@ xEV BMS 보안 플랫폼용 공용 Obsidian vault다.
 - [[blockchain/README|Blockchain 허브]]
 - [[blockchain/overview|세션 개요]]
 - [[blockchain/kpi-targets|KPI 목표]]
+- [[blockchain/assets/README|KPI asset 허브]]
 - [[blockchain/chaincode-security-fixes|체인코드 보안 수정 이력]]
 - [[handoffs/blockchain/passport-handoff-2026-04-13|Passport 세션 handoff]]
 

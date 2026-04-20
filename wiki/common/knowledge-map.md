@@ -45,6 +45,8 @@ doc_type: index
 
 ## 6. 참고 자료
 - [[Object/README|참고 자료 안내]]
+- [[passport/assets/README|Passport UI asset 허브]]
+- [[blockchain/assets/README|Blockchain KPI asset 허브]]
 - `Object/*.pdf`
 
 ## 7. 추천 탐색 순서

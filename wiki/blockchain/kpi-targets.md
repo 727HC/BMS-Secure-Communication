@@ -6,6 +6,9 @@ doc_type: reference
 ---
 # 국가과제 KPI 목표 및 평가 기준
 
+## 관련 자산
+- [[blockchain/assets/README|Blockchain KPI asset 허브]]
+
 ## 평가 기준 상세
 ![KPI 평가 기준](assets/kpi-evaluation-criteria.png)
 

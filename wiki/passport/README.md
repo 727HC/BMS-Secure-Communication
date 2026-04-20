@@ -13,6 +13,7 @@ doc_type: index
 - [[passport/frontend|프론트엔드 구조]]
 - [[passport/design-tokens|디자인 토큰]]
 - [[passport/ui-references|UI 레퍼런스]]
+- [[passport/assets/README|UI asset 허브]]
 
 ## 운영 기록
 - [[passport/activity-log|활동 로그 인덱스]]
