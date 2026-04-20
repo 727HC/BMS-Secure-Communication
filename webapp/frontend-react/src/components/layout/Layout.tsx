@@ -1,6 +1,7 @@
 import { type ReactNode, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
+import { useTheme } from '../../contexts/ThemeContext';
 import { MSP_LABELS } from '../../lib/api';
 
 interface NavItem {
@@ -54,6 +55,7 @@ function userInitials(userId: string | null): string {
 
 export default function Layout({ children }: { children: ReactNode }) {
   const { userId, org, logout } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -106,6 +108,16 @@ export default function Layout({ children }: { children: ReactNode }) {
         </div>
 
         <div style={{ paddingTop: 16, borderTop: '1px solid var(--color-border)', display: 'flex', flexDirection: 'column', gap: 4 }}>
+          <button
+            type="button"
+            className="ev-theme-toggle"
+            onClick={toggleTheme}
+            title={theme === 'dark' ? '라이트 모드' : '다크 모드'}
+            aria-label={theme === 'dark' ? '라이트 모드로 전환' : '다크 모드로 전환'}
+          >
+            <span className="ev-theme-toggle__icon" aria-hidden="true">{theme === 'dark' ? '☀' : '☾'}</span>
+            <span>{theme === 'dark' ? '라이트 모드' : '다크 모드'}</span>
+          </button>
           <div className="ev-sidebar-profile" style={{ marginTop: 10 }}>
             <div style={{ width: 38, height: 38, borderRadius: 999, background: 'var(--color-avatar-bg)', color: 'var(--color-avatar-text)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 700, flexShrink: 0 }}>
               {userInitials(userId)}

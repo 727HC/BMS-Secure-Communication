@@ -32,23 +32,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (state.token) {
       sessionStorage.setItem(TOKEN_KEY, state.token);
       localStorage.removeItem(TOKEN_KEY);
+      localStorage.setItem('bp_token', state.token);
     } else {
       sessionStorage.removeItem(TOKEN_KEY);
       localStorage.removeItem(TOKEN_KEY);
+      localStorage.removeItem('bp_token');
     }
     if (state.userId) {
       sessionStorage.setItem(USER_KEY, state.userId);
       localStorage.removeItem(USER_KEY);
+      localStorage.setItem('bp_userId', state.userId);
     } else {
       sessionStorage.removeItem(USER_KEY);
       localStorage.removeItem(USER_KEY);
+      localStorage.removeItem('bp_userId');
     }
     if (state.org) {
       sessionStorage.setItem(ORG_KEY, state.org);
       localStorage.removeItem(ORG_KEY);
+      localStorage.setItem('bp_orgMsp', state.org);
     } else {
       sessionStorage.removeItem(ORG_KEY);
       localStorage.removeItem(ORG_KEY);
+      localStorage.removeItem('bp_orgMsp');
     }
   }, [state]);
 

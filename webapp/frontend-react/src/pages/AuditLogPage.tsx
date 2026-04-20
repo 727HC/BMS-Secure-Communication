@@ -73,7 +73,7 @@ function relativeTime(ts?: string): string {
 }
 
 function getStatusStyle(code?: number): { color: string; bg: string } {
-  if (!code) return { color: '#6b7280', bg: 'transparent' };
+  if (!code) return { color: 'var(--color-text-2)', bg: 'transparent' };
   if (code < 300) return { color: '#34d399', bg: 'rgba(52,211,153,0.1)' };
   if (code < 400) return { color: '#60a5fa', bg: 'rgba(96,165,250,0.1)' };
   if (code < 500) return { color: '#fbbf24', bg: 'rgba(251,191,36,0.1)' };
@@ -211,7 +211,7 @@ export default function AuditLogPage() {
             type="checkbox"
             checked={filterWriteOnly}
             onChange={(e) => setFilterWriteOnly(e.target.checked)}
-            style={{ width: 16, height: 16, accentColor: '#171717', borderRadius: 4 }}
+            style={{ width: 16, height: 16, accentColor: 'var(--color-text-1)', borderRadius: 4 }}
           />
           <span style={{ fontSize: '0.875rem', color: 'var(--color-text-2)' }}>쓰기 작업만</span>
         </label>
@@ -226,7 +226,7 @@ export default function AuditLogPage() {
             <p className="sn-eyebrow" style={{ margin: '0 0 4px' }}>활성 필터</p>
             <p style={{ margin: 0, fontSize: '0.9rem', fontWeight: 700, color: 'var(--color-text-1)' }}>{activeActionLabel}</p>
           </div>
-          <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: '0.8125rem', color: '#6b7280' }}>{total}건</span>
+          <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: '0.8125rem', color: 'var(--color-text-2)' }}>{total}건</span>
         </div>
       )}
 
@@ -250,7 +250,7 @@ export default function AuditLogPage() {
                   <div
                     onClick={() => toggleDetail(log.id)}
                     style={{
-                      background: expanded ? '#fafafa' : '#fff',
+                      background: expanded ? 'var(--color-surface-alt)' : 'var(--color-surface)',
                       padding: '0.75rem 1rem',
                       display: 'flex',
                       gap: '0.75rem',
@@ -278,7 +278,7 @@ export default function AuditLogPage() {
                           style={{
                             width: 10,
                             height: 10,
-                            color: '#6b7280',
+                            color: 'var(--color-text-2)',
                             transition: 'transform 0.2s',
                             transform: expanded ? 'rotate(90deg)' : 'rotate(0deg)',
                             marginLeft: 'auto',
@@ -316,8 +316,8 @@ export default function AuditLogPage() {
                   </div>
 
                   {expanded && (
-                    <div style={{ background: '#fafafa', borderTop: '1px solid rgba(0,0,0,0.04)', padding: '12px 16px 16px' }}>
-                      <div style={{ background: '#fff', boxShadow: 'inset 0 0 0 1px rgba(0,0,0,0.06)', borderRadius: 10, padding: 16, display: 'flex', flexDirection: 'column', gap: 14 }}>
+                    <div style={{ background: 'var(--color-surface-alt)', borderTop: '1px solid rgba(0,0,0,0.04)', padding: '12px 16px 16px' }}>
+                      <div style={{ background: 'var(--color-surface)', boxShadow: 'inset 0 0 0 1px rgba(0,0,0,0.06)', borderRadius: 10, padding: 16, display: 'flex', flexDirection: 'column', gap: 14 }}>
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 12 }}>
                           {[
                             { k: '로그 ID', v: log.id, mono: true },
@@ -330,12 +330,12 @@ export default function AuditLogPage() {
                             { k: '조직', v: log.orgMsp || '(없음)', mono: false },
                           ].map(({ k, v, mono, color }) => (
                             <div key={k}>
-                              <p style={{ fontSize: '0.8125rem', fontWeight: 600, color: '#6b7280', textTransform: 'uppercase', margin: '0 0 2px' }}>{k}</p>
+                              <p style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--color-text-2)', textTransform: 'uppercase', margin: '0 0 2px' }}>{k}</p>
                               <p
                                 style={{
                                   fontFamily: mono ? "'JetBrains Mono',monospace" : undefined,
                                   fontSize: '0.875rem',
-                                  color: color || '#374151',
+                                  color: color || 'var(--color-text-2)',
                                   wordBreak: 'break-all',
                                   margin: 0,
                                 }}
@@ -352,8 +352,8 @@ export default function AuditLogPage() {
                               style={{
                                 fontFamily: "'JetBrains Mono',monospace",
                                 fontSize: '0.875rem',
-                                color: '#525252',
-                                background: '#fafafa',
+                                color: 'var(--color-text-2)',
+                                background: 'var(--color-surface-alt)',
                                 boxShadow: 'inset 0 0 0 1px rgba(0,0,0,0.06)',
                                 borderRadius: 8,
                                 padding: 12,
@@ -375,7 +375,7 @@ export default function AuditLogPage() {
           </div>
 
           <div style={{ padding: '12px 20px', borderTop: '1px solid rgba(0,0,0,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: '0.8125rem', color: '#a3a3a3' }}>
+            <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: '0.8125rem', color: 'var(--color-text-3)' }}>
               {total}건 중 {(page - 1) * 50 + 1}~{Math.min(page * 50, total)}
             </span>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -387,7 +387,7 @@ export default function AuditLogPage() {
               >
                 이전
               </button>
-              <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: '0.8125rem', color: '#a3a3a3', fontVariantNumeric: 'tabular-nums' }}>
+              <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: '0.8125rem', color: 'var(--color-text-3)', fontVariantNumeric: 'tabular-nums' }}>
                 {page} / {totalPages}
               </span>
               <button

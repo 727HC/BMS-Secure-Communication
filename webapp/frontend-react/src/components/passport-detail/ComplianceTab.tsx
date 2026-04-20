@@ -40,8 +40,8 @@ export default function ComplianceTab({ passport, gbaCompliance, complianceGrade
                 borderRadius: 999,
                 fontSize: 12,
                 fontWeight: 600,
-                background: isFullyVerified ? '#eefaf3' : (activeVcCount > 0 ? '#fff7ed' : '#f1f5f9'),
-                color: isFullyVerified ? '#059669' : (activeVcCount > 0 ? '#b45309' : '#64748b'),
+                background: isFullyVerified ? '#eefaf3' : (activeVcCount > 0 ? '#fff7ed' : 'var(--color-surface-alt)'),
+                color: isFullyVerified ? '#059669' : (activeVcCount > 0 ? '#b45309' : 'var(--color-text-2)'),
                 border: `1px solid ${isFullyVerified ? 'rgba(16,185,129,0.12)' : (activeVcCount > 0 ? 'rgba(245,158,11,0.14)' : 'rgba(15,23,42,0.06)')}`,
               }}
             >
@@ -128,12 +128,12 @@ export default function ComplianceTab({ passport, gbaCompliance, complianceGrade
               gap: 8,
               padding: '6px 10px',
               borderRadius: 10,
-              background: '#f8fafc',
+              background: 'var(--color-surface-alt)',
               border: '1px solid rgba(15,23,42,0.06)',
-              color: '#0f172a',
+              color: 'var(--color-text-1)',
             }}
           >
-            <span style={{ fontSize: 13, color: '#64748b' }}>규제 등급</span>
+            <span style={{ fontSize: 13, color: 'var(--color-text-2)' }}>규제 등급</span>
             <strong style={{ fontSize: 20, fontWeight: 800 }}>{complianceGrade}</strong>
           </span>
         </div>
@@ -160,7 +160,7 @@ export default function ComplianceTab({ passport, gbaCompliance, complianceGrade
                 borderBottom: '1px solid rgba(0,0,0,0.04)',
               }}
             >
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 13, color: '#94a3b8' }}>{group.name}</div>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 13, color: 'var(--color-text-3)' }}>{group.name}</div>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                 {group.fields.map((f) => (
                   <span

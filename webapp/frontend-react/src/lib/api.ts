@@ -3,7 +3,7 @@ import { STATUS_LABELS, STATUS_LIST } from './helpers';
 const API_BASE = window.location.origin + '/api';
 
 function getToken(): string | null {
-  return localStorage.getItem('auth_token');
+  return sessionStorage.getItem('auth_token') || localStorage.getItem('auth_token');
 }
 
 async function request<T>(method: string, path: string, body?: unknown): Promise<T> {

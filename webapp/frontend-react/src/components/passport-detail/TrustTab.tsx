@@ -42,7 +42,7 @@ export default function TrustTab({ passport, vcList, onVerify, onRevoke, canRequ
           <div style={{ padding: '16px 18px', display: 'flex', flexDirection: 'column', gap: 12 }}>
             {issuers.map((issuer) => (
               <div key={issuer.issuerMsp} style={{ display: 'grid', gridTemplateColumns: '180px minmax(0,1fr)', gap: 12 }}>
-                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 13, color: '#94a3b8' }}>{issuer.issuerMsp}</div>
+                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 13, color: 'var(--color-text-3)' }}>{issuer.issuerMsp}</div>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                   {issuer.types.map((type) => (
                     <span key={type} className="sn-detail-inline-stamp">{type}</span>
@@ -59,7 +59,7 @@ export default function TrustTab({ passport, vcList, onVerify, onRevoke, canRequ
           <h3 className="sn-detail-dossier-title">DID</h3>
         </div>
         <div style={{ padding: 18 }}>
-          <p style={{ fontFamily: 'var(--font-mono)', fontSize: 14, color: '#0f172a', wordBreak: 'break-all', margin: 0 }}>
+          <p style={{ fontFamily: 'var(--font-mono)', fontSize: 14, color: 'var(--color-text-1)', wordBreak: 'break-all', margin: 0 }}>
             {passport.did || '미등록'}
           </p>
         </div>
@@ -84,10 +84,10 @@ export default function TrustTab({ passport, vcList, onVerify, onRevoke, canRequ
                   borderBottom: '1px solid rgba(0,0,0,0.04)',
                 }}
               >
-                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 13, color: '#94a3b8' }}>{formatDate(vc.issuedAt)}</div>
+                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 13, color: 'var(--color-text-3)' }}>{formatDate(vc.issuedAt)}</div>
                 <div>
-                  <p style={{ margin: '0 0 4px', fontSize: 14, fontWeight: 600, color: '#0f172a' }}>{vc.credType || 'VC'}</p>
-                  <p style={{ margin: 0, fontSize: 13, color: '#94a3b8', fontFamily: 'var(--font-mono)', wordBreak: 'break-all' }}>
+                  <p style={{ margin: '0 0 4px', fontSize: 14, fontWeight: 600, color: 'var(--color-text-1)' }}>{vc.credType || 'VC'}</p>
+                  <p style={{ margin: 0, fontSize: 13, color: 'var(--color-text-3)', fontFamily: 'var(--font-mono)', wordBreak: 'break-all' }}>
                     {vc.credentialId}
                   </p>
                 </div>

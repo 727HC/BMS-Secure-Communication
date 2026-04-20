@@ -1,6 +1,7 @@
 import { lazy, Suspense } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
+import { ThemeProvider } from './contexts/ThemeContext';
 import Layout from './components/layout/Layout';
 import RequireAuth from './components/layout/RequireAuth';
 import Spinner from './components/ui/Spinner';
@@ -27,9 +28,10 @@ function ProtectedPage({ children }: { children: React.ReactNode }) {
 
 export default function App() {
   return (
-    <AuthProvider>
-      <Suspense fallback={<Spinner minHeight="52vh" />}>
-        <Routes>
+    <ThemeProvider>
+      <AuthProvider>
+        <Suspense fallback={<Spinner minHeight="52vh" />}>
+          <Routes>
           <Route path="/" element={<LandingPage />} />
           <Route path="/login" element={<LoginPage />} />
 
@@ -43,9 +45,10 @@ export default function App() {
           <Route path="/qr-scan" element={<ProtectedPage><QrScanPage /></ProtectedPage>} />
           <Route path="/audit-log" element={<ProtectedPage><AuditLogPage /></ProtectedPage>} />
 
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </Suspense>
-    </AuthProvider>
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </Suspense>
+      </AuthProvider>
+    </ThemeProvider>
   );
 }

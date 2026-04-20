@@ -251,15 +251,15 @@ export default function BmuDataPage() {
       ) : !hasSearched && !loading ? (
         <div className="sn-panel" style={{ overflow: 'hidden' }}>
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '80px 24px' }}>
-            <div style={{ width: 56, height: 56, borderRadius: 12, background: '#f5f5f5', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 20 }}>
+            <div style={{ width: 56, height: 56, borderRadius: 12, background: 'var(--color-surface-alt)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 20 }}>
               <svg width="28" height="28" fill="none" stroke="#a3a3a3" strokeWidth="1.5" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
               </svg>
             </div>
-            <h3 style={{ fontSize: '1rem', fontWeight: 600, color: '#171717', margin: '0 0 6px' }}>
+            <h3 style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--color-text-1)', margin: '0 0 6px' }}>
               여권 ID를 입력하여 데이터를 조회하세요
             </h3>
-              <p style={{ fontSize: '0.875rem', color: '#a3a3a3', textAlign: 'center', maxWidth: '28rem' }}>
+              <p style={{ fontSize: '0.875rem', color: 'var(--color-text-3)', textAlign: 'center', maxWidth: '28rem' }}>
               배터리 여권 ID를 입력하면 SOC, 전압, 전류, 온도 등 센서 데이터를 확인할 수 있습니다.
             </p>
           </div>
@@ -272,10 +272,10 @@ export default function BmuDataPage() {
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
               </svg>
             </div>
-            <h3 style={{ fontSize: '1rem', fontWeight: 700, color: '#171717', margin: '0 0 6px' }}>
+            <h3 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--color-text-1)', margin: '0 0 6px' }}>
               현재 계정으로는 이 여권의 BMU 기록을 열 수 없습니다
             </h3>
-              <p style={{ fontSize: '0.875rem', color: '#6b7280', maxWidth: '32rem', margin: '0 0 6px' }}>
+              <p style={{ fontSize: '0.875rem', color: 'var(--color-text-2)', maxWidth: '32rem', margin: '0 0 6px' }}>
               제조사 또는 접근 권한이 있는 계정으로 다시 조회해 주세요. 현재 메시지: {errorMsg}
             </p>
           </div>
@@ -283,8 +283,8 @@ export default function BmuDataPage() {
       ) : hasSearched && records.length === 0 && !loading ? (
         <div className="sn-panel" style={{ overflow: 'hidden' }}>
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '80px 24px' }}>
-            <h3 style={{ fontSize: '1rem', fontWeight: 600, color: '#171717', margin: '0 0 6px' }}>데이터가 없습니다</h3>
-              <p style={{ fontSize: '0.875rem', color: '#a3a3a3' }}>해당 여권에 대한 BMU 기록이 존재하지 않습니다.</p>
+            <h3 style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--color-text-1)', margin: '0 0 6px' }}>데이터가 없습니다</h3>
+              <p style={{ fontSize: '0.875rem', color: 'var(--color-text-3)' }}>해당 여권에 대한 BMU 기록이 존재하지 않습니다.</p>
           </div>
         </div>
       ) : records.length > 0 ? (
@@ -295,7 +295,7 @@ export default function BmuDataPage() {
               <svg style={{ width: 16, height: 16, color: '#059669' }} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 10h16M4 14h16M4 18h16" />
               </svg>
-              <span style={{ fontSize: '0.875rem', fontWeight: 600, color: '#374151' }}>판독 기록</span>
+              <span style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--color-text-2)' }}>판독 기록</span>
           <span style={{ display: 'inline-flex', alignItems: 'center', padding: '2px 8px', borderRadius: 20, fontFamily: "'JetBrains Mono',monospace", fontSize: '0.75rem', fontWeight: 600, color: '#059669', background: 'rgba(52,211,153,0.1)' }}>
                 {records.length}건
               </span>
@@ -306,7 +306,7 @@ export default function BmuDataPage() {
                   갱신 중...
                 </span>
               )}
-          <span style={{ padding: '2px 8px', borderRadius: 6, fontFamily: "'JetBrains Mono',monospace", fontSize: '0.8125rem', color: '#6b7280', background: '#f1f5f9' }}>
+          <span style={{ padding: '2px 8px', borderRadius: 6, fontFamily: "'JetBrains Mono',monospace", fontSize: '0.8125rem', color: 'var(--color-text-3)', background: 'var(--color-surface-alt)' }}>
                 {passportId}
               </span>
             </div>
@@ -330,19 +330,19 @@ export default function BmuDataPage() {
               <tbody>
                 {sortedRecords.map((r, idx) => {
                   const socVal = scaleSOC(r.soc);
-                  const socColor = socVal > 50 ? '#171717' : socVal > 20 ? '#f59e0b' : '#ef4444';
+                  const socColor = socVal > 50 ? 'var(--color-text-1)' : socVal > 20 ? '#f59e0b' : '#ef4444';
                   const badges = decodeStatusFlags(r.statusFlags);
                   return (
                     <tr key={r.recordId || idx}>
                       <td style={{ padding: 0, width: 4, position: 'relative' }}>
                         {idx === 0 && (
-                          <div style={{ position: 'absolute', left: 0, top: 4, bottom: 4, width: 3, borderRadius: '0 3px 3px 0', background: '#171717' }} />
+                          <div style={{ position: 'absolute', left: 0, top: 4, bottom: 4, width: 3, borderRadius: '0 3px 3px 0', background: 'var(--color-text-1)' }} />
                         )}
                       </td>
-                      <td style={{ whiteSpace: 'nowrap', fontSize: '0.85rem', color: '#525252' }}>{formatTimestamp(r.timestamp)}</td>
+                      <td style={{ whiteSpace: 'nowrap', fontSize: '0.85rem', color: 'var(--color-text-2)' }}>{formatTimestamp(r.timestamp)}</td>
                       <td style={{ whiteSpace: 'nowrap', textAlign: 'right' }}>
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 8 }}>
-                          <div style={{ width: 64, height: 6, borderRadius: 999, overflow: 'hidden', background: '#e5e5e5' }}>
+                          <div style={{ width: 64, height: 6, borderRadius: 999, overflow: 'hidden', background: 'var(--color-border)' }}>
                             <div style={{ height: '100%', borderRadius: 999, width: `${Math.min(socVal, 100)}%`, background: socColor, transition: 'all 0.3s' }} />
                           </div>
                           <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: '0.85rem', fontWeight: 700, color: socColor }}>
@@ -350,23 +350,23 @@ export default function BmuDataPage() {
                           </span>
                         </div>
                       </td>
-                      <td style={{ whiteSpace: 'nowrap', textAlign: 'right', fontFamily: "'JetBrains Mono',monospace", fontSize: '0.85rem', color: '#525252' }}>
+                      <td style={{ whiteSpace: 'nowrap', textAlign: 'right', fontFamily: "'JetBrains Mono',monospace", fontSize: '0.85rem', color: 'var(--color-text-2)' }}>
                         {formatNumber(r.voltage, 2)}
                       </td>
-                      <td style={{ whiteSpace: 'nowrap', textAlign: 'right', fontFamily: "'JetBrains Mono',monospace", fontSize: '0.85rem', color: '#525252' }}>
+                      <td style={{ whiteSpace: 'nowrap', textAlign: 'right', fontFamily: "'JetBrains Mono',monospace", fontSize: '0.85rem', color: 'var(--color-text-2)' }}>
                         {formatNumber(r.current, 2)}
                       </td>
-                      <td style={{ whiteSpace: 'nowrap', textAlign: 'right', fontFamily: "'JetBrains Mono',monospace", fontSize: '0.85rem', color: '#525252' }}>
+                      <td style={{ whiteSpace: 'nowrap', textAlign: 'right', fontFamily: "'JetBrains Mono',monospace", fontSize: '0.85rem', color: 'var(--color-text-2)' }}>
                         {scaleTemp(r.temperature)}
                       </td>
-                      <td style={{ whiteSpace: 'nowrap', textAlign: 'right', fontFamily: "'JetBrains Mono',monospace", fontSize: '0.85rem', color: '#525252' }}>
+                      <td style={{ whiteSpace: 'nowrap', textAlign: 'right', fontFamily: "'JetBrains Mono',monospace", fontSize: '0.85rem', color: 'var(--color-text-2)' }}>
                         {r.dischargeCycles != null ? r.dischargeCycles : '-'}
                       </td>
                       <td style={{ whiteSpace: 'nowrap' }}>
                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
                           {badges.length === 0 ? (
-        <span style={{ display: 'inline-flex', alignItems: 'center', padding: '2px 10px', borderRadius: 20, fontSize: '0.875rem', fontWeight: 500, background: '#f5f5f5', color: '#525252', boxShadow: 'inset 0 0 0 1px rgba(0,0,0,0.06)' }}>
-                              <span style={{ width: 6, height: 6, borderRadius: '50%', marginRight: 6, background: '#d4d4d4' }} />
+        <span style={{ display: 'inline-flex', alignItems: 'center', padding: '2px 10px', borderRadius: 20, fontSize: '0.875rem', fontWeight: 500, background: 'var(--color-surface-alt)', color: 'var(--color-text-2)', boxShadow: 'inset 0 0 0 1px rgba(0,0,0,0.06)' }}>
+                              <span style={{ width: 6, height: 6, borderRadius: '50%', marginRight: 6, background: 'var(--color-border)' }} />
                               정상
                             </span>
                           ) : (
@@ -402,10 +402,10 @@ export default function BmuDataPage() {
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 20px', borderTop: '1px solid rgba(0,0,0,0.06)' }}>
-        <span style={{ fontSize: '0.8125rem', color: '#a3a3a3' }}>총 {records.length}개 레코드</span>
+        <span style={{ fontSize: '0.8125rem', color: 'var(--color-text-3)' }}>총 {records.length}개 레코드</span>
             {autoRefresh && (
-        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontFamily: "'JetBrains Mono',monospace", fontSize: '0.75rem', color: '#a3a3a3' }}>
-                <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#171717' }} />
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontFamily: "'JetBrains Mono',monospace", fontSize: '0.75rem', color: 'var(--color-text-3)' }}>
+                <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--color-text-1)' }} />
                 실시간 모니터링 활성 · {countdown}s 후 갱신
               </span>
             )}

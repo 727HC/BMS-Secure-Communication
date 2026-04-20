@@ -34,8 +34,8 @@ export default function TraceabilityTab({ passport, bmuRecords, canVerifyPhysica
                 borderRadius: 999,
                 fontSize: 12,
                 fontWeight: 600,
-                background: latestBmu ? '#eefaf3' : '#f1f5f9',
-                color: latestBmu ? '#059669' : '#64748b',
+                background: latestBmu ? '#eefaf3' : 'var(--color-surface-alt)',
+                color: latestBmu ? '#059669' : 'var(--color-text-2)',
                 border: `1px solid ${latestBmu ? 'rgba(16,185,129,0.12)' : 'rgba(15,23,42,0.06)'}`,
               }}
             >
@@ -90,12 +90,12 @@ export default function TraceabilityTab({ passport, bmuRecords, canVerifyPhysica
                   borderBottom: '1px solid rgba(0,0,0,0.04)',
                 }}
               >
-                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 13, color: '#94a3b8' }}>{formatDate(log.timestamp)}</div>
+                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 13, color: 'var(--color-text-3)' }}>{formatDate(log.timestamp)}</div>
                 <div>
-                  <p style={{ margin: '0 0 4px', fontSize: 14, fontWeight: 600, color: '#0f172a' }}>{log.maintenanceType || '-'}</p>
-                  <p style={{ margin: 0, fontSize: 14, color: '#64748b' }}>{log.description}</p>
+                  <p style={{ margin: '0 0 4px', fontSize: 14, fontWeight: 600, color: 'var(--color-text-1)' }}>{log.maintenanceType || '-'}</p>
+                  <p style={{ margin: 0, fontSize: 14, color: 'var(--color-text-2)' }}>{log.description}</p>
                   {log.technician && (
-                    <p style={{ margin: '4px 0 0', fontSize: 13, color: '#94a3b8' }}>담당: {log.technician}</p>
+                    <p style={{ margin: '4px 0 0', fontSize: 13, color: 'var(--color-text-3)' }}>담당: {log.technician}</p>
                   )}
                 </div>
               </div>
@@ -126,9 +126,9 @@ export default function TraceabilityTab({ passport, bmuRecords, canVerifyPhysica
                 <div style={{ fontFamily: 'var(--font-mono)', fontSize: 13, color: '#dc2626' }}>{formatDate(log.timestamp)}</div>
                 <div>
                   <p style={{ margin: '0 0 4px', fontSize: 14, fontWeight: 600, color: '#dc2626' }}>{log.severity || '-'}</p>
-                  <p style={{ margin: 0, fontSize: 14, color: '#64748b' }}>{log.description}</p>
+                  <p style={{ margin: 0, fontSize: 14, color: 'var(--color-text-2)' }}>{log.description}</p>
                   {log.reporter && (
-                    <p style={{ margin: '4px 0 0', fontSize: 13, color: '#94a3b8' }}>보고: {log.reporter}</p>
+                    <p style={{ margin: '4px 0 0', fontSize: 13, color: 'var(--color-text-3)' }}>보고: {log.reporter}</p>
                   )}
                 </div>
               </div>
@@ -146,7 +146,7 @@ export default function TraceabilityTab({ passport, bmuRecords, canVerifyPhysica
             {Object.entries(recyclingRates).map(([key, value]) => (
               <div key={key} style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 10 }}>
                 <span style={{ width: 100, fontSize: 13, fontWeight: 600 }}>{key}</span>
-                <div style={{ flex: 1, height: 8, background: '#f1f5f9', borderRadius: 4, overflow: 'hidden' }}>
+                <div style={{ flex: 1, height: 8, background: 'var(--color-surface-alt)', borderRadius: 4, overflow: 'hidden' }}>
                   <div style={{ width: `${value}%`, height: '100%', background: '#059669' }} />
                 </div>
                 <span className="sn-mono" style={{ width: 40, textAlign: 'right' }}>{value}%</span>

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { api } from '../lib/api';
 import { getStatusBadge, scaleSOC } from '../lib/helpers';
 import { useAuth } from '../contexts/AuthContext';
+import PassportCreateModal, { type PassportCreateFormData } from '../components/modals/passports/PassportCreateModal';
 
 interface Passport {
   passportId?: string;
@@ -81,6 +82,8 @@ export default function PassportsPage() {
   const [sortBy, setSortBy] = useState<'latest' | 'gba'>('latest');
   const [gbaFilter, setGbaFilter] = useState<GbaFilter>('all');
   const [currentPage, setCurrentPage] = useState(1);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [creating, setCreating] = useState(false);
 
   const isManufacturer = org === 'ManufacturerMSP';
   const isRegulator = org === 'RegulatorMSP';
@@ -158,7 +161,29 @@ export default function PassportsPage() {
     : '여권 상태와 정비 필요 여부를 목록에서 바로 확인합니다.';
 
   const viewDetail = (id?: string) => id && navigate(`/passports/${id}`);
-  const openIssueFlow = () => navigate('/legacy/#passports');
+  const openIssueFlow = () => setShowCreateModal(true);
+  const closeIssueFlow = () => setShowCreateModal(false);
+
+  const submitCreate = async (data: PassportCreateFormData) => {
+    setCreating(true);
+    try {
+      const created = await api.post<{ passportId?: string }>('/passports', data);
+      const nextPassportId = created.passportId || data.passportId;
+      closeIssueFlow();
+      navigate(`/passports/${nextPassportId}`);
+
+      api.get<ListResponse<Passport> | Passport[]>('/passports')
+        .then((refresh) => {
+          const list = Array.isArray(refresh) ? refresh : refresh.records || [];
+          setPassports(list);
+        })
+        .catch(() => {
+          // 목록 새로고침 실패는 생성 성공/상세 이동을 막지 않는다.
+        });
+    } finally {
+      setCreating(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -412,6 +437,13 @@ export default function PassportsPage() {
           </p>
         </div>
       )}
+
+      <PassportCreateModal
+        open={showCreateModal}
+        submitting={creating}
+        onClose={closeIssueFlow}
+        onSubmit={submitCreate}
+      />
     </div>
   );
 }
