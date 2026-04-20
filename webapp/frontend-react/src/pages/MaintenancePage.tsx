@@ -6,7 +6,6 @@ import { getStatusBadge } from '../lib/helpers';
 import Spinner from '../components/ui/Spinner';
 import BaseModal from '../components/modals/BaseModal';
 import { AccidentLogModal, type AccidentFormData } from '../components/modals/maintenance';
-import { RnDContextChip } from '../components/ui';
 
 interface MaintenanceLog {
   timestamp?: string;
@@ -241,9 +240,6 @@ export default function MaintenancePage() {
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
       <div className="sn-page-head">
         <div className="sn-page-head-main">
-          <div style={{ marginBottom: '0.5rem' }}>
-            <RnDContextChip year={1} focus="1년차 — 정비·사고 이력" />
-          </div>
           <p className="sn-eyebrow" style={{ margin: '0 0 0.35rem', color: 'var(--color-warning)' }}>정비 관리</p>
           <h1 className="sn-page-title">정비 관리</h1>
           <p className="sn-page-subtitle">정비 요청, 현장 처리, 사고 기록을 한 화면에서 관리합니다.</p>
@@ -330,9 +326,9 @@ export default function MaintenancePage() {
               현재 탭 조건에 해당하는 정비·사고 이력이 없습니다.
             </p>
             <div style={{ padding: '14px 16px', background: 'var(--color-surface-alt)', borderRadius: 10, border: '1px solid var(--color-border)', maxWidth: '32rem', width: '100%' }}>
-              <p style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--color-text-2)', margin: '0 0 6px' }}>1년차 연구 목표 — 정비·사고 이력 관리</p>
+              <p style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--color-text-2)', margin: '0 0 6px' }}>정비·사고 이력 관리</p>
               <p style={{ fontSize: '0.8125rem', color: 'var(--color-text-3)', margin: 0, lineHeight: 1.6 }}>
-                국가과제 1차년도에서는 xEV 배터리 정비 및 사고 이력을 블록체인에 기록하여 불변의 감사 추적을 확보합니다.
+                xEV 배터리 정비 및 사고 이력을 블록체인에 기록하여 불변의 감사 추적을 확보합니다.
                 정비 요청부터 완료까지의 이력, 사고 발생 내역이 여기에 축적됩니다.
               </p>
             </div>

@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { api } from '../lib/api';
 import { getStatusBadge, STATUS_LABELS } from '../lib/helpers';
 import Spinner from '../components/ui/Spinner';
-import { RnDContextChip } from '../components/ui';
 
 interface Passport {
   passportId?: string;
@@ -193,9 +192,6 @@ export default function QrScanPage() {
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
       <div className="sn-page-head">
         <div className="sn-page-head-main">
-          <div style={{ marginBottom: '0.6rem' }}>
-            <RnDContextChip year={2} focus="2년차 — DID/VC 신원 조회" />
-          </div>
           <p className="sn-eyebrow" style={{ margin: '0 0 0.35rem', color: '#0f766e' }}>식별 접수</p>
           <h1 className="sn-page-title">식별 진입점</h1>
           <p className="sn-page-subtitle">QR·NFC·수동 입력으로 여권을 식별하고 상세 조회로 연결합니다.</p>
