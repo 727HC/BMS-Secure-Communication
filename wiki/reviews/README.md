@@ -1,12 +1,13 @@
 ---
 title: "reviews 폴더 안내"
-date: 2026-04-15
+date: 2026-04-20
 tags: [review, qa, workflow]
 doc_type: index
+status: historical
 ---
 # reviews/
 
-이 폴더는 **반복되는 리뷰 기준 / review memo / QA 결과 / release gate**를 모아두는 운영 폴더다.
+이 폴더는 **현재 기준 문서가 아니라**, QA / review / risk acceptance를 남기는 기록성 폴더다.
 
 ## 현재 구조
 - `reviews/passport/` — Passport QA 체크리스트와 결과
@@ -24,14 +25,11 @@ doc_type: index
 - [[reviews/blockchain/risk-acceptance|리스크 수용 기록]]
 - [[reviews/wiki-consolidation-review-2026-04-18|위키 통합 점검 기록]]
 
-## 추천 형식
-- review scope
-- critical
-- warning
-- suggestion
-- decision / follow-up
-
 ## 언제 쓰나
 - reviewer가 같은 종류의 문제를 반복 지적할 때
 - release / security / design gate를 고정하고 싶을 때
 - diff만 보면 안 보이는 review context를 남겨야 할 때
+
+## 주의
+- onboarding의 1차 current source로 쓰지 않는다.
+- 현재 구조/정책은 common 또는 도메인 허브에서 먼저 확인한다.
