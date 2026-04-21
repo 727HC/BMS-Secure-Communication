@@ -25,7 +25,7 @@ export function DonutChart({ segments, size = 180, thickness = 22, centerLabel, 
   from { stroke-dasharray: 0 ${c.toFixed(2)}; }
 }
 .${animId}-seg {
-  animation: ${animId} 0.55s cubic-bezier(0.33, 1, 0.68, 1) forwards;
+  animation: ${animId} 0.55s cubic-bezier(0.33, 1, 0.68, 1) both;
   will-change: stroke-dasharray;
 }
 @media (prefers-reduced-motion: reduce) {
