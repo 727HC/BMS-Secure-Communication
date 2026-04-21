@@ -81,9 +81,13 @@ interface SparklineProps {
   fillOpacity?: number;
   min?: number;
   max?: number;
+  animate?: boolean;
 }
 
-export function Sparkline({ values, width = 280, height = 64, color = 'var(--color-accent)', fillOpacity = 0.12, min, max }: SparklineProps) {
+/* 고유 id — 복수 Sparkline이 같은 페이지에 있을 때 keyframes 충돌 방지 */
+let _sparklineCounter = 0;
+
+export function Sparkline({ values, width = 280, height = 64, color = 'var(--color-accent)', fillOpacity = 0.12, min, max, animate = true }: SparklineProps) {
   if (values.length === 0) return <svg width={width} height={height} />;
   const lo = min ?? Math.min(...values);
   const hi = max ?? Math.max(...values);
@@ -94,11 +98,39 @@ export function Sparkline({ values, width = 280, height = 64, color = 'var(--col
   const pts = values.map((v, i) => [i * step, pad + innerH - ((v - lo) / span) * innerH] as const);
   const d = pts.map(([x, y], i) => `${i === 0 ? 'M' : 'L'}${x},${y}`).join(' ');
   const fill = `${d} L${width},${height} L0,${height} Z`;
+
+  /* path 길이 근사: 실제 SVGPathElement.getTotalLength() 없이 width로 근사 */
+  const pathLen = width * 1.05;
+  const animId = `sn-spark-${++_sparklineCounter}`;
+
   return (
-    <svg width="100%" height={height} viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none">
-      <path d={fill} fill={color} opacity={fillOpacity} />
-      <path d={d} fill="none" stroke={color} strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" />
-    </svg>
+    <>
+      {animate && (
+        <style>{`
+@keyframes ${animId} {
+  from { stroke-dashoffset: ${pathLen.toFixed(1)}; }
+  to   { stroke-dashoffset: 0; }
+}
+.${animId}-line {
+  stroke-dasharray: ${pathLen.toFixed(1)};
+  stroke-dashoffset: ${pathLen.toFixed(1)};
+  animation: ${animId} 0.8s ease-out forwards;
+}
+        `}</style>
+      )}
+      <svg width="100%" height={height} viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none">
+        <path d={fill} fill={color} opacity={fillOpacity} />
+        <path
+          d={d}
+          fill="none"
+          stroke={color}
+          strokeWidth={2}
+          strokeLinejoin="round"
+          strokeLinecap="round"
+          className={animate ? `${animId}-line` : undefined}
+        />
+      </svg>
+    </>
   );
 }
 

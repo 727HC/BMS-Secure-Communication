@@ -4,7 +4,7 @@ import { api } from '../lib/api';
 import { getStatusBadge, scaleSOC } from '../lib/helpers';
 import { useAuth } from '../contexts/AuthContext';
 import PassportCreateModal, { type PassportCreateFormData } from '../components/modals/passports/PassportCreateModal';
-import { DonutChart, BarRows, LegendStack } from '../components/ui';
+import { DonutChart, BarRows, LegendStack, Skeleton, SkeletonTable } from '../components/ui';
 
 interface Passport {
   passportId?: string;
@@ -258,8 +258,20 @@ export default function PassportsPage() {
 
   if (loading) {
     return (
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '40vh' }}>
-        <div style={{ width: 28, height: 28, border: '2px solid var(--color-border)', borderTopColor: 'var(--color-accent)', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+        {/* 커버 info-tile 4개 skeleton */}
+        <div className="sn-section-card">
+          <div className="sn-info-grid sn-info-grid-auto">
+            {[0, 1, 2, 3].map((i) => (
+              <div key={i} className="sn-info-tile">
+                <Skeleton width="60%" height={12} style={{ marginBottom: 10 }} />
+                <Skeleton width="40%" height={28} />
+              </div>
+            ))}
+          </div>
+        </div>
+        {/* 리스트 row 5개 skeleton */}
+        <SkeletonTable rows={5} cols={5} />
       </div>
     );
   }
