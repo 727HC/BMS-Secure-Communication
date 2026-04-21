@@ -270,6 +270,7 @@ export default function DashboardPage() {
               thickness={20}
               centerLabel="전체"
               centerValue={String(totalCount)}
+              animate={false}
             />
             <LegendStack items={legendItems} />
           </div>
