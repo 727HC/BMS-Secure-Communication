@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
+import Spinner from '../components/ui/Spinner';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../lib/api';
 import { useAuth } from '../contexts/AuthContext';
 import { getStatusBadge } from '../lib/helpers';
-import Spinner from '../components/ui/Spinner';
+import { SkeletonCard, SkeletonTable } from '../components/ui';
 import BaseModal from '../components/modals/BaseModal';
 import { AccidentLogModal, type AccidentFormData } from '../components/modals/maintenance';
 import { DonutChart, BarRows, LegendStack } from '../components/ui';
@@ -264,7 +265,20 @@ export default function MaintenancePage() {
     }
   };
 
-  if (loading) return <Spinner />;
+  if (loading) {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+        {/* summary grid skeleton */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14 }}>
+          {[0, 1, 2, 3].map((i) => (
+            <SkeletonCard key={i} lines={2} showTitle />
+          ))}
+        </div>
+        {/* 테이블 skeleton */}
+        <SkeletonTable rows={5} cols={8} />
+      </div>
+    );
+  }
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>

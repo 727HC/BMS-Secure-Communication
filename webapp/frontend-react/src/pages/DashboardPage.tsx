@@ -2,7 +2,8 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../lib/api';
 import { getStatusBadge } from '../lib/helpers';
-import { DonutChart, LegendStack, Sparkline, BarRows } from '../components/ui';
+import { useCountUp } from '../lib/useCountUp';
+import { DonutChart, LegendStack, Sparkline, BarRows, Skeleton, SkeletonCard } from '../components/ui';
 
 interface Passport {
   passportId?: string;
@@ -149,6 +150,17 @@ export default function DashboardPage() {
   const sparkValues = useMemo(() => buildSparkline(passports), [passports]);
   const hasSparkData = sparkValues.some((v) => v > 0);
 
+  /* count-up 애니메이션 값 */
+  const bindPendAnim = useCountUp(loading ? 0 : bindPend);
+  const svcOpenAnim = useCountUp(loading ? 0 : svcOpen);
+  const recycleNAnim = useCountUp(loading ? 0 : recycleN);
+  const sparkSum = sparkValues.reduce((s, v) => s + v, 0);
+  const sparkAvg = sparkValues.reduce((s, v) => s + v, 0) / 7;
+  const sparkMax = Math.max(...sparkValues, 0);
+  const sparkSumAnim = useCountUp(loading ? 0 : sparkSum);
+  const sparkAvgAnim = useCountUp(loading ? 0 : sparkAvg);
+  const sparkMaxAnim = useCountUp(loading ? 0 : sparkMax);
+
   /* 하단 분포 요약 — 화학계열 + 제조국 */
   const chemistryBars = useMemo(() => {
     const counts: Record<string, number> = {};
@@ -181,17 +193,28 @@ export default function DashboardPage() {
 
   if (loading) {
     return (
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '52vh' }}>
-        <div
-          style={{
-            width: 26,
-            height: 26,
-            border: '2.5px solid var(--color-border)',
-            borderTopColor: 'var(--color-accent)',
-            borderRadius: '50%',
-            animation: 'spin .7s linear infinite',
-          }}
-        />
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+        {/* KPI 3카드 skeleton */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: 18 }}>
+          <div style={{ borderRadius: 20, padding: 20, border: '1px solid var(--color-border)', background: 'var(--color-surface)', display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <Skeleton width="50%" height={14} />
+            <Skeleton width="100%" height={140} radius={12} />
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 14 }}>
+            {[0, 1, 2].map((i) => (
+              <SkeletonCard key={i} lines={2} showTitle />
+            ))}
+          </div>
+        </div>
+        {/* 먼저 볼 목록 skeleton — 2열 x 3행 */}
+        <div style={{ borderRadius: 20, padding: '20px 22px', border: '1px solid var(--color-border)', background: 'var(--color-surface)' }}>
+          <Skeleton width="30%" height={14} style={{ marginBottom: 16 }} />
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 12 }}>
+            {Array.from({ length: 6 }, (_, i) => (
+              <SkeletonCard key={i} lines={2} showTitle />
+            ))}
+          </div>
+        </div>
       </div>
     );
   }
@@ -260,7 +283,7 @@ export default function DashboardPage() {
           >
             <p className="sn-caption" style={{ margin: 0, fontSize: '1rem', fontWeight: 600, color: 'var(--color-text-2)' }}>VIN 연결 필요</p>
             <p className="sn-metric" style={{ margin: 0, fontSize: '3rem', fontWeight: 700, lineHeight: 1.1 }}>
-              {bindPend}
+              {bindPendAnim}
               <span className="sn-metric-unit" style={{ fontSize: '1.125rem', fontWeight: 600, marginLeft: 5 }}>건</span>
             </p>
             <p className="sn-caption" style={{ margin: 0, fontSize: '1rem' }}>차량 정보 연결이 아직 끝나지 않은 여권</p>
@@ -271,7 +294,7 @@ export default function DashboardPage() {
           >
             <p className="sn-caption" style={{ margin: 0, fontSize: '1rem', fontWeight: 600, color: 'var(--color-text-2)' }}>정비·분석 확인</p>
             <p className="sn-metric" style={{ margin: 0, fontSize: '3rem', fontWeight: 700, lineHeight: 1.1 }}>
-              {svcOpen}
+              {svcOpenAnim}
               <span className="sn-metric-unit" style={{ fontSize: '1.125rem', fontWeight: 600, marginLeft: 5 }}>건</span>
             </p>
             <p className="sn-caption" style={{ margin: 0, fontSize: '1rem' }}>결과 등록 또는 후속 검토가 필요한 항목</p>
@@ -282,7 +305,7 @@ export default function DashboardPage() {
           >
             <p className="sn-caption" style={{ margin: 0, fontSize: '1rem', fontWeight: 600, color: 'var(--color-text-2)' }}>회수 판단 확인</p>
             <p className="sn-metric" style={{ margin: 0, fontSize: '3rem', fontWeight: 700, lineHeight: 1.1 }}>
-              {recycleN}
+              {recycleNAnim}
               <span className="sn-metric-unit" style={{ fontSize: '1.125rem', fontWeight: 600, marginLeft: 5 }}>건</span>
             </p>
             <p className="sn-caption" style={{ margin: 0, fontSize: '1rem' }}>회수 또는 재활용 판단이 필요한 여권</p>
@@ -329,14 +352,14 @@ export default function DashboardPage() {
               <div style={{ padding: '12px 14px', borderRadius: 12, background: 'var(--color-surface-alt)', border: '1px solid var(--color-border)' }}>
                 <p className="sn-caption" style={{ margin: '0 0 4px', color: 'var(--color-text-3)', fontSize: '0.8125rem' }}>7일 합계</p>
                 <p style={{ margin: 0, fontSize: '1.75rem', fontWeight: 800, color: 'var(--color-text-1)', lineHeight: 1 }}>
-                  {sparkValues.reduce((s, v) => s + v, 0)}
+                  {sparkSumAnim}
                   <span style={{ fontSize: '0.9375rem', fontWeight: 600, marginLeft: 4, color: 'var(--color-text-3)' }}>건</span>
                 </p>
               </div>
               <div style={{ padding: '12px 14px', borderRadius: 12, background: 'var(--color-surface-alt)', border: '1px solid var(--color-border)' }}>
                 <p className="sn-caption" style={{ margin: '0 0 4px', color: 'var(--color-text-3)', fontSize: '0.8125rem' }}>일 평균</p>
                 <p style={{ margin: 0, fontSize: '1.75rem', fontWeight: 800, color: 'var(--color-text-1)', lineHeight: 1 }}>
-                  {(sparkValues.reduce((s, v) => s + v, 0) / 7).toFixed(1)}
+                  {sparkAvgAnim.toFixed(1)}
                   <span style={{ fontSize: '0.9375rem', fontWeight: 600, marginLeft: 4, color: 'var(--color-text-3)' }}>건</span>
                 </p>
               </div>

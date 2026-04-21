@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { api } from '../lib/api';
 import Spinner from '../components/ui/Spinner';
+import { api } from '../lib/api';
+import { Skeleton, SkeletonRows } from '../components/ui';
 import { DonutChart, BarRows, LegendStack } from '../components/ui/Charts';
 
 interface LogRecord {
@@ -381,7 +382,40 @@ export default function AuditLogPage() {
 
       {/* FEED / EMPTY / LOADING */}
       {loading && logs.length === 0 ? (
-        <Spinner />
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          {/* 시간 요약 skeleton */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+            {[0, 1].map((i) => (
+              <div key={i} className="sn-panel" style={{ padding: '14px 18px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+                <Skeleton width="40%" height={12} />
+                <div style={{ display: 'flex', gap: 24 }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    <Skeleton width={60} height={28} />
+                    <Skeleton width={80} height={12} />
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    <Skeleton width={60} height={28} />
+                    <Skeleton width={80} height={12} />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+          {/* 피드 5개 skeleton */}
+          <div className="sn-panel" style={{ overflow: 'hidden' }}>
+            <div style={{ display: 'flex', flexDirection: 'column' }}>
+              {Array.from({ length: 5 }, (_, i) => (
+                <div key={i} style={{ padding: '0.75rem 1rem', borderBottom: '1px solid var(--color-border)', display: 'flex', gap: 12, alignItems: 'flex-start' }}>
+                  <Skeleton width={8} height={8} radius={4} style={{ marginTop: 6, flexShrink: 0 }} />
+                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    <SkeletonRows rows={2} height={13} gap={6} />
+                  </div>
+                  <Skeleton width={32} height={20} radius={4} />
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
       ) : logs.length === 0 ? (
         <div style={{ padding: '2rem 1.5rem', textAlign: 'center', border: '1px dashed var(--color-border)', borderRadius: '0.5rem' }}>
           <div style={{ width: 44, height: 44, borderRadius: 10, background: 'var(--color-surface-alt)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 14px' }}>

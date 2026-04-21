@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { api } from '../lib/api';
 import { useAuth } from '../contexts/AuthContext';
 import { getStatusBadge, scaleSOC } from '../lib/helpers';
-import Spinner from '../components/ui/Spinner';
+import { Spinner, Skeleton, SkeletonCard, SkeletonTable } from '../components/ui';
 import { ArcGauge } from '../components/ui/BatteryGauge';
 import { computeGbaCompliance, complianceGrade } from '../components/passport-detail/helpers';
 import type { Passport, BmuRecord, Credential, IssuerCatalogItem } from '../components/passport-detail/types';

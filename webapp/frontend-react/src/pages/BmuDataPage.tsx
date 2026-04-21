@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import Spinner from '../components/ui/Spinner';
 import { api } from '../lib/api';
 import { scaleSOC, scaleTemp } from '../lib/helpers';
-import Spinner from '../components/ui/Spinner';
+import { Skeleton, SkeletonTable } from '../components/ui';
 import { Sparkline, BarRows } from '../components/ui';
 
 interface BmuRecord {
@@ -289,7 +290,20 @@ export default function BmuDataPage() {
 
       {/* STATES */}
       {loading && !autoRefresh ? (
-        <Spinner />
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          {/* KPI 4 skeleton */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
+            {[0, 1, 2, 3].map((i) => (
+              <div key={i} style={{ padding: '14px 16px', background: 'var(--color-surface-alt)', borderRadius: 8, border: '1px solid var(--color-border)', display: 'flex', flexDirection: 'column', gap: 10 }}>
+                <Skeleton width="50%" height={12} />
+                <Skeleton width="60%" height={28} />
+                <Skeleton width="100%" height={40} radius={4} />
+              </div>
+            ))}
+          </div>
+          {/* 테이블 skeleton */}
+          <SkeletonTable rows={5} cols={8} />
+        </div>
       ) : !hasSearched && !loading ? (
         <div className="sn-panel" style={{ overflow: 'hidden' }}>
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '2rem 1.5rem' }}>
