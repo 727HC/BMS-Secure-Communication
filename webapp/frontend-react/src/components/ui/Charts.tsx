@@ -18,18 +18,26 @@ export function DonutChart({ segments, size = 180, thickness = 22, centerLabel, 
   const animId = `sn-donut-${++_donutCounter}`;
   let offset = 0;
   return (
-    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+    <svg
+      width={size}
+      height={size}
+      viewBox={`0 0 ${size} ${size}`}
+      className={animate ? `${animId}-in` : undefined}
+    >
       {animate && (
         <style>{`
 @keyframes ${animId} {
-  from { stroke-dasharray: 0 ${c.toFixed(2)}; }
+  from { opacity: 0; transform: scale(0.9); }
+  to   { opacity: 1; transform: scale(1); }
 }
-.${animId}-seg {
-  animation: ${animId} 0.55s cubic-bezier(0.33, 1, 0.68, 1) both;
-  will-change: stroke-dasharray;
+.${animId}-in {
+  animation: ${animId} 0.35s cubic-bezier(0.33, 1, 0.68, 1) both;
+  transform-origin: center;
+  transform-box: fill-box;
+  will-change: opacity, transform;
 }
 @media (prefers-reduced-motion: reduce) {
-  .${animId}-seg { animation: none; }
+  .${animId}-in { animation: none; }
 }
         `}</style>
       )}
@@ -50,8 +58,6 @@ export function DonutChart({ segments, size = 180, thickness = 22, centerLabel, 
             strokeDashoffset={-offset}
             transform={`rotate(-90 ${size / 2} ${size / 2})`}
             strokeLinecap="butt"
-            className={animate ? `${animId}-seg` : undefined}
-            style={animate ? { animationDelay: `${i * 50}ms` } : undefined}
           />
         );
         offset += dash;
