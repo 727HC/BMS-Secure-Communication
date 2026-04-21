@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import Spinner from '../components/ui/Spinner';
 import { api } from '../lib/api';
 import { scaleSOC, scaleTemp } from '../lib/helpers';
 import { Skeleton, SkeletonTable } from '../components/ui';
