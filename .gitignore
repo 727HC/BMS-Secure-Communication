@@ -114,3 +114,6 @@ TOOLS.md
 
 # harness 세션 실행 산출물 — cycle_* 루프 로그는 저장소에 보관 안 함
 .harness/cycle_*/
+
+# Ralph/OMX runtime state
+.omx/
