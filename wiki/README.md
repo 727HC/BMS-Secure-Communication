@@ -42,7 +42,7 @@ xEV BMS 보안 플랫폼용 공용 Obsidian vault다.
 - [[common/terminology|용어 사전]]
 - [[common/wiki-writing-guide|위키 작성 가이드]]
 - [[common/task-packet-template|Task Packet 템플릿]]
-- [[decisions/README|ADR 허브]]
+- [[decisions/README|ADR 허브]] *(현재 거버넌스 문서)*
 
 ### Passport
 - [[passport/README|Passport 허브]]
@@ -64,7 +64,7 @@ xEV BMS 보안 플랫폼용 공용 Obsidian vault다.
 
 ## 보관 문서
 - [[passport/_archive/README|Passport archive 허브]]
-- [[Object/README|참고 자료 안내]]
+- [[Object/README|참고 자료 안내]] *(배경 참조)*
 
 ## 정리 원칙
 1. 새 공통 기준은 `common/`에 둔다.

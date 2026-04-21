@@ -11,7 +11,7 @@ status: current
 - [[common/README|common/ 허브]]
 - [[common/architecture|시스템 아키텍처]]
 - [[common/terminology|용어 사전]]
-- [[decisions/README|ADR 허브]]
+- [[decisions/README|ADR 허브]] *(현재 거버넌스 문서)*
 - [[decisions/001-sidebar-navigation|ADR-001]]
 - [[decisions/002-session-scope-redistribution|ADR-002]]
 - [[passport/README|Passport 허브]]
@@ -48,7 +48,7 @@ status: current
 - [[passport/_archive/activity-log-codex-files/README|Codex 날짜별 로그 허브]]
 
 ## 6. 참고 자료
-- [[Object/README|참고 자료 안내]]
+- [[Object/README|참고 자료 안내]] *(배경 참조)*
 - [[common/claude-design-prompt-reference|Claude 디자인 프롬프트 참조]]
 - [[passport/assets/README|Passport UI asset 허브]]
 - [[blockchain/assets/README|Blockchain KPI asset 허브]]
