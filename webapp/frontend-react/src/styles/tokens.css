@@ -1,5 +1,5 @@
 :root {
-  --font-display: 'Outfit', 'Pretendard Variable', sans-serif;
+  --font-display: 'Pretendard Variable', -apple-system, sans-serif;
   --font-body: 'Pretendard Variable', -apple-system, sans-serif;
   --font-mono: 'JetBrains Mono', monospace;
   --color-primary: #171717;
