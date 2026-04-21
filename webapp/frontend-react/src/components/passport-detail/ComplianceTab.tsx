@@ -86,7 +86,7 @@ export default function ComplianceTab({ passport, gbaCompliance, complianceGrade
                 borderRadius: 999,
                 background: '#eefaf3',
                 color: '#059669',
-                fontSize: 13,
+                fontSize: 14,
                 fontWeight: 700,
                 border: '1px solid rgba(16,185,129,0.12)',
               }}
@@ -105,7 +105,7 @@ export default function ComplianceTab({ passport, gbaCompliance, complianceGrade
                   borderRadius: 999,
                   background: '#fff7ed',
                   color: '#b45309',
-                  fontSize: 13,
+                  fontSize: 14,
                   fontWeight: 700,
                   border: '1px solid rgba(245,158,11,0.14)',
                 }}
@@ -160,7 +160,7 @@ export default function ComplianceTab({ passport, gbaCompliance, complianceGrade
                 borderBottom: '1px solid rgba(0,0,0,0.04)',
               }}
             >
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 13, color: 'var(--color-text-3)' }}>{group.name}</div>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 14, color: 'var(--color-text-3)' }}>{group.name}</div>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                 {group.fields.map((f) => (
                   <span
@@ -170,7 +170,7 @@ export default function ComplianceTab({ passport, gbaCompliance, complianceGrade
                       alignItems: 'center',
                       padding: '4px 8px',
                       borderRadius: 999,
-                        fontSize: 13,
+                      fontSize: 14,
                       fontWeight: 500,
                       background: f.filled ? '#eefaf3' : '#fef2f2',
                       color: f.filled ? '#059669' : '#dc2626',

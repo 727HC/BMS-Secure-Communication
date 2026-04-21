@@ -30,15 +30,15 @@ function FlowStep({ step, label, desc }: { step: number; label: string; desc: st
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, flex: 1 }}>
       <div
         style={{
-          width: 36,
-          height: 36,
+          width: 40,
+          height: 40,
           borderRadius: '50%',
           background: 'var(--color-surface-accent)',
           border: '1px solid var(--color-border)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          fontSize: '0.8125rem',
+          fontSize: '0.9375rem',
           fontWeight: 700,
           color: 'var(--color-accent)',
           fontVariantNumeric: 'tabular-nums',
@@ -46,8 +46,8 @@ function FlowStep({ step, label, desc }: { step: number; label: string; desc: st
       >
         {step}
       </div>
-      <p style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--color-text-1)', margin: 0, textAlign: 'center' }}>{label}</p>
-      <p style={{ fontSize: '0.75rem', color: 'var(--color-text-3)', margin: 0, textAlign: 'center', lineHeight: 1.5 }}>{desc}</p>
+      <p style={{ fontSize: '0.9375rem', fontWeight: 600, color: 'var(--color-text-1)', margin: 0, textAlign: 'center' }}>{label}</p>
+      <p style={{ fontSize: '0.875rem', color: 'var(--color-text-3)', margin: 0, textAlign: 'center', lineHeight: 1.5 }}>{desc}</p>
     </div>
   );
 }

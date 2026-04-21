@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { api } from '../lib/api';
 import { useAuth } from '../contexts/AuthContext';
 import Spinner from '../components/ui/Spinner';
+import { BarRows } from '../components/ui/Charts';
 import {
   MaterialCreateModal,
   MaterialDetailModal,
