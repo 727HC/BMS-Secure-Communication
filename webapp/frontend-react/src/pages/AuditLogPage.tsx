@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { api } from '../lib/api';
 import Spinner from '../components/ui/Spinner';
+import { DonutChart, BarRows, LegendStack } from '../components/ui/Charts';
 
 interface LogRecord {
   id: string;
@@ -158,6 +159,25 @@ export default function AuditLogPage() {
     return sorted.map(([action, count]) => ({ action, count, pct: Math.round((count / max) * 100) }));
   }, [logs]);
 
+  // HTTP method 분포 — DonutChart용
+  const METHOD_COLORS: Record<string, string> = {
+    GET: '#60a5fa',
+    POST: '#10b981',
+    PUT: '#f59e0b',
+    DELETE: '#ef4444',
+    PATCH: '#a78bfa',
+  };
+  const methodDistribution = useMemo(() => {
+    const counts: Record<string, number> = {};
+    for (const log of logs) {
+      const m = (log.method || 'OTHER').toUpperCase();
+      counts[m] = (counts[m] || 0) + 1;
+    }
+    return Object.entries(counts)
+      .sort((a, b) => b[1] - a[1])
+      .map(([method, value]) => ({ label: method, value, color: METHOD_COLORS[method] || 'var(--color-text-3)' }));
+  }, [logs]);
+
   // 시간 요약
   const timeSummary = useMemo(() => {
     const last24h = logs.filter((l) => isWithinHours(l.timestamp, 24)).length;
@@ -230,6 +250,45 @@ export default function AuditLogPage() {
         </div>
       </div>
 
+      {/* 활동 요약 패널 — DonutChart(method 분포) + BarRows(action top5) */}
+      {logs.length > 0 && (
+        <div className="sn-panel" style={{ padding: '16px 20px', display: 'grid', gridTemplateColumns: 'auto 1fr', gap: 28, alignItems: 'start' }}>
+          {/* 좌: DonutChart — HTTP method 분포 */}
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 }}>
+            <p className="sn-eyebrow" style={{ margin: 0 }}>메서드 분포</p>
+            {methodDistribution.length > 0 ? (
+              <>
+                <DonutChart
+                  segments={methodDistribution}
+                  size={130}
+                  thickness={18}
+                  centerLabel="method"
+                  centerValue={String(logs.length)}
+                />
+                <LegendStack items={methodDistribution.map((m) => ({ label: m.label, value: m.value, color: m.color }))} />
+              </>
+            ) : (
+              <p style={{ fontSize: '0.875rem', color: 'var(--color-text-3)' }}>데이터 없음</p>
+            )}
+          </div>
+          {/* 우: BarRows — action top 5 */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <p className="sn-eyebrow" style={{ margin: 0 }}>활동 상위 {actionDistribution.length}</p>
+            {actionDistribution.length > 0 ? (
+              <BarRows
+                items={actionDistribution.map(({ action, count }) => ({
+                  label: ACTION_LABELS[action] || action,
+                  value: count,
+                  hint: '건',
+                }))}
+              />
+            ) : (
+              <p style={{ fontSize: '0.875rem', color: 'var(--color-text-3)' }}>데이터 없음</p>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* TIME SUMMARY + STATUS BAR */}
       {logs.length > 0 && (
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
@@ -238,20 +297,20 @@ export default function AuditLogPage() {
             <p className="sn-eyebrow" style={{ margin: 0 }}>시간 기준 집계</p>
             <div style={{ display: 'flex', gap: 24 }}>
               <div>
-                <p style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--color-text-1)', margin: 0, fontVariantNumeric: 'tabular-nums' }}>
+                <p className="sn-metric sn-metric-md" style={{ margin: 0 }}>
                   {timeSummary.last24h}
                 </p>
-                <p style={{ fontSize: '0.75rem', color: 'var(--color-text-3)', margin: '2px 0 0' }}>지난 24시간</p>
+                <p style={{ fontSize: '0.8125rem', color: 'var(--color-text-3)', margin: '2px 0 0' }}>지난 24시간</p>
               </div>
               <div style={{ width: 1, background: 'var(--color-border)', alignSelf: 'stretch' }} />
               <div>
-                <p style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--color-text-1)', margin: 0, fontVariantNumeric: 'tabular-nums' }}>
+                <p className="sn-metric sn-metric-md" style={{ margin: 0 }}>
                   {timeSummary.last7d}
                 </p>
-                <p style={{ fontSize: '0.75rem', color: 'var(--color-text-3)', margin: '2px 0 0' }}>지난 7일</p>
+                <p style={{ fontSize: '0.8125rem', color: 'var(--color-text-3)', margin: '2px 0 0' }}>지난 7일</p>
               </div>
             </div>
-            <p style={{ fontSize: '0.75rem', color: 'var(--color-text-3)', margin: 0 }}>현재 페이지 기록 기준</p>
+            <p style={{ fontSize: '0.8125rem', color: 'var(--color-text-3)', margin: 0 }}>현재 페이지 기록 기준</p>
           </div>
 
           {/* 성공/실패 비율 */}
@@ -259,10 +318,10 @@ export default function AuditLogPage() {
             <p className="sn-eyebrow" style={{ margin: 0 }}>응답 상태 비율</p>
             {statusSummary ? (
               <>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.8125rem' }}>
-                  <span style={{ color: '#10b981', fontWeight: 600 }}>성공 {statusSummary.success}건</span>
-                  <span style={{ color: 'var(--color-text-3)' }}>{statusSummary.successPct}%</span>
-                  <span style={{ color: '#ef4444', fontWeight: 600 }}>실패 {statusSummary.fail}건</span>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <span style={{ fontSize: '0.9375rem', color: '#10b981', fontWeight: 600 }}>성공 {statusSummary.success}건</span>
+                  <span style={{ fontSize: '0.9375rem', color: 'var(--color-text-3)' }}>{statusSummary.successPct}%</span>
+                  <span style={{ fontSize: '0.9375rem', color: '#ef4444', fontWeight: 600 }}>실패 {statusSummary.fail}건</span>
                 </div>
                 <div style={{ height: 8, borderRadius: 4, background: 'var(--color-surface-alt)', overflow: 'hidden' }}>
                   <div
@@ -275,41 +334,11 @@ export default function AuditLogPage() {
                     }}
                   />
                 </div>
-                <p style={{ fontSize: '0.75rem', color: 'var(--color-text-3)', margin: 0 }}>2xx 성공 / 4xx·5xx 실패</p>
+                <p style={{ fontSize: '0.8125rem', color: 'var(--color-text-3)', margin: 0 }}>2xx 성공 / 4xx·5xx 실패</p>
               </>
             ) : (
-              <p style={{ fontSize: '0.8125rem', color: 'var(--color-text-3)', margin: 0 }}>상태 코드 정보 없음</p>
+              <p style={{ fontSize: '0.875rem', color: 'var(--color-text-3)', margin: 0 }}>상태 코드 정보 없음</p>
             )}
-          </div>
-        </div>
-      )}
-
-      {/* 활동 분류 분포 */}
-      {actionDistribution.length > 0 && (
-        <div className="sn-panel" style={{ padding: '16px 18px' }}>
-          <p className="sn-eyebrow" style={{ margin: '0 0 12px' }}>활동 분류 분포 — 현재 페이지 top {actionDistribution.length}</p>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {actionDistribution.map(({ action, count, pct }) => (
-              <div key={action} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <span style={{ width: 100, fontSize: '0.8125rem', color: 'var(--color-text-2)', flexShrink: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                  {ACTION_LABELS[action] || action}
-                </span>
-                <div style={{ flex: 1, height: 6, borderRadius: 3, background: 'var(--color-surface-alt)', overflow: 'hidden' }}>
-                  <div
-                    style={{
-                      height: '100%',
-                      width: `${pct}%`,
-                      background: 'var(--color-accent)',
-                      borderRadius: 3,
-                      transition: 'width 0.4s ease',
-                    }}
-                  />
-                </div>
-                <span style={{ width: 32, fontSize: '0.75rem', color: 'var(--color-text-3)', textAlign: 'right', fontVariantNumeric: 'tabular-nums', flexShrink: 0 }}>
-                  {count}건
-                </span>
-              </div>
-            ))}
           </div>
         </div>
       )}
@@ -422,7 +451,7 @@ export default function AuditLogPage() {
                           <polyline points="9 18 15 12 9 6" />
                         </svg>
                       </div>
-                      <div style={{ fontSize: '0.875rem', color: 'var(--color-text-3)' }}>
+                      <div style={{ fontSize: '0.9375rem', color: 'var(--color-text-3)' }}>
                         {log.userId || (log.action === 'RECORD_BMU' ? '시스템(BMU)' : '-')}
                         {log.path && (
                           <span style={{ fontFamily: "'JetBrains Mono',monospace" }}> · {log.method} {log.path}</span>

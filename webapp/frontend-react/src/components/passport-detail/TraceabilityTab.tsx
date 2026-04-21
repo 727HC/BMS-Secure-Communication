@@ -90,7 +90,7 @@ export default function TraceabilityTab({ passport, bmuRecords, canVerifyPhysica
                   borderBottom: '1px solid rgba(0,0,0,0.04)',
                 }}
               >
-                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 13, color: 'var(--color-text-3)' }}>{formatDate(log.timestamp)}</div>
+                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 14, color: 'var(--color-text-3)' }}>{formatDate(log.timestamp)}</div>
                 <div>
                   <p style={{ margin: '0 0 4px', fontSize: 14, fontWeight: 600, color: 'var(--color-text-1)' }}>{log.maintenanceType || '-'}</p>
                   <p style={{ margin: 0, fontSize: 14, color: 'var(--color-text-2)' }}>{log.description}</p>

@@ -4,6 +4,7 @@ import { api } from '../lib/api';
 import { useAuth } from '../contexts/AuthContext';
 import { getStatusBadge } from '../lib/helpers';
 import Spinner from '../components/ui/Spinner';
+import { BarRows } from '../components/ui/Charts';
 import BaseModal from '../components/modals/BaseModal';
 import { ExtractModal, RecycleToggleModal, type ExtractEntry } from '../components/modals/recycling';
 
