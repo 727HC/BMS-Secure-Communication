@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { api } from '../lib/api';
 import { scaleSOC, scaleTemp } from '../lib/helpers';
-import Spinner from '../components/ui/Spinner';
+import { Skeleton, SkeletonTable } from '../components/ui';
+import { Sparkline, BarRows } from '../components/ui';
 
 interface BmuRecord {
   recordId?: string;
@@ -70,6 +71,47 @@ export default function BmuDataPage() {
       }),
     [records]
   );
+
+  // 스파크라인용 최근 15개 데이터 (오래된→최신 순)
+  const recentSlice = useMemo(() => {
+    const slice = sortedRecords.slice(0, 15).reverse();
+    return {
+      soc: slice.map((r) => scaleSOC(r.soc)),
+      voltage: slice.map((r) => (r.voltage != null ? Number(r.voltage) : 0)),
+      current: slice.map((r) => (r.current != null ? Number(r.current) : 0)),
+      temperature: slice.map((r) => {
+        const t = scaleTemp(r.temperature);
+        return typeof t === 'number' ? t : parseFloat(String(t));
+      }),
+    };
+  }, [sortedRecords]);
+
+  // 이상 이벤트 분포 (BarRows용)
+  const eventDistribution = useMemo(() => {
+    if (sortedRecords.length === 0) return null;
+    let normal = 0, charging = 0, balancing = 0, fault = 0, tempAbnormal = 0;
+    for (const r of sortedRecords) {
+      const num = typeof r.statusFlags === 'number' ? r.statusFlags : parseInt(String(r.statusFlags), 10);
+      const temp = scaleTemp(r.temperature);
+      const tempNum = typeof temp === 'number' ? temp : parseFloat(String(temp));
+      const isTempAbnormal = !isNaN(tempNum) && (tempNum > 45 || tempNum < -10);
+      if (!isNaN(num) && (num & 0x04)) { fault++; continue; }
+      if (isTempAbnormal) { tempAbnormal++; continue; }
+      if (!isNaN(num) && (num & 0x01)) { charging++; continue; }
+      if (!isNaN(num) && (num & 0x02)) { balancing++; continue; }
+      normal++;
+    }
+    return [
+      { label: '정상', value: normal, color: '#10b981' },
+      { label: '충전', value: charging, color: '#3b82f6' },
+      { label: '밸런싱', value: balancing, color: '#059669' },
+      { label: '결함', value: fault, color: '#ef4444' },
+      { label: '온도 이상', value: tempAbnormal, color: '#f59e0b' },
+    ];
+  }, [sortedRecords]);
+
+  // 최신 센서 스냅샷 (첫 번째 레코드)
+  const latestRecord = sortedRecords[0] ?? null;
 
   const fetchRecords = async (currentAutoRefresh: boolean, currentLoading: boolean) => {
     const id = passportId.trim();
@@ -180,10 +222,10 @@ export default function BmuDataPage() {
               <div style={{ width: 40, height: 22, borderRadius: 11, background: autoRefresh ? 'var(--color-success)' : 'var(--color-border)', transition: 'background 0.2s' }} />
               <div style={{ position: 'absolute', top: 3, left: autoRefresh ? 21 : 3, width: 16, height: 16, borderRadius: '50%', background: 'var(--color-surface)', boxShadow: 'var(--shadow-card)', transition: 'left 0.2s' }} />
             </div>
-            <span style={{ fontSize: '0.875rem', fontWeight: 500, color: 'var(--color-text-2)' }}>자동 새로고침</span>
+            <span style={{ fontSize: '0.9375rem', fontWeight: 500, color: 'var(--color-text-2)' }}>자동 새로고침</span>
           </label>
           {autoRefresh && (
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '3px 10px', borderRadius: 20, fontFamily: "'JetBrains Mono',monospace", fontSize: '0.8125rem', fontWeight: 600, color: '#059669', background: 'rgba(52,211,153,0.1)' }}>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '3px 10px', borderRadius: 20, fontFamily: "'JetBrains Mono',monospace", fontSize: '0.875rem', fontWeight: 600, color: '#059669', background: 'rgba(52,211,153,0.1)' }}>
               <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#059669' }} />
               {countdown}s
             </span>
@@ -225,7 +267,7 @@ export default function BmuDataPage() {
               type="text"
               placeholder="조회할 배터리 여권 ID를 입력하세요"
               className="sn-input"
-              style={{ width: '100%', fontFamily: "'JetBrains Mono',monospace", fontSize: '0.875rem' }}
+              style={{ width: '100%', fontFamily: "'JetBrains Mono',monospace", fontSize: '0.9375rem' }}
             />
           </div>
           <button
@@ -240,177 +282,283 @@ export default function BmuDataPage() {
               opacity: !passportId.trim() || loading ? 0.5 : 1,
             }}
           >
-            <span style={{ fontSize: '0.875rem', fontWeight: 600 }}>{loading ? '조회 중...' : '조회'}</span>
+            <span style={{ fontSize: '0.9375rem', fontWeight: 600 }}>{loading ? '조회 중...' : '조회'}</span>
           </button>
         </div>
       </div>
 
       {/* STATES */}
       {loading && !autoRefresh ? (
-        <Spinner />
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          {/* KPI 4 skeleton */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
+            {[0, 1, 2, 3].map((i) => (
+              <div key={i} style={{ padding: '14px 16px', background: 'var(--color-surface-alt)', borderRadius: 8, border: '1px solid var(--color-border)', display: 'flex', flexDirection: 'column', gap: 10 }}>
+                <Skeleton width="50%" height={12} />
+                <Skeleton width="60%" height={28} />
+                <Skeleton width="100%" height={40} radius={4} />
+              </div>
+            ))}
+          </div>
+          {/* 테이블 skeleton */}
+          <SkeletonTable rows={5} cols={8} />
+        </div>
       ) : !hasSearched && !loading ? (
         <div className="sn-panel" style={{ overflow: 'hidden' }}>
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '80px 24px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '2rem 1.5rem' }}>
             <div style={{ width: 56, height: 56, borderRadius: 12, background: 'var(--color-surface-alt)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 20 }}>
-              <svg width="28" height="28" fill="none" stroke="#a3a3a3" strokeWidth="1.5" viewBox="0 0 24 24">
+              <svg width="28" height="28" fill="none" stroke="var(--color-text-3)" strokeWidth="1.5" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
               </svg>
             </div>
-            <h3 style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--color-text-1)', margin: '0 0 6px' }}>
+            <h3 style={{ fontSize: '1.125rem', fontWeight: 600, color: 'var(--color-text-1)', margin: '0 0 8px' }}>
               여권 ID를 입력하여 데이터를 조회하세요
             </h3>
-              <p style={{ fontSize: '0.875rem', color: 'var(--color-text-3)', textAlign: 'center', maxWidth: '28rem' }}>
+            <p style={{ fontSize: '0.9375rem', color: 'var(--color-text-3)', textAlign: 'center', maxWidth: '32rem', margin: '0 0 20px' }}>
               배터리 여권 ID를 입력하면 SOC, 전압, 전류, 온도 등 센서 데이터를 확인할 수 있습니다.
             </p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxWidth: '32rem', width: '100%', padding: '16px', background: 'var(--color-surface-alt)', borderRadius: 10, border: '1px solid var(--color-border)' }}>
+              <p style={{ fontSize: '0.9375rem', fontWeight: 600, color: 'var(--color-text-2)', margin: 0 }}>물리적 이력 검증</p>
+              <p style={{ fontSize: '0.9375rem', color: 'var(--color-text-3)', margin: 0, lineHeight: 1.6 }}>
+                배터리 물리 이력(SOC 추이, 전압·전류·온도 패턴, 방전 사이클)을 블록체인에 기록하여 신뢰 가능한 상태 검증을 제공합니다.
+                현장 점검 시 여권 ID 기반으로 실시간 센서 기록을 조회하고 이상 플래그를 즉시 확인할 수 있습니다.
+              </p>
+            </div>
           </div>
         </div>
       ) : hasSearched && errorMsg && accessDenied ? (
         <div className="sn-panel" style={{ overflow: 'hidden' }}>
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '72px 24px', textAlign: 'center' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '2rem 1.5rem', textAlign: 'center' }}>
             <div style={{ width: 56, height: 56, borderRadius: 12, background: '#fff7ed', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 18 }}>
               <svg width="26" height="26" fill="none" stroke="#d97706" strokeWidth="1.8" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
               </svg>
             </div>
-            <h3 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--color-text-1)', margin: '0 0 6px' }}>
+            <h3 style={{ fontSize: '1.125rem', fontWeight: 700, color: 'var(--color-text-1)', margin: '0 0 8px' }}>
               현재 계정으로는 이 여권의 BMU 기록을 열 수 없습니다
             </h3>
-              <p style={{ fontSize: '0.875rem', color: 'var(--color-text-2)', maxWidth: '32rem', margin: '0 0 6px' }}>
+            <p style={{ fontSize: '0.9375rem', color: 'var(--color-text-2)', maxWidth: '32rem', margin: '0 0 6px' }}>
               제조사 또는 접근 권한이 있는 계정으로 다시 조회해 주세요. 현재 메시지: {errorMsg}
             </p>
           </div>
         </div>
       ) : hasSearched && records.length === 0 && !loading ? (
         <div className="sn-panel" style={{ overflow: 'hidden' }}>
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '80px 24px' }}>
-            <h3 style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--color-text-1)', margin: '0 0 6px' }}>데이터가 없습니다</h3>
-              <p style={{ fontSize: '0.875rem', color: 'var(--color-text-3)' }}>해당 여권에 대한 BMU 기록이 존재하지 않습니다.</p>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '2rem 1.5rem' }}>
+            <h3 style={{ fontSize: '1.125rem', fontWeight: 600, color: 'var(--color-text-1)', margin: '0 0 8px' }}>데이터가 없습니다</h3>
+            <p style={{ fontSize: '0.9375rem', color: 'var(--color-text-3)' }}>해당 여권에 대한 BMU 기록이 존재하지 않습니다.</p>
           </div>
         </div>
       ) : records.length > 0 ? (
-        <div className="sn-panel" style={{ overflow: 'hidden' }}>
-          {/* TOP BAR */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 20px', borderBottom: '1px solid rgba(0,0,0,0.06)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <svg style={{ width: 16, height: 16, color: '#059669' }} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 10h16M4 14h16M4 18h16" />
-              </svg>
-              <span style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--color-text-2)' }}>판독 기록</span>
-          <span style={{ display: 'inline-flex', alignItems: 'center', padding: '2px 8px', borderRadius: 20, fontFamily: "'JetBrains Mono',monospace", fontSize: '0.75rem', fontWeight: 600, color: '#059669', background: 'rgba(52,211,153,0.1)' }}>
-                {records.length}건
-              </span>
+        <>
+          {/* 최신 센서 스냅샷 + Sparkline */}
+          {latestRecord && (
+            <div className="sn-panel" style={{ padding: '16px 20px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span style={{ fontSize: '0.9375rem', fontWeight: 600, color: 'var(--color-text-1)' }}>최신 센서 스냅샷</span>
+                  <span style={{ fontSize: '0.875rem', color: 'var(--color-text-3)', fontFamily: "'JetBrains Mono',monospace" }}>
+                    {formatTimestamp(latestRecord.timestamp)}
+                  </span>
+                </div>
+                <div style={{ display: 'flex', gap: 6 }}>
+                  {decodeStatusFlags(latestRecord.statusFlags).map((b) => {
+                    const s = BADGE_STYLES[b.color];
+                    return (
+                      <span key={b.label} style={{ display: 'inline-flex', alignItems: 'center', padding: '2px 10px', borderRadius: 20, fontSize: '0.875rem', fontWeight: 600, background: s.bg, color: s.color }}>
+                        <span style={{ width: 6, height: 6, borderRadius: '50%', marginRight: 6, background: s.dot }} />
+                        {b.label}
+                      </span>
+                    );
+                  })}
+                  {decodeStatusFlags(latestRecord.statusFlags).length === 0 && (
+                    <span style={{ display: 'inline-flex', alignItems: 'center', padding: '2px 10px', borderRadius: 20, fontSize: '0.875rem', fontWeight: 500, background: 'var(--color-surface-alt)', color: 'var(--color-text-2)', border: '1px solid var(--color-border)' }}>
+                      <span style={{ width: 6, height: 6, borderRadius: '50%', marginRight: 6, background: '#10b981' }} />
+                      정상
+                    </span>
+                  )}
+                </div>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
+                {/* SOC */}
+                <div style={{ padding: '14px 16px', background: 'var(--color-surface-alt)', borderRadius: 8, border: '1px solid var(--color-border)' }}>
+                  <p style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--color-text-3)', margin: '0 0 6px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>SOC</p>
+                  <p className="sn-metric sn-metric-md" style={{ fontFamily: "'JetBrains Mono',monospace", color: (() => { const v = scaleSOC(latestRecord.soc); return v > 50 ? 'var(--color-text-1)' : v > 20 ? '#f59e0b' : '#ef4444'; })(), margin: '0 0 4px' }}>
+                    {scaleSOC(latestRecord.soc)}<span style={{ fontSize: '0.875rem', fontWeight: 500, marginLeft: 2 }}>%</span>
+                  </p>
+                  <div style={{ marginBottom: 8, height: 4, borderRadius: 999, background: 'var(--color-border)' }}>
+                    <div style={{ height: '100%', borderRadius: 999, width: `${Math.min(scaleSOC(latestRecord.soc), 100)}%`, background: (() => { const v = scaleSOC(latestRecord.soc); return v > 50 ? '#10b981' : v > 20 ? '#f59e0b' : '#ef4444'; })() }} />
+                  </div>
+                  {recentSlice.soc.length > 1 && (
+                    <Sparkline values={recentSlice.soc} height={40} color={(() => { const v = scaleSOC(latestRecord.soc); return v > 50 ? '#10b981' : v > 20 ? '#f59e0b' : '#ef4444'; })()} />
+                  )}
+                </div>
+                {/* 전압 */}
+                <div style={{ padding: '14px 16px', background: 'var(--color-surface-alt)', borderRadius: 8, border: '1px solid var(--color-border)' }}>
+                  <p style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--color-text-3)', margin: '0 0 6px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>전압</p>
+                  <p className="sn-metric sn-metric-md" style={{ fontFamily: "'JetBrains Mono',monospace", color: 'var(--color-text-1)', margin: '0 0 12px' }}>
+                    {formatNumber(latestRecord.voltage, 2)}<span style={{ fontSize: '0.875rem', fontWeight: 500, marginLeft: 2 }}>V</span>
+                  </p>
+                  {recentSlice.voltage.length > 1 && (
+                    <Sparkline values={recentSlice.voltage} height={40} color="var(--color-accent)" />
+                  )}
+                </div>
+                {/* 전류 */}
+                <div style={{ padding: '14px 16px', background: 'var(--color-surface-alt)', borderRadius: 8, border: '1px solid var(--color-border)' }}>
+                  <p style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--color-text-3)', margin: '0 0 6px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>전류</p>
+                  <p className="sn-metric sn-metric-md" style={{ fontFamily: "'JetBrains Mono',monospace", color: 'var(--color-text-1)', margin: '0 0 12px' }}>
+                    {formatNumber(latestRecord.current, 2)}<span style={{ fontSize: '0.875rem', fontWeight: 500, marginLeft: 2 }}>A</span>
+                  </p>
+                  {recentSlice.current.length > 1 && (
+                    <Sparkline values={recentSlice.current} height={40} color="var(--color-accent)" />
+                  )}
+                </div>
+                {/* 온도 */}
+                <div style={{ padding: '14px 16px', background: 'var(--color-surface-alt)', borderRadius: 8, border: '1px solid var(--color-border)' }}>
+                  <p style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--color-text-3)', margin: '0 0 6px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>온도</p>
+                  <p className="sn-metric sn-metric-md" style={{ fontFamily: "'JetBrains Mono',monospace", color: 'var(--color-text-1)', margin: '0 0 12px' }}>
+                    {scaleTemp(latestRecord.temperature)}<span style={{ fontSize: '0.875rem', fontWeight: 500, marginLeft: 2 }}>°C</span>
+                  </p>
+                  {recentSlice.temperature.length > 1 && (
+                    <Sparkline values={recentSlice.temperature} height={40} color="#f59e0b" />
+                  )}
+                </div>
+              </div>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              {refreshing && (
-                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: '0.75rem', color: '#059669' }}>
-                  갱신 중...
+          )}
+
+          {/* 이상 이벤트 분포 */}
+          {eventDistribution && (
+            <div className="sn-panel" style={{ padding: '16px 20px' }}>
+              <p className="sn-eyebrow" style={{ margin: '0 0 12px', color: 'var(--color-text-2)' }}>이상 이벤트 분포</p>
+              <BarRows items={eventDistribution} />
+            </div>
+          )}
+
+          <div className="sn-panel" style={{ overflow: 'hidden' }}>
+            {/* TOP BAR */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 20px', borderBottom: '1px solid rgba(0,0,0,0.06)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <svg style={{ width: 16, height: 16, color: '#059669' }} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+                </svg>
+                <span style={{ fontSize: '0.9375rem', fontWeight: 600, color: 'var(--color-text-2)' }}>판독 기록</span>
+                <span style={{ display: 'inline-flex', alignItems: 'center', padding: '2px 8px', borderRadius: 20, fontFamily: "'JetBrains Mono',monospace", fontSize: '0.875rem', fontWeight: 600, color: '#059669', background: 'rgba(52,211,153,0.1)' }}>
+                  {records.length}건
+                </span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                {refreshing && (
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: '0.875rem', color: '#059669' }}>
+                    갱신 중...
+                  </span>
+                )}
+                <span style={{ padding: '2px 8px', borderRadius: 6, fontFamily: "'JetBrains Mono',monospace", fontSize: '0.875rem', color: 'var(--color-text-3)', background: 'var(--color-surface-alt)' }}>
+                  {passportId}
+                </span>
+              </div>
+            </div>
+
+            {/* TABLE */}
+            <div style={{ overflowX: 'auto' }}>
+              <table className="sn-table">
+                <thead>
+                  <tr>
+                    <th style={{ width: 16 }}></th>
+                    <th>시간</th>
+                    <th style={{ textAlign: 'right' }}>SOC (%)</th>
+                    <th style={{ textAlign: 'right' }}>전압 (V)</th>
+                    <th style={{ textAlign: 'right' }}>전류 (A)</th>
+                    <th style={{ textAlign: 'right' }}>온도 (°C)</th>
+                    <th style={{ textAlign: 'right' }}>사이클</th>
+                    <th>상태</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {sortedRecords.map((r, idx) => {
+                    const socVal = scaleSOC(r.soc);
+                    const socColor = socVal > 50 ? 'var(--color-text-1)' : socVal > 20 ? '#f59e0b' : '#ef4444';
+                    const badges = decodeStatusFlags(r.statusFlags);
+                    return (
+                      <tr key={r.recordId || idx}>
+                        <td style={{ padding: 0, width: 4, position: 'relative' }}>
+                          {idx === 0 && (
+                            <div style={{ position: 'absolute', left: 0, top: 4, bottom: 4, width: 3, borderRadius: '0 3px 3px 0', background: 'var(--color-text-1)' }} />
+                          )}
+                        </td>
+                        <td style={{ whiteSpace: 'nowrap', color: 'var(--color-text-2)' }}>{formatTimestamp(r.timestamp)}</td>
+                        <td style={{ whiteSpace: 'nowrap', textAlign: 'right' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 8 }}>
+                            <div style={{ width: 64, height: 6, borderRadius: 999, overflow: 'hidden', background: 'var(--color-border)' }}>
+                              <div style={{ height: '100%', borderRadius: 999, width: `${Math.min(socVal, 100)}%`, background: socColor, transition: 'all 0.3s' }} />
+                            </div>
+                            <span style={{ fontFamily: "'JetBrains Mono',monospace", fontWeight: 700, color: socColor }}>
+                              {socVal}
+                            </span>
+                          </div>
+                        </td>
+                        <td style={{ whiteSpace: 'nowrap', textAlign: 'right', fontFamily: "'JetBrains Mono',monospace", color: 'var(--color-text-2)' }}>
+                          {formatNumber(r.voltage, 2)}
+                        </td>
+                        <td style={{ whiteSpace: 'nowrap', textAlign: 'right', fontFamily: "'JetBrains Mono',monospace", color: 'var(--color-text-2)' }}>
+                          {formatNumber(r.current, 2)}
+                        </td>
+                        <td style={{ whiteSpace: 'nowrap', textAlign: 'right', fontFamily: "'JetBrains Mono',monospace", color: 'var(--color-text-2)' }}>
+                          {scaleTemp(r.temperature)}
+                        </td>
+                        <td style={{ whiteSpace: 'nowrap', textAlign: 'right', fontFamily: "'JetBrains Mono',monospace", color: 'var(--color-text-2)' }}>
+                          {r.dischargeCycles != null ? r.dischargeCycles : '-'}
+                        </td>
+                        <td style={{ whiteSpace: 'nowrap' }}>
+                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                            {badges.length === 0 ? (
+                              <span style={{ display: 'inline-flex', alignItems: 'center', padding: '2px 10px', borderRadius: 20, fontSize: '0.875rem', fontWeight: 500, background: 'var(--color-surface-alt)', color: 'var(--color-text-2)', border: '1px solid var(--color-border)' }}>
+                                <span style={{ width: 6, height: 6, borderRadius: '50%', marginRight: 6, background: 'var(--color-border)' }} />
+                                정상
+                              </span>
+                            ) : (
+                              badges.map((b) => {
+                                const s = BADGE_STYLES[b.color];
+                                return (
+                                  <span
+                                    key={b.label}
+                                    style={{
+                                      display: 'inline-flex',
+                                      alignItems: 'center',
+                                      padding: '2px 10px',
+                                      borderRadius: 20,
+                                      fontSize: '0.875rem',
+                                      fontWeight: 600,
+                                      background: s.bg,
+                                      color: s.color,
+                                    }}
+                                  >
+                                    <span style={{ width: 6, height: 6, borderRadius: '50%', marginRight: 6, background: s.dot }} />
+                                    {b.label}
+                                  </span>
+                                );
+                              })
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 20px', borderTop: '1px solid rgba(0,0,0,0.06)' }}>
+              <span style={{ fontSize: '0.875rem', color: 'var(--color-text-3)' }}>총 {records.length}개 레코드</span>
+              {autoRefresh && (
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontFamily: "'JetBrains Mono',monospace", fontSize: '0.875rem', color: 'var(--color-text-3)' }}>
+                  <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--color-text-1)' }} />
+                  실시간 모니터링 활성 · {countdown}s 후 갱신
                 </span>
               )}
-          <span style={{ padding: '2px 8px', borderRadius: 6, fontFamily: "'JetBrains Mono',monospace", fontSize: '0.8125rem', color: 'var(--color-text-3)', background: 'var(--color-surface-alt)' }}>
-                {passportId}
-              </span>
             </div>
           </div>
-
-          {/* TABLE */}
-        <div style={{ overflowX: 'auto', fontSize: '0.875rem' }}>
-            <table className="sn-table">
-              <thead>
-                <tr>
-                  <th style={{ width: 16 }}></th>
-                  <th>시간</th>
-                  <th style={{ textAlign: 'right' }}>SOC (%)</th>
-                  <th style={{ textAlign: 'right' }}>전압 (V)</th>
-                  <th style={{ textAlign: 'right' }}>전류 (A)</th>
-                  <th style={{ textAlign: 'right' }}>온도 (°C)</th>
-                  <th style={{ textAlign: 'right' }}>사이클</th>
-                  <th>상태</th>
-                </tr>
-              </thead>
-              <tbody>
-                {sortedRecords.map((r, idx) => {
-                  const socVal = scaleSOC(r.soc);
-                  const socColor = socVal > 50 ? 'var(--color-text-1)' : socVal > 20 ? '#f59e0b' : '#ef4444';
-                  const badges = decodeStatusFlags(r.statusFlags);
-                  return (
-                    <tr key={r.recordId || idx}>
-                      <td style={{ padding: 0, width: 4, position: 'relative' }}>
-                        {idx === 0 && (
-                          <div style={{ position: 'absolute', left: 0, top: 4, bottom: 4, width: 3, borderRadius: '0 3px 3px 0', background: 'var(--color-text-1)' }} />
-                        )}
-                      </td>
-                      <td style={{ whiteSpace: 'nowrap', fontSize: '0.85rem', color: 'var(--color-text-2)' }}>{formatTimestamp(r.timestamp)}</td>
-                      <td style={{ whiteSpace: 'nowrap', textAlign: 'right' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 8 }}>
-                          <div style={{ width: 64, height: 6, borderRadius: 999, overflow: 'hidden', background: 'var(--color-border)' }}>
-                            <div style={{ height: '100%', borderRadius: 999, width: `${Math.min(socVal, 100)}%`, background: socColor, transition: 'all 0.3s' }} />
-                          </div>
-                          <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: '0.85rem', fontWeight: 700, color: socColor }}>
-                            {socVal}
-                          </span>
-                        </div>
-                      </td>
-                      <td style={{ whiteSpace: 'nowrap', textAlign: 'right', fontFamily: "'JetBrains Mono',monospace", fontSize: '0.85rem', color: 'var(--color-text-2)' }}>
-                        {formatNumber(r.voltage, 2)}
-                      </td>
-                      <td style={{ whiteSpace: 'nowrap', textAlign: 'right', fontFamily: "'JetBrains Mono',monospace", fontSize: '0.85rem', color: 'var(--color-text-2)' }}>
-                        {formatNumber(r.current, 2)}
-                      </td>
-                      <td style={{ whiteSpace: 'nowrap', textAlign: 'right', fontFamily: "'JetBrains Mono',monospace", fontSize: '0.85rem', color: 'var(--color-text-2)' }}>
-                        {scaleTemp(r.temperature)}
-                      </td>
-                      <td style={{ whiteSpace: 'nowrap', textAlign: 'right', fontFamily: "'JetBrains Mono',monospace", fontSize: '0.85rem', color: 'var(--color-text-2)' }}>
-                        {r.dischargeCycles != null ? r.dischargeCycles : '-'}
-                      </td>
-                      <td style={{ whiteSpace: 'nowrap' }}>
-                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                          {badges.length === 0 ? (
-        <span style={{ display: 'inline-flex', alignItems: 'center', padding: '2px 10px', borderRadius: 20, fontSize: '0.875rem', fontWeight: 500, background: 'var(--color-surface-alt)', color: 'var(--color-text-2)', boxShadow: 'inset 0 0 0 1px rgba(0,0,0,0.06)' }}>
-                              <span style={{ width: 6, height: 6, borderRadius: '50%', marginRight: 6, background: 'var(--color-border)' }} />
-                              정상
-                            </span>
-                          ) : (
-                            badges.map((b) => {
-                              const s = BADGE_STYLES[b.color];
-                              return (
-                                <span
-                                  key={b.label}
-                                  style={{
-                                    display: 'inline-flex',
-                                    alignItems: 'center',
-                                    padding: '2px 10px',
-                                    borderRadius: 20,
-                                    fontSize: '0.75rem',
-                                    fontWeight: 600,
-                                    background: s.bg,
-                                    color: s.color,
-                                  }}
-                                >
-                                  <span style={{ width: 6, height: 6, borderRadius: '50%', marginRight: 6, background: s.dot }} />
-                                  {b.label}
-                                </span>
-                              );
-                            })
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 20px', borderTop: '1px solid rgba(0,0,0,0.06)' }}>
-        <span style={{ fontSize: '0.8125rem', color: 'var(--color-text-3)' }}>총 {records.length}개 레코드</span>
-            {autoRefresh && (
-        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontFamily: "'JetBrains Mono',monospace", fontSize: '0.75rem', color: 'var(--color-text-3)' }}>
-                <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--color-text-1)' }} />
-                실시간 모니터링 활성 · {countdown}s 후 갱신
-              </span>
-            )}
-          </div>
-        </div>
+        </>
       ) : null}
     </div>
   );
