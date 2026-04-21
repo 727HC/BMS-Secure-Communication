@@ -4,6 +4,7 @@ import { api } from '../lib/api';
 import { useAuth } from '../contexts/AuthContext';
 import { getStatusBadge, scaleSOC } from '../lib/helpers';
 import Spinner from '../components/ui/Spinner';
+import { ArcGauge } from '../components/ui/BatteryGauge';
 import { computeGbaCompliance, complianceGrade } from '../components/passport-detail/helpers';
 import type { Passport, BmuRecord, Credential, IssuerCatalogItem } from '../components/passport-detail/types';
 import type { BindFormData } from '../components/modals/passport-detail/BindModal';
@@ -344,20 +345,39 @@ export default function PassportDetailPage() {
       )}
 
       <div style={{ display: 'flex', flexDirection: 'column', background: 'var(--color-surface)', padding: '1.5rem 1.75rem', borderRadius: '1rem', border: '1px solid var(--color-border)', boxShadow: 'var(--shadow-card)', gap: '1.25rem' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr)) auto', alignItems: 'end', gap: '1.25rem', flexWrap: 'wrap' }}>
-          <div>
-            <p className="sn-eyebrow" style={{ marginBottom: '0.45rem' }}>SOH · 건강 상태</p>
-            <p className="sn-metric sn-metric-md" style={{ color: passport.currentSoh != null && passport.currentSoh < 80 ? 'var(--color-danger)' : 'var(--color-text-1)' }}>
-              {passport.currentSoh != null ? `${passport.currentSoh}` : '--'}
-              {passport.currentSoh != null && <span className="sn-metric-unit">%</span>}
-            </p>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr)) auto', alignItems: 'center', gap: '1.25rem', flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+            {passport.currentSoh != null ? (
+              <ArcGauge
+                value={passport.currentSoh}
+                label="SOH · 건강"
+                sublabel={passport.currentSoh < 80 ? '요주의' : undefined}
+                size={120}
+                strokeWidth={12}
+                warningThreshold={80}
+              />
+            ) : (
+              <>
+                <p className="sn-eyebrow" style={{ marginBottom: '0.45rem' }}>SOH · 건강 상태</p>
+                <p className="sn-metric sn-metric-md">--</p>
+              </>
+            )}
           </div>
-          <div>
-            <p className="sn-eyebrow" style={{ marginBottom: '0.45rem' }}>SOC · 충전 상태</p>
-            <p className="sn-metric sn-metric-md">
-              {passport.currentSoc != null ? `${scaleSOC(passport.currentSoc)}` : '--'}
-              {passport.currentSoc != null && <span className="sn-metric-unit">%</span>}
-            </p>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+            {passport.currentSoc != null ? (
+              <ArcGauge
+                value={scaleSOC(passport.currentSoc)}
+                label="SOC · 충전"
+                size={120}
+                strokeWidth={12}
+                warningThreshold={20}
+              />
+            ) : (
+              <>
+                <p className="sn-eyebrow" style={{ marginBottom: '0.45rem' }}>SOC · 충전 상태</p>
+                <p className="sn-metric sn-metric-md">--</p>
+              </>
+            )}
           </div>
           <div>
             <p className="sn-eyebrow" style={{ marginBottom: '0.45rem' }}>GBA 규제 준수</p>
