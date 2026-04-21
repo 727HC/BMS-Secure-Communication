@@ -20,9 +20,9 @@ status: current
 - [[passport/activity-log|활동 로그 인덱스]]
 - [[passport/activity-log/README|날짜별 활동 로그 허브]]
 - [[reviews/passport/README|Passport review 허브]]
+- [[handoffs/passport/README|Passport handoff 허브]]
 - [[reviews/passport/manual-qa-checklist|수동 QA 체크리스트]]
 - [[reviews/passport/manual-qa-report-2026-04-07|수동 QA 리포트]]
-- [[handoffs/passport/README|Passport handoff 허브]]
 - [[passport/frontend-legacy-vue|레거시 프론트엔드 개요 (Vue)]]
 
 ## archive / 보관

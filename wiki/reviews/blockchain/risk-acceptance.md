@@ -3,8 +3,14 @@ title: "리스크 수용 기록"
 date: 2026-04-13
 tags: [security, risk, decision]
 doc_type: review
+status: historical
 ---
 # 리스크 수용 기록
+
+> 과거 기준 기록
+>
+> 이 문서는 특정 시점에 수용한 리스크를 기록한 review note다. 현재 거버넌스 판단은 ADR과 현재 코드 상태를 함께 본다.
+
 
 코드 리뷰에서 지적되었으나 현재 단계(국가과제 연구/시제품)에서 리스크 수용한 항목.
 
