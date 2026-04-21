@@ -39,10 +39,10 @@ export default function TrustTab({ passport, vcList, onVerify, onRevoke, canRequ
           <div className="sn-detail-dossier-head">
             <h3 className="sn-detail-dossier-title">발급기관 / Credential 타입</h3>
           </div>
-          <div style={{ padding: '16px 18px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <div style={{ padding: '18px 20px', display: 'flex', flexDirection: 'column', gap: 14 }}>
             {issuers.map((issuer) => (
-              <div key={issuer.issuerMsp} style={{ display: 'grid', gridTemplateColumns: '180px minmax(0,1fr)', gap: 12 }}>
-                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 13, color: 'var(--color-text-3)' }}>{issuer.issuerMsp}</div>
+              <div key={issuer.issuerMsp} style={{ display: 'grid', gridTemplateColumns: '200px minmax(0,1fr)', gap: 14, alignItems: 'center' }}>
+                <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.9375rem', fontWeight: 600, color: 'var(--color-text-2)' }}>{issuer.issuerMsp}</div>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                   {issuer.types.map((type) => (
                     <span key={type} className="sn-detail-inline-stamp">{type}</span>
@@ -58,8 +58,8 @@ export default function TrustTab({ passport, vcList, onVerify, onRevoke, canRequ
         <div className="sn-detail-dossier-head">
           <h3 className="sn-detail-dossier-title">DID</h3>
         </div>
-        <div style={{ padding: 18 }}>
-          <p style={{ fontFamily: 'var(--font-mono)', fontSize: 14, color: 'var(--color-text-1)', wordBreak: 'break-all', margin: 0 }}>
+        <div style={{ padding: '18px 20px' }}>
+          <p style={{ fontFamily: 'var(--font-mono)', fontSize: '1rem', fontWeight: 600, color: 'var(--color-text-1)', wordBreak: 'break-all', margin: 0 }}>
             {passport.did || '미등록'}
           </p>
         </div>
@@ -71,42 +71,42 @@ export default function TrustTab({ passport, vcList, onVerify, onRevoke, canRequ
         </div>
         <div>
           {vcList.length === 0 ? (
-            <p className="sn-caption" style={{ padding: 18 }}>발급된 VC가 없습니다.</p>
+            <p className="sn-caption" style={{ padding: '20px', fontSize: '0.9375rem' }}>발급된 VC가 없습니다.</p>
           ) : (
             vcList.map((vc, idx) => (
               <div
                 key={vc.credentialId || idx}
                 style={{
                   display: 'grid',
-                  gridTemplateColumns: '140px minmax(0,1fr) auto',
-                  gap: 14,
-                  padding: '14px 18px',
-                  borderBottom: '1px solid rgba(0,0,0,0.04)',
+                  gridTemplateColumns: '160px minmax(0,1fr) auto',
+                  gap: 16,
+                  padding: '16px 20px',
+                  borderBottom: '1px solid var(--color-border)',
                 }}
               >
-                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 13, color: 'var(--color-text-3)' }}>{formatDate(vc.issuedAt)}</div>
+                <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.9375rem', color: 'var(--color-text-2)' }}>{formatDate(vc.issuedAt)}</div>
                 <div>
-                  <p style={{ margin: '0 0 4px', fontSize: 14, fontWeight: 600, color: 'var(--color-text-1)' }}>{vc.credType || 'VC'}</p>
-                  <p style={{ margin: 0, fontSize: 13, color: 'var(--color-text-3)', fontFamily: 'var(--font-mono)', wordBreak: 'break-all' }}>
+                  <p style={{ margin: '0 0 6px', fontSize: '1rem', fontWeight: 700, color: 'var(--color-text-1)' }}>{vc.credType || 'VC'}</p>
+                  <p style={{ margin: 0, fontSize: '0.875rem', color: 'var(--color-text-3)', fontFamily: 'var(--font-mono)', wordBreak: 'break-all' }}>
                     {vc.credentialId}
                   </p>
                 </div>
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 8 }}>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 10 }}>
                   <span className="sn-detail-inline-stamp">{vc.status || 'ACTIVE'}</span>
-                  <div style={{ display: 'flex', gap: 6 }}>
-                    <button 
-                      onClick={() => vc.credentialId && onVerify(vc.credentialId)} 
-                      className="sn-btn sn-btn-ghost" 
-                      style={{ padding: '4px 8px', fontSize: 12, minHeight: 'auto' }}
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <button
+                      onClick={() => vc.credentialId && onVerify(vc.credentialId)}
+                      className="sn-btn sn-btn-ghost"
+                      style={{ padding: '8px 14px', fontSize: '0.875rem' }}
                       disabled={!vc.credentialId}
                     >
                       검증
                     </button>
                     {vc.status !== 'REVOKED' && (
-                      <button 
-                        onClick={() => vc.credentialId && onRevoke(vc.credentialId)} 
-                        className="sn-btn sn-btn-danger" 
-                        style={{ padding: '4px 8px', fontSize: 12, minHeight: 'auto' }}
+                      <button
+                        onClick={() => vc.credentialId && onRevoke(vc.credentialId)}
+                        className="sn-btn sn-btn-danger"
+                        style={{ padding: '8px 14px', fontSize: '0.875rem' }}
                         disabled={!vc.credentialId}
                       >
                         폐기
