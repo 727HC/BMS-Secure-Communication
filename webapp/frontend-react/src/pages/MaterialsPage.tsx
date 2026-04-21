@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from 'react';
-import Spinner from '../components/ui/Spinner';
 import { api } from '../lib/api';
 import { useAuth } from '../contexts/AuthContext';
 import { Skeleton, SkeletonTable } from '../components/ui';
@@ -209,7 +208,18 @@ export default function MaterialsPage() {
       )}
 
       {loading ? (
-        <Spinner />
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.75rem' }}>
+            {[0, 1, 2].map((i) => (
+              <div key={i} style={{ padding: '0.75rem', background: 'var(--color-surface-alt)', borderRadius: '0.5rem', display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <Skeleton width="50%" height={12} />
+                <Skeleton width="40%" height={28} />
+                <Skeleton width="70%" height={10} />
+              </div>
+            ))}
+          </div>
+          <SkeletonTable rows={5} cols={8} />
+        </div>
       ) : filteredMaterials.length === 0 ? (
         <div style={{ padding: '2rem', textAlign: 'center', border: '1px dashed var(--color-border)', borderRadius: '0.5rem' }}>
           <p style={{ fontSize: '1rem', color: 'var(--color-text-2)', marginBottom: '0.5rem', fontWeight: 600 }}>

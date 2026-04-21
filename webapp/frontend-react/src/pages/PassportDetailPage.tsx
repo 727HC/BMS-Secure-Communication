@@ -55,7 +55,13 @@ const RegulatoryVerificationModal = lazy(() => import('../components/modals/pass
 const PhysicalVerificationModal = lazy(() => import('../components/modals/passport-detail/PhysicalVerificationModal'));
 
 function DetailSectionFallback() {
-  return <Spinner minHeight="18rem" />;
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 14, padding: '20px 0' }}>
+      {[0, 1, 2, 3].map((i) => (
+        <SkeletonCard key={i} lines={3} showTitle />
+      ))}
+    </div>
+  );
 }
 
 export default function PassportDetailPage() {
@@ -297,7 +303,36 @@ export default function PassportDetailPage() {
     }
   };
 
-  if (loading) return <Spinner />;
+  if (loading) {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+        {/* 히어로 skeleton */}
+        <div style={{ background: 'var(--color-surface)', padding: '1.5rem 1.75rem', borderRadius: '1rem', border: '1px solid var(--color-border)', display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <Skeleton width="40%" height={28} />
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 20 }}>
+            {[0, 1, 2, 3].map((i) => (
+              <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 }}>
+                <Skeleton width={120} height={120} radius={60} />
+                <Skeleton width="60%" height={12} />
+              </div>
+            ))}
+          </div>
+        </div>
+        {/* 탭 skeleton */}
+        <div style={{ display: 'flex', gap: 4 }}>
+          {[0, 1, 2, 3, 4].map((i) => (
+            <Skeleton key={i} width={80} height={36} radius={8} />
+          ))}
+        </div>
+        {/* 탭 시트 안 카드 3개 */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+          {[0, 1, 2].map((i) => (
+            <SkeletonCard key={i} lines={3} showTitle />
+          ))}
+        </div>
+      </div>
+    );
+  }
   if (!passport) return <p className="sn-caption">여권을 찾을 수 없습니다.</p>;
 
   const badge = getStatusBadge(passport.status || 'DISPOSED');

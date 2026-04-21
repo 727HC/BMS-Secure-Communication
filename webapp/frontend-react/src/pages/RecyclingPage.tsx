@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from 'react';
-import Spinner from '../components/ui/Spinner';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../lib/api';
 import { useAuth } from '../contexts/AuthContext';
@@ -226,7 +225,18 @@ export default function RecyclingPage() {
     finally { setSubmitting(false); }
   };
 
-  if (loading) return <Spinner />;
+  if (loading) {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '0.75rem' }}>
+          {[0, 1, 2, 3, 4].map((i) => (
+            <SkeletonCard key={i} lines={2} showTitle />
+          ))}
+        </div>
+        <SkeletonTable rows={5} cols={7} />
+      </div>
+    );
+  }
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>

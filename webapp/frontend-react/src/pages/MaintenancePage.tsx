@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from 'react';
-import Spinner from '../components/ui/Spinner';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../lib/api';
 import { useAuth } from '../contexts/AuthContext';

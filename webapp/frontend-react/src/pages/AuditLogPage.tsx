@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import Spinner from '../components/ui/Spinner';
 import { api } from '../lib/api';
 import { Skeleton, SkeletonRows } from '../components/ui';
 import { DonutChart, BarRows, LegendStack } from '../components/ui/Charts';
