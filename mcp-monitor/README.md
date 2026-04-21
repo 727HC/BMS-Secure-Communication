@@ -1,0 +1,279 @@
+# BMS Blockchain MCP Monitor
+
+> **Model Context Protocol 기반 BMS 블록체인 모니터링 서버**
+> Fabric 트랜잭션 · BMU 이상 탐지 · VC 이벤트 · 시스템 상태 — 전부 읽기 전용
+
+Claude Code 등 MCP 클라이언트가 stdio로 연결해, 체인코드를 직접 쿼리하거나 구조화 JSON 로그를 읽어 BMS 블록체인 플랫폼의 운영 상태를 관찰한다. 블록체인 쓰기/변경은 하지 않는다 (ADR-003).
+
+---
+
+## 특징
+
+- **읽기 전용**: `evaluateTransaction`만 사용, `submitTransaction`·fabric-ca-client 없음
+- **하이브리드 데이터 소스**: Fabric 쿼리 + `logs/agent.log` 구조화 JSON 로그 (이중 소스로 정확도 보강)
+- **4개 MCP Tool**: `monitor_transactions`, `monitor_bmu`, `monitor_vc`, `system_status`
+- **1개 MCP Resource**: `agent-logs` (최근 100줄 스트림)
+- **입력 검증**: zod 스키마 (int/min/max + cross-validation)
+- **세션 격리 훅**: `.claude/` 에 SessionStart/PreToolUse/PostToolUse/PostCompact 자동 설정
+
+---
+
+## 아키텍처
+
+```
+┌────────────────────┐  stdio (JSON-RPC)   ┌──────────────────────────┐
+│  MCP Client        │ ──────────────────▶ │  src/index.js            │
+│  (Claude Code 등)  │ ◀────────────────── │  (McpServer)             │
+└────────────────────┘                     └────────────┬─────────────┘
+                                                        │
+                         ┌──────────────────────────────┼──────────────────────────┐
+                         ▼                              ▼                          ▼
+                  ┌──────────────┐              ┌──────────────┐           ┌──────────────┐
+                  │ tools/       │              │ utils/       │           │ system-status│
+                  │  tx-monitor  │◀────────────▶│ fabric-client│           │  docker/proc │
+                  │  bmu-monitor │              │  log-reader  │           │  / http probe│
+                  │  vc-monitor  │              └──────┬───────┘           └──────┬───────┘
+                  └──────┬───────┘                     │                          │
+                         │                             ▼                          ▼
+                         ▼                   ┌──────────────────┐      ┌──────────────────┐
+                ┌──────────────────┐          │ logs/agent.log   │      │ docker ps / curl │
+                │ Fabric Gateway   │          │ (구조화 JSON)    │      │ VON · ACA-Py     │
+                │ evaluateTx only  │          └──────────────────┘      └──────────────────┘
+                └──────────────────┘
+```
+
+---
+
+## 설치 및 실행
+
+### 사전 준비
+
+- Node.js 18+ (권장 20 LTS)
+- `bmu-agent/` wallet에 Fabric identity 사전 등록 (MCP는 자동 enrollment 하지 않음)
+- `logs/agent.log` 존재 (bmu-agent 실행 시 자동 생성)
+- 4-org Fabric 네트워크 기동 (`./start_passport_network.sh up`)
+
+### 설치
+
+```bash
+cd mcp-monitor
+cp .env.example .env        # 필요 시 편집 (기본값으로 로컬 동작)
+npm install
+```
+
+### 실행 (stdio 서버)
+
+```bash
+node src/index.js
+# 또는 npm start
+```
+
+> MCP 서버는 stdio 전송을 사용한다. 직접 실행보다는 MCP 클라이언트(Claude Code 등) 설정에 등록해서 쓴다.
+
+### Claude Code 등록 예시
+
+```json
+{
+  "mcpServers": {
+    "bms-blockchain-monitor": {
+      "command": "node",
+      "args": ["/absolute/path/to/mcp-monitor/src/index.js"]
+    }
+  }
+}
+```
+
+---
+
+## Tool Reference
+
+### 1. `monitor_transactions` — Fabric 트랜잭션
+
+| action | 설명 | 주요 파라미터 |
+|--------|------|---------------|
+| `recent` | 최근 트랜잭션 (로그 기반) | `limit`, `passport_id` |
+| `stats` | 성공/실패 통계 + TPS | `hours` (0.1~720) |
+| `search` | 함수명 검색 | `function_name` (필수), `limit` |
+
+- **정확도**: 비트랜잭션 lifecycle 로그(연결·게이트웨이 등) 제외, `function \|\| action` 있는 로그만 카운트
+- **중복제거**: `timestamp\|category\|message` 키로 Set 기반 중복제거 (tee+logger 이중 기록 대응)
+
+### 2. `monitor_bmu` — BMU 이상 탐지
+
+| action | 설명 | 주요 파라미터 |
+|--------|------|---------------|
+| `anomalies` | 임계값 초과 레코드 | `passport_id`, `limit`, `hours` |
+| `latest` | 최신 BMU 데이터 | `passport_id`, `limit` |
+| `frequency` | 수신 빈도 분석 | `hours` |
+| `thresholds` | 임계값 조회/변경 | `set_thresholds` (soc/voltage/temp) |
+
+- **INVALIDATED 필터링**: `status !== 'INVALIDATED'` 레코드만 분석에 포함 (`invalidatedFiltered` 카운트 응답 포함)
+- **Cross-validation**: threshold 변경 시 `*_min < *_max` 검증
+
+### 3. `monitor_vc` — VC 이벤트
+
+| action | 설명 | 주요 파라미터 |
+|--------|------|---------------|
+| `events` | 최근 VC 이벤트 | `passport_id`, `cred_type`, `limit` |
+| `expiring` | 만료 임박 VC | `days_until_expiry` (1~365) |
+| `stats` | 상태 통계 | — |
+| `revoked` | 폐기된 VC | `limit` |
+
+- **dataScope**: 현재 org MSP(예: `ManufacturerMSP`) 기준 자기 조직 VC만 가시 → 응답에 `dataScope` 필드 포함
+- **typeStats**: `active + revoked + expired` 합산 방식으로 total 계산 (루프 후)
+
+### 4. `system_status` — 시스템 상태
+
+| action | 설명 |
+|--------|------|
+| `overview` | 전체 요약 (fabric·von·acapy·agent·docker) |
+| `fabric` | peer/orderer/CA 상세 |
+| `von` | VON Network 상태 |
+| `acapy` | ACA-Py 상태 |
+| `agent` | Agent 프로세스 상태 |
+| `docker` | 컨테이너 목록 |
+
+- `verbose: true` 로 컨테이너 상세 포함
+
+### Resource: `agent-logs`
+
+- URI: `file:///logs/agent.log`
+- 최근 100줄 JSON 배열
+- 에러 시 `{error: "..."}` 형태 반환 (graceful degradation)
+
+---
+
+## 환경 변수
+
+| 카테고리 | 변수 | 기본값 | 설명 |
+|----------|------|--------|------|
+| Agent | `AGENT_URL` | `http://localhost:3001` | bmu-agent HTTP endpoint |
+| Fabric | `FABRIC_CHANNEL` | `passportchannel` | 채널 이름 |
+| Fabric | `FABRIC_CONTRACT` | `passport-contract` | 체인코드 이름 |
+| Fabric | `FABRIC_IDENTITY` | `admin` | wallet identity label |
+| Fabric | `FABRIC_ORG` | `1` | 1~4 (Manufacturer/EV/Service/Regulator) |
+| Fabric | `FABRIC_DISCOVERY_AS_LOCALHOST` | `true` | 로컬 개발용 |
+| Fabric | `FABRIC_CA_TLS_VERIFY` | `true` | production 필수 |
+| Fabric (조직) | `FABRIC_ORG{1..4}_MSP/DOMAIN/CA_NAME/CA_PORT/PEER_ENDPOINT` | — | 4조직 엔드포인트 |
+| VON | `VON_URL` | `http://localhost:9000` | VON Network |
+| ACA-Py | `ACAPY_ADMIN_URL` | `http://localhost:8031` | ACA-Py admin API |
+| BMU | `BMU_SOC_MIN/MAX` | `10 / 95` | SOC 임계값 (%) |
+| BMU | `BMU_VOLTAGE_MIN/MAX` | `27.5 / 47.85` | 11S 팩 전압 (cell_min/max × 11) |
+| BMU | `BMU_TEMP_MIN/MAX` | `0 / 60` | 온도 (℃) |
+| 로그 | `LOG_FILE_PATH` | `../logs/agent.log` | bmu-agent 구조화 로그 경로 |
+
+> 전체 샘플은 [`.env.example`](.env.example) 참고. `.env`는 gitignored.
+
+---
+
+## 검증 (Verification Protocol)
+
+변경 후 수동/자동 검증 순서:
+
+```bash
+# 1. 구문 검증 (PostToolUse hook 자동 실행 + 수동)
+node -c src/index.js && \
+node -c src/utils/fabric-client.js && \
+node -c src/utils/log-reader.js && \
+node -c src/tools/tx-monitor.js && \
+node -c src/tools/bmu-monitor.js && \
+node -c src/tools/vc-monitor.js && \
+node -c src/tools/system-status.js
+
+# 2. 의존성 확인
+npm ls --depth=0
+
+# 3. MCP 도구 등록 확인 (JSON-RPC tools/list)
+echo '{"jsonrpc":"2.0","id":1,"method":"tools/list"}' | node src/index.js | head -c 600
+
+# 4. 라이브 동작 확인 (Fabric UP 상태 전제)
+#    MCP 클라이언트에서 system_status.overview 호출 → 25/25 컨테이너, fabric: healthy 기대
+```
+
+규칙:
+- PASS 선언 전 최소 1개 adversarial probe (경계값·잘못된 입력 등)
+- "코드 읽어보니 맞다" → 검증 아님. 반드시 실행해서 확인.
+
+---
+
+## 훅 (Hooks)
+
+`.claude/settings.json`에 자동 등록되어 `mcp-monitor/` cwd에서 Claude Code 시작 시 활성화:
+
+| Hook | 스크립트 | 역할 |
+|------|----------|------|
+| `SessionStart` | `session-start.sh` | 세션 범위·정책 자동 주입 |
+| `PreToolUse` (Edit/Write) | `session-guard.sh` | `mcp-monitor/` 외부 수정 차단 |
+| `PostToolUse` (Edit/Write) | `auto-syntax-check.sh` | `.js` 자동 `node -c` 구문 검증 |
+| `PostCompact` | `post-compact.sh` | 컴팩션 전후 작업 상태 보존 |
+
+---
+
+## 주요 기술 결정 (요약)
+
+- **fabric-ca-client 제거** (ADR-003) — 자동 enrollment 보안 리스크 제거, wallet identity는 bmu-agent가 사전 등록
+- **로그 기반 `recent`** — 스냅샷 pseudo-event 제거, 실제 이벤트 로그만 사용
+- **INVALIDATED 필터링** — BMU 쿼리 4지점 모두에서 일관 적용
+- **에러 시그널링 `throw` 통일** — 도구 레이어에서 throw → `index.js` catch가 `isError: true` 설정 → MCP 클라이언트가 정상 인식
+- **VC dataScope 필드** — 요청 org MSP에 따라 가시 범위 다름을 응답에 명시
+
+상세는 `wiki/decisions/003-*`, `wiki/mcp/overview.md`, `wiki/mcp/activity-log.md` 참고.
+
+---
+
+## 디렉토리 구조
+
+```
+mcp-monitor/
+├── src/
+│   ├── index.js                # MCP 서버 진입점, 4 tool + 1 resource 등록
+│   ├── tools/
+│   │   ├── tx-monitor.js       # 트랜잭션 (recent/stats/search)
+│   │   ├── bmu-monitor.js      # BMU (anomalies/latest/frequency/thresholds)
+│   │   ├── vc-monitor.js       # VC (events/expiring/stats/revoked)
+│   │   └── system-status.js    # 시스템 (overview/fabric/von/acapy/agent/docker)
+│   └── utils/
+│       ├── fabric-client.js    # Fabric Gateway 연결 (읽기 전용)
+│       └── log-reader.js       # 구조화 JSON 로그 파서 + 중복제거
+├── .claude/                    # Claude Code 세션 격리 훅
+│   ├── settings.json
+│   └── hooks/                  # session-start / session-guard / auto-syntax-check / post-compact
+├── .env.example                # 환경변수 샘플
+├── CLAUDE.md                   # 세션 가이드
+├── package.json                # @modelcontextprotocol/sdk, fabric-network, axios, dotenv
+└── README.md
+```
+
+---
+
+## 의존성
+
+| 패키지 | 용도 |
+|--------|------|
+| `@modelcontextprotocol/sdk` ^1.12 | MCP 서버 프레임워크 (stdio 전송, 도구/리소스 등록) |
+| `fabric-network` ^2.2 | Fabric Gateway 클라이언트 (`evaluateTransaction` 전용) |
+| `axios` ^1.9 | Agent / VON / ACA-Py HTTP 프로브 |
+| `dotenv` ^17 | `.env` 로드 |
+| `zod` (sdk 의존성 경유) | 입력 스키마 검증 |
+
+> `dockerode`, `fabric-ca-client`는 **의도적으로 제외** — docker는 `docker ps` 셸 호출로 대체, CA는 보안 이유로 제거.
+
+---
+
+## 운영 참고
+
+- 로그 경로 기본값은 `../logs/agent.log` 기준 — bmu-agent가 로그를 기록 중이어야 의미 있는 데이터가 나옴
+- `FABRIC_DISCOVERY_AS_LOCALHOST=true`는 로컬 전용. 원격/운영 배치 시 `false` 로 두고 DNS/host 설정
+- `npm audit` 결과는 주기적으로 확인 필요 (의존성 트리 취약점 추적)
+- filter-repo 등 history 재작성 작업 시 `.env.example` placeholder 점검 (실제 코드 참조 여부 grep으로 재검증)
+
+---
+
+## 관련 문서
+
+- 프로젝트 전체 README: [`../README.md`](../README.md)
+- 세션 가이드: [`CLAUDE.md`](CLAUDE.md)
+- 세션 활동 로그: `wiki/mcp/activity-log.md`
+- 세션 개요/아키텍처: `wiki/mcp/overview.md`
+- 배터리 여권 전체 구조: `wiki/common/architecture.md`
+- 결정 기록: `wiki/decisions/003-*` (fabric-ca-client 제거, read-only 원칙)
