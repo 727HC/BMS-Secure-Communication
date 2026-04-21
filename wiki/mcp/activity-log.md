@@ -3,8 +3,14 @@ title: "MCP 세션 활동 로그"
 date: 2026-04-06
 tags: [mcp, log]
 doc_type: log
+status: historical
 ---
 # MCP 세션 — 활동 로그
+
+> 과거 기준 기록
+>
+> 이 문서는 MCP 세션의 시계열 작업 로그를 보존한다.
+> 현재 구조/정책 설명은 [[mcp/overview|세션 개요]]와 [[mcp/README|mcp 허브]]를 먼저 본다.
 
 > 세션(컨텍스트) 단위로 기록. 컨텍스트가 차서 다음 세션으로 넘어갈 때 작성.
 
