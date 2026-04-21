@@ -1,5 +1,5 @@
 ---
-title: "\"ADR-005: MCP 세션 Hook 기반 격리\""
+title: "ADR-005: MCP 세션 Hook 기반 격리"
 date: 2026-04-06
 tags: [adr, mcp, workflow, hooks]
 doc_type: adr

@@ -19,10 +19,10 @@ status: current
 - [[common/task-packet-template|Task Packet 템플릿]]
 
 ## 함께 보는 허브
-- [[decisions/README|ADR 허브]]
+- [[decisions/README|ADR 허브]] *(현재 거버넌스 문서)*
 - [[handoffs/README|handoff 기록 허브]]
 - [[reviews/README|review 기록 허브]]
-- [[Object/README|참고 자료 허브]]
+- [[Object/README|참고 자료 허브]] *(배경 참조)*
 
 ## 배경 참조
 - [[common/claude-design-prompt-reference|Claude 디자인 프롬프트 참조]] *(외부/과거 참고 자료)*

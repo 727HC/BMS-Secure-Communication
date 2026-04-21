@@ -1,5 +1,5 @@
 ---
-title: "\"ADR-002: 세션 범위 재배분\""
+title: "ADR-002: 세션 범위 재배분"
 date: 2026-04-06
 tags: [adr, architecture, sessions]
 doc_type: adr

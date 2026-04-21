@@ -1,5 +1,5 @@
 ---
-title: "\"ADR-001: 사이드바 네비게이션 전환\""
+title: "ADR-001: 사이드바 네비게이션 전환"
 date: 2026-04-06
 tags: [adr, design, navigation]
 doc_type: adr
