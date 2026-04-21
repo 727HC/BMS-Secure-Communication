@@ -234,7 +234,10 @@ export default function DashboardPage() {
             style={{ padding: 20, borderRadius: 16, background: 'var(--color-surface-accent)', border: '1px solid rgba(23,105,224,0.12)', textAlign: 'left', cursor: 'pointer', display: 'flex', flexDirection: 'column', gap: 10 }}
           >
             <p className="sn-caption" style={{ margin: 0, fontSize: '1rem', fontWeight: 600, color: 'var(--color-text-2)' }}>VIN 연결 필요</p>
-            <p className="sn-metric sn-metric-lg" style={{ margin: 0 }}>{bindPend}<span style={{ fontSize: '1rem', fontWeight: 600, marginLeft: 4 }}>건</span></p>
+            <p className="sn-metric" style={{ margin: 0, fontSize: '3rem', fontWeight: 700, lineHeight: 1.1 }}>
+              {bindPend}
+              <span className="sn-metric-unit" style={{ fontSize: '1.125rem', fontWeight: 600, marginLeft: 5 }}>건</span>
+            </p>
             <p className="sn-caption" style={{ margin: 0, fontSize: '1rem' }}>차량 정보 연결이 아직 끝나지 않은 여권</p>
           </button>
           <button
@@ -242,7 +245,10 @@ export default function DashboardPage() {
             style={{ padding: 20, borderRadius: 16, background: 'var(--color-surface-warm)', border: '1px solid rgba(245,158,11,0.16)', textAlign: 'left', cursor: 'pointer', display: 'flex', flexDirection: 'column', gap: 10 }}
           >
             <p className="sn-caption" style={{ margin: 0, fontSize: '1rem', fontWeight: 600, color: 'var(--color-text-2)' }}>정비·분석 확인</p>
-            <p className="sn-metric sn-metric-lg" style={{ margin: 0 }}>{svcOpen}<span style={{ fontSize: '1rem', fontWeight: 600, marginLeft: 4 }}>건</span></p>
+            <p className="sn-metric" style={{ margin: 0, fontSize: '3rem', fontWeight: 700, lineHeight: 1.1 }}>
+              {svcOpen}
+              <span className="sn-metric-unit" style={{ fontSize: '1.125rem', fontWeight: 600, marginLeft: 5 }}>건</span>
+            </p>
             <p className="sn-caption" style={{ margin: 0, fontSize: '1rem' }}>결과 등록 또는 후속 검토가 필요한 항목</p>
           </button>
           <button
@@ -250,7 +256,10 @@ export default function DashboardPage() {
             style={{ padding: 20, borderRadius: 16, background: 'var(--color-surface-teal)', border: '1px solid rgba(13,148,136,0.16)', textAlign: 'left', cursor: 'pointer', display: 'flex', flexDirection: 'column', gap: 10 }}
           >
             <p className="sn-caption" style={{ margin: 0, fontSize: '1rem', fontWeight: 600, color: 'var(--color-text-2)' }}>회수 판단 확인</p>
-            <p className="sn-metric sn-metric-lg" style={{ margin: 0 }}>{recycleN}<span style={{ fontSize: '1rem', fontWeight: 600, marginLeft: 4 }}>건</span></p>
+            <p className="sn-metric" style={{ margin: 0, fontSize: '3rem', fontWeight: 700, lineHeight: 1.1 }}>
+              {recycleN}
+              <span className="sn-metric-unit" style={{ fontSize: '1.125rem', fontWeight: 600, marginLeft: 5 }}>건</span>
+            </p>
             <p className="sn-caption" style={{ margin: 0, fontSize: '1rem' }}>회수 또는 재활용 판단이 필요한 여권</p>
           </button>
         </div>
@@ -286,10 +295,33 @@ export default function DashboardPage() {
 
         {/* 최근 7일 등록 추세 — 데이터 있을 때만 표시 */}
         {hasSparkData && (
-          <div className="sn-panel" style={{ borderRadius: 20, padding: '20px 22px', border: '1px solid var(--color-border)', background: 'var(--color-surface)', display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <div className="sn-panel" style={{ borderRadius: 20, padding: '20px 22px', border: '1px solid var(--color-border)', background: 'var(--color-surface)', display: 'flex', flexDirection: 'column', gap: 16, minHeight: 0, alignSelf: 'stretch' }}>
             <div>
               <p className="sn-eyebrow" style={{ margin: '0 0 4px', color: 'var(--color-text-3)' }}>최근 7일 등록 추세</p>
               <p className="sn-caption" style={{ margin: 0 }}>등록일 기준 일별 신규 여권 수</p>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
+              <div style={{ padding: '10px 12px', borderRadius: 10, background: 'var(--color-surface-2)', border: '1px solid var(--color-border)' }}>
+                <p className="sn-caption" style={{ margin: '0 0 2px', color: 'var(--color-text-3)', fontSize: '0.8125rem' }}>7일 합계</p>
+                <p style={{ margin: 0, fontSize: '1.5rem', fontWeight: 700, color: 'var(--color-text-1)', lineHeight: 1.2 }}>
+                  {sparkValues.reduce((s, v) => s + v, 0)}
+                  <span style={{ fontSize: '0.875rem', fontWeight: 500, marginLeft: 3, color: 'var(--color-text-2)' }}>건</span>
+                </p>
+              </div>
+              <div style={{ padding: '10px 12px', borderRadius: 10, background: 'var(--color-surface-2)', border: '1px solid var(--color-border)' }}>
+                <p className="sn-caption" style={{ margin: '0 0 2px', color: 'var(--color-text-3)', fontSize: '0.8125rem' }}>일 평균</p>
+                <p style={{ margin: 0, fontSize: '1.5rem', fontWeight: 700, color: 'var(--color-text-1)', lineHeight: 1.2 }}>
+                  {(sparkValues.reduce((s, v) => s + v, 0) / 7).toFixed(1)}
+                  <span style={{ fontSize: '0.875rem', fontWeight: 500, marginLeft: 3, color: 'var(--color-text-2)' }}>건</span>
+                </p>
+              </div>
+              <div style={{ padding: '10px 12px', borderRadius: 10, background: 'var(--color-surface-2)', border: '1px solid var(--color-border)' }}>
+                <p className="sn-caption" style={{ margin: '0 0 2px', color: 'var(--color-text-3)', fontSize: '0.8125rem' }}>최대 1일</p>
+                <p style={{ margin: 0, fontSize: '1.5rem', fontWeight: 700, color: 'var(--color-text-1)', lineHeight: 1.2 }}>
+                  {Math.max(...sparkValues)}
+                  <span style={{ fontSize: '0.875rem', fontWeight: 500, marginLeft: 3, color: 'var(--color-text-2)' }}>건</span>
+                </p>
+              </div>
             </div>
             <div style={{ flex: 1, minHeight: 80 }}>
               <Sparkline values={sparkValues} height={80} color="var(--color-accent)" fillOpacity={0.12} />
