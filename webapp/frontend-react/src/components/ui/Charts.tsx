@@ -6,15 +6,29 @@ interface DonutProps {
   thickness?: number;
   centerLabel?: string;
   centerValue?: string;
+  animate?: boolean;
 }
 
-export function DonutChart({ segments, size = 180, thickness = 22, centerLabel, centerValue }: DonutProps) {
+let _donutCounter = 0;
+
+export function DonutChart({ segments, size = 180, thickness = 22, centerLabel, centerValue, animate = true }: DonutProps) {
   const total = segments.reduce((a, s) => a + s.value, 0) || 1;
   const r = (size - thickness) / 2;
   const c = 2 * Math.PI * r;
+  const animId = `sn-donut-${++_donutCounter}`;
   let offset = 0;
   return (
     <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+      {animate && (
+        <style>{`
+@keyframes ${animId} {
+  from { stroke-dasharray: 0 ${c.toFixed(2)}; }
+}
+.${animId}-seg {
+  animation: ${animId} 0.9s cubic-bezier(0.33, 1, 0.68, 1) forwards;
+}
+        `}</style>
+      )}
       <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="var(--color-border)" strokeWidth={thickness} />
       {segments.map((seg, i) => {
         const dash = (seg.value / total) * c;
@@ -32,6 +46,8 @@ export function DonutChart({ segments, size = 180, thickness = 22, centerLabel, 
             strokeDashoffset={-offset}
             transform={`rotate(-90 ${size / 2} ${size / 2})`}
             strokeLinecap="butt"
+            className={animate ? `${animId}-seg` : undefined}
+            style={animate ? { animationDelay: `${i * 100}ms` } : undefined}
           />
         );
         offset += dash;
@@ -99,8 +115,14 @@ export function Sparkline({ values, width = 280, height = 64, color = 'var(--col
   const d = pts.map(([x, y], i) => `${i === 0 ? 'M' : 'L'}${x},${y}`).join(' ');
   const fill = `${d} L${width},${height} L0,${height} Z`;
 
-  /* path 길이 근사: 실제 SVGPathElement.getTotalLength() 없이 width로 근사 */
-  const pathLen = width * 1.05;
+  /* 실제 path 길이: 연속된 점 사이 유클리드 거리 합 (getTotalLength 없이 정확) */
+  let pathLen = 0;
+  for (let i = 1; i < pts.length; i++) {
+    const dx = pts[i][0] - pts[i - 1][0];
+    const dy = pts[i][1] - pts[i - 1][1];
+    pathLen += Math.sqrt(dx * dx + dy * dy);
+  }
+  pathLen = Math.max(pathLen, 1);
   const animId = `sn-spark-${++_sparklineCounter}`;
 
   return (
