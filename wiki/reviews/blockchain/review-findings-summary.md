@@ -4,8 +4,14 @@ date: 2026-04-13
 updated: 2026-04-13
 tags: [review, verification, security]
 doc_type: review
+status: historical
 ---
 # 코드 리뷰 사실/거짓 판별 결과
+
+> 과거 기준 기록
+>
+> 이 문서는 특정 시점의 코드 리뷰 판정 결과를 요약한 기록이다. 현재 구조/정책 설명의 1차 source로 쓰지 않는다.
+
 
 5회 코드 리뷰에서 총 60건+ 지적. 블록체인 세션에서 사실 여부 검증.
 

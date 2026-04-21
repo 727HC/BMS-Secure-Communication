@@ -3,8 +3,14 @@ title: "BATP 실사용 QA 결과"
 date: 2026-04-07
 tags: [passport, qa, report]
 doc_type: review
+status: historical
 ---
 # BATP 실사용 QA 결과
+
+> 과거 기준 기록
+>
+> 이 문서는 2026-04-07 시점의 수동 QA 실행 결과를 보존한다. 현재 반복 검증 절차는 [[reviews/passport/manual-qa-checklist|체크리스트]]를 먼저 본다.
+
 
 - 최초 점검 시각: 2026. 4. 7. AM 10:45:09
 - 재점검 시각: 2026-04-07 12:27:59 KST

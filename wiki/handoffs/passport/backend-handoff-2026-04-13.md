@@ -3,8 +3,14 @@ title: "배터리 여권 백엔드 요청사항"
 date: 2026-04-13
 tags: [passport, backend, handoff]
 doc_type: handoff
+status: historical
 ---
 # 배터리 여권 백엔드 요청사항
+
+> 과거 기준 기록
+>
+> 이 문서는 2026-04-13 시점에 작성한 Passport→Backend handoff다. 현재 구조 설명이 아니라 세션 간 전달 기록으로 본다.
+
 
 ## 목적
 

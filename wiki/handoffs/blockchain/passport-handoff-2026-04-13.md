@@ -4,8 +4,14 @@ aliases: [passport-session-handoff]
 date: 2026-04-13
 tags: [handoff, passport, chaincode, v1.8]
 doc_type: handoff
+status: historical
 ---
 # Passport 세션 handoff — 체인코드 v1.8
+
+> 과거 기준 기록
+>
+> 이 문서는 2026-04-13 시점의 Blockchain→Passport handoff다. 현재 기준 문서가 아니라 전달 기록이다.
+
 
 ## 개요
 
