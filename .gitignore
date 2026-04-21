@@ -104,3 +104,13 @@ workspaceS32DS.3.6.0.zip
 /passport-network/*.tar.gz
 /passport-network/log.txt
 # END runtime-artifact-policy
+
+# AI agent persona templates (harness) — 로컬에서만 관리
+SOUL.md
+IDENTITY.md
+USER.md
+HEARTBEAT.md
+TOOLS.md
+
+# harness 세션 실행 산출물 — cycle_* 루프 로그는 저장소에 보관 안 함
+.harness/cycle_*/
