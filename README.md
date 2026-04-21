@@ -7,22 +7,29 @@
 
 ## Battery Passport Platform (배터리 여권)
 
-GBA 21 규격 배터리 여권 플랫폼 — 4-org Fabric 네트워크 + Vue 3 웹앱
+GBA 21 규격 배터리 여권 플랫폼 — 4-org Fabric + CouchDB + React 웹앱 + Cloud Agent 이중 저장
 
 ```bash
+# 사전 준비 (처음 1회)
+cp passport-network/.env.template passport-network/.env
+# .env 편집: CA_ADMIN_USER/PASSWORD, COUCHDB_USER/PASSWORD 설정
+
 # Quick Start
-./start_passport_network.sh up          # 4-org Fabric + CouchDB
-cd bmu-agent && FABRIC_ORG=1 node server.js  # Agent + 프론트엔드
+./start_passport_network.sh up          # 4-org Fabric + CouchDB + CA
+cd bmu-agent && FABRIC_ORG=1 node server.js
+# React 빌드: cd webapp/frontend-react && npm run build
 # 브라우저에서 http://localhost:3001 접속
-./test/demo-lifecycle.sh                # 전주기 데모
 ```
 
 | 디렉토리 | 설명 |
 |----------|------|
-| `passport-network/` | 4-org Hyperledger Fabric (Manufacturer, EVManufacturer, Service, Regulator) |
-| `chaincode/passport-contract/` | GBA 21 체인코드 (Go, 19개 함수, RBAC) |
-| `bmu-agent/` | Node.js API 서버 (Express 4, JWT, org별 gateway pool) |
-| `webapp/frontend/` | Vue 3 + Tailwind CSS (8개 페이지, ESG 디자인) |
+| `passport-network/` | 4-org Hyperledger Fabric 2.5 (Manufacturer, EVManufacturer, Service, Regulator) + CouchDB ×4 + CA ×5 |
+| `chaincode/passport-contract/` | GBA 21 체인코드 (Go, 7파일 분리 구조, 50개 함수, 4-MSP RBAC) |
+| `bmu-agent/` | Node.js API 서버 (Express 4, JWT, 구조화 로깅, rate limit, helmet) |
+| `cloud-agent/` | 오프체인 read model (MongoDB, Block Event 동기화, 고속 조회 REST API) |
+| `webapp/frontend-react/` | React + TypeScript + Vite (Dark mode, 11개 페이지, VC 기반 로그인) |
+| `webapp/frontend/` | Vue 3 레거시 (`/legacy` 경로에 보존) |
+| `mcp-monitor/` | MCP 기반 모니터링 서버 (Fabric 읽기 전용, ADR-003) |
 | `docs/ARCHITECTURE.md` | 상세 아키텍처 문서 |
 
 **BMU 데이터 흐름**: BMU(Ed25519 서명) → serial_to_agent.py → Agent(48B 파싱 + DID 검증) → Fabric → 여권 SOC/Cycles 갱신
@@ -117,17 +124,32 @@ BMS/
 │   ├── organizations/         # 조직별 인증서 (cryptogen/CA)
 │   └── start_passport_network.sh # 네트워크 기동 + 체인코드 배포
 │
-├── chaincode/passport-contract/ # Go 체인코드 — 배터리 여권 전주기 관리
-│   ├── passport_contract.go   # 37개 함수, GBA 21 필드, RBAC 4-MSP
-│   └── META-INF/              # CouchDB 인덱스 4개
+├── chaincode/passport-contract/ # Go 체인코드 — 배터리 여권 전주기 관리 (7파일 분리)
+│   ├── main.go                # 엔트리 포인트 + ContractChaincode 등록
+│   ├── types.go               # BatteryPassport, BMURecord, VC 등 struct 정의
+│   ├── helpers.go             # RBAC 헬퍼, txTimestamp, buildQuery(json.Marshal)
+│   ├── passport_tx.go         # 여권 CRUD + 정비/사고/재활용 (13 fn)
+│   ├── bmu_tx.go              # BMU 데이터 기록 + FC 단조 검증 (3 fn)
+│   ├── vc_tx.go               # VC 발급/검증/취소 + 규제 검증 (13 fn)
+│   ├── query.go               # CouchDB rich query 15 fn (페이지네이션 포함)
+│   └── META-INF/              # CouchDB 인덱스
 │
 ├── bmu-agent/                  # Node.js Agent — REST API + Fabric Gateway (포트 3001)
-│   ├── server.js              # Express 서버, 41개 엔드포인트
-│   ├── routes/                # 9개 라우트 그룹 (passport, bmu, did, vc, auth 등)
-│   ├── services/              # Fabric, DID, BMU parser, logger
-│   └── middleware/            # JWT auth, RBAC, audit
+│   ├── server.js              # Express 서버, 구조화 로깅, rate limit, helmet
+│   ├── routes/                # passport, bmu, did, vc, auth, material, maintenance 등
+│   ├── services/              # Fabric, DID(ACA-Py), BMU parser, logger, auth
+│   └── middleware/            # JWT auth, MSP-based RBAC, audit log
 │
-├── webapp/frontend/            # 배터리 여권 웹 대시보드 (Vue.js SPA)
+├── cloud-agent/                # 오프체인 read model (포트 3002)
+│   ├── server.js              # MongoDB 기반 고속 조회 REST API
+│   └── services/fabric-listener.js  # Fabric Block Event → MongoDB 동기화
+│
+├── webapp/frontend-react/      # React + TypeScript + Vite (최신)
+│   ├── src/pages/             # 11개 페이지 (Dashboard, Passport, BMU, VC 등)
+│   ├── src/contexts/          # AuthContext (sessionStorage 기반 토큰)
+│   └── src/components/modals/ # 여권 발급/수정/검증 모달
+│
+├── webapp/frontend/            # Vue.js 레거시 (/legacy 경로에서 서빙)
 │
 ├── caliper-workspace/          # Hyperledger Caliper 벤치마크 (읽기/쓰기 TPS 측정)
 │
@@ -497,11 +519,22 @@ BMU UART (COM4, 28800 baud)에서 확인할 수 있는 정상 동작 출력:
 | DID fallback | dev에서만 `DEFAULT_BMU_DID` 허용 | production에서 자동 비활성화 (`NODE_ENV=production`) |
 | Fabric 연결 | 실패 시 서버만 기동 (dev) | `REQUIRE_FABRIC=true` 설정 시 즉시 종료 |
 
+### 최근 보안/운영 개선 (Sentinel 3차 리뷰 대응)
+
+- **하드코딩 크레덴셜 전면 제거**: `compose-couch.yaml`, `compose-ca.yaml`, `network.sh` 전부 환경변수 기반 (`CA_ADMIN_USER/PASSWORD`, `COUCHDB_USER/PASSWORD`). `passport-network/.env.template`에서 복사 후 값 채우기.
+- **git history 정리**: 과거 history에 잔존하던 시크릿 4종(`adminpw`, `change-me-in-production`, DID seed, wallet key)을 `git filter-repo`로 전 이력에서 제거 완료 (2026-04-18).
+- **체인코드 결정성 보강**: `txTimestamp` `time.Now()` fallback 제거 → GetTxTimestamp 실패 시 에러 반환 (endorsement 불일치 방지).
+- **timing-safe API key 비교**: `crypto.timingSafeEqual` 적용 (cloud-agent).
+- **Query 함수 nil slice 방어**: 빈 결과 시 `[]*Type{}` 초기화 — JSON `null` 스키마 검증 실패 방지 (2026-04-20).
+- **TLS 강제**: production에서 `FABRIC_CA_TLS_VERIFY=false` 차단, `FABRIC_CA_CERT_PATH` 기반 trustedRoots 로드.
+- **CouchDB 기본 포함**: `network.sh`가 `compose-couch.yaml`을 항상 로드 — DID rich query에 필수.
+
 ---
 
 ## 주의사항
 
 - `secrets.h` 파일은 **절대 VCS(git)에 커밋하지 마십시오**. `.gitignore`에 이미 등록되어 있습니다.
+- `**/.env` 파일(예: `bmu-agent/.env`, `cloud-agent/.env`, `passport-network/.env`)은 git-ignored — **시크릿은 채팅·이슈·PR에 절대 노출 금지**. 세션 간 시크릿 공유는 권한 600의 별도 파일 경유 "생성 → 읽기 → 삭제" 패턴 권장.
 - CMU 보드의 **FlexNVM 파티셔닝**은 최초 1회만 필요합니다. 재파티셔닝 시 CSEc 키가 초기화됩니다.
 - BMU HSE 키 카탈로그 포맷은 이미 포맷된 경우 `HSE_SRV_RSP_NOT_ALLOWED`를 반환하며, 이는 정상 동작입니다.
 - `BMS_MODE` 변경 시 반드시 **클린 빌드**를 수행하십시오 (`build.sh`는 자동으로 오브젝트 파일을 삭제합니다).
