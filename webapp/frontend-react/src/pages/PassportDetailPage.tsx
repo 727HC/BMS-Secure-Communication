@@ -3,7 +3,8 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { api } from '../lib/api';
 import { useAuth } from '../contexts/AuthContext';
 import { getStatusBadge, scaleSOC } from '../lib/helpers';
-import Spinner from '../components/ui/Spinner';
+import { Spinner, Skeleton, SkeletonCard, SkeletonTable } from '../components/ui';
+import { ArcGauge } from '../components/ui/BatteryGauge';
 import { computeGbaCompliance, complianceGrade } from '../components/passport-detail/helpers';
 import type { Passport, BmuRecord, Credential, IssuerCatalogItem } from '../components/passport-detail/types';
 import type { BindFormData } from '../components/modals/passport-detail/BindModal';
@@ -54,7 +55,13 @@ const RegulatoryVerificationModal = lazy(() => import('../components/modals/pass
 const PhysicalVerificationModal = lazy(() => import('../components/modals/passport-detail/PhysicalVerificationModal'));
 
 function DetailSectionFallback() {
-  return <Spinner minHeight="18rem" />;
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 14, padding: '20px 0' }}>
+      {[0, 1, 2, 3].map((i) => (
+        <SkeletonCard key={i} lines={3} showTitle />
+      ))}
+    </div>
+  );
 }
 
 export default function PassportDetailPage() {
@@ -296,7 +303,36 @@ export default function PassportDetailPage() {
     }
   };
 
-  if (loading) return <Spinner />;
+  if (loading) {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+        {/* 히어로 skeleton */}
+        <div style={{ background: 'var(--color-surface)', padding: '1.5rem 1.75rem', borderRadius: '1rem', border: '1px solid var(--color-border)', display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <Skeleton width="40%" height={28} />
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 20 }}>
+            {[0, 1, 2, 3].map((i) => (
+              <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 }}>
+                <Skeleton width={120} height={120} radius={60} />
+                <Skeleton width="60%" height={12} />
+              </div>
+            ))}
+          </div>
+        </div>
+        {/* 탭 skeleton */}
+        <div style={{ display: 'flex', gap: 4 }}>
+          {[0, 1, 2, 3, 4].map((i) => (
+            <Skeleton key={i} width={80} height={36} radius={8} />
+          ))}
+        </div>
+        {/* 탭 시트 안 카드 3개 */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+          {[0, 1, 2].map((i) => (
+            <SkeletonCard key={i} lines={3} showTitle />
+          ))}
+        </div>
+      </div>
+    );
+  }
   if (!passport) return <p className="sn-caption">여권을 찾을 수 없습니다.</p>;
 
   const badge = getStatusBadge(passport.status || 'DISPOSED');
@@ -343,38 +379,58 @@ export default function PassportDetailPage() {
         </div>
       )}
 
-      <div style={{ display: 'flex', flexDirection: 'column', background: 'var(--color-surface)', padding: '1.25rem 1.5rem', borderRadius: '1rem', border: '1px solid var(--color-border)', boxShadow: 'var(--shadow-card)', gap: '1rem' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem' }}>
-          <div style={{ display: 'flex', gap: '2.5rem', flexWrap: 'wrap' }}>
-            <div>
-              <p className="sn-eyebrow" style={{ marginBottom: '0.35rem' }}>SOH (건강 상태)</p>
-              <p style={{ fontFamily: 'var(--font-mono)', fontSize: '1.5rem', fontWeight: 700, color: passport.currentSoh && passport.currentSoh < 80 ? 'var(--color-danger)' : 'var(--color-text-1)' }}>
-                {passport.currentSoh != null ? `${passport.currentSoh}%` : '--'}
+      <div style={{ display: 'flex', flexDirection: 'column', background: 'var(--color-surface)', padding: '1.5rem 1.75rem', borderRadius: '1rem', border: '1px solid var(--color-border)', boxShadow: 'var(--shadow-card)', gap: '1.25rem' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr)) auto', alignItems: 'center', gap: '1.25rem', flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+            {passport.currentSoh != null ? (
+              <ArcGauge
+                value={passport.currentSoh}
+                label="SOH · 건강"
+                sublabel={passport.currentSoh < 80 ? '요주의' : undefined}
+                size={120}
+                strokeWidth={12}
+                warningThreshold={80}
+              />
+            ) : (
+              <>
+                <p className="sn-eyebrow" style={{ marginBottom: '0.45rem' }}>SOH · 건강 상태</p>
+                <p className="sn-metric sn-metric-md">--</p>
+              </>
+            )}
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+            {passport.currentSoc != null ? (
+              <ArcGauge
+                value={scaleSOC(passport.currentSoc)}
+                label="SOC · 충전"
+                size={120}
+                strokeWidth={12}
+                warningThreshold={20}
+              />
+            ) : (
+              <>
+                <p className="sn-eyebrow" style={{ marginBottom: '0.45rem' }}>SOC · 충전 상태</p>
+                <p className="sn-metric sn-metric-md">--</p>
+              </>
+            )}
+          </div>
+          <div>
+            <p className="sn-eyebrow" style={{ marginBottom: '0.45rem' }}>GBA 규제 준수</p>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.6rem', flexWrap: 'wrap' }}>
+              <p className="sn-metric sn-metric-md" style={{ color: gbaCompliance.pct === 100 ? 'var(--color-success)' : 'var(--color-warning)' }}>
+                {gbaCompliance.pct}
+                <span className="sn-metric-unit">%</span>
               </p>
-            </div>
-            <div>
-              <p className="sn-eyebrow" style={{ marginBottom: '0.35rem' }}>SOC (충전 상태)</p>
-              <p style={{ fontFamily: 'var(--font-mono)', fontSize: '1.5rem', fontWeight: 700, color: 'var(--color-text-1)' }}>
-                {passport.currentSoc != null ? `${scaleSOC(passport.currentSoc)}%` : '--'}
-              </p>
-            </div>
-            <div>
-              <p className="sn-eyebrow" style={{ marginBottom: '0.35rem' }}>GBA 규제 준수</p>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <p style={{ fontFamily: 'var(--font-mono)', fontSize: '1.5rem', fontWeight: 700, color: gbaCompliance.pct === 100 ? '#10b981' : '#f59e0b' }}>
-                  {gbaCompliance.pct}%
-                </p>
-                <span className="bp-stamp" style={{ fontSize: '0.75rem', background: 'var(--color-surface-accent)', color: 'var(--color-accent)', border: '1px solid rgba(23,105,224,0.12)' }}>Grade {grade}</span>
-              </div>
-            </div>
-            <div>
-              <p className="sn-eyebrow" style={{ marginBottom: '0.35rem' }}>라이프사이클</p>
-              <p style={{ fontSize: '1.1rem', fontWeight: 600, color: 'var(--color-text-1)', marginTop: '0.2rem' }}>
-                {lifecycleLabel}
-              </p>
+              <span className="bp-stamp" style={{ fontSize: '0.8125rem', fontWeight: 700, padding: '3px 10px', background: 'var(--color-surface-accent)', color: 'var(--color-accent)', border: '1px solid var(--color-border)' }}>Grade {grade}</span>
             </div>
           </div>
-          <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+          <div>
+            <p className="sn-eyebrow" style={{ marginBottom: '0.45rem' }}>라이프사이클</p>
+            <p style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--color-text-1)', margin: 0, lineHeight: 1.2 }}>
+              {lifecycleLabel}
+            </p>
+          </div>
+          <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
             {isManufacturer && (
               <button onClick={() => setOpenModal('correct')} className="sn-btn sn-btn-ghost">데이터 정정</button>
             )}
@@ -402,11 +458,11 @@ export default function PassportDetailPage() {
           </div>
         </div>
         {warningMessages.length > 0 && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem', paddingTop: '0.75rem', borderTop: '1px solid rgba(15,23,42,0.06)' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem', paddingTop: '1rem', borderTop: '1px solid var(--color-border)' }}>
             {warningMessages.map((message) => (
-              <div key={message} style={{ display: 'flex', alignItems: 'flex-start', gap: '0.65rem', padding: '0.9rem 1rem', borderRadius: '0.85rem', background: 'var(--color-warning-soft)', color: 'var(--color-warning)', border: '1px solid rgba(245,158,11,0.16)' }}>
-                <span style={{ fontSize: 14, fontWeight: 800, lineHeight: 1.4 }}>!</span>
-                <span style={{ fontSize: '0.9rem', lineHeight: 1.6 }}>{message}</span>
+              <div key={message} style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem', padding: '0.9rem 1.1rem', borderRadius: '0.85rem', background: 'var(--color-warning-soft)', color: 'var(--color-warning)', border: '1px solid var(--color-border)' }}>
+                <span style={{ fontSize: '1rem', fontWeight: 800, lineHeight: 1.4 }}>!</span>
+                <span style={{ fontSize: '0.9375rem', lineHeight: 1.6 }}>{message}</span>
               </div>
             ))}
           </div>

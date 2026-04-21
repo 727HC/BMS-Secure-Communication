@@ -3,9 +3,10 @@ import { useNavigate } from 'react-router-dom';
 import { api } from '../lib/api';
 import { useAuth } from '../contexts/AuthContext';
 import { getStatusBadge } from '../lib/helpers';
-import Spinner from '../components/ui/Spinner';
+import { SkeletonCard, SkeletonTable } from '../components/ui';
 import BaseModal from '../components/modals/BaseModal';
 import { AccidentLogModal, type AccidentFormData } from '../components/modals/maintenance';
+import { DonutChart, BarRows, LegendStack } from '../components/ui';
 
 interface MaintenanceLog {
   timestamp?: string;
@@ -27,6 +28,7 @@ interface Passport {
   vin?: string;
   model?: string;
   manufacturerName?: string;
+  createdAt?: string;
   maintenanceLogs?: MaintenanceLog[];
   accidentLogs?: AccidentLog[];
   [key: string]: unknown;
@@ -40,6 +42,22 @@ const MAINTENANCE_TYPES = [
   { value: 'recall', label: '리콜' },
   { value: 'emergency', label: '긴급' },
 ];
+
+function formatTimestamp(ts?: string): string {
+  if (!ts) return '-';
+  try { return new Date(ts).toLocaleString('ko-KR'); }
+  catch { return ts; }
+}
+
+function latestMaintenanceTimestamp(logs?: MaintenanceLog[]): string {
+  if (!logs || logs.length === 0) return '-';
+  const sorted = [...logs].sort((a, b) => {
+    const tA = a.timestamp ? new Date(a.timestamp).getTime() : 0;
+    const tB = b.timestamp ? new Date(b.timestamp).getTime() : 0;
+    return tB - tA;
+  });
+  return formatTimestamp(sorted[0].timestamp);
+}
 
 export default function MaintenancePage() {
   const navigate = useNavigate();
@@ -99,6 +117,80 @@ export default function MaintenancePage() {
     maintenance: passports.filter((p) => p.status === 'MAINTENANCE' || p.status === 'ANALYSIS').length,
     accident: passports.filter((p) => (p.accidentLogs?.length ?? 0) > 0).length,
   };
+
+  // 확장 통계 계산
+  const extStats = useMemo(() => {
+    const totalMaintenance = passports.reduce((sum, p) => sum + (p.maintenanceLogs?.length ?? 0), 0);
+    const totalAccident = passports.reduce((sum, p) => sum + (p.accidentLogs?.length ?? 0), 0);
+
+    // 긴급 대응 필요: status === 'MAINTENANCE' 이면서 요청 후 7일 이상
+    const now = Date.now();
+    const urgentCount = passports.filter((p) => {
+      if (p.status !== 'MAINTENANCE') return false;
+      const logs = p.maintenanceLogs ?? [];
+      if (logs.length === 0) return false;
+      const latest = logs.reduce((a, b) => {
+        const tA = a.timestamp ? new Date(a.timestamp).getTime() : 0;
+        const tB = b.timestamp ? new Date(b.timestamp).getTime() : 0;
+        return tA > tB ? a : b;
+      });
+      if (!latest.timestamp) return false;
+      const diffDays = (now - new Date(latest.timestamp).getTime()) / (1000 * 60 * 60 * 24);
+      return diffDays >= 7;
+    }).length;
+
+    // 평균 정비 간격: createdAt vs 최신 정비 timestamp
+    const intervals: number[] = [];
+    for (const p of passports) {
+      if (!p.createdAt || !p.maintenanceLogs?.length) continue;
+      const created = new Date(p.createdAt).getTime();
+      if (isNaN(created)) continue;
+      const latestLog = p.maintenanceLogs.reduce((a, b) => {
+        const tA = a.timestamp ? new Date(a.timestamp).getTime() : 0;
+        const tB = b.timestamp ? new Date(b.timestamp).getTime() : 0;
+        return tA > tB ? a : b;
+      });
+      if (!latestLog.timestamp) continue;
+      const latestTime = new Date(latestLog.timestamp).getTime();
+      if (isNaN(latestTime) || latestTime <= created) continue;
+      const days = (latestTime - created) / (1000 * 60 * 60 * 24);
+      if (days > 0) intervals.push(days);
+    }
+    const avgIntervalDays = intervals.length > 0
+      ? Math.round(intervals.reduce((a, b) => a + b, 0) / intervals.length)
+      : null;
+
+    // 대기 여권 수 (status ACTIVE with VIN but no maintenance yet)
+    const pendingPassports = passports.filter((p) => p.status === 'ACTIVE' && p.vin && !(p.maintenanceLogs?.length)).length;
+
+    return { totalMaintenance, totalAccident, urgentCount, avgIntervalDays, pendingPassports };
+  }, [passports]);
+
+  // 정비 타입별 집계 (BarRows용)
+  const maintenanceTypeBreakdown = useMemo(() => {
+    const counts: Record<string, number> = { routine: 0, repair: 0, recall: 0, emergency: 0 };
+    for (const p of passports) {
+      for (const log of p.maintenanceLogs ?? []) {
+        const t = log.maintenanceType ?? 'routine';
+        if (t in counts) counts[t]++;
+      }
+    }
+    return [
+      { label: '정기점검', value: counts.routine, color: '#10b981' },
+      { label: '수리', value: counts.repair, color: 'var(--color-accent)' },
+      { label: '리콜', value: counts.recall, color: '#f59e0b' },
+      { label: '긴급', value: counts.emergency, color: '#ef4444' },
+    ];
+  }, [passports]);
+
+  // 도넛 차트 데이터
+  const donutSegments = useMemo(() => [
+    { label: '정비 건수', value: extStats.totalMaintenance, color: '#10b981' },
+    { label: '사고 건수', value: extStats.totalAccident, color: '#ef4444' },
+    { label: '대기 여권', value: extStats.pendingPassports, color: '#f59e0b' },
+  ], [extStats]);
+
+  const donutTotal = extStats.totalMaintenance + extStats.totalAccident + extStats.pendingPassports;
 
   const tabs: { key: Tab; label: string }[] = [
     { key: 'all', label: '전체' },
@@ -172,7 +264,20 @@ export default function MaintenancePage() {
     }
   };
 
-  if (loading) return <Spinner />;
+  if (loading) {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+        {/* summary grid skeleton */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14 }}>
+          {[0, 1, 2, 3].map((i) => (
+            <SkeletonCard key={i} lines={2} showTitle />
+          ))}
+        </div>
+        {/* 테이블 skeleton */}
+        <SkeletonTable rows={5} cols={8} />
+      </div>
+    );
+  }
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
@@ -187,6 +292,32 @@ export default function MaintenancePage() {
         </button>
       </div>
 
+      {/* 정비 활동 구성 — 차트 2-col */}
+      <div className="sn-panel" style={{ padding: '20px' }}>
+        <p className="sn-eyebrow" style={{ margin: '0 0 16px', color: 'var(--color-text-2)' }}>정비 활동 구성</p>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
+          {/* 좌: 도넛 + 레전드 */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
+            <DonutChart
+              segments={donutSegments}
+              size={140}
+              thickness={18}
+              centerValue={String(donutTotal)}
+              centerLabel="총계"
+            />
+            <LegendStack items={donutSegments} />
+          </div>
+          {/* 우: 정비 타입별 BarRows */}
+          <div>
+            <p style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--color-text-3)', margin: '0 0 12px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+              정비 유형별
+            </p>
+            <BarRows items={maintenanceTypeBreakdown} />
+          </div>
+        </div>
+      </div>
+
+      {/* 확장 summary grid */}
       <div className="sn-panel sn-summary-grid sn-summary-grid-4">
         <div className="sn-summary-lead">
           <p className="sn-eyebrow sn-summary-title">요약</p>
@@ -199,21 +330,36 @@ export default function MaintenancePage() {
           </p>
         </div>
         <div>
-          <p className="sn-eyebrow sn-stat-card-title">접수 포함</p>
-          <p className="sn-stat-count">{tabCounts.all}</p>
-          <p className="sn-stat-note">확인할 항목</p>
+          <p className="sn-eyebrow sn-stat-card-title">전체 정비 건수</p>
+          <p className="sn-metric sn-metric-md sn-stat-count">{extStats.totalMaintenance}</p>
+          <p className="sn-stat-note">누적 정비 이력</p>
         </div>
         <div>
-          <p className="sn-eyebrow sn-stat-card-title" style={{ color: 'var(--color-warning)' }}>정비·분석</p>
-          <p className="sn-stat-count" style={{ color: 'var(--color-warning)' }}>{tabCounts.maintenance}</p>
-          <p className="sn-stat-note">현재 확인 대상</p>
+          <p className="sn-eyebrow sn-stat-card-title" style={{ color: 'var(--color-danger)' }}>사고 건수</p>
+          <p className="sn-metric sn-metric-md sn-stat-count" style={{ color: 'var(--color-danger)' }}>{extStats.totalAccident}</p>
+          <p className="sn-stat-note">누적 사고 기록</p>
         </div>
         <div>
-          <p className="sn-eyebrow sn-stat-card-title" style={{ color: 'var(--color-danger)' }}>사고기록</p>
-          <p className="sn-stat-count" style={{ color: 'var(--color-danger)' }}>{tabCounts.accident}</p>
-          <p className="sn-stat-note">사고 기록</p>
+          <p className="sn-eyebrow sn-stat-card-title" style={{ color: extStats.urgentCount > 0 ? 'var(--color-danger)' : 'var(--color-text-3)' }}>
+            긴급 대응 필요
+          </p>
+          <p className="sn-metric sn-metric-md sn-stat-count" style={{ color: extStats.urgentCount > 0 ? 'var(--color-danger)' : 'var(--color-text-2)' }}>
+            {extStats.urgentCount}
+          </p>
+          <p className="sn-stat-note">정비 접수 7일 초과</p>
         </div>
       </div>
+
+      {/* 평균 정비 간격 보조 행 */}
+      {extStats.avgIntervalDays !== null && (
+        <div className="sn-panel" style={{ padding: '10px 20px', display: 'flex', alignItems: 'center', gap: 16 }}>
+          <span style={{ fontSize: '0.9375rem', fontWeight: 600, color: 'var(--color-text-2)' }}>평균 정비 간격</span>
+          <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: '0.9375rem', fontWeight: 700, color: 'var(--color-text-1)' }}>
+            {extStats.avgIntervalDays}일
+          </span>
+          <span style={{ fontSize: '0.875rem', color: 'var(--color-text-3)' }}>여권 생성일 → 최신 정비 기준</span>
+        </div>
+      )}
 
       <div className="sn-filter-tabs" style={{ paddingBottom: 0 }}>
         {tabs.map((tab) => {
@@ -226,6 +372,7 @@ export default function MaintenancePage() {
               style={{
                 color: active ? 'var(--color-text-1)' : 'var(--color-text-3)',
                 borderBottomColor: active ? 'var(--color-text-1)' : 'transparent',
+                minHeight: 36,
               }}
             >
               {tab.label}
@@ -236,8 +383,25 @@ export default function MaintenancePage() {
       </div>
 
       {filteredPassports.length === 0 ? (
-        <div className="sn-empty-dashed">
-          <p className="sn-caption">표시할 항목이 없습니다.</p>
+        <div className="sn-panel" style={{ overflow: 'hidden' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '2rem 1.5rem' }}>
+            <div style={{ width: 56, height: 56, borderRadius: 12, background: 'var(--color-surface-alt)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 20 }}>
+              <svg width="28" height="28" fill="none" stroke="var(--color-text-3)" strokeWidth="1.5" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+              </svg>
+            </div>
+            <h3 style={{ fontSize: '1.125rem', fontWeight: 600, color: 'var(--color-text-1)', margin: '0 0 8px' }}>표시할 항목이 없습니다</h3>
+            <p style={{ fontSize: '0.9375rem', color: 'var(--color-text-3)', textAlign: 'center', maxWidth: '28rem', margin: '0 0 20px' }}>
+              현재 탭 조건에 해당하는 정비·사고 이력이 없습니다.
+            </p>
+            <div style={{ padding: '16px', background: 'var(--color-surface-alt)', borderRadius: 10, border: '1px solid var(--color-border)', maxWidth: '32rem', width: '100%' }}>
+              <p style={{ fontSize: '0.9375rem', fontWeight: 600, color: 'var(--color-text-2)', margin: '0 0 6px' }}>정비·사고 이력 관리</p>
+              <p style={{ fontSize: '0.9375rem', color: 'var(--color-text-3)', margin: 0, lineHeight: 1.6 }}>
+                xEV 배터리 정비 및 사고 이력을 블록체인에 기록하여 불변의 감사 추적을 확보합니다.
+                정비 요청부터 완료까지의 이력, 사고 발생 내역이 여기에 축적됩니다.
+              </p>
+            </div>
+          </div>
         </div>
       ) : (
         <div className="sn-panel" style={{ overflow: 'hidden' }}>
@@ -250,6 +414,7 @@ export default function MaintenancePage() {
                 <th>VIN</th>
                 <th>상태</th>
                 <th>이력</th>
+                <th>최근 정비</th>
                 <th style={{ textAlign: 'right' }}>조치</th>
               </tr>
             </thead>
@@ -265,41 +430,44 @@ export default function MaintenancePage() {
                     style={{ cursor: 'pointer' }}
                   >
                     <td>
-                      <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: '0.8125rem', color: 'var(--color-text-2)' }}>
+                      <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: '0.875rem', color: 'var(--color-text-2)' }}>
                         {p.passportId}
                       </span>
                     </td>
                     <td>{p.model || '-'}</td>
                     <td style={{ color: 'var(--color-text-3)' }}>{p.manufacturerName || '-'}</td>
                     <td>
-                      <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: '0.8125rem', color: 'var(--color-text-3)' }}>
+                      <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: '0.875rem', color: 'var(--color-text-3)' }}>
                         {p.vin || '미바인딩'}
                       </span>
                     </td>
                     <td>
                       <span className={`bp-stamp ${badge.bg} ${badge.text} ${badge.border}`}>{badge.label}</span>
                     </td>
-                    <td style={{ fontSize: '0.8125rem', color: 'var(--color-text-2)' }}>
+                    <td style={{ color: 'var(--color-text-2)' }}>
                       {mCount > 0 && <span>정비 {mCount}건 </span>}
                       {aCount > 0 && <span style={{ color: 'var(--color-danger)' }}>사고 {aCount}건</span>}
                       {mCount === 0 && aCount === 0 && <span style={{ color: 'var(--color-text-3)' }}>-</span>}
                     </td>
+                    <td style={{ color: 'var(--color-text-3)', whiteSpace: 'nowrap', fontFamily: "'JetBrains Mono',monospace" }}>
+                      {latestMaintenanceTimestamp(p.maintenanceLogs)}
+                    </td>
                     <td style={{ textAlign: 'right' }}>
                       <div style={{ display: 'inline-flex', gap: 6 }} onClick={(e) => e.stopPropagation()}>
                         {canRequestMaintenance && p.status === 'ACTIVE' && (
-                          <button onClick={() => openMaintenanceRequest(p)} className="sn-btn-sm-secondary">
+                          <button onClick={() => openMaintenanceRequest(p)} className="sn-btn-sm-secondary" style={{ minHeight: 36 }}>
                             요청
                           </button>
                         )}
                         {canLogMaintenance && p.status === 'MAINTENANCE' && (
-                          <button onClick={() => openMaintenanceLog(p)} className="sn-btn-sm-primary">
+                          <button onClick={() => openMaintenanceLog(p)} className="sn-btn-sm-primary" style={{ minHeight: 36 }}>
                             완료 기록
                           </button>
                         )}
                         {canLogAccident && (
                           <button
                             onClick={() => openAccident(p)}
-                        style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '6px 10px', fontSize: 13, fontWeight: 700, background: 'var(--color-danger-soft)', color: 'var(--color-danger)', border: 'none', borderRadius: 8, cursor: 'pointer' }}
+                            style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '6px 10px', minHeight: 36, fontSize: '0.9375rem', fontWeight: 700, background: 'var(--color-danger-soft)', color: 'var(--color-danger)', border: 'none', borderRadius: 8, cursor: 'pointer' }}
                           >
                             사고
                           </button>

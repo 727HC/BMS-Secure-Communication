@@ -10,18 +10,18 @@
 .sn-page-head-main { min-width: 0; }
 .sn-page-title {
   font-family: var(--font-display);
-  font-size: 1.5rem;
-  font-weight: 600;
+  font-size: 1.875rem;
+  font-weight: 700;
   letter-spacing: -0.04em;
   line-height: 1.1;
   color: var(--color-text-1);
   margin: 0;
 }
 .sn-page-subtitle {
-  margin-top: 0.125rem;
-  font-size: 0.9375rem;
+  margin-top: 0.4rem;
+  font-size: 1rem;
   line-height: 1.6;
-  color: var(--color-text-3);
+  color: var(--color-text-2);
 }
 .sn-page-actions {
   display: flex;

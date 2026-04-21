@@ -64,7 +64,7 @@ export default function DataTab({ bmuRecords }: Props) {
               ) : (
                 bmuRecords.slice(0, 20).map((r, idx) => (
                   <tr key={r.recordId || idx}>
-                    <td style={{ fontFamily: 'var(--font-mono)', fontSize: '0.8125rem', color: 'var(--color-text-2)' }}>{formatDate(r.timestamp)}</td>
+                    <td style={{ fontFamily: 'var(--font-mono)', color: 'var(--color-text-2)' }}>{formatDate(r.timestamp)}</td>
                     <td style={{ textAlign: 'right', fontFamily: 'var(--font-mono)' }}>{scaleSOC(r.soc)}%</td>
                     <td style={{ textAlign: 'right', fontFamily: 'var(--font-mono)' }}>{r.voltage ?? '-'}V</td>
                     <td style={{ textAlign: 'right', fontFamily: 'var(--font-mono)' }}>{r.current ?? '-'}A</td>

@@ -134,20 +134,20 @@ export default function Layout({ children }: { children: ReactNode }) {
       </aside>
 
       <div className="ev-main" style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
-        <header style={{ height: 52, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 32px', background: 'var(--color-surface)', borderBottom: '1px solid var(--color-border)', flexShrink: 0 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        <header style={{ height: 60, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 32px', background: 'var(--color-surface)', borderBottom: '1px solid var(--color-border)', flexShrink: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               className="lg:hidden"
               style={{ padding: 6, background: 'none', border: 'none', color: 'var(--color-text-2)', cursor: 'pointer' }}
             >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
             </button>
-            <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: 600, color: 'var(--color-text-1)', margin: 0 }}>{pageTitle}</h2>
+            <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '1.125rem', fontWeight: 700, color: 'var(--color-text-1)', margin: 0, letterSpacing: '-0.02em' }}>{pageTitle}</h2>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <span style={{ fontSize: 13, color: 'var(--color-text-2)' }}>{userId}</span>
-            <span style={{ fontSize: 12, fontWeight: 600, padding: '2px 8px', borderRadius: 4, background: 'rgba(23,105,224,0.12)', color: 'var(--color-accent)' }}>{orgLabel}</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <span style={{ fontSize: '0.9375rem', fontWeight: 600, color: 'var(--color-text-2)' }}>{userId}</span>
+            <span style={{ fontSize: '0.8125rem', fontWeight: 700, padding: '4px 10px', borderRadius: 6, background: 'var(--color-surface-accent)', color: 'var(--color-accent)' }}>{orgLabel}</span>
           </div>
         </header>
 

@@ -28,31 +28,43 @@ export default function BindModal({ open, submitting, onClose, onSubmit }: Props
   return (
     <BaseModal open={open} onClose={handleClose} title="차대번호 연결">
       <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-        <input
-          className="sn-input"
-          placeholder="VIN"
-          value={form.vin}
-          onChange={(e) => setForm({ ...form, vin: e.target.value })}
-        />
-        <input
-          className="sn-input"
-          type="date"
-          value={form.installDate}
-          onChange={(e) => setForm({ ...form, installDate: e.target.value })}
-        />
-        <input
-          className="sn-input"
-          placeholder="EV 제조사"
-          value={form.evManufacturer}
-          onChange={(e) => setForm({ ...form, evManufacturer: e.target.value })}
-        />
-        <input
-          className="sn-input"
-          placeholder="조립 국가"
-          value={form.evAssemblyCountry}
-          onChange={(e) => setForm({ ...form, evAssemblyCountry: e.target.value })}
-        />
-        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+        <label style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+          <span className="sn-eyebrow" style={{ color: 'var(--color-text-3)' }}>차대번호 (VIN)</span>
+          <input
+            className="sn-input"
+            placeholder="17자리 VIN"
+            value={form.vin}
+            onChange={(e) => setForm({ ...form, vin: e.target.value })}
+          />
+        </label>
+        <label style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+          <span className="sn-eyebrow" style={{ color: 'var(--color-text-3)' }}>설치일</span>
+          <input
+            className="sn-input"
+            type="date"
+            value={form.installDate}
+            onChange={(e) => setForm({ ...form, installDate: e.target.value })}
+          />
+        </label>
+        <label style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+          <span className="sn-eyebrow" style={{ color: 'var(--color-text-3)' }}>EV 제조사</span>
+          <input
+            className="sn-input"
+            placeholder="EV 제조사"
+            value={form.evManufacturer}
+            onChange={(e) => setForm({ ...form, evManufacturer: e.target.value })}
+          />
+        </label>
+        <label style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+          <span className="sn-eyebrow" style={{ color: 'var(--color-text-3)' }}>조립 국가</span>
+          <input
+            className="sn-input"
+            placeholder="조립 국가"
+            value={form.evAssemblyCountry}
+            onChange={(e) => setForm({ ...form, evAssemblyCountry: e.target.value })}
+          />
+        </label>
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, paddingTop: 4 }}>
           <button onClick={handleClose} className="sn-btn sn-btn-ghost">취소</button>
           <button
             onClick={() => onSubmit(form)}
