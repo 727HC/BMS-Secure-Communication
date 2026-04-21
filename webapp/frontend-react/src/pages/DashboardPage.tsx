@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../lib/api';
 import { getStatusBadge } from '../lib/helpers';
-import { DonutChart, LegendStack, Sparkline } from '../components/ui';
+import { DonutChart, LegendStack, Sparkline, BarRows } from '../components/ui';
 
 interface Passport {
   passportId?: string;
@@ -148,6 +148,31 @@ export default function DashboardPage() {
 
   const sparkValues = useMemo(() => buildSparkline(passports), [passports]);
   const hasSparkData = sparkValues.some((v) => v > 0);
+
+  /* 하단 분포 요약 — 화학계열 + 제조국 */
+  const chemistryBars = useMemo(() => {
+    const counts: Record<string, number> = {};
+    for (const p of passports) {
+      const k = (p.chemistry as string) || '미분류';
+      counts[k] = (counts[k] || 0) + 1;
+    }
+    return Object.entries(counts)
+      .map(([label, value]) => ({ label, value }))
+      .sort((a, b) => b.value - a.value)
+      .slice(0, 6);
+  }, [passports]);
+
+  const countryBars = useMemo(() => {
+    const counts: Record<string, number> = {};
+    for (const p of passports) {
+      const k = (p.manufactureCountry as string) || '미입력';
+      counts[k] = (counts[k] || 0) + 1;
+    }
+    return Object.entries(counts)
+      .map(([label, value]) => ({ label, value }))
+      .sort((a, b) => b.value - a.value)
+      .slice(0, 6);
+  }, [passports]);
 
   const goPP = (id?: string) => id && navigate(`/passports/${id}`);
   const goPassports = () => navigate('/passports');
@@ -301,30 +326,30 @@ export default function DashboardPage() {
               <p className="sn-caption" style={{ margin: 0 }}>등록일 기준 일별 신규 여권 수</p>
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
-              <div style={{ padding: '10px 12px', borderRadius: 10, background: 'var(--color-surface-2)', border: '1px solid var(--color-border)' }}>
-                <p className="sn-caption" style={{ margin: '0 0 2px', color: 'var(--color-text-3)', fontSize: '0.8125rem' }}>7일 합계</p>
-                <p style={{ margin: 0, fontSize: '1.5rem', fontWeight: 700, color: 'var(--color-text-1)', lineHeight: 1.2 }}>
+              <div style={{ padding: '12px 14px', borderRadius: 12, background: 'var(--color-surface-alt)', border: '1px solid var(--color-border)' }}>
+                <p className="sn-caption" style={{ margin: '0 0 4px', color: 'var(--color-text-3)', fontSize: '0.8125rem' }}>7일 합계</p>
+                <p style={{ margin: 0, fontSize: '1.75rem', fontWeight: 800, color: 'var(--color-text-1)', lineHeight: 1 }}>
                   {sparkValues.reduce((s, v) => s + v, 0)}
-                  <span style={{ fontSize: '0.875rem', fontWeight: 500, marginLeft: 3, color: 'var(--color-text-2)' }}>건</span>
+                  <span style={{ fontSize: '0.9375rem', fontWeight: 600, marginLeft: 4, color: 'var(--color-text-3)' }}>건</span>
                 </p>
               </div>
-              <div style={{ padding: '10px 12px', borderRadius: 10, background: 'var(--color-surface-2)', border: '1px solid var(--color-border)' }}>
-                <p className="sn-caption" style={{ margin: '0 0 2px', color: 'var(--color-text-3)', fontSize: '0.8125rem' }}>일 평균</p>
-                <p style={{ margin: 0, fontSize: '1.5rem', fontWeight: 700, color: 'var(--color-text-1)', lineHeight: 1.2 }}>
+              <div style={{ padding: '12px 14px', borderRadius: 12, background: 'var(--color-surface-alt)', border: '1px solid var(--color-border)' }}>
+                <p className="sn-caption" style={{ margin: '0 0 4px', color: 'var(--color-text-3)', fontSize: '0.8125rem' }}>일 평균</p>
+                <p style={{ margin: 0, fontSize: '1.75rem', fontWeight: 800, color: 'var(--color-text-1)', lineHeight: 1 }}>
                   {(sparkValues.reduce((s, v) => s + v, 0) / 7).toFixed(1)}
-                  <span style={{ fontSize: '0.875rem', fontWeight: 500, marginLeft: 3, color: 'var(--color-text-2)' }}>건</span>
+                  <span style={{ fontSize: '0.9375rem', fontWeight: 600, marginLeft: 4, color: 'var(--color-text-3)' }}>건</span>
                 </p>
               </div>
-              <div style={{ padding: '10px 12px', borderRadius: 10, background: 'var(--color-surface-2)', border: '1px solid var(--color-border)' }}>
-                <p className="sn-caption" style={{ margin: '0 0 2px', color: 'var(--color-text-3)', fontSize: '0.8125rem' }}>최대 1일</p>
-                <p style={{ margin: 0, fontSize: '1.5rem', fontWeight: 700, color: 'var(--color-text-1)', lineHeight: 1.2 }}>
+              <div style={{ padding: '12px 14px', borderRadius: 12, background: 'var(--color-surface-alt)', border: '1px solid var(--color-border)' }}>
+                <p className="sn-caption" style={{ margin: '0 0 4px', color: 'var(--color-text-3)', fontSize: '0.8125rem' }}>최대 1일</p>
+                <p style={{ margin: 0, fontSize: '1.75rem', fontWeight: 800, color: 'var(--color-text-1)', lineHeight: 1 }}>
                   {Math.max(...sparkValues)}
-                  <span style={{ fontSize: '0.875rem', fontWeight: 500, marginLeft: 3, color: 'var(--color-text-2)' }}>건</span>
+                  <span style={{ fontSize: '0.9375rem', fontWeight: 600, marginLeft: 4, color: 'var(--color-text-3)' }}>건</span>
                 </p>
               </div>
             </div>
-            <div style={{ flex: 1, minHeight: 80 }}>
-              <Sparkline values={sparkValues} height={80} color="var(--color-accent)" fillOpacity={0.12} />
+            <div style={{ flex: 1, minHeight: 110 }}>
+              <Sparkline values={sparkValues} height={110} color="var(--color-accent)" fillOpacity={0.14} />
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
               <span className="sn-caption">7일 전</span>
@@ -333,6 +358,32 @@ export default function DashboardPage() {
           </div>
         )}
       </div>
+
+      {/* 하단: 포트폴리오 요약 — 화학계열 + 제조국 */}
+      {passports.length > 0 && (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 18 }}>
+          <div className="sn-panel" style={{ borderRadius: 20, padding: '22px 24px', border: '1px solid var(--color-border)', background: 'var(--color-surface)', display: 'flex', flexDirection: 'column', gap: 18 }}>
+            <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between' }}>
+              <div>
+                <p className="sn-eyebrow" style={{ margin: '0 0 6px', color: 'var(--color-text-3)' }}>포트폴리오 · 화학계열</p>
+                <p style={{ fontSize: '1rem', color: 'var(--color-text-2)', margin: 0 }}>등록된 배터리의 셀 chemistry 분포</p>
+              </div>
+              <span className="sn-caption">{chemistryBars.length}종</span>
+            </div>
+            <BarRows items={chemistryBars} barColor="var(--color-accent)" />
+          </div>
+          <div className="sn-panel" style={{ borderRadius: 20, padding: '22px 24px', border: '1px solid var(--color-border)', background: 'var(--color-surface)', display: 'flex', flexDirection: 'column', gap: 18 }}>
+            <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between' }}>
+              <div>
+                <p className="sn-eyebrow" style={{ margin: '0 0 6px', color: 'var(--color-text-3)' }}>포트폴리오 · 제조국</p>
+                <p style={{ fontSize: '1rem', color: 'var(--color-text-2)', margin: 0 }}>제조사 본사 기준 상위 6개국</p>
+              </div>
+              <span className="sn-caption">{countryBars.length}국</span>
+            </div>
+            <BarRows items={countryBars} barColor="var(--color-success)" />
+          </div>
+        </div>
+      )}
     </div>
   );
 }
