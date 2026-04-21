@@ -25,7 +25,11 @@ export function DonutChart({ segments, size = 180, thickness = 22, centerLabel, 
   from { stroke-dasharray: 0 ${c.toFixed(2)}; }
 }
 .${animId}-seg {
-  animation: ${animId} 0.9s cubic-bezier(0.33, 1, 0.68, 1) forwards;
+  animation: ${animId} 0.55s cubic-bezier(0.33, 1, 0.68, 1) forwards;
+  will-change: stroke-dasharray;
+}
+@media (prefers-reduced-motion: reduce) {
+  .${animId}-seg { animation: none; }
 }
         `}</style>
       )}
@@ -47,7 +51,7 @@ export function DonutChart({ segments, size = 180, thickness = 22, centerLabel, 
             transform={`rotate(-90 ${size / 2} ${size / 2})`}
             strokeLinecap="butt"
             className={animate ? `${animId}-seg` : undefined}
-            style={animate ? { animationDelay: `${i * 100}ms` } : undefined}
+            style={animate ? { animationDelay: `${i * 50}ms` } : undefined}
           />
         );
         offset += dash;
@@ -136,7 +140,11 @@ export function Sparkline({ values, width = 280, height = 64, color = 'var(--col
 .${animId}-line {
   stroke-dasharray: ${pathLen.toFixed(1)};
   stroke-dashoffset: ${pathLen.toFixed(1)};
-  animation: ${animId} 0.8s ease-out forwards;
+  animation: ${animId} 0.5s ease-out forwards;
+  will-change: stroke-dashoffset;
+}
+@media (prefers-reduced-motion: reduce) {
+  .${animId}-line { animation: none; stroke-dashoffset: 0; }
 }
         `}</style>
       )}
