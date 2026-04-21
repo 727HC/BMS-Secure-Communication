@@ -1,34 +1,6 @@
 import React from 'react';
 
-const STYLE_ID = 'sn-skeleton-styles';
-
-function injectStyles() {
-  if (typeof document === 'undefined') return;
-  if (document.getElementById(STYLE_ID)) return;
-  const el = document.createElement('style');
-  el.id = STYLE_ID;
-  el.textContent = `
-@keyframes skeleton-shimmer {
-  0%   { background-position: -200% 0; }
-  100% { background-position:  200% 0; }
-}
-.sn-skeleton {
-  display: block;
-  background: linear-gradient(
-    90deg,
-    var(--color-border)      25%,
-    var(--color-surface-alt) 50%,
-    var(--color-border)      75%
-  );
-  background-size: 200% 100%;
-  animation: skeleton-shimmer 1.2s ease-in-out infinite;
-  flex-shrink: 0;
-}
-`;
-  document.head.appendChild(el);
-}
-
-injectStyles();
+/* Skeleton — sn-skeleton.css 정본 참조 (shimmer, var(--color-*) 토큰) */
 
 export interface SkeletonProps {
   width?: string | number;
