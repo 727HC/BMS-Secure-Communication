@@ -148,11 +148,14 @@ export function ArcGauge({
   const labelFontSize = Math.max(13, Math.round(size / 10));
   const sublabelFontSize = Math.max(11, Math.round(size / 12));
 
-  const valueY = cy + strokeWidth / 2 + valueFontSize * 0.75 + 4;
-  const labelY = valueY + labelFontSize + 4;
-  const sublabelY = labelY + sublabelFontSize + 4;
+  const valueY = cy + strokeWidth / 2 + valueFontSize * 0.75 + 6;
+  const labelY = valueY + labelFontSize + 6;
+  const sublabelY = labelY + sublabelFontSize + 6;
 
-  const svgHeight = (sublabel ? sublabelY : labelY) + 6;
+  /* hanging baseline이라 마지막 라인 높이만큼 여유 확보 */
+  const svgHeight = (sublabel
+    ? sublabelY + sublabelFontSize + 6
+    : labelY + labelFontSize + 8);
   const animId = `sn-arc-${++_arcCounter}`;
 
   return (
@@ -168,8 +171,12 @@ export function ArcGauge({
   to   { stroke-dasharray: ${fillLen.toFixed(2)} ${arcLen.toFixed(2)}; }
 }
 .${animId}-fill {
-  animation: ${animId} 0.9s cubic-bezier(0.33, 1, 0.68, 1) forwards;
+  animation: ${animId} 0.55s cubic-bezier(0.33, 1, 0.68, 1) forwards;
   stroke-dasharray: 0 ${arcLen.toFixed(2)};
+  will-change: stroke-dasharray;
+}
+@media (prefers-reduced-motion: reduce) {
+  .${animId}-fill { animation: none; stroke-dasharray: ${fillLen.toFixed(2)} ${arcLen.toFixed(2)}; }
 }
       `}</style>
       {/* Track — 반원 전체 */}
