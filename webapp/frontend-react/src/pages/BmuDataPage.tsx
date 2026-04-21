@@ -292,9 +292,9 @@ export default function BmuDataPage() {
         <Spinner />
       ) : !hasSearched && !loading ? (
         <div className="sn-panel" style={{ overflow: 'hidden' }}>
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '48px 24px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '2rem 1.5rem' }}>
             <div style={{ width: 56, height: 56, borderRadius: 12, background: 'var(--color-surface-alt)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 20 }}>
-              <svg width="28" height="28" fill="none" stroke="#a3a3a3" strokeWidth="1.5" viewBox="0 0 24 24">
+              <svg width="28" height="28" fill="none" stroke="var(--color-text-3)" strokeWidth="1.5" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
               </svg>
             </div>
@@ -315,7 +315,7 @@ export default function BmuDataPage() {
         </div>
       ) : hasSearched && errorMsg && accessDenied ? (
         <div className="sn-panel" style={{ overflow: 'hidden' }}>
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '48px 24px', textAlign: 'center' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '2rem 1.5rem', textAlign: 'center' }}>
             <div style={{ width: 56, height: 56, borderRadius: 12, background: '#fff7ed', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 18 }}>
               <svg width="26" height="26" fill="none" stroke="#d97706" strokeWidth="1.8" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
@@ -331,7 +331,7 @@ export default function BmuDataPage() {
         </div>
       ) : hasSearched && records.length === 0 && !loading ? (
         <div className="sn-panel" style={{ overflow: 'hidden' }}>
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '48px 24px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '2rem 1.5rem' }}>
             <h3 style={{ fontSize: '1.125rem', fontWeight: 600, color: 'var(--color-text-1)', margin: '0 0 8px' }}>데이터가 없습니다</h3>
             <p style={{ fontSize: '0.9375rem', color: 'var(--color-text-3)' }}>해당 여권에 대한 BMU 기록이 존재하지 않습니다.</p>
           </div>
@@ -344,7 +344,7 @@ export default function BmuDataPage() {
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   <span style={{ fontSize: '0.9375rem', fontWeight: 600, color: 'var(--color-text-1)' }}>최신 센서 스냅샷</span>
-                  <span style={{ fontSize: '0.8125rem', color: 'var(--color-text-3)', fontFamily: "'JetBrains Mono',monospace" }}>
+                  <span style={{ fontSize: '0.875rem', color: 'var(--color-text-3)', fontFamily: "'JetBrains Mono',monospace" }}>
                     {formatTimestamp(latestRecord.timestamp)}
                   </span>
                 </div>
@@ -352,14 +352,14 @@ export default function BmuDataPage() {
                   {decodeStatusFlags(latestRecord.statusFlags).map((b) => {
                     const s = BADGE_STYLES[b.color];
                     return (
-                      <span key={b.label} style={{ display: 'inline-flex', alignItems: 'center', padding: '2px 10px', borderRadius: 20, fontSize: '0.8125rem', fontWeight: 600, background: s.bg, color: s.color }}>
+                      <span key={b.label} style={{ display: 'inline-flex', alignItems: 'center', padding: '2px 10px', borderRadius: 20, fontSize: '0.875rem', fontWeight: 600, background: s.bg, color: s.color }}>
                         <span style={{ width: 6, height: 6, borderRadius: '50%', marginRight: 6, background: s.dot }} />
                         {b.label}
                       </span>
                     );
                   })}
                   {decodeStatusFlags(latestRecord.statusFlags).length === 0 && (
-                    <span style={{ display: 'inline-flex', alignItems: 'center', padding: '2px 10px', borderRadius: 20, fontSize: '0.8125rem', fontWeight: 500, background: 'var(--color-surface-alt)', color: 'var(--color-text-2)', border: '1px solid var(--color-border)' }}>
+                    <span style={{ display: 'inline-flex', alignItems: 'center', padding: '2px 10px', borderRadius: 20, fontSize: '0.875rem', fontWeight: 500, background: 'var(--color-surface-alt)', color: 'var(--color-text-2)', border: '1px solid var(--color-border)' }}>
                       <span style={{ width: 6, height: 6, borderRadius: '50%', marginRight: 6, background: '#10b981' }} />
                       정상
                     </span>
@@ -369,7 +369,7 @@ export default function BmuDataPage() {
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
                 {/* SOC */}
                 <div style={{ padding: '14px 16px', background: 'var(--color-surface-alt)', borderRadius: 8, border: '1px solid var(--color-border)' }}>
-                  <p style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-text-3)', margin: '0 0 6px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>SOC</p>
+                  <p style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--color-text-3)', margin: '0 0 6px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>SOC</p>
                   <p className="sn-metric sn-metric-md" style={{ fontFamily: "'JetBrains Mono',monospace", color: (() => { const v = scaleSOC(latestRecord.soc); return v > 50 ? 'var(--color-text-1)' : v > 20 ? '#f59e0b' : '#ef4444'; })(), margin: '0 0 4px' }}>
                     {scaleSOC(latestRecord.soc)}<span style={{ fontSize: '0.875rem', fontWeight: 500, marginLeft: 2 }}>%</span>
                   </p>
@@ -382,7 +382,7 @@ export default function BmuDataPage() {
                 </div>
                 {/* 전압 */}
                 <div style={{ padding: '14px 16px', background: 'var(--color-surface-alt)', borderRadius: 8, border: '1px solid var(--color-border)' }}>
-                  <p style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-text-3)', margin: '0 0 6px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>전압</p>
+                  <p style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--color-text-3)', margin: '0 0 6px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>전압</p>
                   <p className="sn-metric sn-metric-md" style={{ fontFamily: "'JetBrains Mono',monospace", color: 'var(--color-text-1)', margin: '0 0 12px' }}>
                     {formatNumber(latestRecord.voltage, 2)}<span style={{ fontSize: '0.875rem', fontWeight: 500, marginLeft: 2 }}>V</span>
                   </p>
@@ -392,7 +392,7 @@ export default function BmuDataPage() {
                 </div>
                 {/* 전류 */}
                 <div style={{ padding: '14px 16px', background: 'var(--color-surface-alt)', borderRadius: 8, border: '1px solid var(--color-border)' }}>
-                  <p style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-text-3)', margin: '0 0 6px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>전류</p>
+                  <p style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--color-text-3)', margin: '0 0 6px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>전류</p>
                   <p className="sn-metric sn-metric-md" style={{ fontFamily: "'JetBrains Mono',monospace", color: 'var(--color-text-1)', margin: '0 0 12px' }}>
                     {formatNumber(latestRecord.current, 2)}<span style={{ fontSize: '0.875rem', fontWeight: 500, marginLeft: 2 }}>A</span>
                   </p>
@@ -402,7 +402,7 @@ export default function BmuDataPage() {
                 </div>
                 {/* 온도 */}
                 <div style={{ padding: '14px 16px', background: 'var(--color-surface-alt)', borderRadius: 8, border: '1px solid var(--color-border)' }}>
-                  <p style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-text-3)', margin: '0 0 6px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>온도</p>
+                  <p style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--color-text-3)', margin: '0 0 6px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>온도</p>
                   <p className="sn-metric sn-metric-md" style={{ fontFamily: "'JetBrains Mono',monospace", color: 'var(--color-text-1)', margin: '0 0 12px' }}>
                     {scaleTemp(latestRecord.temperature)}<span style={{ fontSize: '0.875rem', fontWeight: 500, marginLeft: 2 }}>°C</span>
                   </p>
@@ -430,13 +430,13 @@ export default function BmuDataPage() {
                   <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 10h16M4 14h16M4 18h16" />
                 </svg>
                 <span style={{ fontSize: '0.9375rem', fontWeight: 600, color: 'var(--color-text-2)' }}>판독 기록</span>
-                <span style={{ display: 'inline-flex', alignItems: 'center', padding: '2px 8px', borderRadius: 20, fontFamily: "'JetBrains Mono',monospace", fontSize: '0.8125rem', fontWeight: 600, color: '#059669', background: 'rgba(52,211,153,0.1)' }}>
+                <span style={{ display: 'inline-flex', alignItems: 'center', padding: '2px 8px', borderRadius: 20, fontFamily: "'JetBrains Mono',monospace", fontSize: '0.875rem', fontWeight: 600, color: '#059669', background: 'rgba(52,211,153,0.1)' }}>
                   {records.length}건
                 </span>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                 {refreshing && (
-                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: '0.8125rem', color: '#059669' }}>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: '0.875rem', color: '#059669' }}>
                     갱신 중...
                   </span>
                 )}
@@ -499,7 +499,7 @@ export default function BmuDataPage() {
                         <td style={{ whiteSpace: 'nowrap' }}>
                           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
                             {badges.length === 0 ? (
-                              <span style={{ display: 'inline-flex', alignItems: 'center', padding: '2px 10px', borderRadius: 20, fontSize: '0.875rem', fontWeight: 500, background: 'var(--color-surface-alt)', color: 'var(--color-text-2)', boxShadow: 'inset 0 0 0 1px rgba(0,0,0,0.06)' }}>
+                              <span style={{ display: 'inline-flex', alignItems: 'center', padding: '2px 10px', borderRadius: 20, fontSize: '0.875rem', fontWeight: 500, background: 'var(--color-surface-alt)', color: 'var(--color-text-2)', border: '1px solid var(--color-border)' }}>
                                 <span style={{ width: 6, height: 6, borderRadius: '50%', marginRight: 6, background: 'var(--color-border)' }} />
                                 정상
                               </span>
@@ -514,7 +514,7 @@ export default function BmuDataPage() {
                                       alignItems: 'center',
                                       padding: '2px 10px',
                                       borderRadius: 20,
-                                      fontSize: '0.8125rem',
+                                      fontSize: '0.875rem',
                                       fontWeight: 600,
                                       background: s.bg,
                                       color: s.color,
@@ -538,7 +538,7 @@ export default function BmuDataPage() {
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 20px', borderTop: '1px solid rgba(0,0,0,0.06)' }}>
               <span style={{ fontSize: '0.875rem', color: 'var(--color-text-3)' }}>총 {records.length}개 레코드</span>
               {autoRefresh && (
-                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontFamily: "'JetBrains Mono',monospace", fontSize: '0.8125rem', color: 'var(--color-text-3)' }}>
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontFamily: "'JetBrains Mono',monospace", fontSize: '0.875rem', color: 'var(--color-text-3)' }}>
                   <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--color-text-1)' }} />
                   실시간 모니터링 활성 · {countdown}s 후 갱신
                 </span>

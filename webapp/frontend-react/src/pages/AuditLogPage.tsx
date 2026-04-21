@@ -220,9 +220,9 @@ export default function AuditLogPage() {
               <div style={{ width: 36, height: 20, borderRadius: 10, background: autoRefresh ? 'var(--color-primary)' : 'var(--color-border)', transition: 'background 0.2s' }} />
               <div style={{ position: 'absolute', top: 2, left: autoRefresh ? 18 : 2, width: 16, height: 16, borderRadius: '50%', background: 'var(--color-surface)', boxShadow: 'var(--shadow-card)', transition: 'left 0.2s' }} />
             </div>
-            <span style={{ fontSize: '0.8125rem', fontWeight: 500, color: 'var(--color-text-2)' }}>실시간</span>
+            <span style={{ fontSize: '0.875rem', fontWeight: 500, color: 'var(--color-text-2)' }}>실시간</span>
           </label>
-          <button onClick={fetchLogs} className="sn-btn sn-btn-ghost" style={{ fontSize: '0.8125rem' }}>
+          <button onClick={fetchLogs} className="sn-btn sn-btn-ghost" style={{ fontSize: '0.875rem' }}>
             <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
             </svg>
@@ -300,17 +300,17 @@ export default function AuditLogPage() {
                 <p className="sn-metric sn-metric-md" style={{ margin: 0 }}>
                   {timeSummary.last24h}
                 </p>
-                <p style={{ fontSize: '0.8125rem', color: 'var(--color-text-3)', margin: '2px 0 0' }}>지난 24시간</p>
+                <p style={{ fontSize: '0.875rem', color: 'var(--color-text-3)', margin: '2px 0 0' }}>지난 24시간</p>
               </div>
               <div style={{ width: 1, background: 'var(--color-border)', alignSelf: 'stretch' }} />
               <div>
                 <p className="sn-metric sn-metric-md" style={{ margin: 0 }}>
                   {timeSummary.last7d}
                 </p>
-                <p style={{ fontSize: '0.8125rem', color: 'var(--color-text-3)', margin: '2px 0 0' }}>지난 7일</p>
+                <p style={{ fontSize: '0.875rem', color: 'var(--color-text-3)', margin: '2px 0 0' }}>지난 7일</p>
               </div>
             </div>
-            <p style={{ fontSize: '0.8125rem', color: 'var(--color-text-3)', margin: 0 }}>현재 페이지 기록 기준</p>
+            <p style={{ fontSize: '0.875rem', color: 'var(--color-text-3)', margin: 0 }}>현재 페이지 기록 기준</p>
           </div>
 
           {/* 성공/실패 비율 */}
@@ -334,10 +334,10 @@ export default function AuditLogPage() {
                     }}
                   />
                 </div>
-                <p style={{ fontSize: '0.8125rem', color: 'var(--color-text-3)', margin: 0 }}>2xx 성공 / 4xx·5xx 실패</p>
+                <p style={{ fontSize: '0.875rem', color: 'var(--color-text-3)', margin: 0 }}>2xx 성공 / 4xx·5xx 실패</p>
               </>
             ) : (
-              <p style={{ fontSize: '0.875rem', color: 'var(--color-text-3)', margin: 0 }}>상태 코드 정보 없음</p>
+              <p style={{ fontSize: '0.9375rem', color: 'var(--color-text-3)', margin: 0 }}>상태 코드 정보 없음</p>
             )}
           </div>
         </div>
@@ -349,7 +349,7 @@ export default function AuditLogPage() {
           value={filterAction}
           onChange={(e) => setFilterAction(e.target.value)}
           className="sn-input"
-          style={{ minWidth: 140, fontSize: '0.875rem' }}
+          style={{ minWidth: 140, fontSize: '0.9375rem' }}
         >
           {ACTION_OPTIONS.map((opt) => (
             <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -362,9 +362,9 @@ export default function AuditLogPage() {
             onChange={(e) => setFilterWriteOnly(e.target.checked)}
             style={{ width: 16, height: 16, accentColor: 'var(--color-text-1)', borderRadius: 4 }}
           />
-          <span style={{ fontSize: '0.875rem', color: 'var(--color-text-2)' }}>쓰기 작업만</span>
+          <span style={{ fontSize: '0.9375rem', color: 'var(--color-text-2)' }}>쓰기 작업만</span>
         </label>
-          <span style={{ marginLeft: 'auto', fontFamily: "'JetBrains Mono',monospace", fontSize: '0.8125rem', color: 'var(--color-text-3)' }}>
+          <span style={{ marginLeft: 'auto', fontFamily: "'JetBrains Mono',monospace", fontSize: '0.875rem', color: 'var(--color-text-3)' }}>
           총 {total}건
         </span>
       </div>
@@ -375,7 +375,7 @@ export default function AuditLogPage() {
             <p className="sn-eyebrow" style={{ margin: '0 0 4px' }}>활성 필터</p>
             <p style={{ margin: 0, fontSize: '0.9rem', fontWeight: 700, color: 'var(--color-text-1)' }}>{activeActionLabel}</p>
           </div>
-          <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: '0.8125rem', color: 'var(--color-text-2)' }}>{total}건</span>
+          <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: '0.875rem', color: 'var(--color-text-2)' }}>{total}건</span>
         </div>
       )}
 
@@ -383,16 +383,16 @@ export default function AuditLogPage() {
       {loading && logs.length === 0 ? (
         <Spinner />
       ) : logs.length === 0 ? (
-        <div style={{ padding: '3rem 2rem', textAlign: 'center', border: '1px dashed var(--color-border)', borderRadius: '0.5rem' }}>
+        <div style={{ padding: '2rem 1.5rem', textAlign: 'center', border: '1px dashed var(--color-border)', borderRadius: '0.5rem' }}>
           <div style={{ width: 44, height: 44, borderRadius: 10, background: 'var(--color-surface-alt)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 14px' }}>
             <svg width="22" height="22" fill="none" stroke="var(--color-text-3)" strokeWidth="1.5" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
             </svg>
           </div>
-          <p style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--color-text-2)', margin: '0 0 6px' }}>
+          <p style={{ fontSize: '0.9375rem', fontWeight: 600, color: 'var(--color-text-2)', margin: '0 0 6px' }}>
             {filterAction ? `${activeActionLabel} 작업 기록이 없습니다` : '아직 기록된 작업이 없습니다'}
           </p>
-          <p style={{ fontSize: '0.8125rem', color: 'var(--color-text-3)', margin: 0 }}>
+          <p style={{ fontSize: '0.875rem', color: 'var(--color-text-3)', margin: 0 }}>
             {filterAction
               ? `현재 필터(${activeActionLabel})와 일치하는 감사 증빙이 없습니다. 필터를 해제하거나 다른 조건을 선택하세요.`
               : '체인 이벤트가 발생하면 여기에 표시됩니다. 실시간 모드를 켜 두면 자동으로 갱신됩니다.'}
