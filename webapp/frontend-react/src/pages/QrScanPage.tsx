@@ -47,7 +47,7 @@ function FlowStep({ step, label, desc }: { step: number; label: string; desc: st
         {step}
       </div>
       <p style={{ fontSize: '0.9375rem', fontWeight: 600, color: 'var(--color-text-1)', margin: 0, textAlign: 'center' }}>{label}</p>
-      <p style={{ fontSize: '0.875rem', color: 'var(--color-text-3)', margin: 0, textAlign: 'center', lineHeight: 1.5 }}>{desc}</p>
+      <p style={{ fontSize: '0.9375rem', color: 'var(--color-text-3)', margin: 0, textAlign: 'center', lineHeight: 1.5 }}>{desc}</p>
     </div>
   );
 }
@@ -247,13 +247,13 @@ export default function QrScanPage() {
               {scanning ? (
                 <div id="qr-reader" style={{ borderRadius: 10, overflow: 'hidden' }} />
               ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '32px 16px', textAlign: 'center', gap: 20 }}>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '24px 20px', textAlign: 'center', gap: 16 }}>
                   {/* 헤드라인 */}
                   <div>
-                    <p style={{ fontSize: '0.9375rem', fontWeight: 700, color: 'var(--color-text-1)', margin: '0 0 6px' }}>
+                    <p style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--color-text-1)', margin: '0 0 6px' }}>
                       여권 QR 또는 NFC로 배터리 신원 확인
                     </p>
-                    <p style={{ fontSize: '0.8125rem', color: 'var(--color-text-3)', margin: 0 }}>
+                    <p style={{ fontSize: '0.9375rem', color: 'var(--color-text-3)', margin: 0 }}>
                       배터리 표면의 QR 코드나 NFC 태그를 인식하면 자동으로 조회합니다
                     </p>
                   </div>
@@ -310,27 +310,27 @@ export default function QrScanPage() {
             <div style={{ padding: '24px 16px', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
               {NFC_SUPPORTED && nfcScanning && (
                 <>
-                  <p style={{ fontSize: '0.875rem', fontWeight: 500, color: '#2563eb', margin: '0 0 4px' }}>NFC 대기 중...</p>
-                  <p style={{ fontSize: '0.8125rem', color: 'var(--color-text-3)' }}>배터리에 붙어 있는 NFC 태그를 기기에 가까이 대세요</p>
+                  <p style={{ fontSize: '0.9375rem', fontWeight: 500, color: '#2563eb', margin: '0 0 4px' }}>NFC 대기 중...</p>
+                  <p style={{ fontSize: '0.9375rem', color: 'var(--color-text-3)' }}>배터리에 붙어 있는 NFC 태그를 기기에 가까이 대세요</p>
                 </>
               )}
               {NFC_SUPPORTED && !nfcScanning && (
-                <p style={{ fontSize: '0.8125rem', color: 'var(--color-text-3)' }}>NFC를 활성화하여 태그를 읽으세요</p>
+                <p style={{ fontSize: '0.9375rem', color: 'var(--color-text-3)' }}>NFC를 활성화하여 태그를 읽으세요</p>
               )}
               {!NFC_SUPPORTED && (
-                <p style={{ fontSize: '0.8125rem', color: 'var(--color-text-3)' }}>현재 환경에서는 Web NFC를 지원하지 않습니다.</p>
+                <p style={{ fontSize: '0.9375rem', color: 'var(--color-text-3)' }}>현재 환경에서는 Web NFC를 지원하지 않습니다.</p>
               )}
             </div>
           </div>
 
           <div className="sn-panel" style={{ padding: '12px 16px' }}>
-            <h2 style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--color-text-1)', margin: '0 0 6px' }}>수동 입력</h2>
-            <p style={{ fontSize: '0.75rem', color: 'var(--color-text-3)', margin: '0 0 10px' }}>
-              형식 예시: <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.75rem' }}>PASSPORT-…</span>
+            <h2 style={{ fontSize: '0.9375rem', fontWeight: 600, color: 'var(--color-text-1)', margin: '0 0 6px' }}>수동 입력</h2>
+            <p style={{ fontSize: '0.875rem', color: 'var(--color-text-3)', margin: '0 0 10px' }}>
+              형식 예시: <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.875rem' }}>PASSPORT-…</span>
               {' '}/{' '}
-              <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.75rem' }}>BATTERY-…</span>
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.875rem' }}>BATTERY-…</span>
               {' '}/{' '}
-              <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.75rem' }}>did:sov:…</span>
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.875rem' }}>did:sov:…</span>
             </p>
             <div style={{ display: 'flex', gap: 8 }}>
               <input
@@ -388,7 +388,7 @@ export default function QrScanPage() {
                       <p
                         style={{
                           fontFamily: mono ? 'var(--font-mono)' : undefined,
-                          fontSize: mono ? '0.75rem' : '0.8125rem',
+                          fontSize: mono ? '0.8125rem' : '0.9375rem',
                           fontWeight: 500,
                           color: 'var(--color-text-2)',
                           margin: '3px 0 0',
@@ -406,14 +406,20 @@ export default function QrScanPage() {
                 {/* 여권 ID + 시리얼번호 — mono */}
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
                   {[
-                    { k: '여권 ID', v: passportData.passportId },
-                    { k: '시리얼번호', v: passportData.serialNumber || '-' },
-                  ].map(({ k, v }) => (
+                    { k: '여권 ID', v: passportData.passportId, metric: true },
+                    { k: '시리얼번호', v: passportData.serialNumber || '-', metric: false },
+                  ].map(({ k, v, metric }) => (
                     <div key={k} style={{ background: 'var(--color-surface-alt)', boxShadow: 'inset 0 0 0 1px rgba(0,0,0,0.06)', borderRadius: 8, padding: '8px 10px' }}>
                       <p className="sn-eyebrow" style={{ margin: 0 }}>{k}</p>
-                      <p style={{ fontFamily: 'var(--font-mono)', fontSize: '0.75rem', fontWeight: 500, color: 'var(--color-text-2)', margin: '3px 0 0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {v}
-                      </p>
+                      {metric ? (
+                        <p className="sn-metric sn-metric-md" style={{ fontFamily: 'var(--font-mono)', color: 'var(--color-text-2)', margin: '3px 0 0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {v}
+                        </p>
+                      ) : (
+                        <p style={{ fontFamily: 'var(--font-mono)', fontSize: '0.875rem', fontWeight: 500, color: 'var(--color-text-2)', margin: '3px 0 0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {v}
+                        </p>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -445,8 +451,8 @@ export default function QrScanPage() {
                   <line x1="12" y1="16" x2="12.01" y2="16" />
                 </svg>
               </div>
-              <p style={{ fontSize: '0.875rem', fontWeight: 600, color: '#dc2626', margin: '0 0 6px' }}>조회 실패</p>
-              <p style={{ fontSize: '0.8125rem', color: 'var(--color-text-3)', margin: '0 0 16px', lineHeight: 1.6 }}>{scanError}</p>
+              <p style={{ fontSize: '0.9375rem', fontWeight: 600, color: '#dc2626', margin: '0 0 6px' }}>조회 실패</p>
+              <p style={{ fontSize: '0.9375rem', color: 'var(--color-text-3)', margin: '0 0 16px', lineHeight: 1.6 }}>{scanError}</p>
               <button
                 onClick={() => { setScanError(null); setScanResult(null); }}
                 className="sn-btn sn-btn-ghost"
@@ -462,8 +468,8 @@ export default function QrScanPage() {
                   <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                 </svg>
               </div>
-              <p style={{ fontSize: '0.875rem', fontWeight: 500, color: 'var(--color-text-2)', margin: '0 0 6px' }}>식별값을 입력하거나 스캔해 조회를 시작하세요</p>
-              <p style={{ fontSize: '0.8125rem', color: 'var(--color-text-3)' }}>조회 결과가 여기에 표시됩니다</p>
+              <p style={{ fontSize: '0.9375rem', fontWeight: 500, color: 'var(--color-text-2)', margin: '0 0 6px' }}>식별값을 입력하거나 스캔해 조회를 시작하세요</p>
+              <p style={{ fontSize: '0.9375rem', color: 'var(--color-text-3)' }}>조회 결과가 여기에 표시됩니다</p>
             </div>
           )}
         </div>

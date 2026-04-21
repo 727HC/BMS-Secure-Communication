@@ -244,27 +244,27 @@ export default function RecyclingPage() {
       <div className="sn-panel" style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '0.75rem', padding: '0.9rem 1rem' }}>
         <div style={{ padding: '0.75rem', background: 'var(--color-surface-alt)', borderRadius: '0.5rem' }}>
           <p className="sn-eyebrow sn-stat-card-title" style={{ margin: '0 0 0.25rem' }}>재활용 가능</p>
-          <p className="sn-stat-count" style={{ color: 'var(--color-success)' }}>{tabCounts.recyclable}</p>
+          <p className="sn-info-tile-value" style={{ color: 'var(--color-success)', margin: '0 0 0.25rem' }}>{tabCounts.recyclable}</p>
           <p className="sn-stat-note">판정 완료</p>
         </div>
         <div style={{ padding: '0.75rem', background: 'var(--color-surface-alt)', borderRadius: '0.5rem' }}>
           <p className="sn-eyebrow sn-stat-card-title" style={{ margin: '0 0 0.25rem', color: 'var(--color-accent)' }}>재활용 중</p>
-          <p className="sn-stat-count" style={{ color: 'var(--color-accent)' }}>{tabCounts.recycling}</p>
+          <p className="sn-info-tile-value" style={{ color: 'var(--color-accent)', margin: '0 0 0.25rem' }}>{tabCounts.recycling}</p>
           <p className="sn-stat-note">현재 처리 중</p>
         </div>
         <div style={{ padding: '0.75rem', background: 'var(--color-surface-alt)', borderRadius: '0.5rem' }}>
           <p className="sn-eyebrow sn-stat-card-title" style={{ margin: '0 0 0.25rem', color: 'var(--color-text-2)' }}>폐기 완료</p>
-          <p className="sn-stat-count" style={{ color: 'var(--color-text-2)' }}>{tabCounts.disposed}</p>
+          <p className="sn-info-tile-value" style={{ color: 'var(--color-text-2)', margin: '0 0 0.25rem' }}>{tabCounts.disposed}</p>
           <p className="sn-stat-note">누적</p>
         </div>
         <div style={{ padding: '0.75rem', background: 'var(--color-surface-alt)', borderRadius: '0.5rem' }}>
           <p className="sn-eyebrow sn-stat-card-title" style={{ margin: '0 0 0.25rem' }}>평균 SOH</p>
-          <p className="sn-stat-count">{avgSoh != null ? `${avgSoh}%` : '-'}</p>
+          <p className="sn-info-tile-value" style={{ margin: '0 0 0.25rem' }}>{avgSoh != null ? `${avgSoh}%` : '-'}</p>
           <p className="sn-stat-note">관리 대상 기준</p>
         </div>
         <div style={{ padding: '0.75rem', background: 'var(--color-surface-alt)', borderRadius: '0.5rem' }}>
           <p className="sn-eyebrow sn-stat-card-title" style={{ margin: '0 0 0.25rem' }}>평균 잔존수명</p>
-          <p className="sn-stat-count">{avgRemaining != null ? `${avgRemaining}사이클` : '-'}</p>
+          <p className="sn-info-tile-value" style={{ margin: '0 0 0.25rem' }}>{avgRemaining != null ? `${avgRemaining}사이클` : '-'}</p>
           <p className="sn-stat-note">관리 대상 기준</p>
         </div>
       </div>
@@ -272,29 +272,11 @@ export default function RecyclingPage() {
       {/* 재활용률 구성 분석 */}
       {avgRates.length > 0 && (
         <div className="sn-panel" style={{ padding: '0.9rem 1rem' }}>
-          <p className="sn-eyebrow" style={{ margin: '0 0 0.6rem' }}>재활용률 구성 분석 — 전체 여권 원소별 평균</p>
-          <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
-            {avgRates.map(({ element, avg: rate }) => (
-              <span
-                key={element}
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: 4,
-                  padding: '4px 12px',
-                  borderRadius: 20,
-                  background: 'var(--color-surface-alt)',
-                  border: '1px solid var(--color-border)',
-                  fontSize: '0.8125rem',
-                  color: 'var(--color-text-1)',
-                  fontWeight: 600,
-                }}
-              >
-                {element}
-                <span style={{ fontSize: '0.75rem', color: 'var(--color-text-3)', fontWeight: 400 }}>{rate}%</span>
-              </span>
-            ))}
-          </div>
+          <p className="sn-eyebrow" style={{ margin: '0 0 0.75rem' }}>재활용률 구성 분석 — 전체 여권 원소별 평균</p>
+          <BarRows
+            items={avgRates.map(({ element, avg: rate }) => ({ label: element, value: rate, hint: '%' }))}
+            max={100}
+          />
         </div>
       )}
 
@@ -348,22 +330,22 @@ export default function RecyclingPage() {
                     style={{ cursor: 'pointer' }}
                   >
                     <td>
-                      <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: '0.8125rem', color: 'var(--color-text-2)' }}>
+                      <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: '0.875rem', color: 'var(--color-text-2)' }}>
                         {p.passportId}
                       </span>
                     </td>
-                    <td>{p.model || '-'}</td>
+                    <td style={{ fontSize: '0.9375rem' }}>{p.model || '-'}</td>
                     <td>
                       <span className={`bp-stamp ${badge.bg} ${badge.text} ${badge.border}`}>{badge.label}</span>
                     </td>
-                    <td style={{ textAlign: 'right', fontFamily: "'JetBrains Mono',monospace", fontSize: '0.8125rem', color: sohColor, fontWeight: 700 }}>
+                    <td style={{ textAlign: 'right', fontFamily: "'JetBrains Mono',monospace", fontSize: '0.9375rem', color: sohColor, fontWeight: 700 }}>
                       {p.soh != null ? `${p.soh}%` : '-'}
                     </td>
                     <td>
                       {p.recycleAvailable ? (
                         <span className="bp-stamp bp-status-recycling">가능</span>
                       ) : (
-                        <span style={{ fontSize: '0.8125rem', color: 'var(--color-text-3)' }}>미판정</span>
+                        <span style={{ fontSize: '0.875rem', color: 'var(--color-text-3)' }}>미판정</span>
                       )}
                     </td>
                     <td>
@@ -380,7 +362,7 @@ export default function RecyclingPage() {
                                 borderRadius: 12,
                                 background: 'var(--color-surface-alt)',
                                 border: '1px solid var(--color-border)',
-                                fontSize: '0.75rem',
+                                fontSize: '0.8125rem',
                                 color: 'var(--color-text-2)',
                                 whiteSpace: 'nowrap',
                               }}
@@ -391,7 +373,7 @@ export default function RecyclingPage() {
                           ))}
                         </span>
                       ) : (
-                        <span style={{ fontSize: '0.8125rem', color: 'var(--color-text-3)' }}>-</span>
+                        <span style={{ fontSize: '0.875rem', color: 'var(--color-text-3)' }}>-</span>
                       )}
                     </td>
                     <td style={{ textAlign: 'right' }}>
