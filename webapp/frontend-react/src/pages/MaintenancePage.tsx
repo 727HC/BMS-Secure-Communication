@@ -296,7 +296,7 @@ export default function MaintenancePage() {
           </div>
           {/* 우: 정비 타입별 BarRows */}
           <div>
-            <p style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--color-text-3)', margin: '0 0 12px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+            <p style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--color-text-3)', margin: '0 0 12px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
               정비 유형별
             </p>
             <BarRows items={maintenanceTypeBreakdown} />
@@ -371,9 +371,9 @@ export default function MaintenancePage() {
 
       {filteredPassports.length === 0 ? (
         <div className="sn-panel" style={{ overflow: 'hidden' }}>
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '48px 24px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '2rem 1.5rem' }}>
             <div style={{ width: 56, height: 56, borderRadius: 12, background: 'var(--color-surface-alt)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 20 }}>
-              <svg width="28" height="28" fill="none" stroke="#a3a3a3" strokeWidth="1.5" viewBox="0 0 24 24">
+              <svg width="28" height="28" fill="none" stroke="var(--color-text-3)" strokeWidth="1.5" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
               </svg>
             </div>

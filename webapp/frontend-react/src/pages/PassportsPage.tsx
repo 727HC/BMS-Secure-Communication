@@ -391,7 +391,7 @@ export default function PassportsPage() {
             <option value="incomplete">문서 보완 필요</option>
           </select>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-            <span style={{ fontSize: '0.8125rem', color: 'var(--color-text-3)' }}>정렬</span>
+            <span style={{ fontSize: '0.875rem', color: 'var(--color-text-3)' }}>정렬</span>
             {([{ v: 'latest', l: '최신순' }, { v: 'gba', l: 'GBA' }] as const).map((s) => {
               const active = sortBy === s.v;
               return (
@@ -400,7 +400,7 @@ export default function PassportsPage() {
                   onClick={() => setSortBy(s.v)}
                   type="button"
                   style={{
-                    fontSize: '0.8125rem',
+                    fontSize: '0.875rem',
                     padding: '0.3rem 0.55rem',
                     background: active ? 'rgba(0,0,0,0.04)' : 'none',
                     border: 'none',
@@ -523,7 +523,7 @@ export default function PassportsPage() {
           </div>
         </div>
       ) : (
-        <div style={{ padding: '3rem', textAlign: 'center', border: '1px dashed var(--color-border)', borderRadius: '0.5rem' }}>
+        <div style={{ padding: '2rem', textAlign: 'center', border: '1px dashed var(--color-border)', borderRadius: '0.5rem' }}>
           <p style={{ fontSize: '1rem', color: 'var(--color-text-3)', marginBottom: '0.75rem' }}>
             {searchQuery || filterStatus
               ? '검색 조건에 맞는 여권이 없습니다. 검색어나 필터를 다시 확인하세요.'
