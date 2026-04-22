@@ -56,7 +56,12 @@ von-network/
 # Fabric network runtime artifacts
 passport-network/organizations/peerOrganizations/
 passport-network/organizations/ordererOrganizations/
-passport-network/organizations/fabric-ca/*/
+passport-network/organizations/fabric-ca/*/msp/
+passport-network/organizations/fabric-ca/*/tls-cert.pem
+passport-network/organizations/fabric-ca/*/ca-cert.pem
+passport-network/organizations/fabric-ca/*/fabric-ca-server.db
+passport-network/organizations/fabric-ca/*/IssuerPublicKey
+passport-network/organizations/fabric-ca/*/IssuerRevocationPublicKey
 passport-network/channel-artifacts/
 passport-network/system-genesis-block/
 
