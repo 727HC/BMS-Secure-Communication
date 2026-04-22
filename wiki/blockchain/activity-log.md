@@ -343,18 +343,45 @@ filter-repo가 `adminpw`, `change-me-in-production` 등을 `REMOVED_SECRET_ROTAT
 - **network.sh는 compose 파일 리스트 전수 확인** — networkUp/networkDown 양쪽 모두 수정해야 down -v 시 CouchDB 볼륨도 정리됨
 - WSL2 Docker Desktop hang은 재발 가능 — playbook 기록해두면 다음에 빠르게 복구
 
-<!--
-## Session N 템플릿
+## Session 2026-04-22: 네트워크 재기동 트러블슈팅 + 재부트스트랩 경로 복구
 
 ### 작업 내용
-- 
+- 도커 콜드 재기동 후 `start_all.sh` 기동 실패 디버깅 (초기 증상: orderer MSP 로드 panic)
+- `./network.sh down` 으로 조직 crypto 일괄 정리 후 재기동 시 재부트스트랩 경로가 완전히 깨져 있음을 확인
+  - **근본 원인 1**: 2026-03-27 `00c9987` (임베디드 CRC/TRNG 변경) 커밋이 `passport-network/organizations/` 4개 필수 파일을 부수적으로 삭제 → 25일간 잠재
+    - `registerEnroll.sh`, `ccp-generate.sh`, `ccp-template.json`, `ccp-template.yaml`
+    - `createOrgs()` 는 `organizations/peerOrganizations` 디렉토리가 없을 때만 호출되기 때문에, 기존 crypto 를 얹어 재기동하는 한 발견 불가 — `down` 이 방아쇠
+  - **근본 원인 2**: 2026-04-18 CA 시크릿 rotation 설계가 반쪽 구현
+    - `.env` 에만 `ca-admin:<hex>` 기록하고 `fabric-ca-server-config.yaml` 의 `registry.identities: admin/adminpw` 는 그대로 둠
+    - fabric-ca-server 는 `registry.identities` 가 존재하면 compose 의 `-b` flag 를 무시 → DB 가 초기화될 때마다 `admin:adminpw` 로 원복
+    - rotation 시도 2 (`registry.identities: []` 로 비우고 `-b` flag 의존) 도 실패 — v1.5.17 은 빈 리스트로 들어와도 `-b` 를 identity 로 병합하지 않음
+- 실용적 복구 경로 채택
+  - `registerEnroll.sh` 를 `cae71e5` 기준으로 복원 + filter-repo 치환문 정리 (`${CA_ADMIN_USER}:${CA_ADMIN_PASSWORD}` 로 9 군데, `adminpw` 로 4 군데)
+  - `ccp-generate.sh` / 템플릿 2 개 동일 방식 복원
+  - `.env` 를 `admin:adminpw` 로 되돌리고 TODO 주석 추가 (`identity modify` 를 post-up 로 통합하는 후속 과제 명시)
+  - 5 개 CA 의 `fabric-ca-server-config.yaml` 을 docker fabric-ca init 의 기본 템플릿으로 재생성 후 git 추적 대상으로 전환
+- 재기동 검증: Fabric 4 peer + orderer + 5 CA + 4 CouchDB 정상, chaincode v2.0 배포, Agent `/api/status` `fabric:connected`
 
 ### 변경 파일
-- 
+- `passport-network/organizations/registerEnroll.sh` — 복원 + CA admin enroll URL 을 `.env` 참조로 교체
+- `passport-network/organizations/ccp-generate.sh` — 복원
+- `passport-network/organizations/ccp-template.json` — 복원
+- `passport-network/organizations/ccp-template.yaml` — 복원
+- `passport-network/organizations/fabric-ca/{evmanufacturer,manufacturer,ordererOrg,regulator,service}/fabric-ca-server-config.yaml` — fresh default 로 재작성 후 git 추적
+- `.gitignore` — `passport-network/organizations/fabric-ca/*/` 블랭킷 무시를 `msp/·ca-cert.pem·tls-cert.pem·fabric-ca-server.db·Issuer*Key` 로 쪼개 config.yaml 은 추적
+- `passport-network/.env` — `CA_ADMIN_USER/PASSWORD` 를 `admin/adminpw` 로 원복 + rotation 제약 TODO 주석
 
-### 미완료
-- 
+### 커밋
+- `4cc246d` — fix(blockchain): restore registerEnroll.sh / ccp-generate.sh — 네트워크 재부트스트랩 경로 복구
+- `e461e7e` — chore(blockchain): track fabric-ca-server-config.yaml, keep runtime artifacts ignored
+
+### 미완료 / 후속
+- CA bootstrap 시크릿 실제 rotation: `start_passport_network.sh up` 다음에 `fabric-ca-client identity modify` 로 `admin` → 강한 랜덤 비밀번호 교체하는 단계 추가. 동일 값을 `.env` 에 주입해 downstream 에서 사용 (commit 된 config.yaml 값과 실제 런타임 비밀번호를 분리)
+- Docker Desktop WSL 콜드 기동 직후 bind mount race 로 orderer MSP 로드 실패하는 패턴은 지난 2026-04-20 과 동일 — playbook 이 유효함을 재확인
 
 ### 교훈
-- 
--->
+- **`network.sh down` 은 `organizations/peerOrganizations` / `ordererOrganizations` 를 물리 삭제한다** — 이 순간에만 `createOrgs()` 재경로가 실제로 실행되므로 registerEnroll.sh 같은 의존 스크립트 누락이 이때만 폭발. 테스트 관점에서 "정상 재기동" 은 잠재 버그를 가릴 수 있다
+- **대규모 커밋의 `git status --porcelain=v1 --find-renames=100%` 검토** — 00c9987 커밋이 임베디드 변경 외에 `passport-network/organizations/*.sh`, `compose/*.yaml`, `scripts/*.sh` 등 네트워크 인프라 파일을 대량 삭제했다. 향후 대형 삭제 blast radius 는 리뷰 게이트 필요
+- **fabric-ca `-b` flag 는 registry.identities 와 배타적이지 않다** — 문서와 달리 v1.5.17 은 `identities` 가 존재하면 (빈 리스트 포함) `-b` 를 bootstrap 으로 쓰지 않는다. rotation 을 원하면 실제 동작을 실험으로 확인 후 설계해야
+- **잠재 버그는 "중간 커밋" 으로 격리** — Commit 1 (파일 복원) 은 명백한 fix 라 바로 세이프 포인트. Commit 2 시도가 실패하면 되돌리기만 하면 1 은 유지. 두 단계 분리 덕분에 rotation 실험 실패해도 핵심 복구는 보존됨
+
