@@ -41,11 +41,13 @@ case "$ACTION" in
     ./network.sh createChannel -c passportchannel
     echo ""
     echo "=== Deploying passport-contract chaincode ==="
+    # KPI 튜닝(bf2290d): 1-of-4 OR endorsement → 쓰기 TPS 93.8 → 173.1
     ./network.sh deployCC \
       -ccn passport-contract \
       -ccp "${SCRIPT_DIR}/chaincode/passport-contract" \
       -ccl go \
-      -c passportchannel
+      -c passportchannel \
+      -ccep "OR('ManufacturerMSP.peer','EVManufacturerMSP.peer','ServiceMSP.peer','RegulatorMSP.peer')"
     echo ""
     echo "=== Passport Network Ready ==="
     echo "  Orderer:       localhost:7050"
