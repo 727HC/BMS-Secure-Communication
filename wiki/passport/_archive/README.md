@@ -3,6 +3,7 @@ title: "passport archive 허브"
 date: 2026-04-20
 tags: [passport, archive, index]
 doc_type: index
+status: archive
 ---
 # passport/_archive/
 

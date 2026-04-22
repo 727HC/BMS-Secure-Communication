@@ -4,6 +4,7 @@ date: 2026-04-13
 updated: 2026-04-13
 tags: [chaincode, security, couchdb, pattern]
 doc_type: reference
+status: current
 ---
 # CouchDB JSON Injection 방지 패턴
 

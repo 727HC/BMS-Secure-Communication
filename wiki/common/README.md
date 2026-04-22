@@ -14,6 +14,7 @@ status: current
 - [[common/architecture|시스템 아키텍처]]
 - [[common/terminology|용어 사전]]
 - [[common/wiki-writing-guide|위키 작성 가이드]]
+- [[common/document-role-guide|문서 역할 / status 가이드]]
 - [[common/agent-wiki-writing-guide|Agent wiki writing guide]]
 - [[common/agent-entrypoints|Agent별 위키 시작점]]
 - [[common/task-packet-template|Task Packet 템플릿]]

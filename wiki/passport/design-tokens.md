@@ -3,6 +3,7 @@ title: "디자인 토큰"
 date: 2026-04-06
 tags: [design, tokens, ui]
 doc_type: reference
+status: current
 ---
 # 디자인 토큰
 

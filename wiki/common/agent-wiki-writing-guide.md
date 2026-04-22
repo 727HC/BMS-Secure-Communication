@@ -3,6 +3,7 @@ title: "Agent wiki writing guide"
 date: 2026-04-18
 tags: [common, wiki, agents, guide]
 doc_type: guide
+status: current
 ---
 # Agent wiki writing guide
 
@@ -42,6 +43,12 @@ doc_type: guide
 - 오늘 무슨 작업 했는지 → `activity-log`
 
 ## 4. frontmatter 규칙
+
+역할 구분이 필요하면 `status`를 사용한다.
+- 일반 note: `current`, `historical`, `archive`
+- ADR: `accepted`, `superseded`, `proposed` 등 결정 상태
+- 자세한 기준: [[common/document-role-guide|문서 역할 / status 가이드]]
+
 필수 키:
 - `title`
 - `date`

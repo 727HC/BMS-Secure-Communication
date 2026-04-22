@@ -4,6 +4,7 @@ date: 2026-04-13
 updated: 2026-04-13
 tags: [chaincode, refactor, structure]
 doc_type: reference
+status: current
 ---
 # 체인코드 파일 분리 구조
 

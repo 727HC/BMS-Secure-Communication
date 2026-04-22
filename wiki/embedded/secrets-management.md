@@ -3,6 +3,7 @@ title: "펌웨어 키/시크릿 관리"
 date: 2026-04-07
 tags: [embedded, security, secrets]
 doc_type: reference
+status: current
 ---
 # 펌웨어 키/시크릿 관리
 

@@ -4,6 +4,7 @@ date: 2026-04-18
 updated: 2026-04-18
 tags: [review, wiki, taxonomy, mirror]
 doc_type: review
+status: historical
 ---
 # 위키 통합 점검 기록
 

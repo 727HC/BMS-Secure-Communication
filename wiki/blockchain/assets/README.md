@@ -3,6 +3,7 @@ title: "blockchain assets 허브"
 date: 2026-04-20
 tags: [blockchain, assets, index]
 doc_type: index
+status: current
 ---
 # blockchain/assets/
 
