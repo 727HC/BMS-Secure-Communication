@@ -3,6 +3,7 @@ title: "passport 날짜별 활동 로그 허브"
 date: 2026-04-20
 tags: [passport, log, index]
 doc_type: index
+status: historical
 ---
 # passport/activity-log/
 

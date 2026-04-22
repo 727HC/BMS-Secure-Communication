@@ -3,6 +3,7 @@ title: "Agent별 위키 시작점"
 date: 2026-04-14
 tags: [common, workflow, agents, wiki]
 doc_type: guide
+status: current
 ---
 # Agent별 위키 시작점
 

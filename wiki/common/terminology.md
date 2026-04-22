@@ -3,6 +3,7 @@ title: "용어 사전"
 date: 2026-04-06
 tags: [terminology, reference]
 doc_type: reference
+status: current
 ---
 # 용어 사전
 

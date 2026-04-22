@@ -28,6 +28,7 @@ status: current
 ## 3. 작업할 때 같이 보는 허브
 - [[common/agent-entrypoints|Agent별 시작점]]
 - [[common/wiki-writing-guide|위키 작성 가이드]]
+- [[common/document-role-guide|문서 역할 / status 가이드]]
 - [[common/agent-wiki-writing-guide|Agent wiki writing guide]]
 - [[handoffs/README|handoff 기록 허브]]
 - [[reviews/README|review 기록 허브]]

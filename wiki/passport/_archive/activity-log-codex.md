@@ -3,6 +3,7 @@ title: "배터리 여권 세션 활동 로그 (Codex)"
 date: 2026-04-18
 tags: [passport, log, codex]
 doc_type: index
+status: archive
 ---
 # 배터리 여권 세션 — Codex 활동 로그
 

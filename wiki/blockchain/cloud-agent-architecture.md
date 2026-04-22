@@ -4,6 +4,7 @@ date: 2026-04-13
 updated: 2026-04-13
 tags: [cloud-agent, mongodb, offchain, tps, architecture]
 doc_type: reference
+status: current
 ---
 # Cloud Agent 아키텍처
 

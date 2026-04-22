@@ -3,6 +3,7 @@ title: "UI 레퍼런스"
 date: 2026-04-06
 tags: [design, reference, ui]
 doc_type: reference
+status: current
 ---
 # UI 레퍼런스
 

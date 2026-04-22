@@ -3,6 +3,7 @@ title: "배터리 여권 세션 활동 로그"
 date: 2026-04-20
 tags: [passport, log]
 doc_type: index
+status: historical
 ---
 # 배터리 여권 세션 — 활동 로그
 
@@ -15,6 +16,7 @@ doc_type: index
 - [[passport/activity-log/README|날짜별 활동 로그 허브]]
 
 ## 날짜별 기록
+- [[passport/activity-log/2026-04-22|2026-04-22]]
 - [[passport/activity-log/2026-04-21|2026-04-21]]
 - [[passport/activity-log/2026-04-20|2026-04-20]]
 - [[passport/activity-log/2026-04-18|2026-04-18]]

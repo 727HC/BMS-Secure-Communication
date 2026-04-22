@@ -3,6 +3,7 @@ title: "passport Codex 날짜별 로그 허브"
 date: 2026-04-20
 tags: [passport, log, codex, archive, index]
 doc_type: index
+status: archive
 ---
 # passport/_archive/activity-log-codex-files/
 

@@ -3,6 +3,7 @@ title: "passport assets 허브"
 date: 2026-04-20
 tags: [passport, assets, index]
 doc_type: index
+status: current
 ---
 # passport/assets/
 

@@ -3,6 +3,7 @@ title: "위키 작성 가이드"
 date: 2026-04-14
 tags: [common, workflow, wiki]
 doc_type: guide
+status: current
 ---
 # 위키 작성 가이드
 
@@ -83,6 +84,10 @@ doc_type: guide
   - `rsync -aunv --delete --exclude='.obsidian' --exclude='.trash' wiki/ /path/to/BMS-Knowledge/`
 - `.obsidian/`, `.trash/`는 사용자별 상태 폴더라 parity 비교에서 제외한다.
 - dry-run 출력이 비어 있으면 관리 대상 문서는 source와 mirror가 같은 상태다.
+
+## status 역할 가이드
+- current / historical / archive 구분은 [[common/document-role-guide|문서 역할 / status 가이드]]를 따른다.
+- ADR은 accepted / superseded / proposed 같은 결정 상태를 우선 사용한다.
 
 ## agent 적용 규칙
 - agent용 자동 적용 surface: `wiki/AGENTS.md`
