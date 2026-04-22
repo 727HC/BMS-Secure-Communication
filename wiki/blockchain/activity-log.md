@@ -385,3 +385,32 @@ filter-repo가 `adminpw`, `change-me-in-production` 등을 `REMOVED_SECRET_ROTAT
 - **fabric-ca `-b` flag 는 registry.identities 와 배타적이지 않다** — 문서와 달리 v1.5.17 은 `identities` 가 존재하면 (빈 리스트 포함) `-b` 를 bootstrap 으로 쓰지 않는다. rotation 을 원하면 실제 동작을 실험으로 확인 후 설계해야
 - **잠재 버그는 "중간 커밋" 으로 격리** — Commit 1 (파일 복원) 은 명백한 fix 라 바로 세이프 포인트. Commit 2 시도가 실패하면 되돌리기만 하면 1 은 유지. 두 단계 분리 덕분에 rotation 실험 실패해도 핵심 복구는 보존됨
 
+### 후속 — 같은 세션 내 벤치마크 재현
+
+- 기동 검증 후 Caliper 실행 → Round 0 에서 `EndorseError: 10 ABORTED` + `x509: ECDSA verification failure` 대량 발생
+  - **근본 원인 3 (명명): Docker named volume 생존** — `compose_orderer.battery.com` / `compose_peer0.*.battery.com` 등 오더러·피어의 ledger 데이터 볼륨이 `docker compose down --volumes` 의 anonymous volume 제거 범위를 벗어나 생존
+  - 결과적으로 매 재기동마다 새 CA crypto 는 생성되지만 **오더러는 옛 제네시스 블록(옛 MSP 임베드)** 을 유지 → 피어가 채널 join 시도 → 채널 이미 존재, MSP 불일치, x509 검증 실패
+  - 해결: `docker volume rm compose_orderer.battery.com compose_peer0.{manufacturer,evmanufacturer,service,regulator}.battery.com` 로 5 개 명시 삭제 후 `start_all.sh` 재실행
+- bmu-agent / cloud-agent `.env` 의 `FABRIC_ADMIN_SECRET` 도 2026-04-18 rotation hex 잔재 — `adminpw` 로 되돌림
+- bmu-agent / cloud-agent 의 `wallet/` 디렉토리도 옛 CA 로 enroll 된 identity 가 잔존 → 전체 삭제 후 재enroll
+- cloud-agent block listener 는 MongoDB `_sync_meta` 컬렉션의 `lastBlock` 체크포인트에서 재개. ledger 가 초기화된 후 옛 block number(1960) 를 찾아 `TypeError: null.toNumber()` crash — `_sync_meta` 컬렉션 비우고 재기동해야 block 0 부터 정상 재동기화
+
+### KPI 측정 결과 (2026-04-22)
+
+| KPI | 목표 | 측정값 | 경로 |
+|-----|------|--------|------|
+| 쓰기 TPS | 150 | **194.9** | Caliper `benchconfig.yaml` (15 worker × fixed-rate 200, NUM_PASSPORTS=500, 1-of-4 endorsement) |
+| 읽기 TPS | 1,500 | **1,810.2** | `scripts/tps-benchmark-cloud.js` → cloud-agent `:3002` → MongoDB (concurrency 200, total 5000) |
+
+측정 조건 상세 및 재현 절차는 [[blockchain/benchmark-methodology|벤치마크 측정 방법론]] 참조.
+
+### 추가 커밋
+- `65d2634` — docs(blockchain): activity-log 2026-04-22 — 재부트스트랩 경로 복구 세션 기록 (중간 snapshot)
+- `cdc473c` — perf(blockchain): deployCC 에 -ccep 1-of-4 OR endorsement 복원 — 쓰기 KPI 재달성
+
+### 추가 교훈
+- **Docker named volume 은 `docker compose down -v` 를 이겨낸다** — 오더러·피어의 ledger 데이터 볼륨은 이름이 지정돼 있으면 anonymous volume 제거 대상이 아니다. network.sh down 이 이를 명시적으로 제거하지 않으면 crypto 는 새로 만들어도 채널 상태는 유지된다. `down` 보강 필요 (향후 네트워크 완전 리셋 시 `docker volume rm compose_orderer.* compose_peer0.*` 명시 필수)
+- **rotation 후 .env / wallet 을 공유하는 모든 컴포넌트 업데이트 필요** — passport-network/.env, bmu-agent/.env, cloud-agent/.env 세 개 모두 `FABRIC_ADMIN_SECRET` 가지고 있음. 한쪽만 고치면 다른 쪽이 auth failure 로 중단
+- **cloud-agent block listener 의 checkpoint 재개 안정성 취약** — ledger 가 wipe 되면 `_sync_meta.lastBlock` 도 함께 비워야 한다. 방어 코드로 NOT_FOUND 응답 받으면 0부터 재시작 fallback 필요
+- **KPI 측정은 Caliper 의 Throughput 컬럼이 공식 수치** — (성공+실패)/elapsed 가 Caliper Throughput 정의. "실효 성공 TPS" 는 별도 파생 지표. 이전 세션의 173.1 TPS 도 동일 정의
+
