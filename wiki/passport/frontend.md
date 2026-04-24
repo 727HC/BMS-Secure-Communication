@@ -9,7 +9,7 @@ status: current
 
 > 현재 기준 문서
 >
-> 배터리 여권의 현재 주 사용자 인터페이스는 `webapp/frontend-react/` 기준으로 유지한다.
+> VELKERN의 현재 주 사용자 인터페이스는 `webapp/frontend-react/` 기준으로 유지한다.
 > 예전 레거시 SPA는 호환용 경로로 남아 있지만, 이 문서는 현재 기준만 설명한다.
 
 ## 현재 기술 스택
@@ -98,3 +98,10 @@ webapp/frontend-react/
 - [[passport/design-tokens|디자인 토큰]]
 - [[passport/ui-references|UI 레퍼런스]]
 - [[passport/assets/README|UI asset 허브]]
+
+## Brand asset policy — VELKERN
+
+- VELKERN 로고는 코드/SVG로 재해석하지 않는다.
+- React 앱의 `BrandMark`는 `public/velkern-logo.png` 원본 파일을 `<img>`로 직접 참조한다.
+- 원본 파일은 `webapp/frontend-react/public/velkern-logo.png`에 보관한다. 현재 기준 SHA-256은 `fefbdeb3b2ddcb56cc8531bb8be8e703b309c88c1b584fe38ca89759e2210ed3`이다.
+- 원본 파일이 누락된 경우에만 텍스트 fallback을 허용하고, 임의 재구성 로고를 만들지 않는다.

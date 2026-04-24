@@ -9,7 +9,7 @@ status: current
 
 > 현재 기준 문서
 >
-> Passport 세션의 현재 기준 UI는 React 기반 작업 공간이며, 과거 UI 흐름은 historical record로만 참고한다.
+> Passport 세션의 현재 기준 UI는 VELKERN React 작업 공간이며, 과거 UI 흐름은 historical record로만 참고한다.
 
 ## 담당 범위
 - `bmu-agent/` — Node.js API 서버
@@ -19,7 +19,7 @@ status: current
 > 체인코드(`chaincode/`)는 블록체인 세션 범위다.
 
 ## 현재 상태
-- 배터리 여권 UI의 현재 기준은 React 기반 화면군이다.
+- 배터리 여권 UI의 현재 제품명은 VELKERN이며, 기준 구현은 React 기반 화면군이다.
 - 랜딩/로그인/대시보드/등록부/상세/원자재/BMU/정비/재활용/QR/감사 로그가 현재 흐름으로 정리돼 있다.
 - 과거 UI 개편 과정은 activity-log와 archive에서 추적한다.
 
