@@ -118,9 +118,12 @@ export default function DashboardPage() {
         <article className="vk-card vk-dataflow">
           <div className="vk-card__head">
             <div>
-              <h2 className="vk-card__title">Data Flow</h2>
+              <div className="vk-card__titleline">
+                <h2 className="vk-card__title">Data Flow</h2>
+              </div>
               <p className="vk-card__sub">기준 처리 단계</p>
             </div>
+            <button type="button" className="vk-linkbtn">상세 보기</button>
           </div>
           <div className="vk-dataflow__chart">
             <Sparkline values={[120, 135, 128, 150, 162, 148, 170, 182, 175, 190, 205, 198, 212, 220]} height={110} color="#1769e0" fillOpacity={0.18} />
@@ -131,7 +134,7 @@ export default function DashboardPage() {
                 <div className="vk-dataflow__badge"><NodeGlyph name={n.key} /></div>
                 <p className="vk-dataflow__label">{n.label}</p>
                 <p className="vk-dataflow__val">{n.action}</p>
-                <p className="vk-dataflow__sub">{n.status}</p>
+                <span className={`vk-dataflow__status vk-dataflow__status--${n.status.toLowerCase()}`}>{n.status}</span>
               </div>
             ))}
           </div>
@@ -142,10 +145,13 @@ export default function DashboardPage() {
         <article className="vk-card">
           <div className="vk-card__head">
             <div>
-              <h2 className="vk-card__title">Alerts</h2>
-              <p className="vk-card__sub">Reference alert queue</p>
+              <div className="vk-card__titleline">
+                <h2 className="vk-card__title">Alerts</h2>
+                <span className="vk-card__count">7</span>
+              </div>
+              <p className="vk-card__sub">우선 확인 알림</p>
             </div>
-            <button type="button" className="vk-linkbtn" onClick={() => navigate('/audit-log')}>전체 로그 →</button>
+            <button type="button" className="vk-linkbtn">전체 알림 보기</button>
           </div>
           <ul className="vk-alerts">
             {ALERT_ROWS.map((a) => {
@@ -188,10 +194,13 @@ export default function DashboardPage() {
         <article className="vk-card">
           <div className="vk-card__head">
             <div>
-              <h2 className="vk-card__title">Tasks / Queue</h2>
-              <p className="vk-card__sub">실행 대기 작업</p>
+              <div className="vk-card__titleline">
+                <h2 className="vk-card__title">Tasks / Queue</h2>
+                <span className="vk-card__count">7</span>
+              </div>
+              <p className="vk-card__sub">우선 처리 대기열</p>
             </div>
-            <button type="button" className="vk-linkbtn" onClick={() => navigate('/maintenance')}>전체 작업 →</button>
+            <button type="button" className="vk-linkbtn">전체 보기</button>
           </div>
           <div className="vk-grid vk-grid--2 vk-grid--tight">
             {TASK_ROWS.map((t) => (
