@@ -119,7 +119,7 @@
 .vk-linkbtn:hover { text-decoration: underline; }
 
 /* KPI cards */
-.vk-kpi { display: flex; flex-direction: column; gap: 10px; min-height: 132px; }
+.vk-kpi { display: flex; flex-direction: column; gap: 9px; min-height: 122px; padding: 16px 18px; }
 .vk-kpi__row { display: flex; justify-content: space-between; align-items: center; }
 .vk-kpi__label { font-size: 0.78rem; color: var(--color-text-2); font-weight: 600; }
 .vk-kpi__delta { font-size: 0.72rem; color: var(--color-text-3); font-weight: 600; }
@@ -131,7 +131,7 @@
   color: var(--color-text-1);
   line-height: 1;
 }
-.vk-kpi__spark { margin-top: auto; height: 42px; }
+.vk-kpi__spark { margin-top: auto; height: 38px; }
 
 /* Fleet Digital Twin */
 .vk-fleet__body {
@@ -143,22 +143,13 @@
 .vk-fleet__pack {
   width: 100%;
   height: auto;
-  max-height: 260px;
-  object-fit: contain;
   user-select: none;
 }
 .vk-fleet__pack--empty {
-  min-height: 220px;
-  max-height: 260px;
-  border: 1.5px dashed var(--color-border);
+  min-height: 236px;
+  border: 0;
   border-radius: 12px;
-  background: var(--color-surface-alt);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--color-text-3);
-  font-size: 0.82rem;
-  letter-spacing: 0.04em;
+  background: transparent;
 }
 .vk-fleet__gauges {
   display: grid;
@@ -166,7 +157,7 @@
   gap: 10px;
 }
 .vk-gauge {
-  padding: 12px 14px;
+  padding: 14px;
   border-radius: 12px;
   background: var(--color-surface-alt);
   border: 1px solid var(--color-border);
@@ -178,6 +169,34 @@
 .vk-gauge--blue .vk-gauge__value { color: #1769e0; }
 .vk-gauge--amber .vk-gauge__value { color: #f59e0b; }
 .vk-gauge--purple .vk-gauge__value { color: #8b5cf6; }
+.vk-fleet__legend {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid var(--color-border);
+}
+.vk-fleet__legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--color-text-2);
+}
+.vk-fleet__legend-item::before {
+  content: '';
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--color-border);
+}
+.vk-fleet__legend-item--normal::before { background: var(--color-success); }
+.vk-fleet__legend-item--warning::before { background: var(--color-warning); }
+.vk-fleet__legend-item--critical::before { background: var(--color-danger); }
+.vk-fleet__legend-item--none::before { background: var(--color-text-3); }
 
 /* Data Flow */
 .vk-dataflow__chart { margin: 8px 0 14px; }
