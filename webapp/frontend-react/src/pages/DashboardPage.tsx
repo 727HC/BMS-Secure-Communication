@@ -22,7 +22,12 @@ const FLEET_GAUGES = [
   { label: 'Health Score', value: '87 /100', tone: 'purple' },
 ] as const;
 
-const FLEET_LEGEND = ['Normal', 'Warning', 'Critical', 'No Data'] as const;
+const FLEET_LEGEND = [
+  { label: 'Normal', tone: 'normal' },
+  { label: 'Warning', tone: 'warning' },
+  { label: 'Critical', tone: 'critical' },
+  { label: 'No Data', tone: 'none' },
+] as const;
 
 const DATAFLOW_NODES = [
   { key: 'cmu', label: 'CMU', action: '수집', status: 'Active' },
@@ -91,7 +96,7 @@ export default function DashboardPage() {
               <h2 className="vk-card__title">Fleet Digital Twin</h2>
               <p className="vk-card__sub">Viewing: Fleet (All Batteries)</p>
             </div>
-            <button type="button" className="vk-linkbtn" onClick={() => navigate('/bmu-data')}>Select Battery</button>
+            <button type="button" className="vk-linkbtn">Select Battery</button>
           </div>
           <div className="vk-fleet__body">
             <div className="vk-fleet__pack vk-fleet__pack--empty" aria-hidden="true" />
@@ -102,7 +107,11 @@ export default function DashboardPage() {
             </div>
           </div>
           <div className="vk-fleet__legend" aria-label="Fleet status legend">
-            {FLEET_LEGEND.map((item) => <span key={item}>{item}</span>)}
+            {FLEET_LEGEND.map((item) => (
+              <span key={item.label} className={`vk-fleet__legend-item vk-fleet__legend-item--${item.tone}`}>
+                {item.label}
+              </span>
+            ))}
           </div>
         </article>
 
