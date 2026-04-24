@@ -1,6 +1,6 @@
-# BATP Web Frontend (React)
+# VELKERN Web Frontend (React)
 
-배터리 여권 플랫폼(BATP)의 오퍼레이터 웹앱. 제조사 · EV 제조사 · 정비/분석 · 검증기관이 조직별 권한에 따라 배터리 여권 전주기(제조→바인딩→정비→분석→재활용→폐기)를 관리한다.
+VELKERN의 오퍼레이터 웹앱. 제조사 · EV 제조사 · 정비/분석 · 검증기관이 조직별 권한에 따라 배터리 여권 전주기(제조→바인딩→정비→분석→재활용→폐기)를 관리한다.
 
 ## 스택
 
@@ -10,6 +10,7 @@
 - **html5-qrcode** — QR 스캐너 (on-demand lazy import)
 - **Pretendard Variable** + **JetBrains Mono** — 한글·라틴·숫자 타이포
 - **경량 SVG 차트** — 외부 차트 라이브러리 없음 (Donut/Sparkline/BarRows/ArcGauge/BatteryOutline 직접 구현)
+- **브랜드 로고 asset** — `src/components/ui/BrandMark.tsx`는 로고를 재해석하지 않고 `public/velkern-logo.png` 원본 파일을 `<img>`로 그대로 사용한다.
 
 ## 주요 화면
 
