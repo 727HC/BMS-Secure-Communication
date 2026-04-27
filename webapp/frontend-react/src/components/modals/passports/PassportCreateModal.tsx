@@ -1,4 +1,5 @@
-import { useEffect, useState, type FormEvent } from 'react';
+import * as React from 'react';
+import { useEffect, useState } from 'react';
 import BaseModal from '../BaseModal';
 
 export interface PassportCreateFormData {
@@ -75,7 +76,7 @@ export default function PassportCreateModal({ open, submitting, onClose, onSubmi
 
   const isValid = Boolean(form.passportId && form.batteryId && form.serialNumber && form.did);
 
-  const handleSubmit = (e: FormEvent) => {
+  const handleSubmit = (e: React.SyntheticEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!isValid) return;
     const trimmed: PassportCreateFormData = Object.fromEntries(

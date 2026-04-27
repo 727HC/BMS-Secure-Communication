@@ -1,4 +1,5 @@
-import { useState, useEffect, type FormEvent } from 'react';
+import * as React from 'react';
+import { useState, useEffect } from 'react';
 import BaseModal from '../BaseModal';
 
 export interface MaterialFormData {
@@ -39,7 +40,7 @@ export default function MaterialCreateModal({ open, submitting, onClose, onSubmi
 
   const isValid = Boolean(form.name && form.origin && form.supplier && form.quantity);
 
-  const handleSubmit = (e: FormEvent) => {
+  const handleSubmit = (e: React.SyntheticEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!isValid) return;
     onSubmit(form);

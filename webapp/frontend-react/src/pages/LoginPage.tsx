@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState, type FormEvent } from 'react';
+import * as React from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { api } from '../lib/api';
 import { toastFromError } from '../lib/chaincodeErrorMessages';
@@ -61,7 +62,7 @@ export default function LoginPage() {
 
   const goLanding = () => navigate('/');
 
-  const handleSubmit = async (e: FormEvent) => {
+  const handleSubmit = async (e: React.SyntheticEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!userId || !password) {
       setErrorMsg('아이디와 비밀번호를 입력해주세요.');
