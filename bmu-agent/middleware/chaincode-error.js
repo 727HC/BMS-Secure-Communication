@@ -17,6 +17,11 @@ const FABRIC_WRAP_PREFIXES = [
   'error in simulation: ',
 ];
 
+// Fabric Gateway SDK wrap (multi-peer endorsement collation):
+//   "No valid responses from any peers. Errors:\n    peer=..., status=..., message=<inner>"
+// 마지막 `message=` 뒤가 chaincode 원문. (last-message 우선; 다 peer 동일하면 첫 메시지와 같음)
+const FABRIC_GATEWAY_WRAP_RE = /No valid responses from any peers\. Errors:[\s\S]*?message=([\s\S]*?)$/;
+
 function unwrapFabricError(msg) {
   if (typeof msg !== 'string') return String(msg ?? '');
   let unwrapped = msg;
@@ -29,6 +34,11 @@ function unwrapFabricError(msg) {
         unwrapped = unwrapped.slice(prefix.length);
         changed = true;
       }
+    }
+    const gatewayMatch = unwrapped.match(FABRIC_GATEWAY_WRAP_RE);
+    if (gatewayMatch) {
+      unwrapped = gatewayMatch[1].trim();
+      changed = true;
     }
   }
   return unwrapped;
