@@ -8,6 +8,10 @@ const { DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE, DID_CACHE_TTL_MS, MSP } = require('../
 const { authenticateToken } = require('../middleware/auth');
 const { requireMSP } = require('../middleware/rbac');
 const { createLogger } = require('../services/logger.service');
+const {
+  SEED_FLAG,
+  isDashboardPassportSeedEnabled,
+} = require('../services/devPassportSeed.service');
 const log = createLogger('bmu');
 
 // P0-3: unsigned BMU 완전 거부 (임베디드 확인: BMU는 100% 서명 포함)
@@ -171,6 +175,11 @@ router.get('/records/:passportId', authenticateToken, async (req, res) => {
   try {
     const pageSize = Math.min(parseInt(req.query.pageSize || String(DEFAULT_PAGE_SIZE), 10), MAX_PAGE_SIZE);
     const bookmark = req.query.bookmark || '';
+    if (isDashboardPassportSeedEnabled() && /^DEV-DASH-P-/.test(req.params.passportId)) {
+      res.set('X-BMS-Dev-Seed', SEED_FLAG);
+      return res.json({ records: [], bookmark: '', count: 0 });
+    }
+
     const result = await fabricService.evaluateTransaction(
       'QueryBMURecordsByPassport', [req.params.passportId, String(pageSize), bookmark], req.user
     );

@@ -6,6 +6,12 @@ const { authenticateToken } = require('../middleware/auth');
 const { requireMSP } = require('../middleware/rbac');
 const fabricService = require('../services/fabric.service');
 const { MSP, DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE } = require('../config/constants');
+const {
+  SEED_FLAG,
+  isDashboardPassportSeedEnabled,
+  buildDashboardPassportSeed,
+  paginateDashboardSeed,
+} = require('../services/devPassportSeed.service');
 
 // Vehicle image upload config — static tree 밖에 저장하여 직접 접근 차단
 const fs = require('fs');
@@ -83,6 +89,13 @@ router.get('/', authenticateToken, async (req, res) => {
       MAX_PAGE_SIZE
     );
     const bookmark = req.query.bookmark || '';
+    if (isDashboardPassportSeedEnabled()) {
+      const records = buildDashboardPassportSeed();
+      const paginatedResult = paginateDashboardSeed(records, pageSize, bookmark);
+      res.set('X-BMS-Dev-Seed', SEED_FLAG);
+      return res.json(paginatedResult);
+    }
+
     const result = await fabricService.evaluateTransaction(
       'QueryPassportsWithPagination', [String(pageSize), bookmark], req.user
     );
