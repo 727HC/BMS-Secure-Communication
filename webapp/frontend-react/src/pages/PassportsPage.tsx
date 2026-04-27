@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../lib/api';
+import { toastFromError } from '../lib/chaincodeErrorMessages';
 import { getStatusBadge, scaleSOC } from '../lib/helpers';
 import { useAuth } from '../contexts/AuthContext';
 import PassportCreateModal, { type PassportCreateFormData } from '../components/modals/passports/PassportCreateModal';
@@ -102,6 +103,7 @@ export default function PassportsPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [creating, setCreating] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   const isManufacturer = org === 'ManufacturerMSP';
   const isRegulator = org === 'RegulatorMSP';
@@ -241,6 +243,7 @@ export default function PassportsPage() {
 
   const submitCreate = async (data: PassportCreateFormData) => {
     setCreating(true);
+    setSubmitError(null);
     try {
       const created = await api.post<{ passportId?: string }>('/passports', data);
       const nextPassportId = created.passportId || data.passportId;
@@ -255,6 +258,10 @@ export default function PassportsPage() {
         .catch(() => {
           // 목록 새로고침 실패는 생성 성공/상세 이동을 막지 않는다.
         });
+    } catch (err) {
+      const { toast, debug, category } = toastFromError(err);
+      console.warn('[passports] mutation failed', { category, debug });
+      setSubmitError(toast);
     } finally {
       setCreating(false);
     }
@@ -318,6 +325,12 @@ export default function PassportsPage() {
           </>
         )}
       />
+
+      {submitError && (
+        <div role="alert" style={{ padding: '0.9rem 1rem', borderRadius: '0.85rem', background: 'var(--color-danger-soft)', color: 'var(--color-danger)', border: '1px solid var(--color-border)' }}>
+          <span style={{ fontSize: '0.9rem', lineHeight: 1.6 }}>{submitError}</span>
+        </div>
+      )}
 
       <section className="sn-section-card">
         <div className="sn-section-head">
