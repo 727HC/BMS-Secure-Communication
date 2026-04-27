@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
 import { MSP_LABELS } from '../../lib/api';
+import ShellBrandLink from './ShellBrandLink';
 
 interface NavItem {
   to: string;
@@ -32,7 +33,7 @@ const NAV_ITEMS: NavItem[] = [
     icon: <svg className="ev-sidebar-glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9"><path d="M3 12h3l3-7 4 14 3-7h5"/></svg>,
   },
   {
-    to: '/recycling', label: 'Recycling & EOL',
+    to: '/recycling', label: 'Recycling & ESG',
     icon: <svg className="ev-sidebar-glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9"><path d="M7 20l-3-3 3-3"/><path d="M4 17h9a5 5 0 005-5"/><path d="M17 4l3 3-3 3"/><path d="M20 7h-9a5 5 0 00-5 5"/></svg>,
   },
   {
@@ -51,7 +52,7 @@ const PAGE_TITLES: Record<string, string> = {
   '/passports': 'Battery Passport',
   '/materials': 'Supply Chain',
   '/bmu-data': 'BMS Live Data',
-  '/recycling': 'Recycling & EOL',
+  '/recycling': 'Recycling & ESG',
   '/qr-scan': 'QR Scan',
   '/audit-log': 'Audit / Ledger',
   '/settings': 'Settings',
@@ -82,17 +83,7 @@ export default function Layout({ children }: { children: ReactNode }) {
   return (
     <div style={{ display: 'flex', minHeight: '100vh', background: 'var(--color-bg)' }}>
       <aside className="ev-sidebar">
-        <div
-          style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '6px 4px 22px', cursor: 'pointer' }}
-          onClick={() => navigate('/dashboard')}
-        >
-          <img
-            src="/velkern-mini-logo.png"
-            alt="VELKERN"
-            draggable={false}
-            style={{ width: '100%', maxWidth: '180px', height: 'auto', objectFit: 'contain', display: 'block' }}
-          />
-        </div>
+        <ShellBrandLink />
 
         <div className="ev-sidebar-nav" style={{ flex: 1 }}>
           <div className="ev-sidebar-section-label">주요 화면</div>
