@@ -136,7 +136,7 @@ UI 매핑 권고: 모두 한국어 "접근 권한이 없습니다" 계열로 통
 | `invalid evidenceIds JSON: {wrappedErr}` | UpdateRegulatoryVerification |
 | `invalid recycledElementContent JSON: {wrappedErr}` | CorrectPassportData |
 | `invalid extensionInfo JSON: {wrappedErr}` | CorrectPassportData |
-| `failed to unmarshal recycling rates: {wrappedErr}` | ExtractMaterials (예외: prefix 가 `failed to unmarshal` 인데 의미는 VAL. agent 매핑 함수에서 특이 처리 필요) |
+| `invalid recycling rates JSON: {wrappedErr}` | ExtractMaterials |
 | `DID mismatch: passport {passportId} is registered to DID {expectedDid}, not {gotDid}` | RecordBMUData |
 | `evidence {credId} is not a valid credential` | UpdateRegulatoryVerification |
 | `no new materials to link (all already linked or empty)` | LinkRawMaterials |
@@ -195,7 +195,7 @@ UI 매핑 권고: 모두 한국어 "접근 권한이 없습니다" 계열로 통
 
 UI 권고: 사용자에겐 "일시적 오류" 표시 + 디버그 콘솔로 raw 메시지 노출.
 
-**예외**: `failed to unmarshal recycling rates: ...` 는 의미상 VAL (사용자 입력 JSON 파싱 실패). agent 매핑 함수에서 이 한 케이스만 명시적으로 VAL 로 분류 권고.
+**모든 사용자 입력 JSON 파싱 실패는 `invalid XXX JSON:` 패턴으로 통일**되어 VAL 로 분류된다 (signals/evidenceIds/recycledElementContent/extensionInfo/recyclingRates 모두 §3.2.3 참조). `failed to ...` prefix 는 INTERNAL 만 발생.
 
 ---
 
