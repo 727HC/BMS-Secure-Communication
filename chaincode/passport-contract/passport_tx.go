@@ -709,6 +709,21 @@ func (c *PassportContract) CorrectPassportData(ctx contractapi.TransactionContex
 		return fmt.Errorf("failed to get client MSP: %v", err)
 	}
 
+	// Ownership 검증 — fieldCorrectors 가 MSP 종류만 본 후, 호출자가 실제로
+	// 해당 여권의 발급자/바인더인지 확인. Regulator 는 보편 corrector 라 통과.
+	// requireMSP 가 이미 fieldCorrectors[fieldName] 으로 MSP 종류를 좁혔으므로
+	// 여기서 만나는 msp 는 Manufacturer / EVManufacturer / Regulator 셋 뿐.
+	switch msp {
+	case mspManufacturer:
+		if passport.CreatorMSP != msp {
+			return fmt.Errorf("access denied: passport %s was created by %s, caller %s cannot correct it", passportId, passport.CreatorMSP, msp)
+		}
+	case mspEVManufacturer:
+		if passport.EvBinderMSP != msp {
+			return fmt.Errorf("access denied: passport %s was bound by %s, caller %s cannot correct EV fields", passportId, passport.EvBinderMSP, msp)
+		}
+	}
+
 	// 정정 가능한 필드 목록 및 원래 값 추출
 	var originalValue string
 	switch fieldName {
