@@ -71,6 +71,25 @@ export default function BmuDataPage() {
     [records]
   );
 
+  const RECORDS_PAGE_SIZE = 25;
+  const [currentPage, setCurrentPage] = useState(1);
+  const totalPages = Math.max(1, Math.ceil(sortedRecords.length / RECORDS_PAGE_SIZE));
+  const pagedRecords = useMemo(() => {
+    const start = (currentPage - 1) * RECORDS_PAGE_SIZE;
+    return sortedRecords.slice(start, start + RECORDS_PAGE_SIZE);
+  }, [sortedRecords, currentPage]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [passportId]);
+
+  useEffect(() => {
+    if (currentPage > totalPages) setCurrentPage(totalPages);
+  }, [totalPages, currentPage]);
+
+  const showingFrom = sortedRecords.length ? (currentPage - 1) * RECORDS_PAGE_SIZE + 1 : 0;
+  const showingTo = Math.min(currentPage * RECORDS_PAGE_SIZE, sortedRecords.length);
+
   // 스파크라인용 최근 15개 데이터 (오래된→최신 순)
   const recentSlice = useMemo(() => {
     const slice = sortedRecords.slice(0, 15).reverse();
@@ -451,7 +470,7 @@ export default function BmuDataPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {sortedRecords.map((r, idx) => {
+                  {pagedRecords.map((r, idx) => {
                     const socVal = scaleSOC(r.soc);
                     const socColor = socVal > 50 ? 'var(--color-text-1)' : socVal > 20 ? 'var(--color-warning)' : 'var(--color-danger)';
                     const badges = decodeStatusFlags(r.statusFlags);
@@ -525,7 +544,30 @@ export default function BmuDataPage() {
             </div>
 
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 20px', borderTop: '1px solid var(--color-border)' }}>
-              <span style={{ fontSize: '0.875rem', color: 'var(--color-text-3)' }}>총 {records.length}개 레코드</span>
+              <span style={{ fontSize: '0.875rem', color: 'var(--color-text-3)' }}>
+                총 {records.length}개 레코드 · {showingFrom}-{showingTo} 표시
+              </span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginRight: 12 }}>
+                <button
+                  className="sn-btn sn-btn-ghost"
+                  style={{ padding: '6px 10px', fontSize: 12 }}
+                  disabled={currentPage === 1}
+                  onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                >
+                  이전
+                </button>
+                <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.8125rem', color: 'var(--color-text-3)' }}>
+                  {currentPage} / {totalPages}
+                </span>
+                <button
+                  className="sn-btn sn-btn-ghost"
+                  style={{ padding: '6px 10px', fontSize: 12 }}
+                  disabled={currentPage === totalPages}
+                  onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                >
+                  다음
+                </button>
+              </div>
               {autoRefresh && (
                 <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontFamily: 'var(--font-mono)', fontSize: '0.875rem', color: 'var(--color-text-3)' }}>
                   <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--color-text-1)' }} />
