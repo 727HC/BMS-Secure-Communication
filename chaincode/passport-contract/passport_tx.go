@@ -104,35 +104,56 @@ func (c *PassportContract) CreateBatteryPassport(ctx contractapi.TransactionCont
 	if err != nil {
 		return fmt.Errorf("invalid cellCount value: %v", err)
 	}
+	if cellCountVal < 0 {
+		return fmt.Errorf("cellCount must be non-negative, got %d", cellCountVal)
+	}
 
 	weightVal, err := strconv.ParseFloat(weight, 64)
 	if err != nil {
 		return fmt.Errorf("invalid weight value: %v", err)
+	}
+	if weightVal < 0 {
+		return fmt.Errorf("weight must be non-negative, got %f", weightVal)
 	}
 
 	totalEnergyVal, err := strconv.ParseFloat(totalEnergy, 64)
 	if err != nil {
 		return fmt.Errorf("invalid totalEnergy value: %v", err)
 	}
+	if totalEnergyVal < 0 {
+		return fmt.Errorf("totalEnergy must be non-negative, got %f", totalEnergyVal)
+	}
 
 	energyDensityVal, err := strconv.ParseFloat(energyDensity, 64)
 	if err != nil {
 		return fmt.Errorf("invalid energyDensity value: %v", err)
+	}
+	if energyDensityVal < 0 {
+		return fmt.Errorf("energyDensity must be non-negative, got %f", energyDensityVal)
 	}
 
 	ratedCapacityVal, err := strconv.ParseFloat(ratedCapacity, 64)
 	if err != nil {
 		return fmt.Errorf("invalid ratedCapacity value: %v", err)
 	}
+	if ratedCapacityVal < 0 {
+		return fmt.Errorf("ratedCapacity must be non-negative, got %f", ratedCapacityVal)
+	}
 
 	expectedLifespanVal, err := strconv.Atoi(expectedLifespan)
 	if err != nil {
 		return fmt.Errorf("invalid expectedLifespan value: %v", err)
 	}
+	if expectedLifespanVal < 0 {
+		return fmt.Errorf("expectedLifespan must be non-negative, got %d", expectedLifespanVal)
+	}
 
 	carbonFootprintVal, err := strconv.ParseFloat(carbonFootprint, 64)
 	if err != nil {
 		carbonFootprintVal = 0 // optional — 미입력 시 0
+	}
+	if carbonFootprintVal < 0 {
+		return fmt.Errorf("carbonFootprint must be non-negative, got %f", carbonFootprintVal)
 	}
 
 	msp, err := c.getClientMSP(ctx)
@@ -526,15 +547,24 @@ func (c *PassportContract) SubmitAnalysisResult(ctx contractapi.TransactionConte
 	if err != nil {
 		return fmt.Errorf("invalid soh value: %v", err)
 	}
+	if sohVal < 0 || sohVal > 100 {
+		return fmt.Errorf("soh must be in [0, 100], got %f", sohVal)
+	}
 
 	soceVal, err := strconv.ParseFloat(soce, 64)
 	if err != nil {
 		return fmt.Errorf("invalid soce value: %v", err)
 	}
+	if soceVal < 0 || soceVal > 100 {
+		return fmt.Errorf("soce must be in [0, 100], got %f", soceVal)
+	}
 
 	remainingLifeCycleVal, err := strconv.Atoi(remainingLifeCycle)
 	if err != nil {
 		return fmt.Errorf("invalid remainingLifeCycle value: %v", err)
+	}
+	if remainingLifeCycleVal < 0 {
+		return fmt.Errorf("remainingLifeCycle must be non-negative, got %d", remainingLifeCycleVal)
 	}
 
 	recycleAvailableVal := strings.ToLower(recycleAvailable) == "true"
