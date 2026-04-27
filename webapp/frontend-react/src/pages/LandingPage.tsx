@@ -153,6 +153,7 @@ export default function LandingPage() {
   const goLogin = () => navigate('/login');
   return (
     <main
+      data-page="landing"
       className="min-h-screen overflow-hidden bg-white text-[var(--landing-ink)]"
       style={{
         colorScheme: 'light',
