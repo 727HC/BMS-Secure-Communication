@@ -1,8 +1,9 @@
 const { test, expect } = require('@playwright/test');
+const { E2E_ADMIN_USER, E2E_ADMIN_PASSWORD } = require('../auth-fixture');
 
-const BASE = 'http://localhost:3001';
-const USER = process.env.E2E_USER || 'testmfg';
-const PASS = process.env.E2E_PASS || 'testpass123';
+const BASE = (process.env.PW_BASE_URL || 'http://localhost:3001').replace(/\/+$/, '');
+const USER = process.env.E2E_USER || E2E_ADMIN_USER;
+const PASS = process.env.E2E_PASS || E2E_ADMIN_PASSWORD;
 const ORG_NUM = Number(process.env.E2E_ORG || 1);
 
 async function login(page) {
@@ -17,7 +18,8 @@ async function login(page) {
   await page.getByPlaceholder('비밀번호 입력').fill(PASS);
   // submit 버튼 명시 (탭 "로그인" 버튼과 구분)
   await page.locator('button[type="submit"]').click();
-  await page.waitForURL('**/dashboard', { timeout: 15000 });
+  await expect(page).toHaveURL(/\/dashboard$/, { timeout: 15000 });
+  await expect(page.locator('.vk-dash')).toBeVisible({ timeout: 15000 });
 }
 
 function collectConsoleErrors(page) {
@@ -39,30 +41,23 @@ test.describe('UI polish smoke — feat/passport-ui-polish 병합 후', () => {
   test('로그인 → 대시보드 핵심 요소 렌더', async ({ page }) => {
     const errors = collectConsoleErrors(page);
     await login(page);
-    await page.waitForLoadState('networkidle');
-    await expect(page.locator('.sn-page-title')).toContainText('대시보드');
-    // KPI 3카드 (skeleton → 실 content)
-    await expect(page.locator('button:has-text("VIN 연결 필요")').first()).toBeVisible({ timeout: 10000 });
-    await expect(page.locator('button:has-text("회수 판단 확인")').first()).toBeVisible();
-    // 정비·분석: page-head action + KPI card 둘 다 텍스트 가짐 → 첫 번째만 확인
-    await expect(page.locator('button:has-text("정비·분석 확인")').first()).toBeVisible();
-    // Donut (SVG 존재)
+    await expect(page.getByRole('heading', { name: 'Overview' })).toBeVisible();
+    await expect(page.locator('.vk-kpi')).toHaveCount(4);
+    await expect(page.getByRole('heading', { name: 'Fleet Digital Twin' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Tasks / Queue' })).toBeVisible();
     await expect(page.locator('svg').first()).toBeVisible();
-    // 하단 포트폴리오 BarRows
-    await expect(page.locator('text=포트폴리오 · 화학계열')).toBeVisible();
-    await expect(page.locator('text=포트폴리오 · 제조국')).toBeVisible();
     expect(errors, errors.join('\n')).toEqual([]);
   });
 
   test('여권 목록 → 상세 히어로 ArcGauge 렌더', async ({ page }) => {
     const errors = collectConsoleErrors(page);
     await login(page);
-    await page.getByRole('link', { name: '배터리 여권' }).click();
-    await page.waitForURL('**/passports');
+    await page.goto(`${BASE}/passports`);
+    await expect(page).toHaveURL(/\/passports$/);
     await page.waitForLoadState('networkidle');
-    await expect(page.locator('.sn-page-title')).toContainText('배터리 여권');
+    await expect(page.locator('.sn-page-title')).toContainText('Battery Passport Register');
     // 첫 카드 클릭
-    const firstCard = page.locator('[class*="sn-panel"]').filter({ hasText: /BP-/ }).first();
+    const firstCard = page.locator('[data-page="passports"] [class*="sn-panel"]').filter({ hasText: /DEV-|PASSPORT-|QA-/ }).first();
     if (await firstCard.isVisible()) {
       await firstCard.click();
       await page.waitForURL(/\/passports\/.+/, { timeout: 8000 });
@@ -78,19 +73,17 @@ test.describe('UI polish smoke — feat/passport-ui-polish 병합 후', () => {
     const errors = collectConsoleErrors(page);
     await login(page);
     const routes = [
-      { path: '/materials', title: '원자재 관리' },
-      { path: '/bmu-data', title: '배터리 데이터' },
-      { path: '/maintenance', title: '정비' },
-      { path: '/recycling', title: '재활용' },
-      { path: '/qr-scan', title: '여권' },
-      { path: '/audit-log', title: '감사' },
+      { path: '/materials', title: 'Supply Chain Register' },
+      { path: '/bmu-data', title: 'BMS Live Data' },
+      { path: '/maintenance', title: 'Tasks Docket' },
+      { path: '/recycling', title: 'Recycling & ESG' },
+      { path: '/qr-scan', title: 'Field Identify Search' },
+      { path: '/audit-log', title: 'Audit / Ledger' },
     ];
     for (const r of routes) {
       await page.goto(`${BASE}${r.path}`);
       await page.waitForLoadState('networkidle', { timeout: 12000 });
-      // sn-page-title 또는 주요 헤드라인 존재
-      const hasHead = await page.locator('.sn-page-title, h1, h2').count();
-      expect(hasHead, `${r.path} 헤드라인 없음`).toBeGreaterThan(0);
+      await expect(page.locator('.sn-page-title, h1, h2').filter({ hasText: r.title }).first(), `${r.path} 헤드라인 없음`).toBeVisible({ timeout: 12000 });
     }
     expect(errors.filter((e) => !e.includes('html5-qrcode')), errors.join('\n')).toEqual([]);
   });
@@ -100,7 +93,7 @@ test.describe('UI polish smoke — feat/passport-ui-polish 병합 후', () => {
     await login(page);
 
     // 다크 토글
-    const toggle = page.locator('button.ev-theme-toggle');
+    const toggle = page.getByRole('button', { name: /다크 모드/ }).first();
     await toggle.waitFor({ timeout: 5000 });
     const bgLight = await page.evaluate(() => getComputedStyle(document.body).backgroundColor);
     await toggle.click();
