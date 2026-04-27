@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../lib/api';
+import { toastFromError } from '../lib/chaincodeErrorMessages';
 import { useAuth } from '../contexts/AuthContext';
 import { getStatusBadge } from '../lib/helpers';
 import { BarRows, PageHead, SkeletonCard, SkeletonTable } from '../components/ui';
@@ -69,6 +70,7 @@ export default function RecyclingPage() {
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<Tab>('all');
   const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const [selectedPassport, setSelectedPassport] = useState<Passport | null>(null);
   const [showAnalysis, setShowAnalysis] = useState(false);
   const [showToggle, setShowToggle] = useState(false);
@@ -188,10 +190,15 @@ export default function RecyclingPage() {
 
   const requestAnalysis = async (passport: Passport) => {
     if (!passport.passportId) return;
+    setSubmitError(null);
     try {
       await api.post(`/analysis/${passport.passportId}/request`, {});
       await fetchPassports();
-    } catch { /* toast 생략 */ }
+    } catch (err) {
+      const { toast, debug, category } = toastFromError(err);
+      console.warn('[recycling] mutation failed', { category, debug });
+      setSubmitError(toast);
+    }
   };
 
   const openAnalysisResult = (p: Passport) => {
@@ -203,6 +210,7 @@ export default function RecyclingPage() {
   const submitAnalysisResult = async () => {
     if (!selectedPassport?.passportId) return;
     setSubmitting(true);
+    setSubmitError(null);
     try {
       await api.post(`/analysis/${selectedPassport.passportId}/result`, {
         soh: Number(analysisForm.soh),
@@ -212,7 +220,11 @@ export default function RecyclingPage() {
       });
       closeAll();
       await fetchPassports();
-    } catch { /* noop */ }
+    } catch (err) {
+      const { toast, debug, category } = toastFromError(err);
+      console.warn('[recycling] mutation failed', { category, debug });
+      setSubmitError(toast);
+    }
     finally { setSubmitting(false); }
   };
 
@@ -225,11 +237,16 @@ export default function RecyclingPage() {
   const submitRecycleToggle = async (available: boolean) => {
     if (!selectedPassport?.passportId) return;
     setSubmitting(true);
+    setSubmitError(null);
     try {
       await api.put(`/recycling/${selectedPassport.passportId}/availability`, { available });
       closeAll();
       await fetchPassports();
-    } catch { /* noop */ }
+    } catch (err) {
+      const { toast, debug, category } = toastFromError(err);
+      console.warn('[recycling] mutation failed', { category, debug });
+      setSubmitError(toast);
+    }
     finally { setSubmitting(false); }
   };
 
@@ -241,6 +258,7 @@ export default function RecyclingPage() {
   const submitExtract = async (entries: ExtractEntry[]) => {
     if (!selectedPassport?.passportId) return;
     setSubmitting(true);
+    setSubmitError(null);
     try {
       const recyclingRates: Record<string, number> = {};
       entries.forEach((e) => {
@@ -249,7 +267,11 @@ export default function RecyclingPage() {
       await api.post(`/recycling/${selectedPassport.passportId}/extract`, { recyclingRates });
       closeAll();
       await fetchPassports();
-    } catch { /* noop */ }
+    } catch (err) {
+      const { toast, debug, category } = toastFromError(err);
+      console.warn('[recycling] mutation failed', { category, debug });
+      setSubmitError(toast);
+    }
     finally { setSubmitting(false); }
   };
 
@@ -261,11 +283,16 @@ export default function RecyclingPage() {
   const submitDispose = async () => {
     if (!selectedPassport?.passportId) return;
     setSubmitting(true);
+    setSubmitError(null);
     try {
       await api.post(`/recycling/${selectedPassport.passportId}/dispose`, {});
       closeAll();
       await fetchPassports();
-    } catch { /* noop */ }
+    } catch (err) {
+      const { toast, debug, category } = toastFromError(err);
+      console.warn('[recycling] mutation failed', { category, debug });
+      setSubmitError(toast);
+    }
     finally { setSubmitting(false); }
   };
 
@@ -303,6 +330,12 @@ export default function RecyclingPage() {
           </>
         )}
       />
+
+      {submitError && (
+        <div role="alert" style={{ padding: '0.9rem 1rem', borderRadius: '0.85rem', background: 'var(--color-danger-soft)', color: 'var(--color-danger)', border: '1px solid var(--color-border)' }}>
+          <span style={{ fontSize: '0.9rem', lineHeight: 1.6 }}>{submitError}</span>
+        </div>
+      )}
 
       <section className="sn-section-card">
         <div className="sn-section-head">
