@@ -1,6 +1,8 @@
 ---
 title: chaincode 계약 감사 — UI/bmu-agent ↔ chaincode 갭 분석
 date: 2026-04-27
+tags: [blockchain, chaincode, audit]
+doc_type: review
 session: blockchain
 scope: chaincode/passport-contract, passport-network
 status: 보고서 (read-only audit)

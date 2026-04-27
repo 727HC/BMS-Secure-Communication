@@ -556,3 +556,29 @@ caliper read 의 Send Rate 1052.4 TPS (목표 1800 TPS 대비 58%) 는 peer gate
 - ✅ P2 small bundle (P2-2/4/5) 진행 가능 — KPI 안전 마진 충분
 - ✅ Passport Stage 3 (a85c6e1 e2e 거부 케이스 픽스처) 진행 신호 (마커 commit 04ade1d 이미 push 완료)
 - ⏸ P2-6 (SetEvent) 는 별도 사전/사후 비교 필요 (RecordBMUData 영향 가능)
+
+### P2 small bundle 측정 (2026-04-27 18:00 KST)
+
+P2-2/4/5 패치 (95a65f2) 적용본 (chaincode 1.3 / sequence 4) 으로 재측정.
+
+| KPI | 목표 | P0/P1 baseline | P2 적용 후 | 변동 |
+|-----|------|----------------|-----------|------|
+| Caliper Write Throughput | 150 TPS | 190.5 TPS | **192.1 TPS** | +0.8% |
+| Cloud HTTP Read TPS (sanity) | 1500 TPS | 1794.6 TPS | **1705.7 TPS** | -5.0% |
+
+**모두 PASS. P0 + P1 + P2 small bundle 10건 chaincode 패치 후 KPI 안전 마진 유지.**
+
+#### 측정 노이즈 발견 — caliper 직후 cloud read 일시 저하
+
+caliper 종료 직후 cloud read 가 1466.6 TPS (KPI fail) 로 측정됨. 그러나 ~1분 cool-down 후 재측정 시 1705.7 TPS 로 정상 회복. 원인 추정:
+- caliper 의 다량 RecordBMUData tx → cloud-agent block listener 가 동기 처리 중 → MongoDB write + read 경합
+- cloud-agent 의 read 응답성이 일시 저하 후 회복
+
+**KPI 측정 권고**: caliper write 종료 후 ~1분 cool-down 후 cloud read 측정. 또는 cloud read 를 caliper 와 별도 세션에서 측정.
+
+#### 다음 권고
+
+- ✅ KPI 검증 완료, P0~P2-small (10건) 회귀 없음
+- ⏸ P2-1 (정비 요청자–수행자 매핑) 은 Passport 회신에서 단일 Service MSP 유지로 결정 → 백로그 제거
+- ⏸ P2-6 (SetEvent) 만 단독 사이클로 사전/사후 측정 필요
+- ⏸ P2-7/8 (history wrappers, accident query) 신규 query 추가 — 별도 PR
