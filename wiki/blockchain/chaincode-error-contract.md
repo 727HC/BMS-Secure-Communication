@@ -128,7 +128,7 @@ UI 매핑 권고: 모두 한국어 "접근 권한이 없습니다" 계열로 통
 | Prefix | 발생 함수 |
 |--------|-----------|
 | `materialId, name, origin must not be empty` | RegisterRawMaterial |
-| `passportId, batteryId, did must not be empty` | CreateBatteryPassport |
+| `passportId, batteryId, did, serialNumber must not be empty` | CreateBatteryPassport |
 | `passportId must not be empty` | BindToVehicle |
 | `vin must not be empty` | BindToVehicle |
 | `passportId, fieldName, newValue, reason must not be empty` | CorrectPassportData |
@@ -173,6 +173,7 @@ UI 매핑 권고: 모두 한국어 "접근 권한이 없습니다" 계열로 통
 | `invalid recycledElementContent JSON: {wrappedErr}` | CorrectPassportData |
 | `invalid extensionInfo JSON: {wrappedErr}` | CorrectPassportData |
 | `invalid recycling rates JSON: {wrappedErr}` | ExtractMaterials |
+| `invalid recycling rate for {material}: must be in [0, 1], got {value}` | ExtractMaterials (P2-4) |
 | `DID mismatch: passport {passportId} is registered to DID {expectedDid}, not {gotDid}` | RecordBMUData |
 | `evidence {credId} is not a valid credential` | UpdateRegulatoryVerification |
 | `no new materials to link (all already linked or empty)` | LinkRawMaterials |
@@ -213,6 +214,7 @@ UI 매핑 권고: 모두 한국어 "접근 권한이 없습니다" 계열로 통
 | `passport status must be ACTIVE for maintenance request, current: {status}` | RequestMaintenance |
 | `passport status must be ACTIVE or MAINTENANCE for analysis request, current: {status}` | RequestAnalysis |
 | `passport status must be ANALYSIS for result submission, current: {status}` | SubmitAnalysisResult |
+| `passport status must be ACTIVE or ANALYSIS or RECYCLING for recycle availability change, current: {status}` | SetRecycleAvailability (P2-5) |
 | `cannot add maintenance log: passport status must be MAINTENANCE or ACTIVE, current: {status}` | AddMaintenanceLog |
 | `extract requires ACTIVE or ANALYSIS status, current: {status}` | ExtractMaterials |
 | `passport {passportId} has not been activated yet` | DisposeBattery |

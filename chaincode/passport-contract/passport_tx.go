@@ -88,8 +88,8 @@ func (c *PassportContract) CreateBatteryPassport(ctx contractapi.TransactionCont
 		return err
 	}
 
-	if passportId == "" || batteryId == "" || did == "" {
-		return fmt.Errorf("passportId, batteryId, did must not be empty")
+	if passportId == "" || batteryId == "" || did == "" || serialNumber == "" {
+		return fmt.Errorf("passportId, batteryId, did, serialNumber must not be empty")
 	}
 
 	existing, err := ctx.GetStub().GetState(passportId)
@@ -613,6 +613,11 @@ func (c *PassportContract) SetRecycleAvailability(ctx contractapi.TransactionCon
 		return fmt.Errorf("failed to unmarshal passport: %v", err)
 	}
 
+	// P2-5: DISPOSED 여권은 recycle availability 변경 불가 (기존 PRECONDITION 패턴)
+	if passport.Status == "DISPOSED" {
+		return fmt.Errorf("passport status must be ACTIVE or ANALYSIS or RECYCLING for recycle availability change, current: %s", passport.Status)
+	}
+
 	now, tsErr := txTimestamp(ctx)
 	if tsErr != nil {
 		return fmt.Errorf("failed to get timestamp: %v", tsErr)
@@ -661,6 +666,13 @@ func (c *PassportContract) ExtractMaterials(ctx contractapi.TransactionContextIn
 	err = json.Unmarshal([]byte(recyclingRatesJSON), &recyclingRates)
 	if err != nil {
 		return fmt.Errorf("invalid recycling rates JSON: %v", err)
+	}
+
+	// P2-4: 각 element 의 비율은 [0, 1] 범위
+	for material, rate := range recyclingRates {
+		if rate < 0 || rate > 1 {
+			return fmt.Errorf("invalid recycling rate for %s: must be in [0, 1], got %f", material, rate)
+		}
 	}
 
 	now, tsErr := txTimestamp(ctx)
