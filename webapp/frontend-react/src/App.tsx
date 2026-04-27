@@ -18,6 +18,7 @@ const MaintenancePage = lazy(() => import('./pages/MaintenancePage'));
 const RecyclingPage = lazy(() => import('./pages/RecyclingPage'));
 const QrScanPage = lazy(() => import('./pages/QrScanPage'));
 const AuditLogPage = lazy(() => import('./pages/AuditLogPage'));
+const SettingsPage = lazy(() => import('./pages/SettingsPage'));
 
 function ProtectedPage({ children }: { children: React.ReactNode }) {
   return (
@@ -53,6 +54,7 @@ export default function App() {
           <Route path="/recycling" element={<ProtectedPage><RecyclingPage /></ProtectedPage>} />
           <Route path="/qr-scan" element={<ProtectedPage><QrScanPage /></ProtectedPage>} />
           <Route path="/audit-log" element={<ProtectedPage><AuditLogPage /></ProtectedPage>} />
+          <Route path="/settings" element={<ProtectedPage><SettingsPage /></ProtectedPage>} />
 
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>

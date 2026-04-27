@@ -93,6 +93,7 @@ export default function LoginPage() {
 
   return (
     <div
+      data-page="login"
       className="min-h-screen overflow-hidden px-6 py-10 lg:px-10"
       style={{ background: 'var(--color-bg)', color: 'var(--color-text-2)' }}
     >
