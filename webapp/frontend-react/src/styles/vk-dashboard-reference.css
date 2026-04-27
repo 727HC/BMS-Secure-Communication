@@ -35,11 +35,23 @@
   --shadow-card: 0 1px 3px rgba(15, 23, 42, 0.05);
   --shadow-elevated: 0 4px 16px rgba(15, 23, 42, 0.08);
   min-height: 100vh;
-  display: flex;
+  display: block;
   background: var(--vk-ref-bg);
   color: var(--vk-ref-text-main);
   color-scheme: light;
   font-family: 'Pretendard Variable', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+/* Layout.tsx의 ev-sidebar(position:fixed, width:248px)와 같이 사용되므로
+   vk-ref-main이 sidebar 영역만큼 좌측 여백을 둬야 콘텐츠가 안 가려진다. */
+.vk-ref-shell > .vk-ref-main {
+  margin-left: 248px;
+}
+
+@media (max-width: 1024px) {
+  .vk-ref-shell > .vk-ref-main {
+    margin-left: 0;
+  }
 }
 
 .vk-ref-sidebar {
