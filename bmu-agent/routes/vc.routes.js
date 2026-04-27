@@ -7,6 +7,7 @@ const fabricService = require('../services/fabric.service');
 const vcService = require('../services/vc.service');
 const { MSP, DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE } = require('../config/constants');
 const { createLogger } = require('../services/logger.service');
+const { sendChaincodeError } = require('../middleware/chaincode-error');
 const log = createLogger('vc');
 
 function makeRequestId() {
@@ -27,7 +28,7 @@ router.post('/schemas', authenticateToken, requireMSP(MSP.MANUFACTURER), async (
     const result = await vcService.createSchema(name, version, attributes);
     res.json({ success: true, ...result });
   } catch (err) {
-    res.status(500).json({ error: 'Internal server error' });
+    sendChaincodeError(res, err);
   }
 });
 
@@ -41,7 +42,7 @@ router.post('/credential-definitions', authenticateToken, requireMSP(MSP.MANUFAC
     const result = await vcService.createCredentialDefinition(schemaId, tag, supportRevocation);
     res.json({ success: true, ...result });
   } catch (err) {
-    res.status(500).json({ error: 'Internal server error' });
+    sendChaincodeError(res, err);
   }
 });
 
@@ -51,7 +52,7 @@ router.post('/schemas/init', authenticateToken, requireMSP(MSP.MANUFACTURER), as
     const results = await vcService.initializeSchemas();
     res.json({ success: true, schemas: results });
   } catch (err) {
-    res.status(500).json({ error: 'Internal server error' });
+    sendChaincodeError(res, err);
   }
 });
 
@@ -65,7 +66,7 @@ router.get('/issuers', authenticateToken, requireMSP(MSP.REGULATOR), async (req,
     const issuers = await vcService.queryIssuers(fabricService, req.user);
     res.json({ issuers });
   } catch (err) {
-    res.status(500).json({ error: 'Internal server error' });
+    sendChaincodeError(res, err);
   }
 });
 
@@ -75,7 +76,7 @@ router.get('/issuers/:issuerMsp/types', authenticateToken, async (req, res) => {
     const types = await vcService.queryCredentialTypesByIssuer(fabricService, req.params.issuerMsp, req.user);
     res.json({ issuerMsp: req.params.issuerMsp, types });
   } catch (err) {
-    res.status(500).json({ error: 'Internal server error' });
+    sendChaincodeError(res, err);
   }
 });
 
@@ -90,7 +91,7 @@ router.post('/request', authenticateToken, requireMSP(MSP.MANUFACTURER, MSP.EV_M
     const result = await vcService.requestCredentialIssuance(fabricService, requestId, passportId, credType, req.user);
     res.json({ success: true, requestId, ...result });
   } catch (err) {
-    res.status(500).json({ error: 'Internal server error' });
+    sendChaincodeError(res, err);
   }
 });
 
@@ -100,7 +101,7 @@ router.post('/request/:requestId/approve', authenticateToken, requireMSP(MSP.MAN
     const result = await vcService.approveCredentialIssuance(fabricService, req.params.requestId, req.user);
     res.json({ success: true, ...result });
   } catch (err) {
-    res.status(500).json({ error: 'Internal server error' });
+    sendChaincodeError(res, err);
   }
 });
 
@@ -114,7 +115,7 @@ router.post('/request/:requestId/reject', authenticateToken, requireMSP(MSP.MANU
     const result = await vcService.rejectCredentialIssuance(fabricService, req.params.requestId, reason, req.user);
     res.json({ success: true, ...result });
   } catch (err) {
-    res.status(500).json({ error: 'Internal server error' });
+    sendChaincodeError(res, err);
   }
 });
 
@@ -149,7 +150,7 @@ router.post('/issue', authenticateToken, requireMSP(MSP.MANUFACTURER, MSP.SERVIC
     res.json({ success: true, ...result });
   } catch (err) {
     log.error('VC issue failed', { action: 'IssueCredential', credentialId, passportId, credType, error: err.message });
-    res.status(500).json({ error: 'Internal server error' });
+    sendChaincodeError(res, err);
   }
 });
 
@@ -171,7 +172,7 @@ router.post('/revoke', authenticateToken, requireMSP(MSP.MANUFACTURER, MSP.SERVI
     res.json({ success: true, ...result });
   } catch (err) {
     log.error('VC revoke failed', { action: 'RevokeCredential', credentialId, error: err.message });
-    res.status(500).json({ error: 'Internal server error' });
+    sendChaincodeError(res, err);
   }
 });
 
@@ -187,7 +188,7 @@ router.get('/verify/:credentialId', authenticateToken, async (req, res) => {
     );
     res.json(result);
   } catch (err) {
-    res.status(404).json({ error: 'Credential not found' });
+    sendChaincodeError(res, err);
   }
 });
 
@@ -210,7 +211,7 @@ router.post('/verify-log', authenticateToken, async (req, res) => {
     });
     res.json({ success: true, ...logResult });
   } catch (err) {
-    res.status(500).json({ error: 'Internal server error' });
+    sendChaincodeError(res, err);
   }
 });
 
@@ -224,7 +225,7 @@ router.get('/verify-log/:credentialId', authenticateToken, async (req, res) => {
     );
     res.json(result);
   } catch (err) {
-    res.status(500).json({ error: 'Internal server error' });
+    sendChaincodeError(res, err);
   }
 });
 
@@ -238,7 +239,7 @@ router.get('/verifier/:verifierDid/history', authenticateToken, requireMSP(MSP.R
     );
     res.json(result);
   } catch (err) {
-    res.status(500).json({ error: 'Internal server error' });
+    sendChaincodeError(res, err);
   }
 });
 
@@ -254,7 +255,7 @@ router.get('/:credentialId', authenticateToken, async (req, res) => {
     );
     res.json(result);
   } catch (err) {
-    res.status(404).json({ error: 'Credential not found' });
+    sendChaincodeError(res, err);
   }
 });
 
@@ -268,7 +269,7 @@ router.get('/passport/:passportId', authenticateToken, async (req, res) => {
     );
     res.json(result);
   } catch (err) {
-    res.status(500).json({ error: 'Internal server error' });
+    sendChaincodeError(res, err);
   }
 });
 
@@ -282,7 +283,7 @@ router.get('/holder/:holderDid', authenticateToken, async (req, res) => {
     );
     res.json(result);
   } catch (err) {
-    res.status(500).json({ error: 'Internal server error' });
+    sendChaincodeError(res, err);
   }
 });
 
@@ -296,7 +297,7 @@ router.get('/type/:credType', authenticateToken, async (req, res) => {
     );
     res.json(result);
   } catch (err) {
-    res.status(500).json({ error: 'Internal server error' });
+    sendChaincodeError(res, err);
   }
 });
 
@@ -310,7 +311,7 @@ router.get('/revoked/list', authenticateToken, requireMSP(MSP.REGULATOR), async 
     );
     res.json(result);
   } catch (err) {
-    res.status(500).json({ error: 'Internal server error' });
+    sendChaincodeError(res, err);
   }
 });
 
@@ -322,7 +323,7 @@ router.get('/:credentialId/history', authenticateToken, async (req, res) => {
     );
     res.json(result);
   } catch (err) {
-    res.status(500).json({ error: 'Internal server error' });
+    sendChaincodeError(res, err);
   }
 });
 
