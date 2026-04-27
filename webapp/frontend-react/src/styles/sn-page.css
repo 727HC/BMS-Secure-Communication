@@ -69,3 +69,50 @@
   border: 1px dashed var(--color-border);
   border-radius: 0.5rem;
 }
+
+@media (max-width: 640px) {
+  .sn-page-head {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .sn-page-title {
+    font-size: 1.55rem;
+  }
+
+  .sn-page-actions {
+    width: 100%;
+    align-items: stretch;
+  }
+
+  .sn-page-actions > * {
+    max-width: 100%;
+  }
+
+  .sn-page-actions .sn-kpi-mini {
+    min-width: 0;
+  }
+
+  .sn-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .sn-toolbar > * {
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  .sn-filter-tabs {
+    overflow-x: auto;
+    flex-wrap: nowrap;
+  }
+
+  .sn-filter-tab {
+    flex: 0 0 auto;
+  }
+
+  .sn-empty-dashed {
+    padding: 2rem 1rem;
+  }
+}

@@ -11,6 +11,34 @@
   bottom: 0;
   z-index: 50;
 }
+
+.oc-shell-brand {
+  display: flex;
+  height: 74px;
+  min-height: 74px;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  padding: 0;
+  text-decoration: none;
+  flex-shrink: 0;
+}
+
+.ev-sidebar > .oc-shell-brand {
+  margin-top: 10px;
+  margin-right: 8px;
+  margin-left: 4px;
+}
+
+.oc-shell-brand__mark {
+  display: block;
+  width: 220px;
+  max-width: none;
+  height: auto;
+  object-fit: contain;
+  transform: translate(-7px, -18px);
+}
+
 .ev-sidebar-nav { display: flex; flex-direction: column; gap: 4px; }
 .ev-sidebar-section-label {
   padding: 12px 12px 6px;
@@ -97,4 +125,53 @@
 @media (max-width: 1024px) {
   .ev-sidebar { display: none !important; }
   .ev-main { margin-left: 0 !important; }
+}
+
+@media (max-width: 640px) {
+  .ev-main {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .ev-main > header {
+    height: auto !important;
+    min-height: 64px;
+    align-items: flex-start !important;
+    flex-wrap: wrap;
+    gap: 10px !important;
+    padding: 10px 16px !important;
+  }
+
+  .ev-main > header > div {
+    min-width: 0 !important;
+  }
+
+  .ev-main > header > div:first-child,
+  .ev-main > header > div:last-child {
+    width: 100%;
+  }
+
+  .ev-main > header > div:last-child {
+    flex-wrap: wrap;
+    flex-shrink: 1 !important;
+    gap: 8px !important;
+  }
+
+  .ev-main > header > div:last-child > div:first-child {
+    width: 100% !important;
+    min-width: 0 !important;
+    flex: 1 1 100% !important;
+  }
+
+  .ev-main > header > div:last-child > span {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .ev-main > main {
+    width: 100%;
+    min-width: 0 !important;
+    padding: 16px !important;
+  }
 }
