@@ -414,3 +414,26 @@ filter-repo가 `LEGACY_DEFAULT_SECRET`, `LEGACY_PLACEHOLDER_SECRET` 등을 `REMO
 - **cloud-agent block listener 의 checkpoint 재개 안정성 취약** — ledger 가 wipe 되면 `_sync_meta.lastBlock` 도 함께 비워야 한다. 방어 코드로 NOT_FOUND 응답 받으면 0부터 재시작 fallback 필요
 - **KPI 측정은 Caliper 의 Throughput 컬럼이 공식 수치** — (성공+실패)/elapsed 가 Caliper Throughput 정의. "실효 성공 TPS" 는 별도 파생 지표. 이전 세션의 173.1 TPS 도 동일 정의
 
+
+---
+
+## Session 2026-04-27 (chaincode 계약 감사)
+
+### 의도
+
+velkern-brand-assets 브랜치 UI 대수정 후 패스포트 세션이 "엔드포인트는 있는데 validation/RBAC/evidence 갭" 을 지목. 블록체인 세션은 chaincode 영역만 정확히 갭 분석.
+
+### 산출물
+
+- [[blockchain/chaincode-contract-audit-2026-04-27|chaincode 계약 감사 보고서]] — UI 40+ action 모두 chaincode 함수 매핑 확인, 미지원 0건. 부분 지원/하드닝 갭 16건 식별, P0/P1/P2 우선순위 배정.
+
+### 핵심 결론
+
+- **기능 미지원 0건**. UI/agent 의 모든 mutation/query 에 대응 chaincode 함수 존재.
+- **P0**: `CorrectPassportData` 의 ownership 미검증 — Manufacturer/EVManufacturer 가 임의 여권의 자기 권한 필드를 수정 가능. fieldCorrectors 가 MSP 종류만 보고 CreatorMSP/EvBinderMSP 일치를 확인하지 않음.
+- **P1 다수**: RequestMaintenance/RequestAnalysis/AddAccidentLog/IssueCredential 도 동일 패턴(MSP 종류만 체크, ownership 누락). SubmitAnalysisResult 의 SOH/SOCE 범위 검증 부재. CreateBatteryPassport 의 음수 값 허용.
+- **P2**: SetEvent 미사용, BMU/CredentialRequest history 래퍼 부재, AccidentLogs 전용 query 부재 (passport 전체 페이로드 비대화 위험).
+
+### 수정 미실시
+
+이번 세션은 read-only 갭 분석. chaincode patch 는 다음 세션에서 P0-1 부터 진행 권고.
