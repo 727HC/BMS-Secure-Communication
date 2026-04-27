@@ -608,10 +608,10 @@ const SNAPSHOT_SPARKLINE_OFFSETS: Record<KpiSnapshotTrendKind, number[]> = {
 
 function buildSnapshotSparkline(snapshot: KpiSnapshotViewModel): KpiTrendViewModel {
   const rawBase = snapshot.fill * 100;
-  const base = rawBase === 0 ? 8 : rawBase;
+  // 값이 0이면 그래프도 평평한 0 baseline. base=8 fudge 제거 (실제값과 일치).
   const points = SNAPSHOT_SPARKLINE_OFFSETS[snapshot.kind].map((offset, index) => ({
     label: `snapshot-${index + 1}`,
-    value: Math.min(100, Math.max(0, base + offset)),
+    value: rawBase === 0 ? 0 : Math.min(100, Math.max(0, rawBase + offset)),
     timestamp: index,
   }));
 
