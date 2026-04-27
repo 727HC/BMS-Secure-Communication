@@ -1,6 +1,8 @@
 ---
 title: chaincode 에러 메시지 contract
 date: 2026-04-27
+tags: [blockchain, chaincode, contract, error-handling]
+doc_type: reference
 session: blockchain
 scope: chaincode/passport-contract
 audience: bmu-agent, frontend (UI 토스트 매핑 기준)
