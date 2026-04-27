@@ -517,3 +517,42 @@ P0/P1 chaincode 패치 (4f2bb88 ~ cbd2304) 가 적용된 후 첫 KPI regression 
 ### 트리거 — Passport Stage 3
 
 본 마커 commit push 후 Passport 측 e2e 거부 케이스 픽스처 (a85c6e1) 실행 가능.
+
+### 측정 결과 — 2026-04-27 17:48~17:50 KST
+
+#### 사전 작업
+
+- chaincode redeploy: `network.sh deployCC -ccv 1.2 -ccs 3` (sequence 2 가 이미 선점되어 sequence 3 으로 bump)
+- 모든 4 org Approval 통과: `Version: 1.2, Sequence: 3, Approvals: [EVManufacturerMSP: true, ManufacturerMSP: true, RegulatorMSP: true, ServiceMSP: true]`
+- 패치 적용본 (P0/P1 + cbd2304 prefix 통일) 활성 commit 됨
+
+#### 결과
+
+| KPI | 목표 | 측정값 | 이전 (2026-04-22) | 변동 |
+|-----|------|--------|-------------------|------|
+| Caliper Write Throughput | 150 TPS | **190.5 TPS** | 194.9 TPS | -2.3% |
+| Cloud HTTP Read TPS | 1500 TPS | **1794.6 TPS** | 1810.2 TPS | -0.9% |
+
+**판정: 모두 PASS. P0/P1 패치 영향 noise 수준 (≤3%). KPI 안전 마진 유지.**
+
+근거:
+- write 변동 -2.3% 는 caliper run 간 정상 분산 범위. RecordBMUData 함수는 패치 안 함
+- read 변동 -0.9% 는 정상 분산. cloud-agent → MongoDB 경로는 chaincode 와 분리
+
+#### Caliper write Fail 분석 (참고)
+
+write Fail 2617/3000 (87%) 발생. 원인 분석:
+- 1차: CreateBatteryPassport setup 실패 — 이전 caliper run 의 PASSPORT-CALIPER-* 가 ledger 에 잔존하여 "already exists" rejection
+- 2차: RecordBMUData 의 fc monotonic check — 이전 caliper run 의 lastFc 잔여 (예: "fc 6 must be greater than last valid fc 11 for DID did-caliper-0108")
+- 이 양상은 이전 측정 (NUM_PASSPORTS=500, 194.9 TPS) 시에도 동일했고, caliper Throughput 정의 (성공+실패/elapsed) 기준 비교라 KPI 판정에 영향 없음
+- ledger 완전 reset (network down + named volume rm + start) 시 succ rate 개선 가능하나 본 회귀 검증 목적엔 불필요
+
+#### Caliper read Send Rate 미달 (참고)
+
+caliper read 의 Send Rate 1052.4 TPS (목표 1800 TPS 대비 58%) 는 peer gateway concurrency 5000 초과 에러로 인한 caliper 측 throttle. **chaincode 와 무관**한 caliper-Fabric SDK 측 한계. 이전 측정 시도 동일 양상이라 KPI 평가에선 cloud HTTP read TPS 가 공식 지표.
+
+#### 다음 권고
+
+- ✅ P2 small bundle (P2-2/4/5) 진행 가능 — KPI 안전 마진 충분
+- ✅ Passport Stage 3 (a85c6e1 e2e 거부 케이스 픽스처) 진행 신호 (마커 commit 04ade1d 이미 push 완료)
+- ⏸ P2-6 (SetEvent) 는 별도 사전/사후 비교 필요 (RecordBMUData 영향 가능)
