@@ -253,6 +253,8 @@ interface AlertRowViewModel {
   source: string;
   severity: AlertSeverity;
   time: string;
+  /** source가 실제 passport ID라서 클릭 시 /passports/:id로 이동 가능한지. system error/audit row는 false. */
+  navigable?: boolean;
 }
 
 interface TaskRowViewModel {
@@ -373,6 +375,7 @@ function buildAlertRows(
         source,
         severity: 'Medium',
         time: passportAlertTime(passport),
+        navigable: true,
       });
     }
   });
@@ -386,6 +389,7 @@ function buildAlertRows(
         source,
         severity: verificationAlertSeverity(passport),
         time: passportAlertTime(passport),
+        navigable: true,
       });
     }
   });
@@ -400,6 +404,7 @@ function buildAlertRows(
         source,
         severity: status === 'MAINTENANCE' ? 'Medium' : 'Low',
         time: passportAlertTime(passport),
+        navigable: true,
       });
     }
   });
@@ -1250,17 +1255,17 @@ export default function DashboardPage() {
             ) : alertRows.map((a) => {
               const severity = a.severity.toLowerCase();
               const navigateToPassport = () => {
-                if (a.source) navigate(`/passports/${encodeURIComponent(a.source)}`);
+                if (a.navigable && a.source) navigate(`/passports/${encodeURIComponent(a.source)}`);
               };
               return (
                 <li
                   key={a.key}
                   className={`vk-alerts__row vk-alerts__row--${severity}`}
-                  onClick={a.source ? navigateToPassport : undefined}
-                  onKeyDown={(e) => { if (a.source && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); navigateToPassport(); } }}
-                  role={a.source ? 'button' : undefined}
-                  tabIndex={a.source ? 0 : undefined}
-                  style={{ cursor: a.source ? 'pointer' : 'default' }}
+                  onClick={a.navigable ? navigateToPassport : undefined}
+                  onKeyDown={(e) => { if (a.navigable && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); navigateToPassport(); } }}
+                  role={a.navigable ? 'button' : undefined}
+                  tabIndex={a.navigable ? 0 : undefined}
+                  style={{ cursor: a.navigable ? 'pointer' : 'default' }}
                 >
                   <span className={`vk-alerts__icon vk-alerts__icon--${severity}`} aria-hidden="true">
                     <AlertGlyph severity={a.severity} />
