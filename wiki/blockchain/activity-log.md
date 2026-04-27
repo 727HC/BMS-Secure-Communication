@@ -496,3 +496,24 @@ ed2b977 미들웨어가 처리하는 Fabric wrap prefix 4종 (`Failed to evaluat
 3. 결과 동일 activity-log 에 commit
 4. KPI 안전 마진 확인되면 P2 small bundle (P2-2/4/5) 묶음 PR 진행
 5. P2-6 (SetEvent) 진행 시 baseline → SetEvent 전후 비교 측정 의무
+
+---
+
+## Session 2026-04-27 caliper start
+
+P0/P1 chaincode 패치 (4f2bb88 ~ cbd2304) 가 적용된 후 첫 KPI regression 측정.
+
+### 측정 전 상태
+
+- Fabric 4-org + couchdb + ca + orderer 모두 5일 기동 유지 (재기동 없음)
+- 현재 deploy 된 chaincode container hash `18a2a36d437b...` 는 P0 commit (KST 16:00) 보다 **3시간 먼저 기동** 된 `dev-peer0-*-passport-contract` 컨테이너 — 즉 패치 이전 binary. 패치 적용본 측정 위해 redeploy 선행 필요.
+- bmu-agent / cloud-agent 정상 응답 확인
+
+### 측정 항목
+
+1. caliper write KPI (RecordBMUData, NUM_PASSPORTS=500, 1-of-4 OR endorsement) — 목표 150 TPS, 이전 측정 194.9 TPS
+2. cloud-agent HTTP read KPI — 목표 1500 TPS, 이전 측정 1810.2 TPS
+
+### 트리거 — Passport Stage 3
+
+본 마커 commit push 후 Passport 측 e2e 거부 케이스 픽스처 (a85c6e1) 실행 가능.
