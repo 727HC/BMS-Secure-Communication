@@ -1,7 +1,6 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { api } from '../lib/api';
-import { Skeleton, SkeletonRows } from '../components/ui';
-import { DonutChart, BarRows, LegendStack } from '../components/ui/Charts';
+import { BarRows, DonutChart, LegendStack, PageHead, Skeleton, SkeletonRows } from '../components/ui';
 
 interface LogRecord {
   id: string;
@@ -52,6 +51,14 @@ const ACTION_OPTIONS = [
   { value: 'LOGIN', label: '로그인' },
 ];
 
+const METHOD_COLORS: Record<string, string> = {
+  GET: 'var(--color-accent)',
+  POST: 'var(--color-success)',
+  PUT: 'var(--color-warning)',
+  DELETE: 'var(--color-danger)',
+  PATCH: 'var(--color-text-2)',
+};
+
 function formatTime(ts?: string): string {
   if (!ts) return '-';
   try { return new Date(ts).toLocaleString('ko-KR'); }
@@ -73,12 +80,12 @@ function relativeTime(ts?: string): string {
   return '';
 }
 
-function getStatusStyle(code?: number): { color: string; bg: string } {
-  if (!code) return { color: 'var(--color-text-2)', bg: 'transparent' };
-  if (code < 300) return { color: '#34d399', bg: 'rgba(52,211,153,0.1)' };
-  if (code < 400) return { color: '#60a5fa', bg: 'rgba(96,165,250,0.1)' };
-  if (code < 500) return { color: '#fbbf24', bg: 'rgba(251,191,36,0.1)' };
-  return { color: '#ef4444', bg: 'rgba(239,68,68,0.1)' };
+function getStatusStyle(code?: number): { color: string; bg: string; label: string } {
+  if (!code) return { color: 'var(--color-text-3)', bg: 'var(--color-surface-alt)', label: '상태 없음' };
+  if (code < 300) return { color: 'var(--color-success)', bg: 'var(--color-success-soft)', label: '성공' };
+  if (code < 400) return { color: 'var(--color-accent)', bg: 'var(--color-surface-accent)', label: '전환' };
+  if (code < 500) return { color: 'var(--color-warning)', bg: 'var(--color-warning-soft)', label: '클라이언트 오류' };
+  return { color: 'var(--color-danger)', bg: 'var(--color-danger-soft)', label: '서버 오류' };
 }
 
 function isWithinHours(ts: string | undefined, hours: number): boolean {
@@ -95,11 +102,12 @@ export default function AuditLogPage() {
   const [filterWriteOnly, setFilterWriteOnly] = useState(true);
   const [autoRefresh, setAutoRefresh] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [errorMsg, setErrorMsg] = useState('');
   const intervalRef = useRef<number | null>(null);
 
   const totalPages = Math.max(1, Math.ceil(total / 50));
 
-  const fetchLogs = async () => {
+  const fetchLogs = useCallback(async () => {
     setLoading(true);
     try {
       const params = new URLSearchParams({ page: String(page), limit: '50' });
@@ -108,21 +116,19 @@ export default function AuditLogPage() {
       const data = await api.get<LogsResponse>(`/audit?${params.toString()}`);
       setLogs(data.records || []);
       setTotal(data.total || 0);
-    } catch {
+      setErrorMsg('');
+    } catch (e: unknown) {
       setLogs([]);
+      setTotal(0);
+      setErrorMsg(e instanceof Error ? e.message : 'Audit ledger를 불러오지 못했습니다.');
     } finally {
       setLoading(false);
     }
-  };
+  }, [filterAction, filterWriteOnly, page]);
 
   useEffect(() => {
     fetchLogs();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, filterAction, filterWriteOnly]);
-
-  useEffect(() => {
-    setPage(1);
-  }, [filterAction, filterWriteOnly]);
+  }, [fetchLogs]);
 
   useEffect(() => {
     if (autoRefresh) {
@@ -137,36 +143,25 @@ export default function AuditLogPage() {
         intervalRef.current = null;
       }
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [autoRefresh]);
+  }, [autoRefresh, fetchLogs]);
 
   const activeActionLabel = useMemo(() => {
     const found = ACTION_OPTIONS.find((item) => item.value === filterAction);
     return found ? found.label : '전체';
   }, [filterAction]);
 
-  // 활동 분류 분포 — 현재 페이지 기반 top 5
   const actionDistribution = useMemo(() => {
     const counts: Record<string, number> = {};
     for (const log of logs) {
       const key = log.action || 'OTHER';
       counts[key] = (counts[key] || 0) + 1;
     }
-    const sorted = Object.entries(counts)
+    return Object.entries(counts)
       .sort((a, b) => b[1] - a[1])
-      .slice(0, 5);
-    const max = sorted[0]?.[1] || 1;
-    return sorted.map(([action, count]) => ({ action, count, pct: Math.round((count / max) * 100) }));
+      .slice(0, 5)
+      .map(([action, count]) => ({ action, count }));
   }, [logs]);
 
-  // HTTP method 분포 — DonutChart용
-  const METHOD_COLORS: Record<string, string> = {
-    GET: '#60a5fa',
-    POST: '#10b981',
-    PUT: '#f59e0b',
-    DELETE: '#ef4444',
-    PATCH: '#a78bfa',
-  };
   const methodDistribution = useMemo(() => {
     const counts: Record<string, number> = {};
     for (const log of logs) {
@@ -178,14 +173,30 @@ export default function AuditLogPage() {
       .map(([method, value]) => ({ label: method, value, color: METHOD_COLORS[method] || 'var(--color-text-3)' }));
   }, [logs]);
 
-  // 시간 요약
+  const statusDistribution = useMemo(() => {
+    const buckets = [
+      { key: '2xx', label: '2xx 성공', value: 0, color: 'var(--color-success)' },
+      { key: '3xx', label: '3xx 전환', value: 0, color: 'var(--color-accent)' },
+      { key: '4xx', label: '4xx 거절', value: 0, color: 'var(--color-warning)' },
+      { key: '5xx', label: '5xx 오류', value: 0, color: 'var(--color-danger)' },
+    ];
+    for (const log of logs) {
+      const code = log.statusCode;
+      if (!code) continue;
+      if (code < 300) buckets[0].value += 1;
+      else if (code < 400) buckets[1].value += 1;
+      else if (code < 500) buckets[2].value += 1;
+      else buckets[3].value += 1;
+    }
+    return buckets.filter((bucket) => bucket.value > 0);
+  }, [logs]);
+
   const timeSummary = useMemo(() => {
     const last24h = logs.filter((l) => isWithinHours(l.timestamp, 24)).length;
     const last7d = logs.filter((l) => isWithinHours(l.timestamp, 168)).length;
     return { last24h, last7d };
   }, [logs]);
 
-  // 성공/실패 비율
   const statusSummary = useMemo(() => {
     const withCode = logs.filter((l) => l.statusCode);
     if (withCode.length === 0) return null;
@@ -195,86 +206,149 @@ export default function AuditLogPage() {
     return { success, fail, successPct, total: withCode.length };
   }, [logs]);
 
+  const pageStart = total > 0 ? (page - 1) * 50 + 1 : 0;
+  const pageEnd = Math.min(page * 50, total);
+  const newestTimestamp = logs[0]?.timestamp;
+  const ledgerScopeLabel = filterWriteOnly ? 'Write-only ledger' : 'Full audit ledger';
+  const hasRecords = logs.length > 0;
+
   const toggleDetail = (id: string) => {
     setExpandedId((cur) => (cur === id ? null : id));
   };
 
+  const handleActionChange = (nextAction: string) => {
+    setPage(1);
+    setFilterAction(nextAction);
+  };
+
+  const handleWriteOnlyChange = (nextWriteOnly: boolean) => {
+    setPage(1);
+    setFilterWriteOnly(nextWriteOnly);
+  };
+
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-      {/* HEADER */}
-      <div className="sn-page-head">
-        <div className="sn-page-head-main">
-          <p className="sn-eyebrow" style={{ margin: '0 0 0.35rem', color: 'var(--color-accent)' }}>감사 기록</p>
-          <h1 className="sn-page-title">감사 기록</h1>
-          <p className="sn-page-subtitle">총 {total}건의 작업 기록을 시간순으로 확인합니다.</p>
-        </div>
-        <div className="sn-page-actions">
-          <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', userSelect: 'none' }}>
-            <div style={{ position: 'relative' }}>
-              <input
-                type="checkbox"
-                checked={autoRefresh}
-                onChange={(e) => setAutoRefresh(e.target.checked)}
-                style={{ position: 'absolute', opacity: 0, width: 0, height: 0 }}
-              />
-              <div style={{ width: 36, height: 20, borderRadius: 10, background: autoRefresh ? 'var(--color-primary)' : 'var(--color-border)', transition: 'background 0.2s' }} />
-              <div style={{ position: 'absolute', top: 2, left: autoRefresh ? 18 : 2, width: 16, height: 16, borderRadius: '50%', background: 'var(--color-surface)', boxShadow: 'var(--shadow-card)', transition: 'left 0.2s' }} />
+    <div data-page="audit-log" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+      <PageHead
+        eyebrow="Audit register"
+        eyebrowColor="var(--color-accent)"
+        title="Audit / Ledger"
+        subtitle={`총 ${total}건의 API 행위와 응답 근거를 ledger/register 기준으로 확인합니다.`}
+        actions={(
+          <>
+            <div className="sn-kpi-mini">
+              <p className="sn-eyebrow" style={{ margin: '0 0 0.3rem' }}>현재 페이지</p>
+              <p style={{ fontFamily: 'var(--font-mono)', fontSize: '1.1rem', fontWeight: 700, color: 'var(--color-text-1)', margin: 0 }}>
+                {logs.length}
+              </p>
             </div>
-            <span style={{ fontSize: '0.875rem', fontWeight: 500, color: 'var(--color-text-2)' }}>실시간</span>
-          </label>
-          <button onClick={fetchLogs} className="sn-btn sn-btn-ghost" style={{ fontSize: '0.875rem' }}>
-            <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-            </svg>
-            새로고침
-          </button>
-        </div>
-      </div>
+            <label className="sn-panel" style={{ minHeight: 44, display: 'inline-flex', alignItems: 'center', cursor: 'pointer', userSelect: 'none', gap: 10, padding: '0.55rem 0.9rem' }}>
+              <div style={{ position: 'relative' }}>
+                <input
+                  type="checkbox"
+                  checked={autoRefresh}
+                  onChange={(e) => setAutoRefresh(e.target.checked)}
+                  style={{ position: 'absolute', opacity: 0, width: 0, height: 0 }}
+                />
+                <div style={{ width: 40, height: 22, borderRadius: 11, background: autoRefresh ? 'var(--color-accent)' : 'var(--color-border)', transition: 'background 0.2s' }} />
+                <div style={{ position: 'absolute', top: 3, left: autoRefresh ? 21 : 3, width: 16, height: 16, borderRadius: '50%', background: 'var(--color-surface)', boxShadow: 'var(--shadow-card)', transition: 'left 0.2s' }} />
+              </div>
+              <span style={{ fontSize: '0.9375rem', fontWeight: 600, color: 'var(--color-text-2)' }}>Auto refresh</span>
+              {autoRefresh && (
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontFamily: 'var(--font-mono)', fontSize: '0.875rem', fontWeight: 700, color: 'var(--color-accent)' }}>
+                  <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--color-accent)' }} />
+                  5s
+                </span>
+              )}
+            </label>
+            <button onClick={fetchLogs} className="sn-btn sn-btn-ghost" style={{ flexShrink: 0 }}>
+              새로고침
+            </button>
+          </>
+        )}
+      />
 
-      {/* SUMMARY */}
-      <div className="sn-panel sn-summary-grid sn-summary-grid-3">
-        <div className="sn-summary-lead">
-          <p className="sn-eyebrow sn-summary-title">요약</p>
-          <p className="sn-summary-copy-strong">행위 → 응답 → 요청 데이터</p>
-          <p className="sn-summary-copy">필터로 필요한 기록만 추려 보고, 상세 패널에서 요청 내용을 확인할 수 있습니다.</p>
+      <section className="sn-section-card">
+        <div className="sn-section-head">
+          <div className="sn-section-head-row">
+            <div>
+              <p className="sn-eyebrow" style={{ margin: '0 0 0.4rem', color: 'var(--color-text-3)' }}>{ledgerScopeLabel}</p>
+              <h2 className="sn-heading" style={{ margin: 0, fontSize: '1.25rem' }}>Ledger filing summary</h2>
+              <p className="sn-caption" style={{ margin: '0.45rem 0 0', maxWidth: '48rem' }}>
+                기존 audit endpoint의 페이지, action, writeOnly 조건을 그대로 사용해 기록을 좁히고, 펼친 행에서만 요청 데이터를 확인합니다.
+              </p>
+            </div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+              <span className="sn-detail-inline-stamp">GET /api/audit</span>
+              <span className="sn-detail-inline-stamp">limit 50</span>
+              <span className="sn-detail-inline-stamp">page {page}/{totalPages}</span>
+            </div>
+          </div>
         </div>
-        <div>
-          <p className="sn-eyebrow sn-stat-card-title">현재 페이지</p>
-          <p className="sn-stat-count">{logs.length}</p>
-          <p className="sn-stat-note">표시 중인 기록</p>
-        </div>
-        <div>
-          <p className="sn-eyebrow sn-stat-card-title" style={{ color: '#059669' }}>필터</p>
-          <p className="sn-summary-copy-strong" style={{ margin: 0 }}>{filterWriteOnly ? '쓰기 작업만' : '전체 기록'}</p>
-          <p className="sn-stat-note">{autoRefresh ? '실시간 확인' : '수동 새로고침'}</p>
-        </div>
-      </div>
 
-      {/* 활동 요약 패널 — DonutChart(method 분포) + BarRows(action top5) */}
-      {logs.length > 0 && (
-        <div className="sn-panel" style={{ padding: '16px 20px', display: 'grid', gridTemplateColumns: 'auto 1fr', gap: 28, alignItems: 'start' }}>
-          {/* 좌: DonutChart — HTTP method 분포 */}
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 }}>
-            <p className="sn-eyebrow" style={{ margin: 0 }}>메서드 분포</p>
-            {methodDistribution.length > 0 ? (
-              <>
+        <div className="sn-info-grid sn-info-grid-auto">
+          <div className="sn-info-tile">
+            <p className="sn-eyebrow" style={{ margin: '0 0 0.5rem', color: 'var(--color-accent)' }}>Ledger files</p>
+            <p className="sn-info-tile-value" style={{ color: 'var(--color-accent)' }}>{total}</p>
+            <p className="sn-stat-note">현재 조건의 전체 건수</p>
+          </div>
+          <div className="sn-info-tile">
+            <p className="sn-eyebrow" style={{ margin: '0 0 0.5rem', color: filterWriteOnly ? 'var(--color-success)' : 'var(--color-text-3)' }}>Write scope</p>
+            <p className="sn-info-tile-value" style={{ color: filterWriteOnly ? 'var(--color-success)' : 'var(--color-text-1)' }}>{filterWriteOnly ? 'ON' : 'ALL'}</p>
+            <p className="sn-stat-note">{filterWriteOnly ? 'writeOnly=true 적용' : 'writeOnly 조건 해제'}</p>
+          </div>
+          <div className="sn-info-tile">
+            <p className="sn-eyebrow" style={{ margin: '0 0 0.5rem' }}>Action filter</p>
+            <p className="sn-info-tile-value" style={{ fontSize: '1.35rem', lineHeight: 1.15 }}>{activeActionLabel}</p>
+            <p className="sn-stat-note">기존 action label 유지</p>
+          </div>
+          <div className="sn-info-tile">
+            <p className="sn-eyebrow" style={{ margin: '0 0 0.5rem', color: autoRefresh ? 'var(--color-accent)' : 'var(--color-text-3)' }}>Refresh</p>
+            <p className="sn-info-tile-value" style={{ color: autoRefresh ? 'var(--color-accent)' : 'var(--color-text-1)' }}>{autoRefresh ? '5s' : 'Manual'}</p>
+            <p className="sn-stat-note">최근 기록 {newestTimestamp ? formatTime(newestTimestamp) : '대기 중'}</p>
+          </div>
+        </div>
+
+        <div className="sn-summary-grid sn-summary-grid-3" style={{ borderTop: '1px solid var(--color-border)' }}>
+          <div className="sn-summary-lead">
+            <p className="sn-eyebrow sn-summary-title" style={{ margin: '0 0 0.4rem' }}>Register posture</p>
+            <p className="sn-summary-copy-strong" style={{ margin: 0, color: 'var(--color-text-1)' }}>행위 · 응답 · 증빙 상세</p>
+            <p className="sn-stat-note" style={{ margin: '0.35rem 0 0', lineHeight: 1.6 }}>
+              피드는 실제 audit log만 렌더링하며, 빈 상태나 오류 상태에서는 대체 행을 만들지 않습니다.
+            </p>
+          </div>
+          <div>
+            <p className="sn-eyebrow sn-stat-card-title">최근 24시간</p>
+            <p className="sn-metric sn-metric-md sn-stat-count">{timeSummary.last24h}</p>
+            <p className="sn-stat-note">현재 페이지 기록 기준</p>
+          </div>
+          <div>
+            <p className="sn-eyebrow sn-stat-card-title">최근 7일</p>
+            <p className="sn-metric sn-metric-md sn-stat-count">{timeSummary.last7d}</p>
+            <p className="sn-stat-note">현재 페이지 기록 기준</p>
+          </div>
+        </div>
+      </section>
+
+      {hasRecords && (
+        <section className="sn-section-card" style={{ padding: '20px 22px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'minmax(18rem, auto) 1fr', gap: 32, alignItems: 'start' }}>
+            <div>
+              <p className="sn-eyebrow" style={{ margin: '0 0 0.4rem', color: 'var(--color-text-3)' }}>Method distribution</p>
+              <h2 className="sn-heading" style={{ margin: '0 0 1rem', fontSize: '1.125rem' }}>HTTP method register</h2>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 20, flexWrap: 'wrap' }}>
                 <DonutChart
                   segments={methodDistribution}
-                  size={130}
+                  size={150}
                   thickness={18}
                   centerLabel="method"
                   centerValue={String(logs.length)}
                 />
-                <LegendStack items={methodDistribution.map((m) => ({ label: m.label, value: m.value, color: m.color }))} />
-              </>
-            ) : (
-              <p style={{ fontSize: '0.875rem', color: 'var(--color-text-3)' }}>데이터 없음</p>
-            )}
-          </div>
-          {/* 우: BarRows — action top 5 */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            <p className="sn-eyebrow" style={{ margin: 0 }}>활동 상위 {actionDistribution.length}</p>
-            {actionDistribution.length > 0 ? (
+                <LegendStack items={methodDistribution} />
+              </div>
+            </div>
+            <div>
+              <p className="sn-eyebrow" style={{ margin: '0 0 0.4rem', color: 'var(--color-text-3)' }}>Action ledger</p>
+              <h2 className="sn-heading" style={{ margin: '0 0 1rem', fontSize: '1.125rem' }}>상위 행위 분포</h2>
               <BarRows
                 items={actionDistribution.map(({ action, count }) => ({
                   label: ACTION_LABELS[action] || action,
@@ -282,158 +356,145 @@ export default function AuditLogPage() {
                   hint: '건',
                 }))}
               />
-            ) : (
-              <p style={{ fontSize: '0.875rem', color: 'var(--color-text-3)' }}>데이터 없음</p>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* TIME SUMMARY + STATUS BAR */}
-      {logs.length > 0 && (
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-          {/* 시간별 요약 */}
-          <div className="sn-panel" style={{ padding: '14px 18px', display: 'flex', flexDirection: 'column', gap: 10 }}>
-            <p className="sn-eyebrow" style={{ margin: 0 }}>시간 기준 집계</p>
-            <div style={{ display: 'flex', gap: 24 }}>
-              <div>
-                <p className="sn-metric sn-metric-md" style={{ margin: 0 }}>
-                  {timeSummary.last24h}
-                </p>
-                <p style={{ fontSize: '0.875rem', color: 'var(--color-text-3)', margin: '2px 0 0' }}>지난 24시간</p>
-              </div>
-              <div style={{ width: 1, background: 'var(--color-border)', alignSelf: 'stretch' }} />
-              <div>
-                <p className="sn-metric sn-metric-md" style={{ margin: 0 }}>
-                  {timeSummary.last7d}
-                </p>
-                <p style={{ fontSize: '0.875rem', color: 'var(--color-text-3)', margin: '2px 0 0' }}>지난 7일</p>
-              </div>
             </div>
-            <p style={{ fontSize: '0.875rem', color: 'var(--color-text-3)', margin: 0 }}>현재 페이지 기록 기준</p>
           </div>
+        </section>
+      )}
 
-          {/* 성공/실패 비율 */}
-          <div className="sn-panel" style={{ padding: '14px 18px', display: 'flex', flexDirection: 'column', gap: 10 }}>
-            <p className="sn-eyebrow" style={{ margin: 0 }}>응답 상태 비율</p>
-            {statusSummary ? (
-              <>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <span style={{ fontSize: '0.9375rem', color: '#10b981', fontWeight: 600 }}>성공 {statusSummary.success}건</span>
-                  <span style={{ fontSize: '0.9375rem', color: 'var(--color-text-3)' }}>{statusSummary.successPct}%</span>
-                  <span style={{ fontSize: '0.9375rem', color: '#ef4444', fontWeight: 600 }}>실패 {statusSummary.fail}건</span>
-                </div>
-                <div style={{ height: 8, borderRadius: 4, background: 'var(--color-surface-alt)', overflow: 'hidden' }}>
-                  <div
-                    style={{
-                      height: '100%',
-                      width: `${statusSummary.successPct}%`,
-                      background: '#10b981',
-                      borderRadius: 4,
-                      transition: 'width 0.4s ease',
-                    }}
-                  />
-                </div>
-                <p style={{ fontSize: '0.875rem', color: 'var(--color-text-3)', margin: 0 }}>2xx 성공 / 4xx·5xx 실패</p>
-              </>
+      {hasRecords && (
+        <section className="sn-section-card" style={{ padding: '18px 22px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'minmax(220px, 0.9fr) minmax(260px, 1.1fr)', gap: '1.25rem', alignItems: 'start' }}>
+            <div>
+              <p className="sn-eyebrow" style={{ margin: '0 0 0.4rem', color: 'var(--color-text-3)' }}>Status distribution</p>
+              <h2 className="sn-heading" style={{ margin: '0 0 0.55rem', fontSize: '1.125rem' }}>응답 상태 등록부</h2>
+              <p className="sn-caption" style={{ margin: 0 }}>
+                {statusSummary
+                  ? `성공 ${statusSummary.success}건, 실패 ${statusSummary.fail}건 · 성공률 ${statusSummary.successPct}%`
+                  : '상태 코드가 있는 로그가 없습니다.'}
+              </p>
+            </div>
+            {statusDistribution.length > 0 ? (
+              <BarRows items={statusDistribution} max={Math.max(...statusDistribution.map((item) => item.value), 1)} />
             ) : (
-              <p style={{ fontSize: '0.9375rem', color: 'var(--color-text-3)', margin: 0 }}>상태 코드 정보 없음</p>
+              <p className="sn-caption" style={{ margin: 0 }}>상태 코드 정보 없음</p>
             )}
           </div>
-        </div>
+        </section>
       )}
 
-      {/* FILTERS */}
-      <div className="sn-panel sn-toolbar">
-        <select
-          value={filterAction}
-          onChange={(e) => setFilterAction(e.target.value)}
-          className="sn-input"
-          style={{ minWidth: 140, fontSize: '0.9375rem' }}
-        >
-          {ACTION_OPTIONS.map((opt) => (
-            <option key={opt.value} value={opt.value}>{opt.label}</option>
-          ))}
-        </select>
-        <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', userSelect: 'none' }}>
-          <input
-            type="checkbox"
-            checked={filterWriteOnly}
-            onChange={(e) => setFilterWriteOnly(e.target.checked)}
-            style={{ width: 16, height: 16, accentColor: 'var(--color-text-1)', borderRadius: 4 }}
-          />
-          <span style={{ fontSize: '0.9375rem', color: 'var(--color-text-2)' }}>쓰기 작업만</span>
-        </label>
-          <span style={{ marginLeft: 'auto', fontFamily: "'JetBrains Mono',monospace", fontSize: '0.875rem', color: 'var(--color-text-3)' }}>
-          총 {total}건
-        </span>
-      </div>
-
-      {filterAction && (
-        <div className="sn-panel" style={{ padding: '10px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div>
-            <p className="sn-eyebrow" style={{ margin: '0 0 4px' }}>활성 필터</p>
-            <p style={{ margin: 0, fontSize: '0.9rem', fontWeight: 700, color: 'var(--color-text-1)' }}>{activeActionLabel}</p>
+      <section className="sn-section-card">
+        <div className="sn-section-head">
+          <div className="sn-section-head-row">
+            <div>
+              <p className="sn-eyebrow" style={{ margin: '0 0 0.4rem', color: 'var(--color-text-3)' }}>Ledger controls</p>
+              <h2 className="sn-heading" style={{ margin: 0, fontSize: '1.25rem' }}>Audit register filters</h2>
+              <p className="sn-caption" style={{ margin: '0.45rem 0 0', maxWidth: '44rem' }}>
+                Action 필터와 write-only 토글은 기존 `/audit` 쿼리 파라미터를 그대로 구성합니다.
+              </p>
+            </div>
           </div>
-          <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: '0.875rem', color: 'var(--color-text-2)' }}>{total}건</span>
         </div>
-      )}
 
-      {/* FEED / EMPTY / LOADING */}
+        <div className="sn-toolbar" style={{ padding: '0.9rem 1.25rem', background: 'var(--color-surface)' }}>
+          <div style={{ flex: 1, minWidth: 180 }}>
+            <label className="sn-eyebrow" style={{ display: 'block', marginBottom: 8 }}>Action</label>
+            <select
+              value={filterAction}
+              onChange={(e) => handleActionChange(e.target.value)}
+              className="sn-input"
+              style={{ minWidth: 180, fontSize: '0.9375rem' }}
+            >
+              {ACTION_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>{opt.label}</option>
+              ))}
+            </select>
+          </div>
+          <label className="sn-panel" style={{ minHeight: 44, display: 'inline-flex', alignItems: 'center', gap: 8, cursor: 'pointer', userSelect: 'none', padding: '0.55rem 0.9rem' }}>
+            <input
+              type="checkbox"
+              checked={filterWriteOnly}
+              onChange={(e) => handleWriteOnlyChange(e.target.checked)}
+              style={{ width: 16, height: 16, accentColor: 'var(--color-text-1)', borderRadius: 4 }}
+            />
+            <span style={{ fontSize: '0.9375rem', fontWeight: 600, color: 'var(--color-text-2)' }}>쓰기 작업만</span>
+          </label>
+          <span style={{ marginLeft: 'auto', fontFamily: 'var(--font-mono)', fontSize: '0.875rem', color: 'var(--color-text-3)' }}>
+            총 {total}건
+          </span>
+        </div>
+
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', padding: '0 1.25rem 1rem', background: 'var(--color-surface)' }}>
+          <span className="sn-detail-inline-stamp">action {filterAction || 'ALL'}</span>
+          <span className="sn-detail-inline-stamp">writeOnly {filterWriteOnly ? 'true' : 'false'}</span>
+          <span className="sn-detail-inline-stamp">표시 {logs.length}</span>
+        </div>
+      </section>
+
       {loading && logs.length === 0 ? (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          {/* 시간 요약 skeleton */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-            {[0, 1].map((i) => (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
+            {[0, 1, 2].map((i) => (
               <div key={i} className="sn-panel" style={{ padding: '14px 18px', display: 'flex', flexDirection: 'column', gap: 12 }}>
-                <Skeleton width="40%" height={12} />
-                <div style={{ display: 'flex', gap: 24 }}>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                    <Skeleton width={60} height={28} />
-                    <Skeleton width={80} height={12} />
-                  </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                    <Skeleton width={60} height={28} />
-                    <Skeleton width={80} height={12} />
-                  </div>
-                </div>
+                <Skeleton width="45%" height={12} />
+                <Skeleton width="60%" height={28} />
+                <Skeleton width="80%" height={12} />
               </div>
             ))}
           </div>
-          {/* 피드 5개 skeleton */}
-          <div className="sn-panel" style={{ overflow: 'hidden' }}>
+          <div className="sn-section-card" style={{ overflow: 'hidden' }}>
             <div style={{ display: 'flex', flexDirection: 'column' }}>
               {Array.from({ length: 5 }, (_, i) => (
-                <div key={i} style={{ padding: '0.75rem 1rem', borderBottom: '1px solid var(--color-border)', display: 'flex', gap: 12, alignItems: 'flex-start' }}>
+                <div key={i} style={{ padding: '0.85rem 1rem', borderBottom: '1px solid var(--color-border)', display: 'flex', gap: 12, alignItems: 'flex-start' }}>
                   <Skeleton width={8} height={8} radius={4} style={{ marginTop: 6, flexShrink: 0 }} />
                   <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 6 }}>
                     <SkeletonRows rows={2} height={13} gap={6} />
                   </div>
-                  <Skeleton width={32} height={20} radius={4} />
+                  <Skeleton width={42} height={22} radius={6} />
                 </div>
               ))}
             </div>
           </div>
         </div>
+      ) : errorMsg ? (
+        <div className="sn-empty-dashed" style={{ minHeight: 220, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', textAlign: 'center' }}>
+          <p className="sn-heading" style={{ fontSize: '1.125rem', margin: '0 0 0.5rem' }}>Audit ledger를 열 수 없습니다.</p>
+          <p className="sn-caption" style={{ margin: '0 0 0.9rem', maxWidth: '38rem' }}>
+            서버가 반환한 메시지: {errorMsg}. 필터 조건을 유지한 채 새로고침할 수 있습니다.
+          </p>
+          <button onClick={fetchLogs} className="sn-btn sn-btn-ghost">다시 조회</button>
+        </div>
       ) : logs.length === 0 ? (
-        <div style={{ padding: '2rem 1.5rem', textAlign: 'center', border: '1px dashed var(--color-border)', borderRadius: '0.5rem' }}>
-          <div style={{ width: 44, height: 44, borderRadius: 10, background: 'var(--color-surface-alt)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 14px' }}>
-            <svg width="22" height="22" fill="none" stroke="var(--color-text-3)" strokeWidth="1.5" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-            </svg>
-          </div>
-          <p style={{ fontSize: '0.9375rem', fontWeight: 600, color: 'var(--color-text-2)', margin: '0 0 6px' }}>
-            {filterAction ? `${activeActionLabel} 작업 기록이 없습니다` : '아직 기록된 작업이 없습니다'}
+        <div className="sn-empty-dashed" style={{ minHeight: 220, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', textAlign: 'center' }}>
+          <p className="sn-heading" style={{ fontSize: '1.125rem', margin: '0 0 0.5rem' }}>
+            {filterAction ? `${activeActionLabel} ledger 항목이 없습니다.` : '표시할 audit ledger 항목이 없습니다.'}
           </p>
-          <p style={{ fontSize: '0.875rem', color: 'var(--color-text-3)', margin: 0 }}>
+          <p className="sn-caption" style={{ margin: '0 0 0.9rem', maxWidth: '38rem' }}>
             {filterAction
-              ? `현재 필터(${activeActionLabel})와 일치하는 감사 증빙이 없습니다. 필터를 해제하거나 다른 조건을 선택하세요.`
-              : '체인 이벤트가 발생하면 여기에 표시됩니다. 실시간 모드를 켜 두면 자동으로 갱신됩니다.'}
+              ? `현재 action 필터(${activeActionLabel})와 write-only 조건에 맞는 감사 증빙이 없습니다.`
+              : '새로운 쓰기 작업이나 인증 이벤트가 기록되면 이 등록부에 표시됩니다.'}
           </p>
+          <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '0.5rem' }}>
+            <span className="sn-detail-inline-stamp">{ledgerScopeLabel}</span>
+            <span className="sn-detail-inline-stamp">fake rows 없음</span>
+          </div>
         </div>
       ) : (
-        <div className="sn-panel" style={{ overflow: 'hidden' }}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 1, background: 'rgba(0,0,0,0.03)' }}>
+        <section className="sn-section-card" style={{ overflow: 'hidden' }}>
+          <div className="sn-section-head">
+            <div className="sn-section-head-row">
+              <div>
+                <p className="sn-eyebrow" style={{ margin: '0 0 0.4rem', color: 'var(--color-text-3)' }}>Audit feed</p>
+                <h2 className="sn-heading" style={{ margin: 0, fontSize: '1.25rem' }}>Ledger entries</h2>
+                <p className="sn-caption" style={{ margin: '0.45rem 0 0' }}>행을 선택하면 기존 상세 필드와 요청 데이터 영역을 펼칩니다.</p>
+              </div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+                <span className="sn-detail-inline-stamp">{pageStart}-{pageEnd}</span>
+                <span className="sn-detail-inline-stamp">total {total}</span>
+              </div>
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', background: 'var(--color-border)', gap: 1 }}>
             {logs.map((log) => {
               const statusStyle = getStatusStyle(log.statusCode);
               const expanded = expandedId === log.id;
@@ -443,74 +504,81 @@ export default function AuditLogPage() {
                     onClick={() => toggleDetail(log.id)}
                     style={{
                       background: expanded ? 'var(--color-surface-alt)' : 'var(--color-surface)',
-                      padding: '0.75rem 1rem',
-                      display: 'flex',
-                      gap: '0.75rem',
+                      padding: '0.9rem 1rem',
+                      display: 'grid',
+                      gridTemplateColumns: 'auto minmax(0, 1fr) auto',
+                      gap: '0.85rem',
                       alignItems: 'flex-start',
                       cursor: 'pointer',
                     }}
                   >
-                    <div
+                    <span
                       style={{
                         width: 8,
                         height: 8,
                         borderRadius: '50%',
-                        marginTop: '0.375rem',
+                        marginTop: '0.45rem',
                         flexShrink: 0,
-                        background: '#16a34a',
+                        background: statusStyle.color,
                       }}
                     />
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
-                        <span style={{ fontSize: '0.875rem', fontWeight: 500, color: 'var(--color-text-1)' }}>
+                    <div style={{ minWidth: 0 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.35rem', flexWrap: 'wrap' }}>
+                        <span style={{ fontSize: '0.9375rem', fontWeight: 700, color: 'var(--color-text-1)' }}>
                           {ACTION_LABELS[log.action || 'OTHER'] || log.action}
                         </span>
-                        <span style={{ fontSize: '0.8125rem', color: 'var(--color-text-3)' }}>{relativeTime(log.timestamp)}</span>
-                        <svg
-                          style={{
-                            width: 10,
-                            height: 10,
-                            color: 'var(--color-text-2)',
-                            transition: 'transform 0.2s',
-                            transform: expanded ? 'rotate(90deg)' : 'rotate(0deg)',
-                            marginLeft: 'auto',
-                            flexShrink: 0,
-                          }}
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                          strokeWidth="2.5"
-                        >
-                          <polyline points="9 18 15 12 9 6" />
-                        </svg>
+                        <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.8125rem', color: 'var(--color-text-3)' }}>{relativeTime(log.timestamp)}</span>
+                        <span style={{ display: 'inline-flex', alignItems: 'center', padding: '2px 8px', borderRadius: 999, background: statusStyle.bg, color: statusStyle.color, fontSize: '0.8125rem', fontWeight: 700 }}>
+                          {statusStyle.label}
+                        </span>
                       </div>
-                      <div style={{ fontSize: '0.9375rem', color: 'var(--color-text-3)' }}>
-                        {log.userId || (log.action === 'RECORD_BMU' ? '시스템(BMU)' : '-')}
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.45rem', fontSize: '0.9375rem', color: 'var(--color-text-3)' }}>
+                        <span>{log.userId || (log.action === 'RECORD_BMU' ? '시스템(BMU)' : '-')}</span>
+                        {log.orgMsp && <span>· {log.orgMsp}</span>}
                         {log.path && (
-                          <span style={{ fontFamily: "'JetBrains Mono',monospace" }}> · {log.method} {log.path}</span>
+                          <span style={{ fontFamily: 'var(--font-mono)' }}>· {log.method} {log.path}</span>
                         )}
-                        <span style={{ fontFamily: "'JetBrains Mono',monospace" }}> · {formatTime(log.timestamp)}</span>
+                        <span style={{ fontFamily: 'var(--font-mono)' }}>· {formatTime(log.timestamp)}</span>
                       </div>
                     </div>
-                    <span
-                      style={{
-                        fontFamily: 'var(--font-mono)',
-                        fontSize: '0.8125rem',
-                        padding: '0.125rem 0.375rem',
-                        borderRadius: 3,
-                        flexShrink: 0,
-                        background: (log.statusCode || 0) < 400 ? '#f0fdf4' : '#fef2f2',
-                        color: (log.statusCode || 0) < 400 ? '#16a34a' : '#dc2626',
-                      }}
-                    >
-                      {log.statusCode || '—'}
-                    </span>
+                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: 10 }}>
+                      <span
+                        style={{
+                          fontFamily: 'var(--font-mono)',
+                          fontSize: '0.8125rem',
+                          padding: '0.2rem 0.45rem',
+                          borderRadius: 8,
+                          flexShrink: 0,
+                          background: statusStyle.bg,
+                          color: statusStyle.color,
+                          fontWeight: 700,
+                        }}
+                      >
+                        {log.statusCode || '—'}
+                      </span>
+                      <svg
+                        style={{
+                          width: 12,
+                          height: 12,
+                          color: 'var(--color-text-2)',
+                          transition: 'transform 0.2s',
+                          transform: expanded ? 'rotate(90deg)' : 'rotate(0deg)',
+                          flexShrink: 0,
+                        }}
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        strokeWidth="2.5"
+                      >
+                        <polyline points="9 18 15 12 9 6" />
+                      </svg>
+                    </div>
                   </div>
 
                   {expanded && (
-                    <div style={{ background: 'var(--color-surface-alt)', borderTop: '1px solid rgba(0,0,0,0.04)', padding: '12px 16px 16px' }}>
-                      <div style={{ background: 'var(--color-surface)', boxShadow: 'inset 0 0 0 1px rgba(0,0,0,0.06)', borderRadius: 10, padding: 16, display: 'flex', flexDirection: 'column', gap: 14 }}>
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 12 }}>
+                    <div style={{ background: 'var(--color-surface-alt)', borderTop: '1px solid var(--color-border)', padding: '12px 16px 16px' }}>
+                      <div style={{ background: 'var(--color-surface)', boxShadow: 'inset 0 0 0 1px var(--color-border)', borderRadius: 12, padding: 16, display: 'flex', flexDirection: 'column', gap: 14 }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 12 }}>
                           {[
                             { k: '로그 ID', v: log.id, mono: true },
                             { k: 'HTTP 메서드', v: log.method, mono: true },
@@ -522,10 +590,10 @@ export default function AuditLogPage() {
                             { k: '조직', v: log.orgMsp || '(없음)', mono: false },
                           ].map(({ k, v, mono, color }) => (
                             <div key={k}>
-                              <p style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--color-text-2)', textTransform: 'uppercase', margin: '0 0 2px' }}>{k}</p>
+                              <p className="sn-eyebrow" style={{ margin: '0 0 0.2rem', color: 'var(--color-text-3)' }}>{k}</p>
                               <p
                                 style={{
-                                  fontFamily: mono ? "'JetBrains Mono',monospace" : undefined,
+                                  fontFamily: mono ? 'var(--font-mono)' : undefined,
                                   fontSize: '0.875rem',
                                   color: color || 'var(--color-text-2)',
                                   wordBreak: 'break-all',
@@ -542,11 +610,11 @@ export default function AuditLogPage() {
                             <p className="sn-eyebrow" style={{ margin: '0 0 6px' }}>요청 데이터</p>
                             <pre
                               style={{
-                                fontFamily: "'JetBrains Mono',monospace",
+                                fontFamily: 'var(--font-mono)',
                                 fontSize: '0.875rem',
                                 color: 'var(--color-text-2)',
                                 background: 'var(--color-surface-alt)',
-                                boxShadow: 'inset 0 0 0 1px rgba(0,0,0,0.06)',
+                                boxShadow: 'inset 0 0 0 1px var(--color-border)',
                                 borderRadius: 8,
                                 padding: 12,
                                 overflowX: 'auto',
@@ -566,9 +634,9 @@ export default function AuditLogPage() {
             })}
           </div>
 
-          <div style={{ padding: '12px 20px', borderTop: '1px solid rgba(0,0,0,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: '0.8125rem', color: 'var(--color-text-3)' }}>
-              {total}건 중 {(page - 1) * 50 + 1}~{Math.min(page * 50, total)}
+          <div style={{ padding: '12px 20px', borderTop: '1px solid var(--color-border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.8125rem', color: 'var(--color-text-3)' }}>
+              {total}건 중 {pageStart}~{pageEnd}
             </span>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <button
@@ -579,7 +647,7 @@ export default function AuditLogPage() {
               >
                 이전
               </button>
-              <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: '0.8125rem', color: 'var(--color-text-3)', fontVariantNumeric: 'tabular-nums' }}>
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.8125rem', color: 'var(--color-text-3)', fontVariantNumeric: 'tabular-nums' }}>
                 {page} / {totalPages}
               </span>
               <button
@@ -592,7 +660,7 @@ export default function AuditLogPage() {
               </button>
             </div>
           </div>
-        </div>
+        </section>
       )}
     </div>
   );

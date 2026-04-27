@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { api } from '../lib/api';
 import { useAuth } from '../contexts/AuthContext';
 import { getStatusBadge, scaleSOC } from '../lib/helpers';
-import { Spinner, Skeleton, SkeletonCard, SkeletonTable } from '../components/ui';
+import { PageHead, Skeleton, SkeletonCard } from '../components/ui';
 import { ArcGauge } from '../components/ui/BatteryGauge';
 import { computeGbaCompliance, complianceGrade } from '../components/passport-detail/helpers';
 import type { Passport, BmuRecord, Credential, IssuerCatalogItem } from '../components/passport-detail/types';
@@ -64,6 +64,10 @@ function DetailSectionFallback() {
   );
 }
 
+function errorMessage(reason: unknown) {
+  return reason instanceof Error ? reason.message : '여권을 불러오지 못했습니다.';
+}
+
 export default function PassportDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -83,20 +87,35 @@ export default function PassportDetailPage() {
   const [selectedVcId, setSelectedVcId] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [fetchError, setFetchError] = useState<string | null>(null);
   const [issuers, setIssuers] = useState<IssuerCatalogItem[]>([]);
 
   const fetchAll = async () => {
-    if (!id) return;
+    if (!id) {
+      setPassport(null);
+      setBmuRecords([]);
+      setFetchError('요청한 여권 ID가 없습니다.');
+      setLoading(false);
+      return;
+    }
     setLoading(true);
+    setFetchError(null);
     try {
       const [p, bmu] = await Promise.allSettled([
         api.get<Passport>(`/passports/${encodeURIComponent(id)}`),
         api.get<{ records?: BmuRecord[] } | BmuRecord[]>(`/bmu/records/${encodeURIComponent(id)}`),
       ]);
-      if (p.status === 'fulfilled') setPassport(p.value);
+      if (p.status === 'fulfilled') {
+        setPassport(p.value);
+      } else {
+        setPassport(null);
+        setFetchError(errorMessage(p.reason));
+      }
       if (bmu.status === 'fulfilled') {
         const data = bmu.value;
         setBmuRecords(Array.isArray(data) ? data : data.records || []);
+      } else {
+        setBmuRecords([]);
       }
     } finally {
       setLoading(false);
@@ -305,7 +324,7 @@ export default function PassportDetailPage() {
 
   if (loading) {
     return (
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+      <div data-page="passport-detail" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
         {/* 히어로 skeleton */}
         <div style={{ background: 'var(--color-surface)', padding: '1.5rem 1.75rem', borderRadius: '1rem', border: '1px solid var(--color-border)', display: 'flex', flexDirection: 'column', gap: 16 }}>
           <Skeleton width="40%" height={28} />
@@ -333,7 +352,37 @@ export default function PassportDetailPage() {
       </div>
     );
   }
-  if (!passport) return <p className="sn-caption">여권을 찾을 수 없습니다.</p>;
+  if (!passport) {
+    return (
+      <div data-page="passport-detail" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+        <PageHead
+          eyebrow="Battery passport dossier"
+          eyebrowColor="var(--color-accent)"
+          title="Dossier unavailable"
+          subtitle={fetchError || '요청한 여권을 찾을 수 없습니다. ID와 접근 권한을 확인하세요.'}
+          actions={(
+            <button onClick={() => navigate('/passports')} className="sn-detail-secondary-btn">
+              ← 여권 등록부
+            </button>
+          )}
+        />
+        <div className="sn-detail-dossier">
+          <div className="sn-detail-dossier-head">
+            <div>
+              <p className="sn-eyebrow" style={{ margin: '0 0 0.35rem', color: 'var(--color-text-3)' }}>Lookup result</p>
+              <h2 className="sn-detail-dossier-title">상세 파일을 열 수 없습니다</h2>
+            </div>
+            <span className="sn-detail-inline-stamp">{id || 'ID 없음'}</span>
+          </div>
+          <div style={{ padding: '18px 20px' }}>
+            <p className="sn-caption" style={{ margin: 0, maxWidth: '46rem', lineHeight: 1.7 }}>
+              등록부에 없는 ID이거나 현재 조직 권한으로 열람할 수 없는 dossier입니다. 여권 등록부에서 ID를 다시 조회하거나 권한이 있는 조직 계정으로 접속하세요.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const badge = getStatusBadge(passport.status || 'DISPOSED');
   const warningMessages = [
@@ -352,113 +401,178 @@ export default function PassportDetailPage() {
         : !passport.vin
           ? 'VIN 등록 대기'
           : '운행 중';
+  const roleDeskLabel = isManufacturer
+    ? 'Manufacturer filing desk'
+    : isEV
+      ? 'EV binding desk'
+      : isService
+        ? 'Service evidence desk'
+        : isRegulator
+          ? 'Regulator review desk'
+          : 'Shared dossier view';
+  const dossierSummary = isManufacturer
+    ? '제조사는 원본 여권 파일, GBA 21 보완 상태, VC 발급 작업을 같은 dossier에서 확인합니다.'
+    : isEV
+      ? 'EV 제조사는 차량 연결 상태와 정비·분석 요청 가능 여부를 dossier 기준으로 확인합니다.'
+      : isService
+        ? '정비/분석 조직은 작업 대기 상태와 BMU 원장 근거를 dossier 안에서 이어봅니다.'
+        : isRegulator
+          ? '검증기관은 규제 증빙, 실물 이력 검증, 폐기 판단을 dossier 기준으로 검토합니다.'
+          : '조직 권한 안에서 열람 가능한 배터리 여권 근거를 dossier 기준으로 확인합니다.';
+  const filingStateLabel = gbaCompliance.pct < 100
+    ? '문서 보완 필요'
+    : !passport.vin
+      ? 'VIN 연결 대기'
+      : '검토 준비';
+  const actionContext = isManufacturer
+    ? '제조 파일 정정과 VC 발급 작업을 실행할 수 있습니다.'
+    : isEV
+      ? '차량 연결, 정비 요청, 분석 요청은 상태와 VIN 조건에 맞을 때 열립니다.'
+      : isService
+        ? '정비 또는 분석 상태의 여권에 결과 등록 작업을 남깁니다.'
+        : isRegulator
+          ? '검증기관 권한으로 폐기 판단과 증빙 발급을 처리합니다.'
+          : '현재 조직에서 허용된 작업만 표시합니다.';
+  const bmuRecordLabel = bmuRecords.length > 0 ? `${bmuRecords.length}건 수집` : '수집 이력 없음';
+  const vinLabel = passport.vin || '미바인딩';
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-      <div className="sn-page-head" style={{ marginBottom: 0, borderBottom: 'none', paddingBottom: 0 }}>
-        <div className="sn-page-head-main">
-          <button
-            onClick={() => navigate('/passports')}
-            style={{ fontSize: 13, color: 'var(--color-text-2)', background: 'none', border: 'none', cursor: 'pointer', padding: 0, marginBottom: 6 }}
-          >
-            ← 여권 목록
-          </button>
-          <h1 className="sn-page-title" style={{ fontFamily: "'JetBrains Mono',monospace" }}>
-            {passport.passportId}
-          </h1>
-          <p className="sn-page-subtitle">
+    <div data-page="passport-detail" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+      <PageHead
+        eyebrow="Battery passport dossier"
+        eyebrowColor="var(--color-accent)"
+        title={passport.passportId || 'Passport dossier'}
+        subtitle={(
+          <>
             <span className={`bp-stamp ${badge.bg} ${badge.text} ${badge.border}`} style={{ marginRight: 8 }}>{badge.label}</span>
-            {passport.model || '-'} · {passport.manufacturerName || '-'}
-          </p>
-        </div>
-      </div>
+            {passport.model || '모델 미등록'} · {passport.manufacturerName || '제조사 미등록'}
+          </>
+        )}
+        actions={(
+          <>
+            <span className="sn-detail-inline-stamp">{roleDeskLabel}</span>
+            <button onClick={() => navigate('/passports')} className="sn-detail-secondary-btn">
+              ← 여권 등록부
+            </button>
+          </>
+        )}
+      />
 
       {submitError && (
-        <div style={{ padding: '0.9rem 1rem', borderRadius: '0.85rem', background: 'var(--color-danger-soft)', color: 'var(--color-danger)', border: '1px solid rgba(239,68,68,0.16)' }}>
+        <div style={{ padding: '0.9rem 1rem', borderRadius: '0.85rem', background: 'var(--color-danger-soft)', color: 'var(--color-danger)', border: '1px solid var(--color-border)' }}>
           <span style={{ fontSize: '0.9rem', lineHeight: 1.6 }}>{submitError}</span>
         </div>
       )}
 
-      <div style={{ display: 'flex', flexDirection: 'column', background: 'var(--color-surface)', padding: '1.5rem 1.75rem', borderRadius: '1rem', border: '1px solid var(--color-border)', boxShadow: 'var(--shadow-card)', gap: '1.25rem' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr)) auto', alignItems: 'center', gap: '1.25rem', flexWrap: 'wrap' }}>
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-            {passport.currentSoh != null ? (
-              <ArcGauge
-                value={passport.currentSoh}
-                label="SOH · 건강"
-                sublabel={passport.currentSoh < 80 ? '요주의' : undefined}
-                size={120}
-                strokeWidth={12}
-                warningThreshold={80}
-              />
-            ) : (
-              <>
-                <p className="sn-eyebrow" style={{ marginBottom: '0.45rem' }}>SOH · 건강 상태</p>
-                <p className="sn-metric sn-metric-md">--</p>
-              </>
-            )}
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-            {passport.currentSoc != null ? (
-              <ArcGauge
-                value={scaleSOC(passport.currentSoc)}
-                label="SOC · 충전"
-                size={120}
-                strokeWidth={12}
-                warningThreshold={20}
-              />
-            ) : (
-              <>
-                <p className="sn-eyebrow" style={{ marginBottom: '0.45rem' }}>SOC · 충전 상태</p>
-                <p className="sn-metric sn-metric-md">--</p>
-              </>
-            )}
-          </div>
+      <section className="sn-detail-hero" aria-label="여권 dossier 요약">
+        <div className="sn-detail-dossier-head" style={{ padding: '0 0 14px', marginBottom: 16 }}>
           <div>
-            <p className="sn-eyebrow" style={{ marginBottom: '0.45rem' }}>GBA 규제 준수</p>
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.6rem', flexWrap: 'wrap' }}>
-              <p className="sn-metric sn-metric-md" style={{ color: gbaCompliance.pct === 100 ? 'var(--color-success)' : 'var(--color-warning)' }}>
-                {gbaCompliance.pct}
-                <span className="sn-metric-unit">%</span>
-              </p>
-              <span className="bp-stamp" style={{ fontSize: '0.8125rem', fontWeight: 700, padding: '3px 10px', background: 'var(--color-surface-accent)', color: 'var(--color-accent)', border: '1px solid var(--color-border)' }}>Grade {grade}</span>
+            <p className="sn-eyebrow" style={{ margin: '0 0 0.35rem', color: 'var(--color-text-3)' }}>{roleDeskLabel}</p>
+            <h2 className="sn-detail-dossier-title">Dossier control sheet</h2>
+            <p className="sn-caption" style={{ margin: '0.45rem 0 0', maxWidth: '48rem', lineHeight: 1.7 }}>{dossierSummary}</p>
+          </div>
+          <span className="sn-detail-inline-stamp">{filingStateLabel}</span>
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(18rem, 0.45fr)', gap: '1rem', alignItems: 'stretch' }}>
+          <div className="sn-detail-dossier" style={{ background: 'var(--color-surface)', boxShadow: 'none' }}>
+            <div className="sn-detail-dossier-head">
+              <h3 className="sn-detail-dossier-title">상태 계기판</h3>
+              <span className="sn-caption">SOH · SOC · GBA · lifecycle</span>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: '1rem', alignItems: 'center', padding: '18px 20px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                {passport.currentSoh != null ? (
+                  <ArcGauge
+                    value={passport.currentSoh}
+                    label="SOH · 상태"
+                    sublabel={passport.currentSoh < 80 ? '요주의' : undefined}
+                    size={120}
+                    strokeWidth={12}
+                    warningThreshold={80}
+                  />
+                ) : (
+                  <>
+                    <p className="sn-eyebrow" style={{ marginBottom: '0.45rem' }}>SOH · 상태</p>
+                    <p className="sn-metric sn-metric-md">--</p>
+                  </>
+                )}
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                {passport.currentSoc != null ? (
+                  <ArcGauge
+                    value={scaleSOC(passport.currentSoc)}
+                    label="SOC · 충전"
+                    size={120}
+                    strokeWidth={12}
+                    warningThreshold={20}
+                  />
+                ) : (
+                  <>
+                    <p className="sn-eyebrow" style={{ marginBottom: '0.45rem' }}>SOC · 충전</p>
+                    <p className="sn-metric sn-metric-md">--</p>
+                  </>
+                )}
+              </div>
+              <div>
+                <p className="sn-eyebrow" style={{ marginBottom: '0.45rem' }}>GBA 21</p>
+                <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.6rem', flexWrap: 'wrap' }}>
+                  <p className="sn-metric sn-metric-md" style={{ color: gbaCompliance.pct === 100 ? 'var(--color-success)' : 'var(--color-warning)' }}>
+                    {gbaCompliance.pct}
+                    <span className="sn-metric-unit">%</span>
+                  </p>
+                  <span className="sn-detail-inline-stamp">Grade {grade}</span>
+                </div>
+                <p className="sn-stat-note" style={{ margin: '0.35rem 0 0' }}>{gbaCompliance.filled}/21 fields filed</p>
+              </div>
+              <div>
+                <p className="sn-eyebrow" style={{ marginBottom: '0.45rem' }}>Lifecycle</p>
+                <p style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--color-text-1)', margin: 0, lineHeight: 1.2 }}>
+                  {lifecycleLabel}
+                </p>
+                <p className="sn-stat-note" style={{ margin: '0.35rem 0 0' }}>{passport.status || '상태 미등록'}</p>
+              </div>
             </div>
           </div>
-          <div>
-            <p className="sn-eyebrow" style={{ marginBottom: '0.45rem' }}>라이프사이클</p>
-            <p style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--color-text-1)', margin: 0, lineHeight: 1.2 }}>
-              {lifecycleLabel}
-            </p>
-          </div>
-          <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
-            {isManufacturer && (
-              <button onClick={() => setOpenModal('correct')} className="sn-btn sn-btn-ghost">데이터 정정</button>
-            )}
-            {isEV && !passport.vin && (
-              <button onClick={() => setOpenModal('bind')} className="sn-btn sn-btn-accent">차량 연결</button>
-            )}
-            {isEV && passport.status === 'ACTIVE' && (
-              <>
-                <button onClick={() => setOpenModal('mRequest')} className="sn-btn sn-btn-ghost">정비 요청</button>
-                <button onClick={() => setOpenModal('aRequest')} className="sn-btn sn-btn-ghost">분석 요청</button>
-              </>
-            )}
-            {isService && passport.status === 'MAINTENANCE' && (
-              <button onClick={() => setOpenModal('mLog')} className="sn-btn sn-btn-accent">정비 완료</button>
-            )}
-            {isService && passport.status === 'ANALYSIS' && (
-              <button onClick={() => setOpenModal('aResult')} className="sn-btn sn-btn-accent">분석 결과</button>
-            )}
-            {isRegulator && passport.status !== 'DISPOSED' && (
-              <button onClick={() => setOpenModal('dispose')} className="sn-btn sn-btn-danger">폐기</button>
-            )}
-            {(isManufacturer || isRegulator) && (
-              <button onClick={() => setOpenModal('vcIssue')} className="sn-btn sn-btn-ghost">VC 발급</button>
-            )}
+
+          <div className="sn-detail-dossier" style={{ background: 'var(--color-surface)', boxShadow: 'none' }}>
+            <div className="sn-detail-dossier-head">
+              <h3 className="sn-detail-dossier-title">권한별 작업</h3>
+            </div>
+            <div style={{ padding: '16px 18px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+              <p className="sn-caption" style={{ margin: 0, lineHeight: 1.7 }}>{actionContext}</p>
+              <div className="sn-detail-action-row">
+                {isManufacturer && (
+                  <button onClick={() => setOpenModal('correct')} className="sn-btn sn-btn-ghost">데이터 정정</button>
+                )}
+                {isEV && !passport.vin && (
+                  <button onClick={() => setOpenModal('bind')} className="sn-btn sn-btn-accent">차량 연결</button>
+                )}
+                {isEV && passport.status === 'ACTIVE' && (
+                  <>
+                    <button onClick={() => setOpenModal('mRequest')} className="sn-btn sn-btn-ghost">정비 요청</button>
+                    <button onClick={() => setOpenModal('aRequest')} className="sn-btn sn-btn-ghost">분석 요청</button>
+                  </>
+                )}
+                {isService && passport.status === 'MAINTENANCE' && (
+                  <button onClick={() => setOpenModal('mLog')} className="sn-btn sn-btn-accent">정비 완료</button>
+                )}
+                {isService && passport.status === 'ANALYSIS' && (
+                  <button onClick={() => setOpenModal('aResult')} className="sn-btn sn-btn-accent">분석 결과</button>
+                )}
+                {isRegulator && passport.status !== 'DISPOSED' && (
+                  <button onClick={() => setOpenModal('dispose')} className="sn-btn sn-btn-danger">폐기</button>
+                )}
+                {(isManufacturer || isRegulator) && (
+                  <button onClick={() => setOpenModal('vcIssue')} className="sn-btn sn-btn-ghost">VC 발급</button>
+                )}
+              </div>
+            </div>
           </div>
         </div>
+
         {warningMessages.length > 0 && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem', paddingTop: '1rem', borderTop: '1px solid var(--color-border)' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem', marginTop: 16, paddingTop: '1rem', borderTop: '1px solid var(--color-border)' }}>
             {warningMessages.map((message) => (
               <div key={message} style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem', padding: '0.9rem 1.1rem', borderRadius: '0.85rem', background: 'var(--color-warning-soft)', color: 'var(--color-warning)', border: '1px solid var(--color-border)' }}>
                 <span style={{ fontSize: '1rem', fontWeight: 800, lineHeight: 1.4 }}>!</span>
@@ -467,9 +581,7 @@ export default function PassportDetailPage() {
             ))}
           </div>
         )}
-      </div>
 
-      <div className="sn-detail-hero">
         <div className="sn-detail-cover-meta">
           <div className="sn-detail-cover-meta-item">
             <span className="sn-detail-cover-meta-key">제조사</span>
@@ -485,23 +597,27 @@ export default function PassportDetailPage() {
           </div>
           <div className="sn-detail-cover-meta-item">
             <span className="sn-detail-cover-meta-key">차대번호</span>
-            <span className="sn-detail-cover-meta-value">{passport.vin || '미바인딩'}</span>
+            <span className="sn-detail-cover-meta-value">{vinLabel}</span>
+          </div>
+          <div className="sn-detail-cover-meta-item">
+            <span className="sn-detail-cover-meta-key">BMU 원장</span>
+            <span className="sn-detail-cover-meta-value">{bmuRecordLabel}</span>
           </div>
         </div>
-      </div>
+      </section>
 
       <div className="sn-panel" style={{ padding: '1rem 1.2rem', background: 'var(--color-surface-alt)', borderStyle: 'dashed' }}>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: '1rem' }}>
           <div>
-            <p className="sn-eyebrow" style={{ marginBottom: '0.35rem' }}>먼저 볼 항목</p>
+            <p className="sn-eyebrow" style={{ marginBottom: '0.35rem' }}>Dossier focus</p>
             <p className="sn-caption">배터리 상태(SOH), 충전 상태(SOC), 규제 준수율, VIN 연결 여부</p>
           </div>
           <div>
-            <p className="sn-eyebrow" style={{ marginBottom: '0.35rem' }}>후속 조치</p>
-            <p className="sn-caption">정비/분석 결과 등록, 데이터 정정, VC 발급, 폐기 판단</p>
+            <p className="sn-eyebrow" style={{ marginBottom: '0.35rem' }}>Register action</p>
+            <p className="sn-caption">권한과 상태 조건을 통과한 작업만 표시합니다.</p>
           </div>
           <div>
-            <p className="sn-eyebrow" style={{ marginBottom: '0.35rem' }}>참고 정보</p>
+            <p className="sn-eyebrow" style={{ marginBottom: '0.35rem' }}>Evidence tabs</p>
             <p className="sn-caption">소재, 운영 이력, 진단 데이터, 증빙은 탭에서 이어서 확인</p>
           </div>
         </div>
