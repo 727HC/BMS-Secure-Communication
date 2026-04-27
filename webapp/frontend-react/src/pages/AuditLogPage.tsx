@@ -98,7 +98,7 @@ export default function AuditLogPage() {
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(false);
   const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState<25 | 50 | 100>(50);
+  const [pageSize, setPageSize] = useState<10 | 25 | 50 | 100>(10);
   const [filterAction, setFilterAction] = useState('');
   const [filterWriteOnly, setFilterWriteOnly] = useState(true);
   const [autoRefresh, setAutoRefresh] = useState(false);
@@ -644,9 +644,10 @@ export default function AuditLogPage() {
                 페이지당
                 <select
                   value={pageSize}
-                  onChange={(e) => { setPageSize(Number(e.target.value) as 25 | 50 | 100); setPage(1); }}
+                  onChange={(e) => { setPageSize(Number(e.target.value) as 10 | 25 | 50 | 100); setPage(1); }}
                   style={{ height: 28, padding: '0 8px', borderRadius: 6, border: '1px solid var(--color-border)', background: 'var(--color-surface)', color: 'var(--color-text-1)', fontSize: '0.8125rem' }}
                 >
+                  <option value={10}>10</option>
                   <option value={25}>25</option>
                   <option value={50}>50</option>
                   <option value={100}>100</option>
