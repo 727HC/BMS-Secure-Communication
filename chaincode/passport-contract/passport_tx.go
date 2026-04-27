@@ -290,6 +290,10 @@ func (c *PassportContract) RequestMaintenance(ctx contractapi.TransactionContext
 	if mspErr != nil {
 		return fmt.Errorf("failed to get client MSP: %v", mspErr)
 	}
+	// P1 ownership: 바인딩한 EVManufacturer 만 정비 요청 가능
+	if passport.EvBinderMSP != msp {
+		return fmt.Errorf("access denied: passport %s is bound to %s, caller %s cannot request maintenance", passportId, passport.EvBinderMSP, msp)
+	}
 	now, tsErr := txTimestamp(ctx)
 	if tsErr != nil {
 		return fmt.Errorf("failed to get timestamp: %v", tsErr)
@@ -400,6 +404,18 @@ func (c *PassportContract) AddAccidentLog(ctx contractapi.TransactionContextInte
 		return fmt.Errorf("failed to get client MSP: %v", err)
 	}
 
+	// P1 ownership: EVManufacturer 는 바인더 본인, Service 는 정비 이력 보유 시만
+	switch msp {
+	case mspEVManufacturer:
+		if passport.EvBinderMSP != msp {
+			return fmt.Errorf("access denied: passport %s is bound to %s, caller %s cannot log accidents", passportId, passport.EvBinderMSP, msp)
+		}
+	case mspService:
+		if err := c.checkPassportAccess(ctx, &passport); err != nil {
+			return err
+		}
+	}
+
 	now, tsErr := txTimestamp(ctx)
 	if tsErr != nil {
 		return fmt.Errorf("failed to get timestamp: %v", tsErr)
@@ -450,6 +466,15 @@ func (c *PassportContract) RequestAnalysis(ctx contractapi.TransactionContextInt
 
 	if passport.Status != "ACTIVE" && passport.Status != "MAINTENANCE" {
 		return fmt.Errorf("passport status must be ACTIVE or MAINTENANCE for analysis request, current: %s", passport.Status)
+	}
+
+	// P1 ownership: 바인딩한 EVManufacturer 만 분석 요청 가능
+	msp, mspErr := c.getClientMSP(ctx)
+	if mspErr != nil {
+		return fmt.Errorf("failed to get client MSP: %v", mspErr)
+	}
+	if passport.EvBinderMSP != msp {
+		return fmt.Errorf("access denied: passport %s is bound to %s, caller %s cannot request analysis", passportId, passport.EvBinderMSP, msp)
 	}
 
 	now, tsErr := txTimestamp(ctx)
