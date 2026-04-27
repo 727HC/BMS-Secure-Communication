@@ -2,7 +2,6 @@ import { lazy, Suspense } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import { ThemeProvider } from './contexts/ThemeContext';
-import DashboardReferenceShell from './components/layout/DashboardReferenceShell';
 import Layout from './components/layout/Layout';
 import RequireAuth from './components/layout/RequireAuth';
 import Spinner from './components/ui/Spinner';
@@ -28,14 +27,6 @@ function ProtectedPage({ children }: { children: React.ReactNode }) {
   );
 }
 
-function ProtectedDashboardPage({ children }: { children: React.ReactNode }) {
-  return (
-    <RequireAuth>
-      <DashboardReferenceShell>{children}</DashboardReferenceShell>
-    </RequireAuth>
-  );
-}
-
 export default function App() {
   return (
     <ThemeProvider>
@@ -45,7 +36,7 @@ export default function App() {
           <Route path="/" element={<LandingPage />} />
           <Route path="/login" element={<LoginPage />} />
 
-          <Route path="/dashboard" element={<ProtectedDashboardPage><DashboardPage /></ProtectedDashboardPage>} />
+          <Route path="/dashboard" element={<ProtectedPage><DashboardPage /></ProtectedPage>} />
           <Route path="/passports" element={<ProtectedPage><PassportsPage /></ProtectedPage>} />
           <Route path="/passports/:id" element={<ProtectedPage><PassportDetailPage /></ProtectedPage>} />
           <Route path="/materials" element={<ProtectedPage><MaterialsPage /></ProtectedPage>} />
