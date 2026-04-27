@@ -59,6 +59,42 @@ function mapChaincodeError(msg) {
 }
 ```
 
+### 2.1 Fabric wrap strip 권고 패턴 (informational)
+
+Fabric SDK 가 chaincode 에러를 gateway → endorsement → chaincode 다단으로 감싸면서 client 가 받는 메시지에 wrap prefix 가 1~여러 겹 붙는다. wiki §2 의 매핑 함수는 unwrap 된 chaincode 본 메시지에 대해서만 동작하므로, 매핑 직전에 wrap strip 이 필요하다.
+
+ed2b977 (Stage 1) `bmu-agent/middleware/chaincode-error.js` 가 채택한 wrap prefix 4종 (다른 클라이언트/agent 도 동일 패턴 권고):
+
+```js
+const FABRIC_WRAP_PREFIXES = [
+  'Failed to evaluate transaction: ',
+  'Failed to submit transaction: ',
+  'transaction returned with failure: ',
+  'error in simulation: ',
+];
+```
+
+다중 wrap 가능성 (예: `Failed to submit transaction: error in simulation: <chaincode msg>`) 때문에 **반복 strip 권고**:
+
+```js
+function unwrapFabricError(msg) {
+  let unwrapped = msg;
+  let changed = true;
+  while (changed) {
+    changed = false;
+    for (const prefix of FABRIC_WRAP_PREFIXES) {
+      if (unwrapped.startsWith(prefix)) {
+        unwrapped = unwrapped.slice(prefix.length);
+        changed = true;
+      }
+    }
+  }
+  return unwrapped;
+}
+```
+
+이 부록은 informational — 진실 공급원은 `bmu-agent/middleware/chaincode-error.js` 이고 Passport 세션이 유지보수한다. wrap prefix 가 새로 발견되거나 Fabric SDK 업그레이드로 변경되면 미들웨어와 본 부록 동시 갱신.
+
 ---
 
 ## 3. 카테고리별 stable prefix 인벤토리
