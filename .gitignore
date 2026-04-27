@@ -95,6 +95,9 @@ workspaceS32DS.3.6.0.zip
 **/.omc/
 .playwright-mcp/
 
+# Sisyphus agent runtime state (plans, evidence, notepads, drafts)
+.sisyphus/
+
 # Test and visual review outputs
 /batp-*.png
 /e2e-tests/screenshots/
