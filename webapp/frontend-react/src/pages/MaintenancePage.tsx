@@ -1,6 +1,4 @@
 import { useEffect, useMemo, useState } from 'react';
-
-const PAGE_SIZE = 12;
 import { useNavigate } from 'react-router-dom';
 import { api } from '../lib/api';
 import { toastFromError } from '../lib/chaincodeErrorMessages';
@@ -9,6 +7,8 @@ import { getStatusBadge } from '../lib/helpers';
 import { BarRows, DonutChart, LegendStack, PageHead, SkeletonCard, SkeletonTable } from '../components/ui';
 import BaseModal from '../components/modals/BaseModal';
 import { AccidentLogModal, type AccidentFormData } from '../components/modals/maintenance';
+
+const PAGE_SIZE = 12;
 
 interface MaintenanceLog {
   timestamp?: string;

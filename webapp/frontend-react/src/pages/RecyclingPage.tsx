@@ -1,6 +1,4 @@
 import { useEffect, useMemo, useState } from 'react';
-
-const PAGE_SIZE = 12;
 import { useNavigate } from 'react-router-dom';
 import { api } from '../lib/api';
 import { toastFromError } from '../lib/chaincodeErrorMessages';
@@ -9,6 +7,8 @@ import { getStatusBadge } from '../lib/helpers';
 import { BarRows, PageHead, SkeletonCard, SkeletonTable } from '../components/ui';
 import BaseModal from '../components/modals/BaseModal';
 import { ExtractModal, RecycleToggleModal, type ExtractEntry } from '../components/modals/recycling';
+
+const PAGE_SIZE = 12;
 
 interface Passport {
   passportId?: string;
