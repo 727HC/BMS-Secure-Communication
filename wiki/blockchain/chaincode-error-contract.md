@@ -229,6 +229,20 @@ UI 세션이 자체 dictionary 를 만들겠지만 1차 시안:
 | 카테고리 변경 (예: VAL → AUTHZ) | breaking. HTTP status 분기가 깨짐 |
 | 한국어 번역 변경 | non-breaking. 본 문서 §4 만 갱신 |
 
+### 5.1 세션 간 sync 책임 분담 (2026-04-27 합의)
+
+| 책임 | 세션 | 대상 |
+|------|------|------|
+| chaincode 패치와 wiki §2 매핑 정규식 + §3 prefix 표 동시 갱신 | **blockchain** | chaincode/passport-contract/*.go + 본 문서 §2/§3 |
+| `bmu-agent/middleware/chaincode-error.js` 의 정규식 sync | **Passport** | wiki §2 의 코드 블록을 미들웨어로 이식 |
+| `webapp/frontend-react/src/lib/chaincodeErrorMessages.ts` (한국어 dictionary) sync | **Passport** | wiki §4 의 한국어 매핑 |
+
+운영 규칙:
+1. blockchain 세션이 chaincode mutation 중 새 prefix 를 추가/삭제하면, **같은 commit 에 wiki §2 정규식 patch 와 §3 prefix 표 갱신을 묶는다**. wiki 가 single source of truth.
+2. breaking 변경 (prefix 삭제 / placeholder 추가 / 카테고리 변경) 의 경우 commit 메시지에 `BREAKING: chaincode error prefix changed — agent middleware sync required` 표식을 명시한다. Passport 세션이 grep 으로 인지 가능.
+3. Passport 세션은 wiki §2 commit SHA 를 `bmu-agent/middleware/chaincode-error.js` 헤더 주석에 `// synced from chaincode-error-contract.md @<SHA>` 로 기록 권고.
+4. non-breaking (새 prefix 추가) 은 Passport 세션의 다음 정기 sync 시점에 일괄 반영해도 무방. fallback 으로 INTERNAL/UNKNOWN 처리되므로 동작 안전.
+
 ---
 
 ## 6. 부록 — 전체 에러 메시지 인벤토리 추출 명령
