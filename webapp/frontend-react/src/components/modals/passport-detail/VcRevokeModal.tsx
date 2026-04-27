@@ -20,7 +20,7 @@ export default function VcRevokeModal({ open, submitting, credentialId, onClose,
     if (open) setReason('');
   }, [open]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e: React.SyntheticEvent<HTMLFormElement>) => {
     e.preventDefault();
     onSubmit({ reason });
   };
