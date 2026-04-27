@@ -140,22 +140,20 @@ for (const tc of REJECTION_CASES) {
     await expect(page.locator('[data-page="passports"]')).toBeVisible({ timeout: 5000 });
 
     // Open create modal
-    await page.locator('button:has-text("발급 접수")').click();
-    await expect(page.locator('[role="dialog"], .modal, .sn-modal').first()).toBeVisible({ timeout: 3000 });
+    await page.getByRole('button', { name: '발급 접수' }).click();
 
-    // Minimal form fill — passportId / batteryId / serialNumber / did
-    const fillIfPresent = async (label, value) => {
-      const candidate = page.locator(`input[name="${label}"], input[placeholder*="${label}" i]`).first();
-      if (await candidate.count()) await candidate.fill(value);
-    };
-    await fillIfPresent('passportId', 'PP-NEW-001');
-    await fillIfPresent('batteryId', 'BAT-NEW-001');
-    await fillIfPresent('serialNumber', 'SN-NEW-001');
-    await fillIfPresent('did', 'did:example:new');
+    // Modal scope — first 4 inputs are required: passportId / batteryId / serialNumber / did
+    const modal = page.locator('.sn-modal, [role="dialog"]').first();
+    await expect(modal).toBeVisible({ timeout: 3000 });
 
-    // Submit
-    const submitBtn = page.locator('button:has-text("등록"), button:has-text("발급"), button[type="submit"]').first();
-    await submitBtn.click();
+    const inputs = modal.locator('input.sn-input');
+    await inputs.nth(0).fill('PP-NEW-001');
+    await inputs.nth(1).fill('BAT-NEW-001');
+    await inputs.nth(2).fill('SN-NEW-001');
+    await inputs.nth(3).fill('did:example:new');
+
+    // Submit — modal-scoped exact "여권 발급" button
+    await modal.getByRole('button', { name: '여권 발급', exact: true }).click();
 
     // Assert alert banner appears with expected Korean toast
     const alert = page.locator('[role="alert"]');
