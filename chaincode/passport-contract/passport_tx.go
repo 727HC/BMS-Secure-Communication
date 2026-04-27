@@ -660,7 +660,7 @@ func (c *PassportContract) ExtractMaterials(ctx contractapi.TransactionContextIn
 	var recyclingRates map[string]float64
 	err = json.Unmarshal([]byte(recyclingRatesJSON), &recyclingRates)
 	if err != nil {
-		return fmt.Errorf("failed to unmarshal recycling rates: %v", err)
+		return fmt.Errorf("invalid recycling rates JSON: %v", err)
 	}
 
 	now, tsErr := txTimestamp(ctx)
