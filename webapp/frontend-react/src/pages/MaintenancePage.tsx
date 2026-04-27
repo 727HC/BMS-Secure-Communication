@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../lib/api';
+import { toastFromError } from '../lib/chaincodeErrorMessages';
 import { useAuth } from '../contexts/AuthContext';
 import { getStatusBadge } from '../lib/helpers';
 import { BarRows, DonutChart, LegendStack, PageHead, SkeletonCard, SkeletonTable } from '../components/ui';
@@ -71,6 +72,7 @@ export default function MaintenancePage() {
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<Tab>('all');
   const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   const [selectedPassport, setSelectedPassport] = useState<Passport | null>(null);
   const [showRequest, setShowRequest] = useState(false);
@@ -235,12 +237,15 @@ export default function MaintenancePage() {
   const submitRequest = async () => {
     if (!selectedPassport?.passportId) return;
     setSubmitting(true);
+    setSubmitError(null);
     try {
       await api.post(`/maintenance/${selectedPassport.passportId}/request`, requestForm);
       closeAll();
       await fetchPassports();
-    } catch {
-      // toast 생략
+    } catch (err) {
+      const { toast, debug, category } = toastFromError(err);
+      console.warn('[maintenance] mutation failed', { category, debug });
+      setSubmitError(toast);
     } finally {
       setSubmitting(false);
     }
@@ -249,12 +254,15 @@ export default function MaintenancePage() {
   const submitLog = async () => {
     if (!selectedPassport?.passportId) return;
     setSubmitting(true);
+    setSubmitError(null);
     try {
       await api.post(`/maintenance/${selectedPassport.passportId}/log`, logForm);
       closeAll();
       await fetchPassports();
-    } catch {
-      // toast 생략
+    } catch (err) {
+      const { toast, debug, category } = toastFromError(err);
+      console.warn('[maintenance] mutation failed', { category, debug });
+      setSubmitError(toast);
     } finally {
       setSubmitting(false);
     }
@@ -263,12 +271,15 @@ export default function MaintenancePage() {
   const submitAccident = async (data: AccidentFormData) => {
     if (!selectedPassport?.passportId) return;
     setSubmitting(true);
+    setSubmitError(null);
     try {
       await api.post(`/maintenance/${selectedPassport.passportId}/accident`, data);
       closeAll();
       await fetchPassports();
-    } catch {
-      // toast 생략
+    } catch (err) {
+      const { toast, debug, category } = toastFromError(err);
+      console.warn('[maintenance] mutation failed', { category, debug });
+      setSubmitError(toast);
     } finally {
       setSubmitting(false);
     }
@@ -308,6 +319,12 @@ export default function MaintenancePage() {
           </>
         )}
       />
+
+      {submitError && (
+        <div role="alert" style={{ padding: '0.9rem 1rem', borderRadius: '0.85rem', background: 'var(--color-danger-soft)', color: 'var(--color-danger)', border: '1px solid var(--color-border)' }}>
+          <span style={{ fontSize: '0.9rem', lineHeight: 1.6 }}>{submitError}</span>
+        </div>
+      )}
 
       <section className="sn-section-card">
         <div className="sn-section-head">

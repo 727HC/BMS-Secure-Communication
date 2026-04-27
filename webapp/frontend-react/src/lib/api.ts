@@ -6,6 +6,25 @@ function getToken(): string | null {
   return sessionStorage.getItem('auth_token') || localStorage.getItem('auth_token');
 }
 
+export type ApiErrorCategory =
+  | 'AUTHZ'
+  | 'VAL'
+  | 'NOT_FOUND'
+  | 'CONFLICT'
+  | 'PRECONDITION'
+  | 'INTERNAL';
+
+export class ApiError extends Error {
+  status: number;
+  category?: ApiErrorCategory;
+  constructor(message: string, status: number, category?: ApiErrorCategory) {
+    super(message);
+    this.name = 'ApiError';
+    this.status = status;
+    this.category = category;
+  }
+}
+
 async function request<T>(method: string, path: string, body?: unknown): Promise<T> {
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
   const token = getToken();
@@ -19,11 +38,13 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
 
   if (!res.ok) {
     let message = `HTTP ${res.status}`;
+    let category: ApiErrorCategory | undefined;
     try {
       const data = await res.json();
       if (data?.error) message = data.error;
+      if (data?.category) category = data.category as ApiErrorCategory;
     } catch { /* noop */ }
-    throw new Error(message);
+    throw new ApiError(message, res.status, category);
   }
 
   if (res.status === 204) return undefined as T;

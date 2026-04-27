@@ -1,6 +1,7 @@
 import { lazy, Suspense, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { api } from '../lib/api';
+import { toastFromError } from '../lib/chaincodeErrorMessages';
 import { useAuth } from '../contexts/AuthContext';
 import { getStatusBadge, scaleSOC } from '../lib/helpers';
 import { PageHead, Skeleton, SkeletonCard } from '../components/ui';
@@ -174,8 +175,9 @@ export default function PassportDetailPage() {
       closeAll();
       await fetchAll();
     } catch (err) {
-      const message = err instanceof Error ? err.message : '요청 처리 중 오류가 발생했습니다.';
-      setSubmitError(message);
+      const { toast, debug, category } = toastFromError(err);
+      console.warn('[passport-detail] mutation failed', { category, debug });
+      setSubmitError(toast);
     }
     finally { setSubmitting(false); }
   };

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { toastFromError } from '../lib/chaincodeErrorMessages';
 import { api } from '../lib/api';
 import { useAuth } from '../contexts/AuthContext';
 import { PageHead, Skeleton, SkeletonTable } from '../components/ui';
@@ -43,6 +44,7 @@ export default function MaterialsPage() {
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [selectedMaterial, setSelectedMaterial] = useState<Material | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
 
   const fetchMaterials = async () => {
@@ -118,13 +120,16 @@ export default function MaterialsPage() {
 
   const submitMaterial = async (form: MaterialFormData) => {
     setSubmitting(true);
+    setSubmitError(null);
     try {
       const payload = { ...form, quantity: Number(form.quantity) };
       await api.post('/materials', payload);
       closeCreateModal();
       await fetchMaterials();
-    } catch {
-      // toast 생략
+    } catch (err) {
+      const { toast, debug, category } = toastFromError(err);
+      console.warn('[materials] mutation failed', { category, debug });
+      setSubmitError(toast);
     } finally {
       setSubmitting(false);
     }
@@ -167,6 +172,12 @@ export default function MaterialsPage() {
           </>
         )}
       />
+
+      {submitError && (
+        <div role="alert" style={{ padding: '0.9rem 1rem', borderRadius: '0.85rem', background: 'var(--color-danger-soft)', color: 'var(--color-danger)', border: '1px solid var(--color-border)' }}>
+          <span style={{ fontSize: '0.9rem', lineHeight: 1.6 }}>{submitError}</span>
+        </div>
+      )}
 
       <section className="sn-section-card">
         <div className="sn-section-head">
