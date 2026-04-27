@@ -97,6 +97,28 @@ function unwrapFabricError(msg) {
 
 이 부록은 informational — 진실 공급원은 `bmu-agent/middleware/chaincode-error.js` 이고 Passport 세션이 유지보수한다. wrap prefix 가 새로 발견되거나 Fabric SDK 업그레이드로 변경되면 미들웨어와 본 부록 동시 갱신.
 
+#### 2.1.1 Multi-peer endorsement collation wrap (regex extract)
+
+Fabric Gateway 가 multi-peer endorsement collation 실패 시 발생하는 wrap 은 startsWith 가 아닌 정규식 추출 패턴이다. real-backend e2e (Stage 3, 2026-04-27) 수집 중 발견되어 Passport 세션이 88d7a1c 에서 미들웨어에 추가:
+
+```
+No valid responses from any peers. Errors:
+    peer=peer0.regulator.battery.com:13051, status=500, message=<chaincode 원문>
+```
+
+추출 정규식 (Passport `bmu-agent/middleware/chaincode-error.js` @ 88d7a1c):
+
+```js
+const FABRIC_GATEWAY_WRAP_RE = /No valid responses from any peers\. Errors:[\s\S]*?message=([\s\S]*?)$/;
+```
+
+| Wrap 종류 | 발생 시점 | Strip 방법 |
+|---------|----------|-----------|
+| Fabric SDK transaction wrap (4종) | 단일 endorsement 실패 | `startsWith` 4 prefix (§2.1 위) |
+| Fabric Gateway multi-peer wrap | 다수 peer collation 실패 | regex `FABRIC_GATEWAY_WRAP_RE` capture group [1] |
+
+미들웨어는 위 두 layer 를 모두 적용해 chaincode 본 메시지를 추출한다. 본 부록은 cross-check reference; 진실 공급원은 미들웨어 코드.
+
 ---
 
 ## 3. 카테고리별 stable prefix 인벤토리
