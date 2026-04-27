@@ -59,6 +59,15 @@ func (c *PassportContract) IssueCredential(ctx contractapi.TransactionContextInt
 		return fmt.Errorf("passport %s does not exist", passportId)
 	}
 
+	// P1 ownership: 발급자가 해당 passport 에 접근 권한이 있는지 확인 (RequestCredentialIssuance 와 일관)
+	var passport BatteryPassport
+	if err := json.Unmarshal(passportJSON, &passport); err != nil {
+		return fmt.Errorf("failed to unmarshal passport: %v", err)
+	}
+	if err := c.checkPassportAccess(ctx, &passport); err != nil {
+		return err
+	}
+
 	now, tsErr := txTimestamp(ctx)
 	if tsErr != nil {
 		return fmt.Errorf("failed to get timestamp: %v", tsErr)
