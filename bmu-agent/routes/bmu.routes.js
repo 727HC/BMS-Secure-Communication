@@ -8,6 +8,7 @@ const { DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE, DID_CACHE_TTL_MS, MSP } = require('../
 const { authenticateToken } = require('../middleware/auth');
 const { requireMSP } = require('../middleware/rbac');
 const { createLogger } = require('../services/logger.service');
+const { sendChaincodeError } = require('../middleware/chaincode-error');
 const {
   SEED_FLAG,
   isDashboardPassportSeedEnabled,
@@ -166,7 +167,7 @@ router.post('/data', authenticateToken, requireMSP(MSP.MANUFACTURER), bmuRateLim
     });
   } catch (err) {
     log.error('BMU record failed', { action: 'RecordBMUData', did, error: err.message });
-    res.status(500).json({ error: 'Internal server error' });
+    sendChaincodeError(res, err);
   }
 });
 
@@ -185,7 +186,7 @@ router.get('/records/:passportId', authenticateToken, async (req, res) => {
     );
     res.json(JSON.parse(result.toString()));
   } catch (err) {
-    res.status(500).json({ error: 'Internal server error' });
+    sendChaincodeError(res, err);
   }
 });
 
@@ -203,7 +204,7 @@ router.post('/invalidate/:recordId', authenticateToken, requireMSP(MSP.MANUFACTU
     res.json({ success: true, recordId: req.params.recordId, status: 'INVALIDATED' });
   } catch (err) {
     log.error('BMU invalidation failed', { action: 'InvalidateBMURecord', recordId: req.params.recordId, error: err.message });
-    res.status(500).json({ error: 'Internal server error' });
+    sendChaincodeError(res, err);
   }
 });
 

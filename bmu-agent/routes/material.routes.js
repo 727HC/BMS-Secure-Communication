@@ -4,6 +4,7 @@ const { authenticateToken } = require('../middleware/auth');
 const { requireMSP } = require('../middleware/rbac');
 const fabricService = require('../services/fabric.service');
 const { MSP } = require('../config/constants');
+const { sendChaincodeError } = require('../middleware/chaincode-error');
 
 router.post('/', authenticateToken, requireMSP(MSP.MANUFACTURER), async (req, res) => {
   const { materialId, name, origin, supplier, quantity, unit, certificationId } = req.body;
@@ -17,7 +18,7 @@ router.post('/', authenticateToken, requireMSP(MSP.MANUFACTURER), async (req, re
     ], req.user);
     res.json({ success: true, materialId });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    sendChaincodeError(res, err);
   }
 });
 
@@ -26,7 +27,7 @@ router.get('/', authenticateToken, async (req, res) => {
     const result = await fabricService.evaluateTransaction('QueryRawMaterials', [], req.user);
     res.json(JSON.parse(result.toString()));
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    sendChaincodeError(res, err);
   }
 });
 
