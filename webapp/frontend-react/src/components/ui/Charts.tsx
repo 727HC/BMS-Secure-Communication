@@ -105,6 +105,7 @@ interface SparklineProps {
   height?: number;
   color?: string;
   fillOpacity?: number;
+  strokeWidth?: number;
   min?: number;
   max?: number;
   animate?: boolean;
@@ -113,7 +114,7 @@ interface SparklineProps {
 /* 고유 id — 복수 Sparkline이 같은 페이지에 있을 때 keyframes 충돌 방지 */
 let _sparklineCounter = 0;
 
-export function Sparkline({ values, width = 280, height = 64, color = 'var(--color-accent)', fillOpacity = 0.12, min, max, animate = true }: SparklineProps) {
+export function Sparkline({ values, width = 280, height = 64, color = 'var(--color-accent)', fillOpacity = 0.12, strokeWidth = 2, min, max, animate = true }: SparklineProps) {
   if (values.length === 0) return <svg width={width} height={height} />;
   const lo = min ?? Math.min(...values);
   const hi = max ?? Math.max(...values);
@@ -160,7 +161,7 @@ export function Sparkline({ values, width = 280, height = 64, color = 'var(--col
           d={d}
           fill="none"
           stroke={color}
-          strokeWidth={2}
+          strokeWidth={strokeWidth}
           strokeLinejoin="round"
           strokeLinecap="round"
           className={animate ? `${animId}-line` : undefined}
