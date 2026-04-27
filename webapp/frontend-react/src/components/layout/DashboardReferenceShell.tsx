@@ -2,7 +2,13 @@ import { type ReactNode } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
+import { MSP_LABELS } from '../../lib/api';
+import ShellBrandLink from './ShellBrandLink';
 import '../../styles/vk-dashboard-reference.css';
+
+const AUDIT_ALLOWED_ORGS = new Set(['ManufacturerMSP', 'RegulatorMSP']);
+const AUDIT_REQUIRED_LABEL = '권한 필요';
+const CONTROL_PENDING_LABEL = '준비 중';
 
 interface DashboardReferenceShellProps {
   children: ReactNode;
@@ -11,7 +17,6 @@ interface DashboardReferenceShellProps {
 interface ReferenceNavItem {
   to: string;
   label: string;
-  badge?: string;
   icon: ReactNode;
 }
 
@@ -24,7 +29,6 @@ const referenceNavItems: ReferenceNavItem[] = [
   {
     to: '/maintenance',
     label: 'Tasks',
-    badge: '7',
     icon: <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M8 12.5l2.5 2.5L16.5 9"/></svg>,
   },
   {
@@ -59,10 +63,18 @@ const referenceNavItems: ReferenceNavItem[] = [
   },
 ];
 
+function userInitials(userId: string | null): string {
+  if (!userId) return '??';
+  return userId.trim().slice(0, 2).toUpperCase() || '??';
+}
+
 export default function DashboardReferenceShell({ children }: DashboardReferenceShellProps) {
-  const { logout } = useAuth();
+  const { logout, org, userId } = useAuth();
   const { toggleTheme } = useTheme();
   const navigate = useNavigate();
+  const canReadAudit = org ? AUDIT_ALLOWED_ORGS.has(org) : false;
+  const orgLabel = org ? (MSP_LABELS[org] || org) : '조직 미확인';
+  const profileName = userId || '사용자 미확인';
 
   const handleLogout = () => {
     logout();
@@ -72,9 +84,7 @@ export default function DashboardReferenceShell({ children }: DashboardReference
   return (
     <div className="vk-ref-shell">
       <aside className="vk-ref-sidebar" aria-label="Dashboard reference navigation">
-        <Link className="vk-ref-brand" to="/dashboard" aria-label="VELKERN dashboard">
-          <img className="vk-ref-brand__mark" src="/velkern-mini-logo.png" alt="VELKERN" draggable={false} />
-        </Link>
+        <ShellBrandLink />
 
         <nav className="vk-ref-nav" aria-label="Dashboard sections">
           {referenceNavItems.map((item) => {
@@ -89,7 +99,6 @@ export default function DashboardReferenceShell({ children }: DashboardReference
               >
                 <span className="vk-ref-nav__icon">{item.icon}</span>
                 <span className="vk-ref-nav__label">{item.label}</span>
-                {item.badge ? <span className="vk-ref-nav__badge">{item.badge}</span> : null}
               </Link>
             );
           })}
@@ -97,12 +106,10 @@ export default function DashboardReferenceShell({ children }: DashboardReference
 
         <div className="vk-ref-sidebar__footer">
           <div className="vk-ref-profile" aria-label="Reference dashboard profile">
-            <span className="vk-ref-profile__avatar" aria-hidden="true">
-              <svg viewBox="0 0 24 24"><path d="M20 21a8 8 0 10-16 0"/><circle cx="12" cy="8" r="4"/></svg>
-            </span>
+            <span className="vk-ref-profile__avatar" aria-hidden="true">{userInitials(userId)}</span>
             <span className="vk-ref-profile__meta">
-              <span className="vk-ref-profile__name">user</span>
-              <span className="vk-ref-profile__role">제조사</span>
+              <span className="vk-ref-profile__name">{profileName}</span>
+              <span className="vk-ref-profile__role">{orgLabel}</span>
             </span>
           </div>
 
@@ -127,20 +134,40 @@ export default function DashboardReferenceShell({ children }: DashboardReference
         <header className="vk-ref-topbar">
           <div className="vk-ref-topbar__space" aria-hidden="true" />
           <div className="vk-ref-userbar" aria-label="Reference top controls">
-            <button type="button" className="vk-ref-top-action" aria-label="Notifications">
+            <button
+              type="button"
+              className={`vk-ref-top-action${canReadAudit ? '' : ' vk-ref-top-action--with-label'}`}
+              aria-label={canReadAudit ? '감사 로그 열기' : `Notifications ${AUDIT_REQUIRED_LABEL}`}
+              title={canReadAudit ? '감사 로그' : AUDIT_REQUIRED_LABEL}
+              disabled={!canReadAudit}
+              onClick={canReadAudit ? () => navigate('/audit-log') : undefined}
+            >
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 8a6 6 0 1112 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10 21h4"/></svg>
-              <span className="vk-ref-top-action__badge">3</span>
+              {canReadAudit ? null : <span className="vk-ref-top-action__label">{AUDIT_REQUIRED_LABEL}</span>}
             </button>
-            <button type="button" className="vk-ref-top-action" aria-label="Messages">
+            <button
+              type="button"
+              className="vk-ref-top-action vk-ref-top-action--with-label"
+              aria-label={`Messages ${CONTROL_PENDING_LABEL}`}
+              title={CONTROL_PENDING_LABEL}
+              disabled
+            >
               <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M4 7l8 6 8-6"/></svg>
+              <span className="vk-ref-top-action__label">{CONTROL_PENDING_LABEL}</span>
             </button>
-            <button type="button" className="vk-ref-top-action" aria-label="Help">
+            <button
+              type="button"
+              className="vk-ref-top-action vk-ref-top-action--with-label"
+              aria-label={`Help ${CONTROL_PENDING_LABEL}`}
+              title={CONTROL_PENDING_LABEL}
+              disabled
+            >
               <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.8 2.8 0 115 1.8c-.9.6-1.5 1.1-1.5 2.2"/><path d="M12 17h.01"/></svg>
+              <span className="vk-ref-top-action__label">{CONTROL_PENDING_LABEL}</span>
             </button>
-            <button type="button" className="vk-ref-role-menu" aria-label="Current organization">
-              <span>제조사</span>
-              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 10l5 5 5-5"/></svg>
-            </button>
+            <span className="vk-ref-role-menu" aria-label={`Current organization: ${orgLabel}`} title={orgLabel}>
+              <span>{orgLabel}</span>
+            </span>
           </div>
         </header>
 
