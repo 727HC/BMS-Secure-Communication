@@ -46,6 +46,8 @@ const NAV_ITEMS: NavItem[] = [
   },
 ];
 
+const AUDIT_ALLOWED_ORGS = new Set(['ManufacturerMSP', 'RegulatorMSP']);
+
 const PAGE_TITLES: Record<string, string> = {
   '/dashboard': 'Overview',
   '/maintenance': 'Tasks',
@@ -71,6 +73,7 @@ export default function Layout({ children }: { children: ReactNode }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const orgLabel = org ? (MSP_LABELS[org] || org) : '';
+  const canReadAudit = org ? AUDIT_ALLOWED_ORGS.has(org) : false;
   const pageTitle =
     PAGE_TITLES[location.pathname] ||
     (location.pathname.startsWith('/passports/') ? '배터리 여권 상세' : 'VELKERN');
@@ -148,9 +151,16 @@ export default function Layout({ children }: { children: ReactNode }) {
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.35-4.35"/></svg>
               <input placeholder="Search..." style={{ flex: 1, border: 'none', background: 'transparent', outline: 'none', color: 'var(--color-text-1)', fontSize: '0.88rem' }} />
             </div>
-            <button type="button" aria-label="Notifications" style={{ position: 'relative', width: 38, height: 38, borderRadius: 10, border: '1px solid var(--color-border)', background: 'var(--color-surface)', color: 'var(--color-text-2)', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
+            <button
+              type="button"
+              aria-label={canReadAudit ? '감사 로그 열기' : '감사 로그 (권한 필요)'}
+              title={canReadAudit ? '감사 로그' : '권한 필요'}
+              disabled={!canReadAudit}
+              onClick={canReadAudit ? () => navigate('/audit-log') : undefined}
+              style={{ position: 'relative', width: 38, height: 38, borderRadius: 10, border: '1px solid var(--color-border)', background: 'var(--color-surface)', color: 'var(--color-text-2)', cursor: canReadAudit ? 'pointer' : 'not-allowed', opacity: canReadAudit ? 1 : 0.5, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
+            >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M6 8a6 6 0 0112 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10 21a2 2 0 004 0"/></svg>
-              <span style={{ position: 'absolute', top: 6, right: 7, width: 8, height: 8, borderRadius: '50%', background: '#ef4444' }} />
+              {canReadAudit && <span style={{ position: 'absolute', top: 6, right: 7, width: 8, height: 8, borderRadius: '50%', background: '#ef4444' }} />}
             </button>
             <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--color-text-2)' }}>{userId}</span>
             <span style={{ fontSize: '0.78rem', fontWeight: 700, padding: '4px 10px', borderRadius: 6, background: 'var(--color-surface-accent)', color: 'var(--color-accent)' }}>{orgLabel}</span>
