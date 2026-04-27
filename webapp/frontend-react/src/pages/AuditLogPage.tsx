@@ -98,6 +98,7 @@ export default function AuditLogPage() {
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(false);
   const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState<25 | 50 | 100>(50);
   const [filterAction, setFilterAction] = useState('');
   const [filterWriteOnly, setFilterWriteOnly] = useState(true);
   const [autoRefresh, setAutoRefresh] = useState(false);
@@ -105,12 +106,12 @@ export default function AuditLogPage() {
   const [errorMsg, setErrorMsg] = useState('');
   const intervalRef = useRef<number | null>(null);
 
-  const totalPages = Math.max(1, Math.ceil(total / 50));
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
 
   const fetchLogs = useCallback(async () => {
     setLoading(true);
     try {
-      const params = new URLSearchParams({ page: String(page), limit: '50' });
+      const params = new URLSearchParams({ page: String(page), limit: String(pageSize) });
       if (filterAction) params.set('action', filterAction);
       if (filterWriteOnly) params.set('writeOnly', 'true');
       const data = await api.get<LogsResponse>(`/audit?${params.toString()}`);
@@ -124,7 +125,7 @@ export default function AuditLogPage() {
     } finally {
       setLoading(false);
     }
-  }, [filterAction, filterWriteOnly, page]);
+  }, [filterAction, filterWriteOnly, page, pageSize]);
 
   useEffect(() => {
     fetchLogs();
@@ -206,8 +207,8 @@ export default function AuditLogPage() {
     return { success, fail, successPct, total: withCode.length };
   }, [logs]);
 
-  const pageStart = total > 0 ? (page - 1) * 50 + 1 : 0;
-  const pageEnd = Math.min(page * 50, total);
+  const pageStart = total > 0 ? (page - 1) * pageSize + 1 : 0;
+  const pageEnd = Math.min(page * pageSize, total);
   const newestTimestamp = logs[0]?.timestamp;
   const ledgerScopeLabel = filterWriteOnly ? 'Write-only ledger' : 'Full audit ledger';
   const hasRecords = logs.length > 0;
@@ -634,11 +635,23 @@ export default function AuditLogPage() {
             })}
           </div>
 
-          <div style={{ padding: '12px 20px', borderTop: '1px solid var(--color-border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+          <div style={{ padding: '12px 20px', borderTop: '1px solid var(--color-border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, position: 'sticky', bottom: 0, background: 'var(--color-surface)', zIndex: 5 }}>
             <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.8125rem', color: 'var(--color-text-3)' }}>
               {total}건 중 {pageStart}~{pageEnd}
             </span>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <label style={{ fontSize: '0.8125rem', color: 'var(--color-text-3)', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                페이지당
+                <select
+                  value={pageSize}
+                  onChange={(e) => { setPageSize(Number(e.target.value) as 25 | 50 | 100); setPage(1); }}
+                  style={{ height: 28, padding: '0 8px', borderRadius: 6, border: '1px solid var(--color-border)', background: 'var(--color-surface)', color: 'var(--color-text-1)', fontSize: '0.8125rem' }}
+                >
+                  <option value={25}>25</option>
+                  <option value={50}>50</option>
+                  <option value={100}>100</option>
+                </select>
+              </label>
               <button
                 onClick={() => page > 1 && setPage(page - 1)}
                 disabled={page <= 1}

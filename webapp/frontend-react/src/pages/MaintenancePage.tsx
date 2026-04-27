@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
+
+const PAGE_SIZE = 12;
 import { useNavigate } from 'react-router-dom';
 import { api } from '../lib/api';
 import { toastFromError } from '../lib/chaincodeErrorMessages';
@@ -112,6 +114,24 @@ export default function MaintenancePage() {
     return passports.filter(isWorkbenchItem);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [passports, activeTab, isEVManufacturer]);
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const totalPages = Math.max(1, Math.ceil(filteredPassports.length / PAGE_SIZE));
+  const pagedPassports = useMemo(() => {
+    const start = (currentPage - 1) * PAGE_SIZE;
+    return filteredPassports.slice(start, start + PAGE_SIZE);
+  }, [filteredPassports, currentPage]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [activeTab]);
+
+  useEffect(() => {
+    if (currentPage > totalPages) setCurrentPage(totalPages);
+  }, [totalPages, currentPage]);
+
+  const showingFrom = filteredPassports.length ? (currentPage - 1) * PAGE_SIZE + 1 : 0;
+  const showingTo = Math.min(currentPage * PAGE_SIZE, filteredPassports.length);
 
   const tabCounts = {
     all: passports.filter(isWorkbenchItem).length,
@@ -489,7 +509,7 @@ export default function MaintenancePage() {
                 </tr>
               </thead>
               <tbody>
-                {filteredPassports.map((p) => {
+                {pagedPassports.map((p) => {
                   const badge = getStatusBadge(p.status || 'DISPOSED');
                   const mCount = p.maintenanceLogs?.length ?? 0;
                   const aCount = p.accidentLogs?.length ?? 0;
@@ -549,6 +569,31 @@ export default function MaintenancePage() {
                 })}
               </tbody>
             </table>
+
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: '0.9rem 1.1rem', borderTop: '1px solid var(--color-border)', background: 'var(--color-surface-alt)' }}>
+              <span className="sn-caption">
+                {filteredPassports.length}개 중 {showingFrom}-{showingTo} 표시
+              </span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <button
+                  className="sn-btn sn-btn-ghost"
+                  style={{ padding: '6px 10px', fontSize: 12 }}
+                  disabled={currentPage === 1}
+                  onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                >
+                  이전
+                </button>
+                <span className="sn-caption">{currentPage} / {totalPages}</span>
+                <button
+                  className="sn-btn sn-btn-ghost"
+                  style={{ padding: '6px 10px', fontSize: 12 }}
+                  disabled={currentPage === totalPages}
+                  onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                >
+                  다음
+                </button>
+              </div>
+            </div>
           </div>
         )}
       </section>
