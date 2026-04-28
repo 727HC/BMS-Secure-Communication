@@ -3,37 +3,36 @@ import { useNavigate } from 'react-router-dom';
 
 const WORDMARK_SRC = '/velkern-wordmark-light.png';
 const NETWORK_HERO_SRC = '/landing-network-hero.png';
-const WORLD_MAP_SRC = '/landing-world-map.png';
 
 const VALUE_ITEMS = [
   {
     key: 'verified',
     title: 'VERIFIED POWER',
-    description: 'Reliable and authentic battery data',
+    description: '검증된 정품 배터리 데이터',
     tone: 'blue',
   },
   {
     key: 'passport',
     title: 'TRUSTED PASSPORT',
-    description: 'Immutable records on blockchain',
+    description: '블록체인 기반 변조 불가 기록',
     tone: 'blue',
   },
   {
     key: 'network',
     title: 'SECURE NETWORK',
-    description: 'End-to-end secure communication',
+    description: '엔드 투 엔드 보안 통신',
     tone: 'green',
   },
   {
     key: 'battery',
     title: 'BATTERY LIFECYCLE',
-    description: 'Track and share across the entire lifecycle',
+    description: '배터리 생애 주기 전반의 추적과 공유',
     tone: 'blue',
   },
   {
     key: 'future',
     title: 'SUSTAINABLE FUTURE',
-    description: 'Data-driven decisions for a greener tomorrow',
+    description: '친환경 미래를 위한 데이터 기반 의사결정',
     tone: 'green',
   },
 ] as const;
@@ -91,18 +90,10 @@ function ValueIcon({ name }: { name: ValueIconKey }) {
 function NetworkVisual() {
   return (
     <section
-      className="relative mx-auto w-full min-w-0 max-w-[62rem]"
+      className="relative ml-auto w-full min-w-0 max-w-[96rem] lg:translate-x-12 lg:-translate-y-4 xl:translate-x-20 xl:-translate-y-6"
       aria-label="VELKERN trust network illustration"
     >
-      <div className="relative w-full" style={{ aspectRatio: '1537 / 1023' }}>
-        <img
-          src={WORLD_MAP_SRC}
-          alt=""
-          aria-hidden="true"
-          draggable={false}
-          className="pointer-events-none absolute inset-x-0 bottom-[26%] z-0 w-full select-none"
-          style={{ opacity: 0.9 }}
-        />
+      <div className="relative w-full" style={{ aspectRatio: '2922 / 2284' }}>
         <img
           src={NETWORK_HERO_SRC}
           alt="VELKERN trust network"
@@ -134,7 +125,7 @@ export default function LandingPage() {
       <h1 className="sr-only">VELKERN</h1>
 
       <div className="mx-auto flex min-h-screen w-full max-w-[1792px] flex-col px-6 py-8 sm:px-8 lg:px-12 xl:px-16">
-        <div className="grid flex-1 grid-cols-1 items-center gap-8 lg:grid-cols-[0.78fr_1.22fr] lg:gap-2">
+        <div className="grid flex-1 grid-cols-1 items-center gap-8 lg:grid-cols-[0.65fr_1.35fr] lg:gap-2">
           <section className="flex min-w-0 max-w-[37rem] flex-col items-start text-left lg:pb-8 xl:pb-10">
             <img
               src={WORDMARK_SRC}
@@ -151,7 +142,7 @@ export default function LandingPage() {
               From BMS Signal to Blockchain Trust.
             </p>
             <p className="mt-7 max-w-[33rem] text-[1rem] font-medium leading-[1.7] tracking-[-0.015em] text-[var(--landing-muted)] sm:text-[1.08rem]">
-              VELKERN is an end-to-end platform that securely connects battery data to a trusted ecosystem. From verified power to a trusted passport, we build the foundation for a sustainable future.
+              VELKERN은 배터리 데이터를 신뢰 가능한 생태계에 안전하게 연결하는 엔드 투 엔드 플랫폼입니다. 검증된 전력에서 신뢰받는 여권까지, 지속 가능한 미래의 기반을 구축합니다.
             </p>
 
             <div className="mt-10 flex flex-wrap items-center gap-5">
@@ -160,13 +151,13 @@ export default function LandingPage() {
                 onClick={goLogin}
                 className="inline-flex h-14 min-w-[11rem] items-center justify-center rounded-md bg-[var(--landing-blue)] px-8 text-[1rem] font-bold text-white shadow-[0_10px_20px_rgba(23,105,224,0.18)] hover:brightness-95"
               >
-                Get Started
+                시작하기
               </button>
               <a
                 href="#landing-highlights"
                 className="inline-flex h-14 min-w-[11rem] items-center justify-center rounded-md border border-[var(--landing-blue)] bg-white px-8 text-[1rem] font-bold text-[var(--landing-blue)] hover:bg-[rgba(23,105,224,0.04)]"
               >
-                Learn More
+                자세히 보기
               </a>
             </div>
           </section>
