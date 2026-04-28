@@ -147,7 +147,7 @@ export default function Layout({ children }: { children: ReactNode }) {
           <span style={{ fontSize: '0.78rem', fontWeight: 700, padding: '4px 10px', borderRadius: 6, background: 'var(--color-surface-accent)', color: 'var(--color-accent)' }}>{orgLabel}</span>
         </header>
 
-        <main style={{ flex: 1, padding: '72px 32px 24px', overflowY: 'auto' }}>{children}</main>
+        <main style={{ flex: 1, padding: '24px 32px', overflowY: 'auto' }}>{children}</main>
       </div>
     </div>
   );
