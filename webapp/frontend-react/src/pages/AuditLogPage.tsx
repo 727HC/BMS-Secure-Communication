@@ -230,7 +230,6 @@ export default function AuditLogPage() {
   return (
     <div data-page="audit-log" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
       <PageHead
-        eyebrow="Audit register"
         title="감사·원장"
         subtitle={`총 ${total}건의 API 행위와 응답 근거를 ledger/register 기준으로 확인합니다.`}
         actions={(

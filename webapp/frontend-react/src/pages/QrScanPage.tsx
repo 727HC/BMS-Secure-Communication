@@ -191,7 +191,6 @@ export default function QrScanPage() {
   return (
     <div data-page="qr-scan" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
       <PageHead
-        eyebrow="Field identify"
         title="현장 식별 조회"
         subtitle="현장에서 확보한 QR, NFC, 수동 식별값으로 여권 dossier를 찾고 상세 화면으로 이어갑니다."
         actions={(

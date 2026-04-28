@@ -1,19 +1,15 @@
 .sn-page-head {
+  min-height: 54px;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
-  gap: 1rem;
-  min-height: 56px;
+  gap: 24px;
+  flex-wrap: wrap;
   margin-bottom: 1.25rem;
-  padding-bottom: 0.75rem;
   padding-right: 240px;
-  border-bottom: 1px solid var(--color-border);
 }
-
 @media (max-width: 1024px) {
-  .sn-page-head {
-    padding-right: 0;
-  }
+  .sn-page-head { padding-right: 0; }
 }
 .sn-page-head-main { min-width: 0; }
 .sn-page-title {
@@ -26,9 +22,10 @@
   margin: 0;
 }
 .sn-page-subtitle {
-  margin-top: 0.4rem;
-  font-size: 1rem;
-  line-height: 1.6;
+  margin: 5px 0 0;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  line-height: 1.5;
   color: var(--color-text-2);
 }
 .sn-page-actions {
