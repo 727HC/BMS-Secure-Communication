@@ -48,18 +48,6 @@ const NAV_ITEMS: NavItem[] = [
 
 const AUDIT_ALLOWED_ORGS = new Set(['ManufacturerMSP', 'RegulatorMSP']);
 
-const PAGE_TITLES: Record<string, string> = {
-  '/dashboard': '개요',
-  '/maintenance': '작업',
-  '/passports': '배터리 여권',
-  '/materials': '공급망',
-  '/bmu-data': 'BMS 실시간 데이터',
-  '/recycling': '재활용·ESG',
-  '/qr-scan': 'QR 스캔',
-  '/audit-log': '감사·원장',
-  '/settings': '설정',
-};
-
 function userInitials(userId: string | null): string {
   if (!userId) return '?';
   return userId.slice(0, 2).toUpperCase();
@@ -74,9 +62,6 @@ export default function Layout({ children }: { children: ReactNode }) {
 
   const orgLabel = org ? (MSP_LABELS[org] || org) : '';
   const canReadAudit = org ? AUDIT_ALLOWED_ORGS.has(org) : false;
-  const pageTitle =
-    PAGE_TITLES[location.pathname] ||
-    (location.pathname.startsWith('/passports/') ? '배터리 여권 상세' : 'VELKERN');
 
   const handleLogout = () => {
     logout();
@@ -134,37 +119,32 @@ export default function Layout({ children }: { children: ReactNode }) {
         </div>
       </aside>
 
-      <div className="ev-main" style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
-        <header style={{ height: 64, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 32px', background: 'var(--color-surface)', borderBottom: '1px solid var(--color-border)', flexShrink: 0, gap: 20 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 14, minWidth: 0 }}>
-            <button
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="lg:hidden"
-              style={{ padding: 6, background: 'none', border: 'none', color: 'var(--color-text-2)', cursor: 'pointer' }}
-            >
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
-            </button>
-            <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '1.25rem', fontWeight: 800, color: 'var(--color-text-1)', margin: 0, letterSpacing: '-0.02em' }}>{pageTitle}</h2>
+      <div className="ev-main" style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: '100vh', position: 'relative' }}>
+        <header style={{ position: 'absolute', top: 18, right: 30, zIndex: 5, display: 'inline-flex', alignItems: 'center', gap: 12, background: 'transparent', border: 'none' }}>
+          <button
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            className="lg:hidden"
+            style={{ padding: 6, background: 'none', border: 'none', color: 'var(--color-text-2)', cursor: 'pointer' }}
+          >
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+          </button>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, height: 38, padding: '0 12px', borderRadius: 10, background: 'var(--color-surface-alt)', border: '1px solid var(--color-border)', color: 'var(--color-text-3)', minWidth: 220 }}>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.35-4.35"/></svg>
+            <input placeholder="Search..." style={{ flex: 1, border: 'none', background: 'transparent', outline: 'none', color: 'var(--color-text-1)', fontSize: '0.88rem' }} />
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
-            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, height: 38, padding: '0 12px', borderRadius: 10, background: 'var(--color-surface-alt)', border: '1px solid var(--color-border)', color: 'var(--color-text-3)', minWidth: 220 }}>
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.35-4.35"/></svg>
-              <input placeholder="Search..." style={{ flex: 1, border: 'none', background: 'transparent', outline: 'none', color: 'var(--color-text-1)', fontSize: '0.88rem' }} />
-            </div>
-            <button
-              type="button"
-              aria-label={canReadAudit ? '감사 로그 열기' : '감사 로그 (권한 필요)'}
-              title={canReadAudit ? '감사 로그' : '권한 필요'}
-              disabled={!canReadAudit}
-              onClick={canReadAudit ? () => navigate('/audit-log') : undefined}
-              style={{ position: 'relative', width: 38, height: 38, borderRadius: 10, border: '1px solid var(--color-border)', background: 'var(--color-surface)', color: 'var(--color-text-2)', cursor: canReadAudit ? 'pointer' : 'not-allowed', opacity: canReadAudit ? 1 : 0.5, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M6 8a6 6 0 0112 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10 21a2 2 0 004 0"/></svg>
-              {canReadAudit && <span style={{ position: 'absolute', top: 6, right: 7, width: 8, height: 8, borderRadius: '50%', background: '#ef4444' }} />}
-            </button>
-            <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--color-text-2)' }}>{userId}</span>
-            <span style={{ fontSize: '0.78rem', fontWeight: 700, padding: '4px 10px', borderRadius: 6, background: 'var(--color-surface-accent)', color: 'var(--color-accent)' }}>{orgLabel}</span>
-          </div>
+          <button
+            type="button"
+            aria-label={canReadAudit ? '감사 로그 열기' : '감사 로그 (권한 필요)'}
+            title={canReadAudit ? '감사 로그' : '권한 필요'}
+            disabled={!canReadAudit}
+            onClick={canReadAudit ? () => navigate('/audit-log') : undefined}
+            style={{ position: 'relative', width: 38, height: 38, borderRadius: 10, border: '1px solid var(--color-border)', background: 'var(--color-surface)', color: 'var(--color-text-2)', cursor: canReadAudit ? 'pointer' : 'not-allowed', opacity: canReadAudit ? 1 : 0.5, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M6 8a6 6 0 0112 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10 21a2 2 0 004 0"/></svg>
+            {canReadAudit && <span style={{ position: 'absolute', top: 6, right: 7, width: 8, height: 8, borderRadius: '50%', background: '#ef4444' }} />}
+          </button>
+          <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--color-text-2)' }}>{userId}</span>
+          <span style={{ fontSize: '0.78rem', fontWeight: 700, padding: '4px 10px', borderRadius: 6, background: 'var(--color-surface-accent)', color: 'var(--color-accent)' }}>{orgLabel}</span>
         </header>
 
         <main style={{ flex: 1, padding: '24px 32px', overflowY: 'auto' }}>{children}</main>
