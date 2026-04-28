@@ -1,7 +1,7 @@
 import { type CSSProperties } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useTheme } from '../contexts/ThemeContext';
 
+const WORDMARK_SRC = '/velkern-wordmark-light.png';
 const NETWORK_HERO_SRC = '/landing-network-hero.png';
 
 const VALUE_ITEMS = [
@@ -90,7 +90,7 @@ function ValueIcon({ name }: { name: ValueIconKey }) {
 function NetworkVisual() {
   return (
     <section
-      className="relative ml-auto w-full min-w-0 max-w-[78rem]"
+      className="relative ml-auto w-full min-w-0 max-w-[88rem] lg:translate-x-12 xl:translate-x-20"
       aria-label="VELKERN trust network illustration"
     >
       <div className="relative w-full" style={{ aspectRatio: '2922 / 2284' }}>
@@ -107,21 +107,19 @@ function NetworkVisual() {
 
 export default function LandingPage() {
   const navigate = useNavigate();
-  const { theme } = useTheme();
   const goLogin = () => navigate('/login');
-  const isDark = theme === 'dark';
   return (
     <main
       data-page="landing"
-      className={`min-h-screen overflow-hidden text-[var(--landing-ink)] ${isDark ? 'bg-[#0b1220]' : 'bg-white'}`}
+      className="min-h-screen overflow-hidden bg-white text-[var(--landing-ink)]"
       style={{
-        colorScheme: isDark ? 'dark' : 'light',
-        '--landing-ink': isDark ? '#e2e8f0' : '#06124a',
-        '--landing-muted': isDark ? '#cbd5e1' : '#26345d',
-        '--landing-soft': isDark ? '#94a3b8' : '#53617f',
-        '--landing-blue': isDark ? '#60a5fa' : '#1769e0',
-        '--landing-green': isDark ? '#34d399' : '#10b981',
-        '--landing-border': isDark ? 'rgba(148, 163, 184, 0.18)' : 'rgba(15, 23, 42, 0.12)',
+        colorScheme: 'light',
+        '--landing-ink': '#06124a',
+        '--landing-muted': '#26345d',
+        '--landing-soft': '#53617f',
+        '--landing-blue': '#1769e0',
+        '--landing-green': '#10b981',
+        '--landing-border': 'rgba(15, 23, 42, 0.12)',
       } as CSSProperties}
     >
       <h1 className="sr-only">VELKERN</h1>
@@ -130,11 +128,10 @@ export default function LandingPage() {
         <div className="grid flex-1 grid-cols-1 items-center gap-8 lg:grid-cols-[0.65fr_1.35fr] lg:gap-2">
           <section className="flex min-w-0 max-w-[37rem] flex-col items-start text-left lg:pb-8 xl:pb-10">
             <img
-              src="/velkern-wordmark-light.png"
+              src={WORDMARK_SRC}
               alt="VELKERN"
               draggable={false}
               className="w-full max-w-[28rem] select-none sm:max-w-[31rem] xl:max-w-[34rem]"
-              style={isDark ? { filter: 'invert(1) hue-rotate(180deg)' } : undefined}
             />
 
             <p className="mt-10 font-[var(--font-display)] text-[2.7rem] font-extrabold leading-[1.08] tracking-[-0.055em] text-[var(--landing-blue)] sm:text-[3.25rem] xl:text-[3.75rem]">
@@ -158,7 +155,7 @@ export default function LandingPage() {
               </button>
               <a
                 href="#landing-highlights"
-                className={`inline-flex h-14 min-w-[11rem] items-center justify-center rounded-md border border-[var(--landing-blue)] px-8 text-[1rem] font-bold text-[var(--landing-blue)] hover:bg-[rgba(23,105,224,0.08)] ${isDark ? 'bg-transparent' : 'bg-white'}`}
+                className="inline-flex h-14 min-w-[11rem] items-center justify-center rounded-md border border-[var(--landing-blue)] bg-white px-8 text-[1rem] font-bold text-[var(--landing-blue)] hover:bg-[rgba(23,105,224,0.04)]"
               >
                 자세히 보기
               </a>
