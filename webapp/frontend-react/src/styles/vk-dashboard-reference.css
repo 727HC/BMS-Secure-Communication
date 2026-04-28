@@ -241,15 +241,18 @@
 }
 
 .vk-ref-topbar {
-  height: 64px;
+  z-index: 5;
+  right: 30px;
+  top: 18px;
+  position: absolute;
+  min-height: 38px;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: 0 32px;
-  background: var(--color-surface);
-  border-bottom: 1px solid var(--color-border);
-  flex-shrink: 0;
-  gap: 20px;
+  justify-content: flex-end;
+  gap: 0;
+  padding: 0;
+  background: transparent;
+  border-bottom: 0;
 }
 
 .vk-ref-topbar__space {
