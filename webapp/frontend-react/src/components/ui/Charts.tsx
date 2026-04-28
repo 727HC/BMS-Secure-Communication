@@ -180,11 +180,11 @@ interface BarRowsProps {
 export function BarRows({ items, max, barColor = 'var(--color-accent)' }: BarRowsProps) {
   const m = max ?? Math.max(...items.map((i) => i.value), 1);
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 10, maxWidth: 480 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
       {items.map((it) => {
         const pct = (it.value / m) * 100;
         return (
-          <div key={it.label} style={{ display: 'grid', gridTemplateColumns: 'minmax(6rem, 0.9fr) minmax(120px, 1.4fr) auto', alignItems: 'center', gap: 12 }}>
+          <div key={it.label} style={{ display: 'grid', gridTemplateColumns: 'minmax(6rem, auto) minmax(140px, 480px) auto', alignItems: 'center', gap: 12 }}>
             <span style={{ fontSize: '0.9375rem', color: 'var(--color-text-2)', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
               {it.label}
             </span>
