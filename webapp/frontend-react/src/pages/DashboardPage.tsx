@@ -1108,10 +1108,7 @@ export default function DashboardPage() {
   return (
     <div className="vk-dash" data-selected-passport-id={selectedPassportId || undefined}>
       <header className="vk-dash__head">
-        <div>
-          <h1 className="vk-dash__title">개요</h1>
-          <p className="vk-dash__sub" title={dashboardDataSummary}>배터리 여권 시스템의 전체 현황을 한눈에 확인하세요.</p>
-        </div>
+        <p className="vk-dash__sub" title={dashboardDataSummary}>배터리 여권 시스템의 전체 현황을 한눈에 확인하세요.</p>
       </header>
 
       <div className="vk-grid vk-grid--4">
