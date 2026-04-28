@@ -234,12 +234,6 @@ export default function AuditLogPage() {
         subtitle={`총 ${total}건의 API 행위와 응답 근거를 ledger/register 기준으로 확인합니다.`}
         actions={(
           <>
-            <div className="sn-kpi-mini">
-              <p className="sn-eyebrow" style={{ margin: '0 0 0.3rem' }}>현재 페이지</p>
-              <p style={{ fontFamily: 'var(--font-mono)', fontSize: '1.1rem', fontWeight: 700, color: 'var(--color-text-1)', margin: 0 }}>
-                {logs.length}
-              </p>
-            </div>
             <label className="sn-panel" style={{ minHeight: 44, display: 'inline-flex', alignItems: 'center', cursor: 'pointer', userSelect: 'none', gap: 10, padding: '0.55rem 0.9rem' }}>
               <div style={{ position: 'relative' }}>
                 <input

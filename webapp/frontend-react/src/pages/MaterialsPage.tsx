@@ -151,24 +151,14 @@ export default function MaterialsPage() {
       <PageHead
         title="공급망 등록부"
         subtitle={registerSummary}
-        actions={(
-          <>
-            <div className="sn-kpi-mini">
-              <p className="sn-eyebrow" style={{ margin: '0 0 0.3rem' }}>현재 표시</p>
-              <p style={{ fontFamily: 'var(--font-mono)', fontSize: '1.1rem', fontWeight: 700, color: 'var(--color-text-1)', margin: 0 }}>
-                {filteredMaterials.length}
-              </p>
-            </div>
-            {isManufacturer && (
-              <button onClick={openCreateModal} className="sn-btn sn-btn-accent" style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                <svg width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24" aria-hidden="true">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
-                </svg>
-                공급망 자재 등재
-              </button>
-            )}
-          </>
-        )}
+        actions={isManufacturer ? (
+          <button onClick={openCreateModal} className="sn-btn sn-btn-accent" style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+            <svg width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24" aria-hidden="true">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+            </svg>
+            공급망 자재 등재
+          </button>
+        ) : undefined}
       />
 
       {submitError && (

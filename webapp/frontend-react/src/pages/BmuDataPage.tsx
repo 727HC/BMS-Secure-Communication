@@ -204,12 +204,6 @@ export default function BmuDataPage() {
         subtitle="배터리 여권 ID로 BMU 원장 기록을 조회하고 최신 센서 판독값, 이상 플래그, 갱신 상태를 한 화면에서 확인합니다."
         actions={(
           <>
-            <div className="sn-kpi-mini">
-              <p className="sn-eyebrow" style={{ margin: '0 0 0.3rem' }}>현재 기록</p>
-              <p style={{ fontFamily: 'var(--font-mono)', fontSize: '1.1rem', fontWeight: 700, color: 'var(--color-text-1)', margin: 0 }}>
-                {hasSearched ? sortedRecords.length : 0}
-              </p>
-            </div>
             <label className="sn-panel" style={{ minHeight: 44, display: 'inline-flex', alignItems: 'center', cursor: 'pointer', userSelect: 'none', gap: 10, padding: '0.55rem 0.9rem' }}>
               <div style={{ position: 'relative' }}>
                 <input
