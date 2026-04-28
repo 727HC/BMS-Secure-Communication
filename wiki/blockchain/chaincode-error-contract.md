@@ -197,7 +197,7 @@ UI 매핑 권고: 모두 한국어 "접근 권한이 없습니다" 계열로 통
 | `invalid recycledElementContent JSON: {wrappedErr}` | CorrectPassportData |
 | `invalid extensionInfo JSON: {wrappedErr}` | CorrectPassportData |
 | `invalid recycling rates JSON: {wrappedErr}` | ExtractMaterials |
-| `invalid recycling rate for {material}: must be in [0, 1], got {value}` | ExtractMaterials (P2-4) |
+| `invalid recycling rate for {material}: must be in [0, 100], got {value}` | ExtractMaterials (P2-4 — % 단위) |
 | `DID mismatch: passport {passportId} is registered to DID {expectedDid}, not {gotDid}` | RecordBMUData |
 | `evidence {credId} is not a valid credential` | UpdateRegulatoryVerification |
 | `no new materials to link (all already linked or empty)` | LinkRawMaterials |
