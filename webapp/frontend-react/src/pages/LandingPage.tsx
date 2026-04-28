@@ -38,27 +38,6 @@ const VALUE_ITEMS = [
   },
 ] as const;
 
-interface HexNode {
-  key: string;
-  text: string;
-  cx: number; // hex center x (%)
-  cy: number; // hex center y (%)
-}
-
-// 각 hex의 실측 centroid — 좌우 대칭 강제 X, 각각 자신의 hex 중앙에 정렬.
-const HEX_NODES: readonly HexNode[] = [
-  { key: 'manufacturer', text: 'MANUFACTURER', cx: 17.76, cy: 14.27 },
-  { key: 'ev', text: 'EV MANUFACTURER', cx: 82.04, cy: 14.17 },
-  { key: 'ecosystem', text: 'GLOBAL\nECOSYSTEM', cx: 7.35, cy: 54.15 },
-  { key: 'service', text: 'SERVICE', cx: 92.45, cy: 54.35 },
-  { key: 'regulator', text: 'REGULATOR', cx: 50.00, cy: 86.41 },
-];
-
-// 각 hex bottom edge = cy + HEX_RADIUS_PCT. 라벨 top = bottom + LABEL_GAP_PCT.
-// → 모든 hex의 bottom과 label top 사이 간격이 정확히 LABEL_GAP_PCT로 통일됨.
-const HEX_RADIUS_PCT = 8.3; // hex 세로 반지름 ~85px / 1023px
-const LABEL_GAP_PCT = 3.0;
-
 type ValueIconKey = (typeof VALUE_ITEMS)[number]['key'];
 
 function ValueIcon({ name }: { name: ValueIconKey }) {
@@ -130,19 +109,6 @@ function NetworkVisual() {
           draggable={false}
           className="absolute inset-0 z-10 h-full w-full select-none object-contain"
         />
-        {HEX_NODES.map((node) => (
-          <p
-            key={node.key}
-            className="absolute z-20 whitespace-pre-line text-center text-[0.8rem] font-bold uppercase leading-[1.25] tracking-[0.06em] text-[var(--landing-ink)] sm:text-[0.9rem] lg:text-[1rem]"
-            style={{
-              top: `${node.cy + HEX_RADIUS_PCT + LABEL_GAP_PCT}%`,
-              left: `${node.cx}%`,
-              transform: 'translateX(-50%)',
-            }}
-          >
-            {node.text}
-          </p>
-        ))}
       </div>
     </section>
   );
