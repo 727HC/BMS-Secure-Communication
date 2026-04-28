@@ -90,7 +90,7 @@ function ValueIcon({ name }: { name: ValueIconKey }) {
 function NetworkVisual() {
   return (
     <section
-      className="relative ml-auto w-full min-w-0 max-w-[96rem] lg:translate-x-12 lg:-translate-y-4 xl:translate-x-20 xl:-translate-y-6"
+      className="relative ml-auto w-full min-w-0 max-w-[78rem]"
       aria-label="VELKERN trust network illustration"
     >
       <div className="relative w-full" style={{ aspectRatio: '2922 / 2284' }}>
@@ -110,7 +110,6 @@ export default function LandingPage() {
   const { theme } = useTheme();
   const goLogin = () => navigate('/login');
   const isDark = theme === 'dark';
-  const wordmarkSrc = isDark ? '/velkern-wordmark-dark.png' : '/velkern-wordmark-light.png';
   return (
     <main
       data-page="landing"
@@ -131,10 +130,11 @@ export default function LandingPage() {
         <div className="grid flex-1 grid-cols-1 items-center gap-8 lg:grid-cols-[0.65fr_1.35fr] lg:gap-2">
           <section className="flex min-w-0 max-w-[37rem] flex-col items-start text-left lg:pb-8 xl:pb-10">
             <img
-              src={wordmarkSrc}
+              src="/velkern-wordmark-light.png"
               alt="VELKERN"
               draggable={false}
               className="w-full max-w-[28rem] select-none sm:max-w-[31rem] xl:max-w-[34rem]"
+              style={isDark ? { filter: 'invert(1) hue-rotate(180deg)' } : undefined}
             />
 
             <p className="mt-10 font-[var(--font-display)] text-[2.7rem] font-extrabold leading-[1.08] tracking-[-0.055em] text-[var(--landing-blue)] sm:text-[3.25rem] xl:text-[3.75rem]">
