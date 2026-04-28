@@ -334,7 +334,7 @@ export default function RecyclingPage() {
       <PageHead
         eyebrow="Lifecycle register"
         eyebrowColor="var(--color-success)"
-        title="Recycling & ESG"
+        title="재활용·ESG"
         subtitle={pageSummary}
         actions={(
           <>
@@ -362,7 +362,7 @@ export default function RecyclingPage() {
           <div className="sn-section-head-row">
             <div>
               <p className="sn-eyebrow" style={{ margin: '0 0 0.4rem', color: 'var(--color-text-3)' }}>{deskLabel}</p>
-              <h2 className="sn-heading" style={{ margin: 0, fontSize: '1.25rem' }}>Lifecycle filing summary</h2>
+              <h2 className="sn-heading" style={{ margin: 0, fontSize: '1.25rem' }}>생애 주기 등재 요약</h2>
               <p className="sn-caption" style={{ margin: '0.45rem 0 0', maxWidth: '48rem' }}>
                 여권 필드의 SOH, 잔존 수명, 회수 가능 판정, 원소별 추출률을 기준으로 ESG 회수 준비 상태를 계산합니다.
               </p>

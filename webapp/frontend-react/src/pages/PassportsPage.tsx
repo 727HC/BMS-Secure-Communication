@@ -305,7 +305,7 @@ export default function PassportsPage() {
       <PageHead
         eyebrow="여권 등록부"
         eyebrowColor="var(--color-accent)"
-        title="Battery Passport Register"
+        title="배터리 여권 등록부"
         subtitle={registerSummary}
         actions={(
           <>
