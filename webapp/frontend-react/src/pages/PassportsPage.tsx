@@ -305,23 +305,15 @@ export default function PassportsPage() {
       <PageHead
         title="배터리 여권 등록부"
         subtitle={registerSummary}
-        actions={(
-          <>
-            <div className="sn-kpi-mini">
-              <p className="sn-eyebrow" style={{ margin: '0 0 0.3rem' }}>현재 표시</p>
-              <p style={{ fontFamily: 'var(--font-mono)', fontSize: '1.1rem', fontWeight: 700, color: 'var(--color-text-1)', margin: 0 }}>{filteredPassports.length}</p>
-            </div>
-            {isManufacturer && (
-              <button onClick={openIssueFlow} className="sn-btn sn-btn-accent" style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5" aria-hidden="true">
-                  <line x1="12" y1="5" x2="12" y2="19" />
-                  <line x1="5" y1="12" x2="19" y2="12" />
-                </svg>
-                발급 접수
-              </button>
-            )}
-          </>
-        )}
+        actions={isManufacturer ? (
+          <button onClick={openIssueFlow} className="sn-btn sn-btn-accent" style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+            <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5" aria-hidden="true">
+              <line x1="12" y1="5" x2="12" y2="19" />
+              <line x1="5" y1="12" x2="19" y2="12" />
+            </svg>
+            발급 접수
+          </button>
+        ) : undefined}
       />
 
       {submitError && (

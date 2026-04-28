@@ -335,17 +335,9 @@ export default function RecyclingPage() {
         title="재활용·ESG"
         subtitle={pageSummary}
         actions={(
-          <>
-            <div className="sn-kpi-mini">
-              <p className="sn-eyebrow" style={{ margin: '0 0 0.3rem' }}>현재 표시</p>
-              <p style={{ fontFamily: 'var(--font-mono)', fontSize: '1.1rem', fontWeight: 700, color: 'var(--color-text-1)', margin: 0 }}>
-                {filteredPassports.length}
-              </p>
-            </div>
-            <button onClick={fetchPassports} className="sn-btn sn-btn-ghost" style={{ flexShrink: 0 }}>
-              새로고침
-            </button>
-          </>
+          <button onClick={fetchPassports} className="sn-btn sn-btn-ghost" style={{ flexShrink: 0 }}>
+            새로고침
+          </button>
         )}
       />
 

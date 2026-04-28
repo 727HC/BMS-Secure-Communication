@@ -193,14 +193,6 @@ export default function QrScanPage() {
       <PageHead
         title="현장 식별 조회"
         subtitle="현장에서 확보한 QR, NFC, 수동 식별값으로 여권 dossier를 찾고 상세 화면으로 이어갑니다."
-        actions={(
-          <div className="sn-kpi-mini">
-            <p className="sn-eyebrow" style={{ margin: '0 0 0.3rem' }}>Lookup state</p>
-            <p style={{ fontFamily: 'var(--font-mono)', fontSize: '1.1rem', fontWeight: 700, color: 'var(--color-text-1)', margin: 0 }}>
-              {loadingPassport ? 'RUN' : passportData ? 'OK' : scanError ? 'ERR' : 'IDLE'}
-            </p>
-          </div>
-        )}
       />
 
       <section className="sn-section-card">
