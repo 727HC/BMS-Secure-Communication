@@ -1410,34 +1410,9 @@ export default function DashboardPage() {
 }
 
 function KpiTrendSparkline({ label, trend }: { label: string; trend: KpiTrendViewModel }) {
-  // snapshot-sparkline 모드는 시간 차트가 아닌 현재 비율 시각화. wave 대신 horizontal bar로
-  // 데이터 기반(현재값) 의미를 명확히 한다. daily-count 모드만 실제 시계열 line 유지.
-  if (trend.mode === 'snapshot-sparkline') {
-    const lastValue = trend.points[trend.points.length - 1]?.value ?? 0;
-    const fillPct = Math.min(100, Math.max(0, lastValue));
-    return (
-      <div
-        className="vk-kpi__trend"
-        aria-label={`${label} 현재 비율 시각화: ${trend.valueLabel}`}
-        data-kpi-trend-sparkline="true"
-        data-kpi-trend-kind={trend.kind}
-        data-kpi-trend-mode={trend.mode}
-        data-kpi-trend-source={trend.source}
-        data-kpi-trend-points={String(trend.points.length)}
-        data-kpi-trend-values={trend.points.map((point) => point.value).join(',')}
-        data-kpi-trend-caption={trend.caption}
-      >
-        <div style={{ height: 6, width: 120, borderRadius: 999, background: 'var(--color-border)', overflow: 'hidden' }} aria-hidden="true">
-          <div style={{ height: '100%', width: `${fillPct}%`, background: 'currentColor', borderRadius: 999, transition: 'width 0.3s' }} />
-        </div>
-        <div className="vk-kpi__trend-meta">
-          <span className="vk-kpi__trend-caption">{trend.caption}</span>
-          <span className="vk-kpi__trend-value">{trend.valueLabel}</span>
-        </div>
-      </div>
-    );
-  }
-
+  // 모든 KPI를 동일한 wave 스타일로 통일. fill=0이면 baseline 평평(이전 fix 유지),
+  // 그 외엔 fill * 100 + offsets로 amplitude wave를 그린다. daily-count는 실제 시계열,
+  // snapshot-sparkline은 현재 비율을 wave amplitude로 시각화 (caption + valueLabel로 의미 명시).
   const width = 120;
   const height = 28;
   const paddingX = 3;
@@ -1461,8 +1436,9 @@ function KpiTrendSparkline({ label, trend }: { label: string; trend: KpiTrendVie
   });
   const pathD = coordinates.map((point, index) => `${index === 0 ? 'M' : 'L'} ${point.x.toFixed(2)} ${point.y.toFixed(2)}`).join(' ');
   const lastPoint = trend.points[trend.points.length - 1];
-  // snapshot-sparkline은 위에서 early return으로 처리됨. 여기 도달하면 daily-count.
-  const ariaLabel = `${label} 실제 추이: ${trend.caption}`;
+  const ariaLabel = trend.mode === 'daily-count'
+    ? `${label} 실제 추이: ${trend.caption}`
+    : `${label} 현재 비율 시각화: ${trend.valueLabel}`;
 
   return (
     <div
