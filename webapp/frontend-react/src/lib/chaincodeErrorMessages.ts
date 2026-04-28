@@ -69,12 +69,28 @@ export interface ToastResult {
   status: number;
 }
 
+// chaincode 에러가 아닌 일반 API 라우트(예: /api/auth/login 401/403)도 카테고리 없이
+// ApiError로 들어오므로, status 기반 fallback으로 합리적인 토스트를 매핑한다.
+function fallbackByStatus(status: number, debug: string): ToastResult {
+  if (status === 401) return { toast: '아이디 또는 비밀번호를 확인해 주세요.', debug, category: 'AUTHZ', status };
+  if (status === 403) return { toast: '이 작업에 대한 권한이 없습니다.', debug, category: 'AUTHZ', status };
+  if (status === 404) return { toast: '요청한 항목을 찾을 수 없습니다.', debug, category: 'NOT_FOUND', status };
+  if (status === 409) return { toast: '이미 처리되었거나 동일한 항목이 존재합니다.', debug, category: 'CONFLICT', status };
+  if (status >= 400 && status < 500) {
+    return { toast: debug || '입력값을 다시 확인해 주세요.', debug, category: 'VAL', status };
+  }
+  return { toast: '일시적인 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.', debug, category: 'INTERNAL', status };
+}
+
 export function toastFromError(err: unknown): ToastResult {
   if (err instanceof ApiError) {
-    const category: ApiErrorCategory = err.category || 'INTERNAL';
     const debug = err.message || '';
-    const toast = refineMessage(category, debug);
-    return { toast, debug, category, status: err.status };
+    if (err.category) {
+      const toast = refineMessage(err.category, debug);
+      return { toast, debug, category: err.category, status: err.status };
+    }
+    // category 없는 비-chaincode 응답(예: auth 라우트)은 status 기반 fallback
+    return fallbackByStatus(err.status, debug);
   }
   // 네트워크 / fetch / 파싱 등 비-API 에러
   const debug = err instanceof Error ? err.message : String(err);
