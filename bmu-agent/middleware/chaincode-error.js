@@ -80,10 +80,19 @@ function mapChaincodeError(rawMsg) {
   return { status: 500, category: 'INTERNAL' };
 }
 
+const { createLogger } = require('../services/logger.service');
+const internalLog = createLogger('chaincode-error');
+
 function sendChaincodeError(res, err) {
   const rawMsg = err && err.message ? err.message : String(err);
   const unwrapped = unwrapFabricError(rawMsg);
   const { status, category } = mapChaincodeError(rawMsg);
+  // INTERNAL 응답은 generic 마스킹: Fabric wallet/CCP 경로, ACA-Py 내부 식별자 등
+  // 인증 클라이언트에도 노출되지 않도록 서버 로그에만 원문 기록.
+  if (category === 'INTERNAL') {
+    internalLog.error('chaincode INTERNAL', { raw: unwrapped, status });
+    return res.status(status).json({ error: 'Internal server error', category });
+  }
   res.status(status).json({ error: unwrapped, category });
 }
 
