@@ -7,39 +7,29 @@
   --vk-ref-green: #10b981;
   --vk-ref-green-soft: #ecfdf5;
   --vk-ref-red: #ef4444;
-  --vk-ref-bg: #f5f6f8;
-  --vk-ref-panel: #ffffff;
-  --vk-ref-panel-soft: #f8fafc;
-  --vk-ref-text-main: #0f172a;
-  --vk-ref-text-sub: #64748b;
-  --vk-ref-text-soft: #94a3b8;
-  --vk-ref-line: rgba(0, 0, 0, 0.06);
-  --vk-ref-side-line: rgba(15, 23, 42, 0.02);
-  --vk-ref-shadow: 0 1px 3px rgba(15, 23, 42, 0.05);
-  --color-primary: #1769e0;
-  --color-accent: #1769e0;
-  --color-bg: #f5f6f8;
-  --color-surface: #ffffff;
-  --color-surface-alt: #f8fafc;
-  --color-surface-accent: #eef5ff;
-  --color-text-1: #0f172a;
-  --color-text-2: #64748b;
-  --color-text-3: #94a3b8;
-  --color-border: rgba(0, 0, 0, 0.06);
-  --color-success: #10b981;
-  --color-success-soft: #ecfdf5;
-  --color-warning: #f59e0b;
-  --color-warning-soft: #fff7ed;
-  --color-danger: #ef4444;
-  --color-danger-soft: #fef2f2;
-  --shadow-card: 0 1px 3px rgba(15, 23, 42, 0.05);
-  --shadow-elevated: 0 4px 16px rgba(15, 23, 42, 0.08);
+  --vk-ref-bg: var(--color-bg);
+  --vk-ref-panel: var(--color-surface);
+  --vk-ref-panel-soft: var(--color-surface-alt);
+  --vk-ref-text-main: var(--color-text-1);
+  --vk-ref-text-sub: var(--color-text-2);
+  --vk-ref-text-soft: var(--color-text-3);
+  --vk-ref-line: var(--color-border);
+  --vk-ref-side-line: var(--color-border);
+  --vk-ref-shadow: var(--shadow-card);
   min-height: 100vh;
   display: block;
   background: var(--vk-ref-bg);
   color: var(--vk-ref-text-main);
-  color-scheme: light;
   font-family: 'Pretendard Variable', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+:root.dark .vk-ref-shell {
+  --vk-ref-blue: #60a5fa;
+  --vk-ref-blue-soft: rgba(96, 165, 250, 0.14);
+  --vk-ref-blue-line: rgba(96, 165, 250, 0.32);
+  --vk-ref-green: #34d399;
+  --vk-ref-green-soft: rgba(52, 211, 153, 0.16);
+  --vk-ref-red: #f87171;
 }
 
 /* Layout.tsx의 ev-sidebar(position:fixed, width:248px)와 같이 사용되므로

@@ -39,6 +39,10 @@
   transform: translate(-7px, -18px);
 }
 
+:root.dark .oc-shell-brand__mark {
+  filter: invert(1) hue-rotate(180deg);
+}
+
 .ev-sidebar-nav { display: flex; flex-direction: column; gap: 4px; }
 .ev-sidebar-section-label {
   padding: 12px 12px 6px;
