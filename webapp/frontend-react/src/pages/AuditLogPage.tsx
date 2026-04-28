@@ -331,7 +331,7 @@ export default function AuditLogPage() {
       </section>
 
       {hasRecords && (
-        <section className="sn-section-card" style={{ padding: '20px 22px' }}>
+        <section className="sn-section-card" style={{ padding: '20px 22px', maxWidth: 1080 }}>
           <div style={{ display: 'grid', gridTemplateColumns: 'minmax(18rem, auto) 1fr', gap: 32, alignItems: 'start' }}>
             <div>
               <p className="sn-eyebrow" style={{ margin: '0 0 0.4rem', color: 'var(--color-text-3)' }}>Method distribution</p>
@@ -363,7 +363,7 @@ export default function AuditLogPage() {
       )}
 
       {hasRecords && (
-        <section className="sn-section-card" style={{ padding: '18px 22px' }}>
+        <section className="sn-section-card" style={{ padding: '18px 22px', maxWidth: 1080 }}>
           <div style={{ display: 'grid', gridTemplateColumns: 'minmax(220px, 0.9fr) minmax(260px, 1.1fr)', gap: '1.25rem', alignItems: 'start' }}>
             <div>
               <p className="sn-eyebrow" style={{ margin: '0 0 0.4rem', color: 'var(--color-text-3)' }}>Status distribution</p>

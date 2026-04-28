@@ -395,7 +395,7 @@ export default function PassportsPage() {
         </div>
       </section>
 
-      <section className="sn-section-card" style={{ padding: '20px 22px' }}>
+      <section className="sn-section-card" style={{ padding: '20px 22px', maxWidth: 1080 }}>
         <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 16, marginBottom: 16, flexWrap: 'wrap' }}>
           <div>
             <p className="sn-eyebrow" style={{ margin: '0 0 0.35rem', color: 'var(--color-text-3)' }}>Register composition</p>
@@ -403,7 +403,7 @@ export default function PassportsPage() {
           </div>
           <p className="sn-caption" style={{ margin: 0 }}>상태, 제조사, 화학계열 분포를 현재 조회 결과로 표시합니다.</p>
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(17rem, auto) 1fr', gap: 32, alignItems: 'start' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(17rem, auto) minmax(0, 1fr)', gap: 32, alignItems: 'start' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 20, flexWrap: 'wrap' }}>
             <DonutChart
               segments={statusDistSegments.length ? statusDistSegments : [{ label: '없음', value: 1, color: 'var(--color-border)' }]}
@@ -415,7 +415,7 @@ export default function PassportsPage() {
             <LegendStack items={statusLegendItems} />
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 28 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
             <div>
               <p className="sn-eyebrow" style={{ margin: '0 0 12px', color: 'var(--color-text-3)' }}>제조사 파일 상위 5</p>
               {manufacturerBarItems.length > 0

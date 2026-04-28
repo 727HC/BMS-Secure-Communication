@@ -415,7 +415,7 @@ export default function RecyclingPage() {
         </div>
       </section>
 
-      <section className="sn-section-card" style={{ padding: '20px 22px' }}>
+      <section className="sn-section-card" style={{ padding: '20px 22px', maxWidth: 1080 }}>
         <div style={{ display: 'grid', gridTemplateColumns: 'minmax(220px, 0.85fr) minmax(260px, 1.15fr)', gap: '1.25rem', alignItems: 'start' }}>
           <div>
             <p className="sn-eyebrow" style={{ margin: '0 0 0.4rem', color: 'var(--color-text-3)' }}>ESG lifecycle distribution</p>
@@ -432,7 +432,7 @@ export default function RecyclingPage() {
       </section>
 
       {avgRates.length > 0 && (
-        <section className="sn-section-card" style={{ padding: '20px 22px' }}>
+        <section className="sn-section-card" style={{ padding: '20px 22px', maxWidth: 1080 }}>
           <div style={{ display: 'grid', gridTemplateColumns: 'minmax(220px, 0.85fr) minmax(260px, 1.15fr)', gap: '1.25rem', alignItems: 'start' }}>
             <div>
               <p className="sn-eyebrow" style={{ margin: '0 0 0.4rem', color: 'var(--color-text-3)' }}>Extraction evidence</p>
