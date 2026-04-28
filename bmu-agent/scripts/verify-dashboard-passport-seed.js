@@ -5,7 +5,7 @@ const path = require('path');
 
 const EXPECTED_SEED_HEADER = 'dashboard-real-seed-data';
 const EXPECTED_RECORD_COUNT = 100;
-const EXPECTED_VALUES = Object.freeze([4, 13, 7, 16, 5, 18, 9, 14, 6, 8]);
+const EXPECTED_VALUES = Object.freeze([6, 8, 7, 11, 12, 14, 11, 13, 10, 8]);
 const EVIDENCE_PATH = path.resolve(
   __dirname,
   '..',
