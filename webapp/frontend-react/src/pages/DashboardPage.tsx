@@ -530,7 +530,7 @@ interface KpiTrendBaseViewModel {
 
 type KpiTrendViewModel =
   | (KpiTrendBaseViewModel & {
-    kind: 'total';
+    kind: KpiSnapshotKind;
     mode: 'daily-count';
     source: 'passports.createdAt';
   })
@@ -630,14 +630,31 @@ function buildSnapshotSparkline(snapshot: KpiSnapshotViewModel): KpiTrendViewMod
   };
 }
 
-function buildDailyRegistrationTrend(passports: DashboardPassport[], total: number): KpiTrendViewModel | null {
-  if (total <= 0) return null;
+const KPI_FILTERS: Record<KpiSnapshotKind, (p: DashboardPassport) => boolean> = {
+  total: () => true,
+  normal: isPassportNormal,
+  alerts: (p) => !isPassportNormal(p),
+  verified: isPassportVerified,
+};
+
+const KPI_TREND_LABELS: Record<KpiSnapshotKind, { caption: string; unit: string }> = {
+  total: { caption: '일별 등록 추이', unit: '대/일' },
+  normal: { caption: '정상 상태 일별 등록', unit: '대/일' },
+  alerts: { caption: '알림 발생 일별 등록', unit: '건/일' },
+  verified: { caption: '검증 완료 일별 등록', unit: '건/일' },
+};
+
+function buildDailyKindTrend(
+  kind: KpiSnapshotKind,
+  passports: DashboardPassport[],
+): KpiTrendViewModel | null {
+  const filtered = passports.filter(KPI_FILTERS[kind]);
+  if (filtered.length === 0) return null;
 
   const buckets = new Map<string, { count: number; timestamp: number }>();
 
-  for (const passport of passports) {
+  for (const passport of filtered) {
     if (!passport.createdAt) continue;
-
     const parsed = Date.parse(passport.createdAt);
     if (!Number.isFinite(parsed)) continue;
 
@@ -645,7 +662,6 @@ function buildDailyRegistrationTrend(passports: DashboardPassport[], total: numb
     const label = date.toISOString().slice(0, 10);
     const timestamp = Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate());
     const bucket = buckets.get(label);
-
     buckets.set(label, {
       count: (bucket?.count ?? 0) + 1,
       timestamp,
@@ -658,18 +674,16 @@ function buildDailyRegistrationTrend(passports: DashboardPassport[], total: numb
     .sort(([, a], [, b]) => a.timestamp - b.timestamp)
     .map(([label, bucket]) => ({ label, value: bucket.count, timestamp: bucket.timestamp }));
 
-  const bucketTotal = points.reduce((sum, point) => sum + point.value, 0);
-  if (bucketTotal !== total) return null;
-
-  const maxDailyCount = Math.max(...points.map((point) => point.value));
+  const maxDaily = Math.max(...points.map((point) => point.value));
+  const labels = KPI_TREND_LABELS[kind];
 
   return {
-    kind: 'total',
+    kind,
     mode: 'daily-count',
     source: 'passports.createdAt',
     points,
-    caption: `일별 등록 추이 · ${points.length}개 실제 날짜`,
-    valueLabel: `최고 ${maxDailyCount}대/일`,
+    caption: `${labels.caption} · ${points.length}개 날짜`,
+    valueLabel: `최고 ${maxDaily}${labels.unit}`,
   };
 }
 
@@ -677,18 +691,17 @@ function buildKpiVisual({
   kind,
   snapshot,
   passports,
-  total,
 }: {
   kind: KpiSnapshotKind;
   snapshot: KpiSnapshotViewModel;
   passports: DashboardPassport[];
   total: number;
 }): KpiVisualViewModel {
-  const snapshotTrend = buildSnapshotSparkline(snapshot);
-  if (kind !== 'total') return { trend: snapshotTrend };
-
-  const trend = buildDailyRegistrationTrend(passports, total);
-  return { trend: trend ?? snapshotTrend };
+  // 4 KPI 모두 createdAt 기반 일별 시계열로 통일. 데이터 부족(필터 결과 0/1일)이면
+  // snapshot wave fallback (현재 비율 amplitude).
+  const dailyTrend = buildDailyKindTrend(kind, passports);
+  if (dailyTrend) return { trend: dailyTrend };
+  return { trend: buildSnapshotSparkline(snapshot) };
 }
 
 interface FleetGaugeViewModel {
