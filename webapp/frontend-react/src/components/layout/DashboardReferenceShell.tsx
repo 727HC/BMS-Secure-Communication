@@ -7,8 +7,6 @@ import ShellBrandLink from './ShellBrandLink';
 import '../../styles/vk-dashboard-reference.css';
 
 const AUDIT_ALLOWED_ORGS = new Set(['ManufacturerMSP', 'RegulatorMSP']);
-const AUDIT_REQUIRED_LABEL = '권한 필요';
-const CONTROL_PENDING_LABEL = '준비 중';
 
 interface DashboardReferenceShellProps {
   children: ReactNode;
@@ -113,40 +111,23 @@ export default function DashboardReferenceShell({ children }: DashboardReference
         <header className="vk-ref-topbar">
           <div className="vk-ref-topbar__space" aria-hidden="true" />
           <div className="vk-ref-userbar" aria-label="Reference top controls">
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, height: 38, padding: '0 12px', borderRadius: 10, background: 'var(--color-surface-alt)', border: '1px solid var(--color-border)', color: 'var(--color-text-3)', minWidth: 220 }}>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.35-4.35"/></svg>
+              <input placeholder="Search..." style={{ flex: 1, border: 'none', background: 'transparent', outline: 'none', color: 'var(--color-text-1)', fontSize: '0.88rem' }} />
+            </div>
             <button
               type="button"
-              className={`vk-ref-top-action${canReadAudit ? '' : ' vk-ref-top-action--with-label'}`}
-              aria-label={canReadAudit ? '감사 로그 열기' : `Notifications ${AUDIT_REQUIRED_LABEL}`}
-              title={canReadAudit ? '감사 로그' : AUDIT_REQUIRED_LABEL}
+              aria-label={canReadAudit ? '감사 로그 열기' : '감사 로그 (권한 필요)'}
+              title={canReadAudit ? '감사 로그' : '권한 필요'}
               disabled={!canReadAudit}
               onClick={canReadAudit ? () => navigate('/audit-log') : undefined}
+              style={{ position: 'relative', width: 38, height: 38, borderRadius: 10, border: '1px solid var(--color-border)', background: 'var(--color-surface)', color: 'var(--color-text-2)', cursor: canReadAudit ? 'pointer' : 'not-allowed', opacity: canReadAudit ? 1 : 0.5, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
             >
-              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 8a6 6 0 1112 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10 21h4"/></svg>
-              {canReadAudit ? null : <span className="vk-ref-top-action__label">{AUDIT_REQUIRED_LABEL}</span>}
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M6 8a6 6 0 0112 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10 21a2 2 0 004 0"/></svg>
+              {canReadAudit && <span style={{ position: 'absolute', top: 6, right: 7, width: 8, height: 8, borderRadius: '50%', background: '#ef4444' }} />}
             </button>
-            <button
-              type="button"
-              className="vk-ref-top-action vk-ref-top-action--with-label"
-              aria-label={`Messages ${CONTROL_PENDING_LABEL}`}
-              title={CONTROL_PENDING_LABEL}
-              disabled
-            >
-              <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M4 7l8 6 8-6"/></svg>
-              <span className="vk-ref-top-action__label">{CONTROL_PENDING_LABEL}</span>
-            </button>
-            <button
-              type="button"
-              className="vk-ref-top-action vk-ref-top-action--with-label"
-              aria-label={`Help ${CONTROL_PENDING_LABEL}`}
-              title={CONTROL_PENDING_LABEL}
-              disabled
-            >
-              <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.8 2.8 0 115 1.8c-.9.6-1.5 1.1-1.5 2.2"/><path d="M12 17h.01"/></svg>
-              <span className="vk-ref-top-action__label">{CONTROL_PENDING_LABEL}</span>
-            </button>
-            <span className="vk-ref-role-menu" aria-label={`Current organization: ${orgLabel}`} title={orgLabel}>
-              <span>{orgLabel}</span>
-            </span>
+            <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--color-text-2)' }}>{userId}</span>
+            <span style={{ fontSize: '0.78rem', fontWeight: 700, padding: '4px 10px', borderRadius: 6, background: 'var(--color-surface-accent)', color: 'var(--color-accent)' }}>{orgLabel}</span>
           </div>
         </header>
 
