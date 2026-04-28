@@ -405,7 +405,7 @@ export default function MaintenancePage() {
         </div>
       </section>
 
-      <section className="sn-section-card" style={{ padding: '20px 22px' }}>
+      <section className="sn-section-card" style={{ padding: '20px 22px', maxWidth: 1080 }}>
         <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 16, marginBottom: 16, flexWrap: 'wrap' }}>
           <div>
             <p className="sn-eyebrow" style={{ margin: '0 0 0.35rem', color: 'var(--color-text-3)' }}>Docket composition</p>

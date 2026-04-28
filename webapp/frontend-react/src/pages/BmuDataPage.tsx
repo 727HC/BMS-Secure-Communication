@@ -424,7 +424,7 @@ export default function BmuDataPage() {
 
           {/* 이상 이벤트 분포 */}
           {eventDistribution && (
-            <section className="sn-section-card" style={{ padding: '16px 20px' }}>
+            <section className="sn-section-card" style={{ padding: '16px 20px', maxWidth: 1080 }}>
               <p className="sn-eyebrow" style={{ margin: '0 0 12px', color: 'var(--color-text-2)' }}>이상 이벤트 분포</p>
               <BarRows items={eventDistribution} />
             </section>

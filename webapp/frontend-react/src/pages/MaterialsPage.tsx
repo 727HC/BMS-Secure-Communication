@@ -251,7 +251,7 @@ export default function MaterialsPage() {
       )}
 
       {!loading && materials.length > 0 && (
-        <div className="sn-panel" style={{ padding: '0.9rem 1rem' }}>
+        <div className="sn-panel" style={{ padding: '0.9rem 1rem', maxWidth: 1080 }}>
           <p className="sn-eyebrow" style={{ margin: '0 0 0.35rem' }}>Supply chain composition</p>
           <h2 className="sn-heading" style={{ margin: '0 0 0.75rem', fontSize: '1.125rem' }}>소재 분류</h2>
           <p className="sn-caption" style={{ margin: '0 0 0.9rem' }}>리튬·니켈·코발트·망간 키워드로 전체 등록부의 소재 분포를 계산합니다.</p>
