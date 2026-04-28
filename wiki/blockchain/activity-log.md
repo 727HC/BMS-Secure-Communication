@@ -582,3 +582,38 @@ caliper 종료 직후 cloud read 가 1466.6 TPS (KPI fail) 로 측정됨. 그러
 - ⏸ P2-1 (정비 요청자–수행자 매핑) 은 Passport 회신에서 단일 Service MSP 유지로 결정 → 백로그 제거
 - ⏸ P2-6 (SetEvent) 만 단독 사이클로 사전/사후 측정 필요
 - ⏸ P2-7/8 (history wrappers, accident query) 신규 query 추가 — 별도 PR
+
+---
+
+## Session 2026-04-28 — Codex review 후속 처리
+
+### Codex review (3건 P2 발견)
+
+caliper KPI PASS 후 codex:review 실행 결과 머지 전 처리할 P2 3건 발견. 모두 실제 코드에서 검증됨.
+
+| # | 영역 | 내용 |
+|---|------|------|
+| P2-1 | blockchain (chaincode) | recyclingRates 단위 mismatch — UI %% / chaincode 분수 |
+| P2-2 | Passport (agent middleware) | INTERNAL 원문 노출 — wallet/CCP 경로 leak 가능 |
+| P2-3 | Passport (UI dictionary) | auth 401 → INTERNAL 토스트 회귀 (LoginPage UX) |
+
+### 분담 처리
+
+- **blockchain** `cf07757` — P2-1 fix: chaincode `[0, 1]` → `[0, 100]` % 단위 통일. UI 수정 0, prefix 정규식 호환 유지 (VAL `must be in \[`)
+- **Passport** `bccc21c` — P2-2 INTERNAL 마스킹 + P2-3 status 기반 fallback (401 → AUTHZ "아이디 또는 비밀번호 확인", 4xx → VAL 등)
+
+### chaincode redeploy — 1.4 / sequence 5
+
+cf07757 적용본 ledger 활성:
+```
+Committed chaincode definition: Version: 1.4, Sequence: 5
+Approvals: [EVManufacturerMSP/ManufacturerMSP/RegulatorMSP/ServiceMSP] = true
+```
+
+### KPI 재측정 미실시
+
+P2-1 변경은 ExtractMaterials 의 입력 검증만 1줄 (rate < 0 || rate > 100 비교). hot path (RecordBMUData) 무관, P0/P1/P2-small 측정 (a573b5a) 결과와 동일 가설 유지. 다음 caliper 사이클에 정기 검증 권고.
+
+### bmu-agent restart
+
+P2-2 INTERNAL 마스킹 효과는 bmu-agent 재기동 후 발현. Passport 측이 시점 결정 (caliper 또는 실 운영 머지 시점).
