@@ -10,9 +10,9 @@
 .sn-page-head-main { min-width: 0; }
 .sn-page-title {
   font-family: var(--font-display);
-  font-size: 1.875rem;
-  font-weight: 700;
-  letter-spacing: -0.04em;
+  font-size: 1.5rem;
+  font-weight: 800;
+  letter-spacing: -0.025em;
   line-height: 1.1;
   color: var(--color-text-1);
   margin: 0;
