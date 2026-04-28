@@ -13,35 +13,35 @@ interface NavItem {
 
 const NAV_ITEMS: NavItem[] = [
   {
-    to: '/dashboard', label: 'Overview',
+    to: '/dashboard', label: '개요',
     icon: <svg className="ev-sidebar-glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9"><rect x="3" y="3" width="8" height="8" rx="1"/><rect x="13" y="3" width="8" height="5" rx="1"/><rect x="3" y="13" width="8" height="8" rx="1"/><rect x="13" y="10" width="8" height="11" rx="1"/></svg>,
   },
   {
-    to: '/maintenance', label: 'Tasks',
+    to: '/maintenance', label: '작업',
     icon: <svg className="ev-sidebar-glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9"><path d="M9 11l2 2 5-5"/><rect x="4" y="4" width="16" height="16" rx="2"/></svg>,
   },
   {
-    to: '/passports', label: 'Battery Passport',
+    to: '/passports', label: '배터리 여권',
     icon: <svg className="ev-sidebar-glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9"><rect x="5" y="3" width="14" height="18" rx="2"/><circle cx="12" cy="10" r="2.5"/><path d="M8 17h8"/></svg>,
   },
   {
-    to: '/materials', label: 'Supply Chain',
+    to: '/materials', label: '공급망',
     icon: <svg className="ev-sidebar-glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9"><path d="M12 3l9 4.5-9 4.5-9-4.5L12 3z"/><path d="M3 12l9 4.5 9-4.5"/><path d="M3 17l9 4.5 9-4.5"/></svg>,
   },
   {
-    to: '/bmu-data', label: 'BMS Live Data',
+    to: '/bmu-data', label: 'BMS 실시간 데이터',
     icon: <svg className="ev-sidebar-glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9"><path d="M3 12h3l3-7 4 14 3-7h5"/></svg>,
   },
   {
-    to: '/recycling', label: 'Recycling & ESG',
+    to: '/recycling', label: '재활용·ESG',
     icon: <svg className="ev-sidebar-glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9"><path d="M7 20l-3-3 3-3"/><path d="M4 17h9a5 5 0 005-5"/><path d="M17 4l3 3-3 3"/><path d="M20 7h-9a5 5 0 00-5 5"/></svg>,
   },
   {
-    to: '/audit-log', label: 'Audit / Ledger',
+    to: '/audit-log', label: '감사·원장',
     icon: <svg className="ev-sidebar-glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9"><path d="M14 3H6a2 2 0 00-2 2v14a2 2 0 002 2h12a2 2 0 002-2V9z"/><path d="M14 3v6h6"/><path d="M8 13h8M8 17h5"/></svg>,
   },
   {
-    to: '/settings', label: 'Settings',
+    to: '/settings', label: '설정',
     icon: <svg className="ev-sidebar-glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 00.3 1.8l.1.1a2 2 0 11-2.8 2.8l-.1-.1a1.7 1.7 0 00-1.8-.3 1.7 1.7 0 00-1 1.5V21a2 2 0 11-4 0v-.1a1.7 1.7 0 00-1-1.5 1.7 1.7 0 00-1.8.3l-.1.1a2 2 0 11-2.8-2.8l.1-.1a1.7 1.7 0 00.3-1.8 1.7 1.7 0 00-1.5-1H3a2 2 0 110-4h.1a1.7 1.7 0 001.5-1 1.7 1.7 0 00-.3-1.8l-.1-.1a2 2 0 112.8-2.8l.1.1a1.7 1.7 0 001.8.3H9a1.7 1.7 0 001-1.5V3a2 2 0 114 0v.1a1.7 1.7 0 001 1.5 1.7 1.7 0 001.8-.3l.1-.1a2 2 0 112.8 2.8l-.1.1a1.7 1.7 0 00-.3 1.8V9a1.7 1.7 0 001.5 1H21a2 2 0 110 4h-.1a1.7 1.7 0 00-1.5 1z"/></svg>,
   },
 ];
@@ -49,15 +49,15 @@ const NAV_ITEMS: NavItem[] = [
 const AUDIT_ALLOWED_ORGS = new Set(['ManufacturerMSP', 'RegulatorMSP']);
 
 const PAGE_TITLES: Record<string, string> = {
-  '/dashboard': 'Overview',
-  '/maintenance': 'Tasks',
-  '/passports': 'Battery Passport',
-  '/materials': 'Supply Chain',
-  '/bmu-data': 'BMS Live Data',
-  '/recycling': 'Recycling & ESG',
-  '/qr-scan': 'QR Scan',
-  '/audit-log': 'Audit / Ledger',
-  '/settings': 'Settings',
+  '/dashboard': '개요',
+  '/maintenance': '작업',
+  '/passports': '배터리 여권',
+  '/materials': '공급망',
+  '/bmu-data': 'BMS 실시간 데이터',
+  '/recycling': '재활용·ESG',
+  '/qr-scan': 'QR 스캔',
+  '/audit-log': '감사·원장',
+  '/settings': '설정',
 };
 
 function userInitials(userId: string | null): string {

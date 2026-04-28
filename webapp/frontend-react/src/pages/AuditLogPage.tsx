@@ -232,7 +232,7 @@ export default function AuditLogPage() {
       <PageHead
         eyebrow="Audit register"
         eyebrowColor="var(--color-accent)"
-        title="Audit / Ledger"
+        title="감사·원장"
         subtitle={`총 ${total}건의 API 행위와 응답 근거를 ledger/register 기준으로 확인합니다.`}
         actions={(
           <>
@@ -273,7 +273,7 @@ export default function AuditLogPage() {
           <div className="sn-section-head-row">
             <div>
               <p className="sn-eyebrow" style={{ margin: '0 0 0.4rem', color: 'var(--color-text-3)' }}>{ledgerScopeLabel}</p>
-              <h2 className="sn-heading" style={{ margin: 0, fontSize: '1.25rem' }}>Ledger filing summary</h2>
+              <h2 className="sn-heading" style={{ margin: 0, fontSize: '1.25rem' }}>원장 등재 요약</h2>
               <p className="sn-caption" style={{ margin: '0.45rem 0 0', maxWidth: '48rem' }}>
                 기존 audit endpoint의 페이지, action, writeOnly 조건을 그대로 사용해 기록을 좁히고, 펼친 행에서만 요청 데이터를 확인합니다.
               </p>
@@ -335,7 +335,7 @@ export default function AuditLogPage() {
           <div style={{ display: 'grid', gridTemplateColumns: 'minmax(18rem, auto) 1fr', gap: 32, alignItems: 'start' }}>
             <div>
               <p className="sn-eyebrow" style={{ margin: '0 0 0.4rem', color: 'var(--color-text-3)' }}>Method distribution</p>
-              <h2 className="sn-heading" style={{ margin: '0 0 1rem', fontSize: '1.125rem' }}>HTTP method register</h2>
+              <h2 className="sn-heading" style={{ margin: '0 0 1rem', fontSize: '1.125rem' }}>HTTP 메서드 등록부</h2>
               <div style={{ display: 'flex', alignItems: 'center', gap: 20, flexWrap: 'wrap' }}>
                 <DonutChart
                   segments={methodDistribution}
@@ -388,7 +388,7 @@ export default function AuditLogPage() {
           <div className="sn-section-head-row">
             <div>
               <p className="sn-eyebrow" style={{ margin: '0 0 0.4rem', color: 'var(--color-text-3)' }}>Ledger controls</p>
-              <h2 className="sn-heading" style={{ margin: 0, fontSize: '1.25rem' }}>Audit register filters</h2>
+              <h2 className="sn-heading" style={{ margin: 0, fontSize: '1.25rem' }}>감사 등록 필터</h2>
               <p className="sn-caption" style={{ margin: '0.45rem 0 0', maxWidth: '44rem' }}>
                 Action 필터와 write-only 토글은 기존 `/audit` 쿼리 파라미터를 그대로 구성합니다.
               </p>
@@ -398,7 +398,7 @@ export default function AuditLogPage() {
 
         <div className="sn-toolbar" style={{ padding: '0.9rem 1.25rem', background: 'var(--color-surface)' }}>
           <div style={{ flex: 1, minWidth: 180 }}>
-            <label className="sn-eyebrow" style={{ display: 'block', marginBottom: 8 }}>Action</label>
+            <label className="sn-eyebrow" style={{ display: 'block', marginBottom: 8 }}>행위</label>
             <select
               value={filterAction}
               onChange={(e) => handleActionChange(e.target.value)}
@@ -467,7 +467,7 @@ export default function AuditLogPage() {
       ) : logs.length === 0 ? (
         <div className="sn-empty-dashed" style={{ minHeight: 220, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', textAlign: 'center' }}>
           <p className="sn-heading" style={{ fontSize: '1.125rem', margin: '0 0 0.5rem' }}>
-            {filterAction ? `${activeActionLabel} ledger 항목이 없습니다.` : '표시할 audit ledger 항목이 없습니다.'}
+            {filterAction ? `${activeActionLabel} 원장 항목이 없습니다.` : '표시할 감사 원장 항목이 없습니다.'}
           </p>
           <p className="sn-caption" style={{ margin: '0 0 0.9rem', maxWidth: '38rem' }}>
             {filterAction
@@ -485,7 +485,7 @@ export default function AuditLogPage() {
             <div className="sn-section-head-row">
               <div>
                 <p className="sn-eyebrow" style={{ margin: '0 0 0.4rem', color: 'var(--color-text-3)' }}>Audit feed</p>
-                <h2 className="sn-heading" style={{ margin: 0, fontSize: '1.25rem' }}>Ledger entries</h2>
+                <h2 className="sn-heading" style={{ margin: 0, fontSize: '1.25rem' }}>원장 항목</h2>
                 <p className="sn-caption" style={{ margin: '0.45rem 0 0' }}>행을 선택하면 기존 상세 필드와 요청 데이터 영역을 펼칩니다.</p>
               </div>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>

@@ -202,7 +202,7 @@ export default function BmuDataPage() {
       <PageHead
         eyebrow="Operational console"
         eyebrowColor="var(--color-success)"
-        title="BMS Live Data"
+        title="BMS 실시간 데이터"
         subtitle="배터리 여권 ID로 BMU 원장 기록을 조회하고 최신 센서 판독값, 이상 플래그, 갱신 상태를 한 화면에서 확인합니다."
         actions={(
           <>
@@ -251,7 +251,7 @@ export default function BmuDataPage() {
 
         <div className="sn-toolbar" style={{ padding: '0.9rem 1.25rem', background: 'var(--color-surface)' }}>
           <div style={{ flex: 1, minWidth: 240 }}>
-            <label className="sn-eyebrow" style={{ display: 'block', marginBottom: 8 }}>Passport ID</label>
+            <label className="sn-eyebrow" style={{ display: 'block', marginBottom: 8 }}>여권 ID</label>
             <input
               value={passportId}
               onChange={(e) => setPassportId(e.target.value)}

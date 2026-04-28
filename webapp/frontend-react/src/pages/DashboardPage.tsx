@@ -1020,9 +1020,9 @@ export default function DashboardPage() {
     }
 
     return [
-      { label: 'Auth Token', value: token ? '토큰 확인됨' : '상태 확인 불가', tone: token ? 'green' : 'neutral', icon: 'lock' },
-      { label: 'Status Endpoint', value: statusReachable ? '상태 응답 수신' : statusSource.loading ? '확인 중' : '상태 확인 불가', tone: statusReachable ? 'green' : 'neutral', icon: 'shield' },
-      { label: 'Audit Access', value: auditValue, tone: auditTone, icon: 'shield' },
+      { label: '인증 토큰', value: token ? '토큰 확인됨' : '상태 확인 불가', tone: token ? 'green' : 'neutral', icon: 'lock' },
+      { label: '상태 엔드포인트', value: statusReachable ? '상태 응답 수신' : statusSource.loading ? '확인 중' : '상태 확인 불가', tone: statusReachable ? 'green' : 'neutral', icon: 'shield' },
+      { label: '감사 접근', value: auditValue, tone: auditTone, icon: 'shield' },
       { label: 'AES / CMAC / Ed25519', value: '상태 확인 불가', tone: 'neutral', icon: 'key' },
     ];
   }, [auditSource, statusSource, token]);
@@ -1109,7 +1109,7 @@ export default function DashboardPage() {
     <div className="vk-dash" data-selected-passport-id={selectedPassportId || undefined}>
       <header className="vk-dash__head">
         <div>
-          <h1 className="vk-dash__title">Overview</h1>
+          <h1 className="vk-dash__title">개요</h1>
           <p className="vk-dash__sub" title={dashboardDataSummary}>배터리 여권 시스템의 전체 현황을 한눈에 확인하세요.</p>
         </div>
       </header>
@@ -1136,7 +1136,7 @@ export default function DashboardPage() {
         <article className="vk-card vk-fleet">
           <div className="vk-card__head">
             <div>
-              <h2 className="vk-card__title">Fleet Digital Twin</h2>
+              <h2 className="vk-card__title">Fleet 디지털 트윈</h2>
               <p className="vk-card__sub">Viewing: {selectedPassportLabel}</p>
             </div>
             <div
@@ -1149,7 +1149,7 @@ export default function DashboardPage() {
                 type="button"
                 className="vk-selectbtn"
                 title={batterySelectorTitle}
-                aria-label={`Select Battery: ${batterySelectorTitle}`}
+                aria-label={`배터리 선택: ${batterySelectorTitle}`}
                 aria-haspopup="listbox"
                 aria-expanded={batteryMenuOpen}
                 aria-controls={batteryMenuOpen ? batteryListboxId : undefined}
@@ -1157,7 +1157,7 @@ export default function DashboardPage() {
                 onClick={() => setBatteryMenuOpen((open) => !open)}
                 onKeyDown={handleBatteryTriggerKeyDown}
               >
-                <span>Select Battery</span>
+                <span>배터리 선택</span>
                 <ChevronDownIcon />
               </button>
               {batteryMenuOpen ? (
@@ -1209,7 +1209,7 @@ export default function DashboardPage() {
           <div className="vk-card__head">
             <div>
               <div className="vk-card__titleline">
-                <h2 className="vk-card__title">Data Flow</h2>
+                <h2 className="vk-card__title">데이터 파이프라인</h2>
               </div>
               <p className="vk-card__sub">기준 처리 단계</p>
             </div>
@@ -1243,7 +1243,7 @@ export default function DashboardPage() {
           <div className="vk-card__head">
             <div>
               <div className="vk-card__titleline">
-                <h2 className="vk-card__title">Alerts</h2>
+                <h2 className="vk-card__title">알림</h2>
                 <span className="vk-card__count">{alertRows.length}</span>
               </div>
               <p className="vk-card__sub">우선 확인 알림</p>
@@ -1299,7 +1299,7 @@ export default function DashboardPage() {
         <article className="vk-card">
           <div className="vk-card__head">
             <div>
-              <h2 className="vk-card__title">Security Status</h2>
+              <h2 className="vk-card__title">보안 상태</h2>
               <p className="vk-card__sub">플랫폼 보안 기준값</p>
             </div>
             <button
@@ -1307,13 +1307,13 @@ export default function DashboardPage() {
               className="vk-linkbtn"
               disabled={!canReadAudit}
               title={canReadAudit ? '감사 로그로 이동' : AUDIT_REQUIRED_LABEL}
-              aria-label={canReadAudit ? 'Security Status 상세 보기' : AUDIT_REQUIRED_LABEL}
+              aria-label={canReadAudit ? '보안 상태 상세 보기' : AUDIT_REQUIRED_LABEL}
               onClick={canReadAudit ? () => navigateDashboard('/audit-log') : undefined}
             >
               {canReadAudit ? '상세 보기' : AUDIT_REQUIRED_LABEL}
             </button>
           </div>
-          <div className="vk-secbar" aria-label="Security Status">
+          <div className="vk-secbar" aria-label="보안 상태">
             {securityRows.map((s) => (
               <div key={s.label} className={`vk-sec vk-sec--${s.tone}`}>
                 <div className="vk-sec__icon" aria-hidden="true"><SecurityGlyph name={s.icon} /></div>
@@ -1332,7 +1332,7 @@ export default function DashboardPage() {
           <div className="vk-card__head">
             <div>
               <div className="vk-card__titleline">
-                <h2 className="vk-card__title">Tasks / Queue</h2>
+                <h2 className="vk-card__title">작업 대기열</h2>
                 <span className="vk-card__count">{totalTaskCount}</span>
               </div>
               <p className="vk-card__sub">우선 처리 대기열</p>
@@ -1371,7 +1371,7 @@ export default function DashboardPage() {
         <article className="vk-card">
           <div className="vk-card__head">
             <div>
-              <h2 className="vk-card__title">Blockchain Ledger</h2>
+              <h2 className="vk-card__title">블록체인 원장</h2>
               <p className="vk-card__sub">최근 커밋 트랜잭션</p>
             </div>
             <button

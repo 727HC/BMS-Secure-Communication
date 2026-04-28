@@ -206,17 +206,17 @@ export default function MaintenancePage() {
 
   // 도넛 차트 데이터
   const donutSegments = useMemo(() => [
-    { label: 'Service logs', value: extStats.totalMaintenance, color: 'var(--color-success)' },
-    { label: 'Incident logs', value: extStats.totalAccident, color: 'var(--color-danger)' },
-    { label: 'Request candidates', value: extStats.pendingPassports, color: 'var(--color-warning)' },
+    { label: '정비 기록', value: extStats.totalMaintenance, color: 'var(--color-success)' },
+    { label: '사고 기록', value: extStats.totalAccident, color: 'var(--color-danger)' },
+    { label: '접수 후보', value: extStats.pendingPassports, color: 'var(--color-warning)' },
   ], [extStats]);
 
   const donutTotal = extStats.totalMaintenance + extStats.totalAccident + extStats.pendingPassports;
 
   const tabs: { key: Tab; label: string }[] = [
-    { key: 'all', label: 'All docket' },
-    { key: 'maintenance', label: 'Service tasks' },
-    { key: 'accident', label: 'Incident logs' },
+    { key: 'all', label: '전체' },
+    { key: 'maintenance', label: '정비 작업' },
+    { key: 'accident', label: '사고 기록' },
   ];
 
   const docketScopeLabel = isEVManufacturer
@@ -325,7 +325,7 @@ export default function MaintenancePage() {
       <PageHead
         eyebrow="Service docket"
         eyebrowColor="var(--color-warning)"
-        title="Tasks Docket"
+        title="작업 처리"
         subtitle={docketSummary}
         actions={(
           <>
@@ -351,7 +351,7 @@ export default function MaintenancePage() {
           <div className="sn-section-head-row">
             <div>
               <p className="sn-eyebrow" style={{ margin: '0 0 0.4rem', color: 'var(--color-text-3)' }}>{docketScopeLabel}</p>
-              <h2 className="sn-heading" style={{ margin: 0, fontSize: '1.25rem' }}>Task docket summary</h2>
+              <h2 className="sn-heading" style={{ margin: 0, fontSize: '1.25rem' }}>작업 처리 요약</h2>
               <p className="sn-caption" style={{ margin: '0.45rem 0 0', maxWidth: '46rem' }}>
                 여권 조회 결과를 service log, incident log, 접수 후보 기준으로 정리합니다.
               </p>
@@ -449,7 +449,7 @@ export default function MaintenancePage() {
           <div className="sn-section-head-row">
             <div>
               <p className="sn-eyebrow" style={{ margin: '0 0 0.4rem', color: 'var(--color-text-3)' }}>Task queue</p>
-              <h2 className="sn-heading" style={{ margin: 0, fontSize: '1.25rem' }}>Service docket files</h2>
+              <h2 className="sn-heading" style={{ margin: 0, fontSize: '1.25rem' }}>작업 처리 파일</h2>
               <p className="sn-caption" style={{ margin: '0.45rem 0 0', maxWidth: '44rem' }}>
                 탭은 기존 상태 규칙 그대로 all, maintenance, accident docket을 나눕니다.
               </p>

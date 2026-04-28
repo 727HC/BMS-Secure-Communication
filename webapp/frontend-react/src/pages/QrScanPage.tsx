@@ -193,7 +193,7 @@ export default function QrScanPage() {
       <PageHead
         eyebrow="Field identify"
         eyebrowColor="var(--color-accent)"
-        title="Field Identify Search"
+        title="현장 식별 조회"
         subtitle="현장에서 확보한 QR, NFC, 수동 식별값으로 여권 dossier를 찾고 상세 화면으로 이어갑니다."
         actions={(
           <div className="sn-kpi-mini">

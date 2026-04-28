@@ -151,7 +151,7 @@ export default function MaterialsPage() {
       <PageHead
         eyebrow="공급망 등록부"
         eyebrowColor="var(--color-accent)"
-        title="Supply Chain Register"
+        title="공급망 등록부"
         subtitle={registerSummary}
         actions={(
           <>
