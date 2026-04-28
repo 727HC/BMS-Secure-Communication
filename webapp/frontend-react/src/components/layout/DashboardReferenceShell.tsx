@@ -109,7 +109,7 @@ export default function DashboardReferenceShell({ children }: DashboardReference
 
       <main className="vk-ref-main">
         <header className="vk-ref-topbar">
-          <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '1.25rem', fontWeight: 800, color: 'var(--color-text-1)', margin: 0, letterSpacing: '-0.02em' }}>개요</h2>
+          <div className="vk-ref-topbar__space" aria-hidden="true" />
           <div className="vk-ref-userbar" aria-label="Reference top controls">
             <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, height: 38, padding: '0 12px', borderRadius: 10, background: 'var(--color-surface-alt)', border: '1px solid var(--color-border)', color: 'var(--color-text-3)', minWidth: 220 }}>
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.35-4.35"/></svg>
