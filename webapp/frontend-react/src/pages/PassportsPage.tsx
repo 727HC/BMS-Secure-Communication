@@ -303,7 +303,6 @@ export default function PassportsPage() {
   return (
     <div data-page="passports" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
       <PageHead
-        eyebrow="여권 등록부"
         title="배터리 여권 등록부"
         subtitle={registerSummary}
         actions={(

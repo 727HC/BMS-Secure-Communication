@@ -149,7 +149,6 @@ export default function MaterialsPage() {
   return (
     <div data-page="materials" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
       <PageHead
-        eyebrow="공급망 등록부"
         title="공급망 등록부"
         subtitle={registerSummary}
         actions={(

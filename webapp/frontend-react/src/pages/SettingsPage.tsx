@@ -68,7 +68,6 @@ export default function SettingsPage() {
   return (
     <div data-page="settings" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
       <PageHead
-        eyebrow="설정 기록"
         title="설정"
         subtitle="현재 로그인 세션, 조직 범위, 표시 환경을 읽기 전용으로 확인합니다."
       />

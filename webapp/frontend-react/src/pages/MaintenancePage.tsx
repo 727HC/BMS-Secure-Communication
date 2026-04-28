@@ -323,7 +323,6 @@ export default function MaintenancePage() {
   return (
     <div data-page="maintenance" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
       <PageHead
-        eyebrow="Service docket"
         title="작업 처리"
         subtitle={docketSummary}
         actions={(

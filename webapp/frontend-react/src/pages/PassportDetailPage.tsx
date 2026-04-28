@@ -358,7 +358,6 @@ export default function PassportDetailPage() {
     return (
       <div data-page="passport-detail" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
         <PageHead
-          eyebrow="Battery passport dossier"
           title="Dossier unavailable"
           subtitle={fetchError || '요청한 여권을 찾을 수 없습니다. ID와 접근 권한을 확인하세요.'}
           actions={(
@@ -440,7 +439,6 @@ export default function PassportDetailPage() {
   return (
     <div data-page="passport-detail" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
       <PageHead
-        eyebrow="Battery passport dossier"
         title={passport.passportId || 'Passport dossier'}
         subtitle={(
           <>

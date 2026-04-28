@@ -36,6 +36,10 @@
   gap: 24px;
   flex-wrap: wrap;
   margin-bottom: 0;
+  padding-right: 240px;
+}
+@media (max-width: 1024px) {
+  .vk-dash__head { padding-right: 0; }
 }
 
 .vk-dash__crumb {
