@@ -668,10 +668,10 @@ func (c *PassportContract) ExtractMaterials(ctx contractapi.TransactionContextIn
 		return fmt.Errorf("invalid recycling rates JSON: %v", err)
 	}
 
-	// P2-4: 각 element 의 비율은 [0, 1] 범위
+	// P2-4: 각 element 의 회수율은 [0, 100] % 범위. UI 가 % 단위로 입력 받음 (ExtractModal.tsx:49)
 	for material, rate := range recyclingRates {
-		if rate < 0 || rate > 1 {
-			return fmt.Errorf("invalid recycling rate for %s: must be in [0, 1], got %f", material, rate)
+		if rate < 0 || rate > 100 {
+			return fmt.Errorf("invalid recycling rate for %s: must be in [0, 100], got %f", material, rate)
 		}
 	}
 
