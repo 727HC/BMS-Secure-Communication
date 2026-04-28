@@ -333,7 +333,6 @@ export default function RecyclingPage() {
     <div data-page="recycling" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
       <PageHead
         eyebrow="Lifecycle register"
-        eyebrowColor="var(--color-success)"
         title="재활용·ESG"
         subtitle={pageSummary}
         actions={(

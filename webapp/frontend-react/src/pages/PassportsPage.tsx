@@ -304,7 +304,6 @@ export default function PassportsPage() {
     <div data-page="passports" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
       <PageHead
         eyebrow="여권 등록부"
-        eyebrowColor="var(--color-accent)"
         title="배터리 여권 등록부"
         subtitle={registerSummary}
         actions={(
