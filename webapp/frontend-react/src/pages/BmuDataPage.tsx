@@ -131,8 +131,8 @@ export default function BmuDataPage() {
   // 최신 센서 스냅샷 (첫 번째 레코드)
   const latestRecord = sortedRecords[0] ?? null;
   const requestPathLabel = hasSearched && passportId.trim()
-    ? `/api/bmu/records/${passportId.trim()}`
-    : '/api/bmu/records/:passportId';
+    ? `/api/realtime/bmu/${passportId.trim()}`
+    : '/api/realtime/bmu/:idOrDid';
 
   const fetchRecords = async (currentAutoRefresh: boolean, currentLoading: boolean) => {
     const id = passportId.trim();
@@ -144,7 +144,7 @@ export default function BmuDataPage() {
     }
     try {
       const data = await api.get<BmuRecord[] | { records?: BmuRecord[] }>(
-        `/bmu/records/${encodeURIComponent(id)}`
+        `/realtime/bmu/${encodeURIComponent(id)}`
       );
       const list = Array.isArray(data) ? data : data.records || [];
       setRecords(list);
@@ -243,13 +243,13 @@ export default function BmuDataPage() {
 
         <div className="sn-toolbar" style={{ padding: '0.9rem 1.25rem', background: 'var(--color-surface)' }}>
           <div style={{ flex: 1, minWidth: 240 }}>
-            <label className="sn-eyebrow" style={{ display: 'block', marginBottom: 8 }}>여권 ID</label>
+            <label className="sn-eyebrow" style={{ display: 'block', marginBottom: 8 }}>여권 ID 또는 DID</label>
             <input
               value={passportId}
               onChange={(e) => setPassportId(e.target.value)}
               onKeyUp={(e) => e.key === 'Enter' && handleSearch()}
               type="text"
-              placeholder="조회할 배터리 여권 ID를 입력하세요"
+              placeholder="조회할 배터리 여권 ID 또는 DID를 입력하세요"
               className="sn-input"
               style={{ fontFamily: 'var(--font-mono)', fontSize: '0.9375rem' }}
             />
