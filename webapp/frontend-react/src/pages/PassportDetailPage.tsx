@@ -103,8 +103,8 @@ export default function PassportDetailPage() {
     setFetchError(null);
     try {
       const [p, bmu] = await Promise.allSettled([
-        api.get<Passport>(`/passports/${encodeURIComponent(id)}`),
-        api.get<{ records?: BmuRecord[] } | BmuRecord[]>(`/bmu/records/${encodeURIComponent(id)}`),
+        api.get<Passport>(`/realtime/passports/${encodeURIComponent(id)}`),
+        api.get<{ records?: BmuRecord[] } | BmuRecord[]>(`/realtime/bmu/${encodeURIComponent(id)}`),
       ]);
       if (p.status === 'fulfilled') {
         setPassport(p.value);
