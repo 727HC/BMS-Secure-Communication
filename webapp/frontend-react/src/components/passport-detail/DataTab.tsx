@@ -6,9 +6,10 @@ import type { BmuRecord } from './types';
 
 interface Props {
   bmuRecords: BmuRecord[];
+  passportId?: string;
 }
 
-export default function DataTab({ bmuRecords }: Props) {
+export default function DataTab({ bmuRecords, passportId }: Props) {
   const navigate = useNavigate();
   const latestBmu = bmuRecords.length > 0
     ? bmuRecords.reduce((a, b) => ((a.timestamp || '') > (b.timestamp || '') ? a : b))
@@ -45,7 +46,12 @@ export default function DataTab({ bmuRecords }: Props) {
       <div className="sn-detail-dossier">
         <div className="sn-detail-dossier-head">
           <h3 className="sn-detail-dossier-title">BMU 원장 ({bmuRecords.length}건)</h3>
-          <button onClick={() => navigate('/bmu-data')} className="sn-btn-sm-secondary">BMU 페이지 열기</button>
+          <button
+            onClick={() => navigate(passportId ? `/bmu-data?id=${encodeURIComponent(passportId)}` : '/bmu-data')}
+            className="sn-btn-sm-secondary"
+          >
+            BMU 페이지 열기
+          </button>
         </div>
         <div style={{ overflowX: 'auto' }}>
           <table className="sn-table">

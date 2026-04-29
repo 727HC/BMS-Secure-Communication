@@ -94,7 +94,7 @@ export default function BmuDataPage() {
 
   // 스파크라인용 최근 15개 데이터 (오래된→최신 순)
   const recentSlice = useMemo(() => {
-    const slice = sortedRecords.slice(0, 15).reverse();
+    const slice = sortedRecords.slice(0, 60).reverse();
     return {
       soc: slice.map((r) => scaleSOC(r.soc)),
       voltage: slice.map((r) => (r.voltage != null ? Number(r.voltage) : 0)),
