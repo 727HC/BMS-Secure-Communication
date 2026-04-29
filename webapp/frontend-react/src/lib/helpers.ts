@@ -1,10 +1,14 @@
-export const SOC_SCALE_DIVISOR = 1000;
+// BMU/DBC 인코딩: SOC raw = SOC% × 65535 / 100 (DBC factor 0.001525902)
+// percent = raw × 0.001525902 = raw / 65535 × 100
+export const SOC_DBC_FACTOR = 100 / 65535;
+// Temperature는 milli-degree 인코딩 (raw / 1000 = °C)
 export const TEMP_SCALE_DIVISOR = 1000;
 
 export function scaleSOC(val: unknown): number {
   if (val == null) return 0;
   const n = Number(val);
-  return n > 100 ? +(n / SOC_SCALE_DIVISOR).toFixed(1) : +n.toFixed(1);
+  // raw uint16 → percent. n이 100 이하면 이미 percent로 들어온 것으로 간주 (구버전/모킹 호환).
+  return n > 100 ? +(n * SOC_DBC_FACTOR).toFixed(1) : +n.toFixed(1);
 }
 
 export function scaleTemp(val: unknown): number {
