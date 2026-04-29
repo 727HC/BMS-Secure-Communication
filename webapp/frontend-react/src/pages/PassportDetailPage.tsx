@@ -326,7 +326,7 @@ export default function PassportDetailPage() {
 
   if (loading) {
     return (
-      <div data-page="passport-detail" style={{ display: 'flex', flexDirection: 'column', gap: 16, maxWidth: 1100, width: '100%', margin: '0 auto' }}>
+      <div data-page="passport-detail" style={{ display: 'flex', flexDirection: 'column', gap: 16, maxWidth: 1320, width: '100%', margin: '0 auto' }}>
         {/* 히어로 skeleton */}
         <div style={{ background: 'var(--color-surface)', padding: '1.5rem 1.75rem', borderRadius: '1rem', border: '1px solid var(--color-border)', display: 'flex', flexDirection: 'column', gap: 16 }}>
           <Skeleton width="40%" height={28} />
@@ -356,7 +356,7 @@ export default function PassportDetailPage() {
   }
   if (!passport) {
     return (
-      <div data-page="passport-detail" style={{ display: 'flex', flexDirection: 'column', gap: 16, maxWidth: 1100, width: '100%', margin: '0 auto' }}>
+      <div data-page="passport-detail" style={{ display: 'flex', flexDirection: 'column', gap: 16, maxWidth: 1320, width: '100%', margin: '0 auto' }}>
         <PageHead
           title="Dossier unavailable"
           subtitle={fetchError || '요청한 여권을 찾을 수 없습니다. ID와 접근 권한을 확인하세요.'}
@@ -437,7 +437,7 @@ export default function PassportDetailPage() {
   const vinLabel = passport.vin || '미바인딩';
 
   return (
-    <div data-page="passport-detail" style={{ display: 'flex', flexDirection: 'column', gap: 16, maxWidth: 1100, width: '100%', margin: '0 auto' }}>
+    <div data-page="passport-detail" style={{ display: 'flex', flexDirection: 'column', gap: 16, maxWidth: 1320, width: '100%', margin: '0 auto' }}>
       <PageHead
         title={passport.passportId || 'Passport dossier'}
         subtitle={(
@@ -447,12 +447,9 @@ export default function PassportDetailPage() {
           </>
         )}
         actions={(
-          <>
-            <span className="sn-detail-inline-stamp">{roleDeskLabel}</span>
-            <button onClick={() => navigate('/passports')} className="sn-detail-secondary-btn">
-              ← 여권 등록부
-            </button>
-          </>
+          <button onClick={() => navigate('/passports')} className="sn-detail-secondary-btn">
+            ← 여권 등록부
+          </button>
         )}
       />
 
