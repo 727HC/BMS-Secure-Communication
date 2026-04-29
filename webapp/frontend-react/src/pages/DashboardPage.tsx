@@ -893,8 +893,8 @@ export default function DashboardPage() {
   );
 
   const selectedPassportLabel = useMemo(() => {
-    if (passportSource.loading) return 'Fleet (Loading Passports)';
-    if (!selectedPassportId) return passports.length ? 'Fleet (Selection Pending)' : 'Fleet (No Batteries)';
+    if (passportSource.loading) return 'Fleet (여권 조회 중)';
+    if (!selectedPassportId) return passports.length ? 'Fleet (선택 대기)' : 'Fleet (배터리 없음)';
     const detail = selectedPassport?.model || selectedPassport?.serialNumber || selectedPassport?.batteryId;
     return detail ? `${selectedPassportId} · ${detail}` : selectedPassportId;
   }, [passportSource.loading, passports.length, selectedPassport, selectedPassportId]);
@@ -1076,6 +1076,11 @@ export default function DashboardPage() {
     : passportOptions.length === 0
       ? '선택 가능한 배터리 없음'
       : selectedPassportLabel;
+  const batterySelectorButtonLabel = passportSource.loading
+    ? '조회 중'
+    : passportOptions.length === 0
+      ? '배터리 없음'
+      : (selectedPassport?.model || selectedPassportId || '배터리 선택');
 
   const selectPassport = (passportId: string) => {
     const nextParams = new URLSearchParams(searchParams);
@@ -1157,7 +1162,7 @@ export default function DashboardPage() {
                 onClick={() => setBatteryMenuOpen((open) => !open)}
                 onKeyDown={handleBatteryTriggerKeyDown}
               >
-                <span>배터리 선택</span>
+                <span>{batterySelectorButtonLabel}</span>
                 <ChevronDownIcon />
               </button>
               {batteryMenuOpen ? (
