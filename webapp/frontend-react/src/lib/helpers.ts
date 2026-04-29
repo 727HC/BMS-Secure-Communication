@@ -1,8 +1,8 @@
-// BMU/DBC 인코딩: SOC raw = SOC% × 65535 / 100 (DBC factor 0.001525902)
-// percent = raw × 0.001525902 = raw / 65535 × 100
+// BMU/DBC 인코딩 (BMS_SecureComm.dbc 참조)
+// SOC: SG_ SOC 64|16@1+ (0.001525902, 0) — raw uint16 / 65535 * 100 = percent
+// Temperature: SG_ Temperature 96|16@1+ (0.000762951, 0) "C" — raw uint16 * 50 / 65535 = °C (0-50°C 범위)
 export const SOC_DBC_FACTOR = 100 / 65535;
-// Temperature는 milli-degree 인코딩 (raw / 1000 = °C)
-export const TEMP_SCALE_DIVISOR = 1000;
+export const TEMP_DBC_FACTOR = 50 / 65535;
 
 export function scaleSOC(val: unknown): number {
   if (val == null) return 0;
@@ -14,7 +14,8 @@ export function scaleSOC(val: unknown): number {
 export function scaleTemp(val: unknown): number {
   if (val == null) return 0;
   const n = Number(val);
-  return n > 100 ? +(n / TEMP_SCALE_DIVISOR).toFixed(1) : +n.toFixed(1);
+  // raw uint16 → °C. n이 100 이하면 이미 °C로 들어온 것으로 간주.
+  return n > 100 ? +(n * TEMP_DBC_FACTOR).toFixed(1) : +n.toFixed(1);
 }
 
 export const STATUS_LIST = ['MANUFACTURED', 'ACTIVE', 'MAINTENANCE', 'ANALYSIS', 'RECYCLING', 'DISPOSED'] as const;
