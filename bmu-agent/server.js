@@ -55,6 +55,7 @@ apiRouter.use('/analysis', require('./routes/analysis.routes'));
 apiRouter.use('/recycling', require('./routes/recycling.routes'));
 apiRouter.use('/did', require('./routes/did.routes'));
 apiRouter.use('/vc', require('./routes/vc.routes'));
+apiRouter.use('/realtime', require('./routes/realtime.routes'));
 // Audit log API (ManufacturerMSP, RegulatorMSP only)
 const { authenticateToken: auditAuth } = require('./middleware/auth');
 const { requireMSP: auditRbac } = require('./middleware/rbac');
