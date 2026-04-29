@@ -231,7 +231,7 @@ export default function BmuDataPage() {
         <div className="sn-section-head">
           <div className="sn-section-head-row">
             <div>
-              <p className="sn-eyebrow" style={{ margin: '0 0 0.4rem', color: 'var(--color-text-3)' }}>Live data lookup</p>
+              <p className="sn-eyebrow" style={{ margin: '0 0 0.4rem', color: 'var(--color-text-3)' }}>실시간 데이터 조회</p>
               <h2 className="sn-heading" style={{ margin: 0, fontSize: '1.25rem' }}>운영 판독 기준</h2>
               <p className="sn-caption" style={{ margin: '0.45rem 0 0', maxWidth: '48rem' }}>
                 입력한 여권 ID를 그대로 BMU record endpoint에 전달합니다. 자동 새로고침을 켜면 기존 10초 주기로 같은 ID를 다시 조회합니다.

@@ -369,7 +369,7 @@ export default function PassportDetailPage() {
         <div className="sn-detail-dossier">
           <div className="sn-detail-dossier-head">
             <div>
-              <p className="sn-eyebrow" style={{ margin: '0 0 0.35rem', color: 'var(--color-text-3)' }}>Lookup result</p>
+              <p className="sn-eyebrow" style={{ margin: '0 0 0.35rem', color: 'var(--color-text-3)' }}>조회 결과</p>
               <h2 className="sn-detail-dossier-title">상세 파일을 열 수 없습니다</h2>
             </div>
             <span className="sn-detail-inline-stamp">{id || 'ID 없음'}</span>
@@ -402,14 +402,14 @@ export default function PassportDetailPage() {
           ? 'VIN 등록 대기'
           : '운행 중';
   const roleDeskLabel = isManufacturer
-    ? 'Manufacturer filing desk'
+    ? '제조사 등재 데스크'
     : isEV
       ? 'EV binding desk'
       : isService
-        ? 'Service evidence desk'
+        ? '서비스 근거 데스크'
         : isRegulator
-          ? 'Regulator review desk'
-          : 'Shared dossier view';
+          ? '규제기관 검토 데스크'
+          : '공유 자료 뷰';
   const dossierSummary = isManufacturer
     ? '제조사는 원본 여권 파일, GBA 21 보완 상태, VC 발급 작업을 같은 dossier에서 확인합니다.'
     : isEV
@@ -521,7 +521,7 @@ export default function PassportDetailPage() {
                 <p className="sn-stat-note" style={{ margin: '0.35rem 0 0' }}>{gbaCompliance.filled}/21 fields filed</p>
               </div>
               <div>
-                <p className="sn-eyebrow" style={{ marginBottom: '0.45rem' }}>Lifecycle</p>
+                <p className="sn-eyebrow" style={{ marginBottom: '0.45rem' }}>생애 주기</p>
                 <p style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--color-text-1)', margin: 0, lineHeight: 1.2 }}>
                   {lifecycleLabel}
                 </p>
@@ -604,15 +604,15 @@ export default function PassportDetailPage() {
       <div className="sn-panel" style={{ padding: '1rem 1.2rem', background: 'var(--color-surface-alt)', borderStyle: 'dashed' }}>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: '1rem' }}>
           <div>
-            <p className="sn-eyebrow" style={{ marginBottom: '0.35rem' }}>Dossier focus</p>
+            <p className="sn-eyebrow" style={{ marginBottom: '0.35rem' }}>자료 초점</p>
             <p className="sn-caption">배터리 상태(SOH), 충전 상태(SOC), 규제 준수율, VIN 연결 여부</p>
           </div>
           <div>
-            <p className="sn-eyebrow" style={{ marginBottom: '0.35rem' }}>Register action</p>
+            <p className="sn-eyebrow" style={{ marginBottom: '0.35rem' }}>등록부 작업</p>
             <p className="sn-caption">권한과 상태 조건을 통과한 작업만 표시합니다.</p>
           </div>
           <div>
-            <p className="sn-eyebrow" style={{ marginBottom: '0.35rem' }}>Evidence tabs</p>
+            <p className="sn-eyebrow" style={{ marginBottom: '0.35rem' }}>근거 탭</p>
             <p className="sn-caption">소재, 운영 이력, 진단 데이터, 증빙은 탭에서 이어서 확인</p>
           </div>
         </div>

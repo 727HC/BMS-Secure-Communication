@@ -210,7 +210,7 @@ export default function AuditLogPage() {
   const pageStart = total > 0 ? (page - 1) * pageSize + 1 : 0;
   const pageEnd = Math.min(page * pageSize, total);
   const newestTimestamp = logs[0]?.timestamp;
-  const ledgerScopeLabel = filterWriteOnly ? 'Write-only ledger' : 'Full audit ledger';
+  const ledgerScopeLabel = filterWriteOnly ? '쓰기 전용 원장' : '전체 감사 원장';
   const hasRecords = logs.length > 0;
 
   const toggleDetail = (id: string) => {
@@ -280,22 +280,22 @@ export default function AuditLogPage() {
 
         <div className="sn-info-grid sn-info-grid-auto">
           <div className="sn-info-tile">
-            <p className="sn-eyebrow" style={{ margin: '0 0 0.5rem', color: 'var(--color-accent)' }}>Ledger files</p>
+            <p className="sn-eyebrow" style={{ margin: '0 0 0.5rem', color: 'var(--color-accent)' }}>원장 파일</p>
             <p className="sn-info-tile-value" style={{ color: 'var(--color-accent)' }}>{total}</p>
             <p className="sn-stat-note">현재 조건의 전체 건수</p>
           </div>
           <div className="sn-info-tile">
-            <p className="sn-eyebrow" style={{ margin: '0 0 0.5rem', color: filterWriteOnly ? 'var(--color-success)' : 'var(--color-text-3)' }}>Write scope</p>
+            <p className="sn-eyebrow" style={{ margin: '0 0 0.5rem', color: filterWriteOnly ? 'var(--color-success)' : 'var(--color-text-3)' }}>쓰기 범위</p>
             <p className="sn-info-tile-value" style={{ color: filterWriteOnly ? 'var(--color-success)' : 'var(--color-text-1)' }}>{filterWriteOnly ? 'ON' : 'ALL'}</p>
             <p className="sn-stat-note">{filterWriteOnly ? 'writeOnly=true 적용' : 'writeOnly 조건 해제'}</p>
           </div>
           <div className="sn-info-tile">
-            <p className="sn-eyebrow" style={{ margin: '0 0 0.5rem' }}>Action filter</p>
+            <p className="sn-eyebrow" style={{ margin: '0 0 0.5rem' }}>작업 필터</p>
             <p className="sn-info-tile-value" style={{ fontSize: '1.35rem', lineHeight: 1.15 }}>{activeActionLabel}</p>
             <p className="sn-stat-note">기존 action label 유지</p>
           </div>
           <div className="sn-info-tile">
-            <p className="sn-eyebrow" style={{ margin: '0 0 0.5rem', color: autoRefresh ? 'var(--color-accent)' : 'var(--color-text-3)' }}>Refresh</p>
+            <p className="sn-eyebrow" style={{ margin: '0 0 0.5rem', color: autoRefresh ? 'var(--color-accent)' : 'var(--color-text-3)' }}>새로고침</p>
             <p className="sn-info-tile-value" style={{ color: autoRefresh ? 'var(--color-accent)' : 'var(--color-text-1)' }}>{autoRefresh ? '5s' : 'Manual'}</p>
             <p className="sn-stat-note">최근 기록 {newestTimestamp ? formatTime(newestTimestamp) : '대기 중'}</p>
           </div>
@@ -303,7 +303,7 @@ export default function AuditLogPage() {
 
         <div className="sn-summary-grid sn-summary-grid-3" style={{ borderTop: '1px solid var(--color-border)' }}>
           <div className="sn-summary-lead">
-            <p className="sn-eyebrow sn-summary-title" style={{ margin: '0 0 0.4rem' }}>Register posture</p>
+            <p className="sn-eyebrow sn-summary-title" style={{ margin: '0 0 0.4rem' }}>등록부 상태</p>
             <p className="sn-summary-copy-strong" style={{ margin: 0, color: 'var(--color-text-1)' }}>행위 · 응답 · 증빙 상세</p>
             <p className="sn-stat-note" style={{ margin: '0.35rem 0 0', lineHeight: 1.6 }}>
               피드는 실제 audit log만 렌더링하며, 빈 상태나 오류 상태에서는 대체 행을 만들지 않습니다.
@@ -326,7 +326,7 @@ export default function AuditLogPage() {
         <section className="sn-section-card" style={{ padding: '20px 22px', maxWidth: 1080 }}>
           <div style={{ display: 'grid', gridTemplateColumns: 'minmax(18rem, auto) 1fr', gap: 32, alignItems: 'start' }}>
             <div>
-              <p className="sn-eyebrow" style={{ margin: '0 0 0.4rem', color: 'var(--color-text-3)' }}>Method distribution</p>
+              <p className="sn-eyebrow" style={{ margin: '0 0 0.4rem', color: 'var(--color-text-3)' }}>방식 분포</p>
               <h2 className="sn-heading" style={{ margin: '0 0 1rem', fontSize: '1.125rem' }}>HTTP 메서드 등록부</h2>
               <div style={{ display: 'flex', alignItems: 'center', gap: 20, flexWrap: 'wrap' }}>
                 <DonutChart
@@ -340,7 +340,7 @@ export default function AuditLogPage() {
               </div>
             </div>
             <div>
-              <p className="sn-eyebrow" style={{ margin: '0 0 0.4rem', color: 'var(--color-text-3)' }}>Action ledger</p>
+              <p className="sn-eyebrow" style={{ margin: '0 0 0.4rem', color: 'var(--color-text-3)' }}>작업 원장</p>
               <h2 className="sn-heading" style={{ margin: '0 0 1rem', fontSize: '1.125rem' }}>상위 행위 분포</h2>
               <BarRows
                 items={actionDistribution.map(({ action, count }) => ({
@@ -358,7 +358,7 @@ export default function AuditLogPage() {
         <section className="sn-section-card" style={{ padding: '18px 22px', maxWidth: 1080 }}>
           <div style={{ display: 'grid', gridTemplateColumns: 'minmax(220px, 0.9fr) minmax(260px, 1.1fr)', gap: '1.25rem', alignItems: 'start' }}>
             <div>
-              <p className="sn-eyebrow" style={{ margin: '0 0 0.4rem', color: 'var(--color-text-3)' }}>Status distribution</p>
+              <p className="sn-eyebrow" style={{ margin: '0 0 0.4rem', color: 'var(--color-text-3)' }}>상태 분포</p>
               <h2 className="sn-heading" style={{ margin: '0 0 0.55rem', fontSize: '1.125rem' }}>응답 상태 등록부</h2>
               <p className="sn-caption" style={{ margin: 0 }}>
                 {statusSummary
@@ -379,7 +379,7 @@ export default function AuditLogPage() {
         <div className="sn-section-head">
           <div className="sn-section-head-row">
             <div>
-              <p className="sn-eyebrow" style={{ margin: '0 0 0.4rem', color: 'var(--color-text-3)' }}>Ledger controls</p>
+              <p className="sn-eyebrow" style={{ margin: '0 0 0.4rem', color: 'var(--color-text-3)' }}>원장 제어</p>
               <h2 className="sn-heading" style={{ margin: 0, fontSize: '1.25rem' }}>감사 등록 필터</h2>
               <p className="sn-caption" style={{ margin: '0.45rem 0 0', maxWidth: '44rem' }}>
                 Action 필터와 write-only 토글은 기존 `/audit` 쿼리 파라미터를 그대로 구성합니다.
@@ -476,7 +476,7 @@ export default function AuditLogPage() {
           <div className="sn-section-head">
             <div className="sn-section-head-row">
               <div>
-                <p className="sn-eyebrow" style={{ margin: '0 0 0.4rem', color: 'var(--color-text-3)' }}>Audit feed</p>
+                <p className="sn-eyebrow" style={{ margin: '0 0 0.4rem', color: 'var(--color-text-3)' }}>감사 피드</p>
                 <h2 className="sn-heading" style={{ margin: 0, fontSize: '1.25rem' }}>원장 항목</h2>
                 <p className="sn-caption" style={{ margin: '0.45rem 0 0' }}>행을 선택하면 기존 상세 필드와 요청 데이터 영역을 펼칩니다.</p>
               </div>
