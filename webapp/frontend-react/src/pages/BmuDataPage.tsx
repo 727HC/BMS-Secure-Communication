@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { api } from '../lib/api';
 import { scaleSOC, scaleTemp } from '../lib/helpers';
 import { BarRows, PageHead, Skeleton, SkeletonTable, Sparkline } from '../components/ui';
@@ -48,7 +49,8 @@ function formatNumber(val: unknown, decimals = 1): string {
 }
 
 export default function BmuDataPage() {
-  const [passportId, setPassportId] = useState('');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [passportId, setPassportId] = useState(() => searchParams.get('id') || '');
   const [records, setRecords] = useState<BmuRecord[]>([]);
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -166,13 +168,27 @@ export default function BmuDataPage() {
   };
 
   const handleSearch = () => {
-    if (passportId.trim()) {
+    const id = passportId.trim();
+    if (id) {
+      const next = new URLSearchParams(searchParams);
+      if (next.get('id') !== id) {
+        next.set('id', id);
+        setSearchParams(next, { replace: true });
+      }
       setHasSearched(false);
       setErrorMsg('');
       setAccessDenied(false);
       fetchRecords(autoRefresh, loading);
     }
   };
+
+  // F5 / 직접 URL 진입 시 ?id=... 파라미터로 자동 조회
+  useEffect(() => {
+    if (passportId.trim() && !hasSearched && !loading) {
+      fetchRecords(false, false);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     if (autoRefresh && passportId.trim()) {
@@ -371,11 +387,8 @@ export default function BmuDataPage() {
                 <div style={{ padding: '14px 16px', background: 'var(--color-surface-alt)', borderRadius: 8, border: '1px solid var(--color-border)' }}>
                   <p style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--color-text-3)', margin: '0 0 6px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>SOC</p>
                   <p className="sn-metric sn-metric-md" style={{ fontFamily: 'var(--font-mono)', color: (() => { const v = scaleSOC(latestRecord.soc); return v > 50 ? 'var(--color-text-1)' : v > 20 ? 'var(--color-warning)' : 'var(--color-danger)'; })(), margin: '0 0 4px' }}>
-                    {scaleSOC(latestRecord.soc)}<span style={{ fontSize: '0.875rem', fontWeight: 500, marginLeft: 2 }}>%</span>
+                    {scaleSOC(latestRecord.soc).toFixed(1)}<span style={{ fontSize: '0.875rem', fontWeight: 500, marginLeft: 2 }}>%</span>
                   </p>
-                  <div style={{ marginBottom: 8, height: 4, borderRadius: 999, background: 'var(--color-border)' }}>
-                    <div style={{ height: '100%', borderRadius: 999, width: `${Math.min(scaleSOC(latestRecord.soc), 100)}%`, background: (() => { const v = scaleSOC(latestRecord.soc); return v > 50 ? 'var(--color-success)' : v > 20 ? 'var(--color-warning)' : 'var(--color-danger)'; })() }} />
-                  </div>
                   {recentSlice.soc.length > 1 && (
                     <Sparkline values={recentSlice.soc} height={40} color={(() => { const v = scaleSOC(latestRecord.soc); return v > 50 ? 'var(--color-success)' : v > 20 ? 'var(--color-warning)' : 'var(--color-danger)'; })()} />
                   )}
@@ -479,8 +492,8 @@ export default function BmuDataPage() {
                             <div style={{ width: 64, height: 6, borderRadius: 999, overflow: 'hidden', background: 'var(--color-border)' }}>
                               <div style={{ height: '100%', borderRadius: 999, width: `${Math.min(socVal, 100)}%`, background: socColor, transition: 'all 0.3s' }} />
                             </div>
-                            <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, color: socColor }}>
-                              {socVal}
+                            <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, color: socColor, fontVariantNumeric: 'tabular-nums' }}>
+                              {socVal.toFixed(1)}
                             </span>
                           </div>
                         </td>
