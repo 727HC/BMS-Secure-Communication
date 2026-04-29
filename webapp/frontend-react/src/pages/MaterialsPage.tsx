@@ -171,7 +171,7 @@ export default function MaterialsPage() {
         <div className="sn-section-head">
           <div className="sn-section-head-row">
             <div>
-              <p className="sn-eyebrow" style={{ margin: '0 0 0.4rem', color: 'var(--color-text-3)' }}>Register controls</p>
+              <p className="sn-eyebrow" style={{ margin: '0 0 0.4rem', color: 'var(--color-text-3)' }}>등록부 제어</p>
               <h2 className="sn-heading" style={{ margin: 0, fontSize: '1.25rem' }}>공급망 검색</h2>
               <p className="sn-caption" style={{ margin: '0.45rem 0 0', maxWidth: '44rem' }}>
                 자재 ID, 소재명, 원산지, 공급사, 인증번호로 등재 파일을 좁힙니다.
@@ -202,7 +202,7 @@ export default function MaterialsPage() {
           <div className="sn-section-head">
             <div className="sn-section-head-row">
               <div>
-                <p className="sn-eyebrow" style={{ margin: '0 0 0.4rem', color: 'var(--color-text-3)' }}>Register summary</p>
+                <p className="sn-eyebrow" style={{ margin: '0 0 0.4rem', color: 'var(--color-text-3)' }}>등록부 요약</p>
                 <h2 className="sn-heading" style={{ margin: 0, fontSize: '1.25rem' }}>공급망 파일 요약</h2>
                 <p className="sn-caption" style={{ margin: '0.45rem 0 0', maxWidth: '44rem' }}>
                   현재 조회 결과를 등재 파일, 인증 근거, 원산지 범위 기준으로 정리합니다.
@@ -240,7 +240,7 @@ export default function MaterialsPage() {
 
       {!loading && materials.length > 0 && (
         <div className="sn-panel" style={{ padding: '0.9rem 1rem', maxWidth: 1080 }}>
-          <p className="sn-eyebrow" style={{ margin: '0 0 0.35rem' }}>Supply chain composition</p>
+          <p className="sn-eyebrow" style={{ margin: '0 0 0.35rem' }}>공급망 구성</p>
           <h2 className="sn-heading" style={{ margin: '0 0 0.75rem', fontSize: '1.125rem' }}>소재 분류</h2>
           <p className="sn-caption" style={{ margin: '0 0 0.9rem' }}>리튬·니켈·코발트·망간 키워드로 전체 등록부의 소재 분포를 계산합니다.</p>
           <BarRows
@@ -282,7 +282,7 @@ export default function MaterialsPage() {
           <div className="sn-section-head">
             <div className="sn-section-head-row">
               <div>
-                <p className="sn-eyebrow" style={{ margin: '0 0 0.4rem', color: 'var(--color-text-3)' }}>Supply ledger</p>
+                <p className="sn-eyebrow" style={{ margin: '0 0 0.4rem', color: 'var(--color-text-3)' }}>공급 원장</p>
                 <h2 className="sn-heading" style={{ margin: 0, fontSize: '1.25rem' }}>공급망 파일</h2>
               </div>
               <p className="sn-caption" style={{ margin: 0 }}>

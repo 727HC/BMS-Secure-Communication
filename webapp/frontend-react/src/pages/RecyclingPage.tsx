@@ -185,12 +185,12 @@ export default function RecyclingPage() {
   ];
 
   const deskLabel = isEVManufacturer
-    ? 'EV manufacturer analysis request desk'
+    ? 'EV제조사 분석 요청 데스크'
     : isService
-      ? 'Service analysis desk'
+      ? '서비스 분석 데스크'
       : isRegulator
-        ? 'Regulator recovery authority'
-        : 'Lifecycle register view';
+        ? '규제기관 회수 권한'
+        : '생애 주기 등록부';
 
   const pageSummary = isEVManufacturer
     ? 'EV 제조사는 운행 중인 여권을 분석 요청으로 넘기고 회수 준비 상태를 같은 ESG 등록부에서 확인합니다.'
@@ -386,7 +386,7 @@ export default function RecyclingPage() {
 
         <div className="sn-summary-grid sn-summary-grid-3" style={{ borderBottom: '1px solid var(--color-border)' }}>
           <div className="sn-summary-lead">
-            <p className="sn-eyebrow sn-summary-title">Recovery readiness</p>
+            <p className="sn-eyebrow sn-summary-title">회수 준비도</p>
             <p className="sn-summary-copy-strong" style={{ margin: 0 }}>회수 준비율 {lifecycleMetrics.readyRatio}%</p>
             <p className="sn-stat-note" style={{ marginTop: '0.45rem', lineHeight: 1.6 }}>
               전체 lifecycle 파일 중 재활용 가능 판정이 끝난 여권 비율입니다.
@@ -425,7 +425,7 @@ export default function RecyclingPage() {
         <section className="sn-section-card" style={{ padding: '20px 22px', maxWidth: 1080 }}>
           <div style={{ display: 'grid', gridTemplateColumns: 'minmax(220px, 0.85fr) minmax(260px, 1.15fr)', gap: '1.25rem', alignItems: 'start' }}>
             <div>
-              <p className="sn-eyebrow" style={{ margin: '0 0 0.4rem', color: 'var(--color-text-3)' }}>Extraction evidence</p>
+              <p className="sn-eyebrow" style={{ margin: '0 0 0.4rem', color: 'var(--color-text-3)' }}>추출 근거</p>
               <h2 className="sn-heading" style={{ margin: '0 0 0.55rem', fontSize: '1.125rem' }}>원소별 평균 회수율</h2>
               <p className="sn-caption" style={{ margin: 0 }}>
                 Regulator 추출 기록의 `recyclingRates`를 원소별 평균으로 집계합니다.
@@ -443,7 +443,7 @@ export default function RecyclingPage() {
         <div className="sn-section-head">
           <div className="sn-section-head-row">
             <div>
-              <p className="sn-eyebrow" style={{ margin: '0 0 0.4rem', color: 'var(--color-text-3)' }}>Lifecycle tabs</p>
+              <p className="sn-eyebrow" style={{ margin: '0 0 0.4rem', color: 'var(--color-text-3)' }}>생애 주기 탭</p>
               <h2 className="sn-heading" style={{ margin: 0, fontSize: '1.25rem' }}>ESG 회수 등록부</h2>
             </div>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>

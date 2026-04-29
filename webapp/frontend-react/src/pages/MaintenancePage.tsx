@@ -222,7 +222,7 @@ export default function MaintenancePage() {
   const docketScopeLabel = isEVManufacturer
     ? 'EV manufacturer service desk'
     : isService
-      ? 'Service completion desk'
+      ? '서비스 완료 데스크'
       : 'Read-only docket view';
   const docketSummary = isEVManufacturer
     ? 'EV 제조사는 운행 중인 VIN 파일을 service task로 접수하고 사고 기록을 docket에 남깁니다.'
@@ -353,12 +353,12 @@ export default function MaintenancePage() {
 
         <div className="sn-info-grid sn-info-grid-auto">
           <div className="sn-info-tile">
-            <p className="sn-eyebrow" style={{ margin: '0 0 0.5rem', color: 'var(--color-success)' }}>Service logs</p>
+            <p className="sn-eyebrow" style={{ margin: '0 0 0.5rem', color: 'var(--color-success)' }}>서비스 로그</p>
             <p className="sn-info-tile-value" style={{ color: 'var(--color-success)' }}>{extStats.totalMaintenance}</p>
             <p className="sn-stat-note">누적 정비 이력</p>
           </div>
           <div className="sn-info-tile">
-            <p className="sn-eyebrow" style={{ margin: '0 0 0.5rem', color: 'var(--color-danger)' }}>Incident logs</p>
+            <p className="sn-eyebrow" style={{ margin: '0 0 0.5rem', color: 'var(--color-danger)' }}>사고 로그</p>
             <p className="sn-info-tile-value" style={{ color: 'var(--color-danger)' }}>{extStats.totalAccident}</p>
             <p className="sn-stat-note">누적 사고 기록</p>
           </div>
@@ -372,7 +372,7 @@ export default function MaintenancePage() {
             <p className="sn-stat-note">정비 접수 7일 초과</p>
           </div>
           <div className="sn-info-tile">
-            <p className="sn-eyebrow" style={{ margin: '0 0 0.5rem', color: 'var(--color-warning)' }}>Request candidates</p>
+            <p className="sn-eyebrow" style={{ margin: '0 0 0.5rem', color: 'var(--color-warning)' }}>요청 후보</p>
             <p className="sn-info-tile-value" style={{ color: 'var(--color-warning)' }}>{extStats.pendingPassports}</p>
             <p className="sn-stat-note">ACTIVE + VIN, 정비 이력 없음</p>
           </div>
@@ -380,17 +380,17 @@ export default function MaintenancePage() {
 
         <div className="sn-summary-grid sn-summary-grid-3" style={{ borderTop: '1px solid var(--color-border)' }}>
           <div className="sn-summary-lead">
-            <p className="sn-eyebrow sn-summary-title" style={{ margin: '0 0 0.4rem' }}>Docket posture</p>
+            <p className="sn-eyebrow sn-summary-title" style={{ margin: '0 0 0.4rem' }}>문서 상태</p>
             <p className="sn-summary-copy-strong" style={{ margin: 0, color: 'var(--color-text-1)' }}>접수 · 완료 · 사고 기록</p>
             <p className="sn-stat-note" style={{ margin: '0.35rem 0 0', lineHeight: 1.6 }}>{docketSummary}</p>
           </div>
           <div>
-            <p className="sn-eyebrow sn-stat-card-title">Service task queue</p>
+            <p className="sn-eyebrow sn-stat-card-title">서비스 작업 큐</p>
             <p className="sn-metric sn-metric-md sn-stat-count">{tabCounts.maintenance}</p>
             <p className="sn-stat-note">MAINTENANCE 또는 ANALYSIS 상태</p>
           </div>
           <div>
-            <p className="sn-eyebrow sn-stat-card-title">Incident docket</p>
+            <p className="sn-eyebrow sn-stat-card-title">사고 문서</p>
             <p className="sn-metric sn-metric-md sn-stat-count">{tabCounts.accident}</p>
             <p className="sn-stat-note">사고 기록이 있는 여권</p>
           </div>
@@ -400,7 +400,7 @@ export default function MaintenancePage() {
       <section className="sn-section-card" style={{ padding: '20px 22px', maxWidth: 1080 }}>
         <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 16, marginBottom: 16, flexWrap: 'wrap' }}>
           <div>
-            <p className="sn-eyebrow" style={{ margin: '0 0 0.35rem', color: 'var(--color-text-3)' }}>Docket composition</p>
+            <p className="sn-eyebrow" style={{ margin: '0 0 0.35rem', color: 'var(--color-text-3)' }}>문서 구성</p>
             <h2 className="sn-heading" style={{ margin: 0, fontSize: '1.125rem' }}>작업 유형과 기록 분포</h2>
           </div>
           <p className="sn-caption" style={{ margin: 0 }}>모든 수치는 현재 여권 조회 결과에서 계산합니다.</p>
@@ -440,7 +440,7 @@ export default function MaintenancePage() {
         <div className="sn-section-head">
           <div className="sn-section-head-row">
             <div>
-              <p className="sn-eyebrow" style={{ margin: '0 0 0.4rem', color: 'var(--color-text-3)' }}>Task queue</p>
+              <p className="sn-eyebrow" style={{ margin: '0 0 0.4rem', color: 'var(--color-text-3)' }}>작업 큐</p>
               <h2 className="sn-heading" style={{ margin: 0, fontSize: '1.25rem' }}>작업 처리 파일</h2>
               <p className="sn-caption" style={{ margin: '0.45rem 0 0', maxWidth: '44rem' }}>
                 탭은 기존 상태 규칙 그대로 all, maintenance, accident docket을 나눕니다.
@@ -594,7 +594,7 @@ export default function MaintenancePage() {
       <BaseModal open={showRequest} onClose={closeAll} title="Service task 접수">
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
           <div>
-            <label className="sn-eyebrow" style={{ display: 'block', marginBottom: 6 }}>Task 유형</label>
+            <label className="sn-eyebrow" style={{ display: 'block', marginBottom: 6 }}>작업 유형</label>
             <select
               className="sn-input"
               value={requestForm.maintenanceType}
@@ -606,7 +606,7 @@ export default function MaintenancePage() {
             </select>
           </div>
           <div>
-            <label className="sn-eyebrow" style={{ display: 'block', marginBottom: 6 }}>Task 설명</label>
+            <label className="sn-eyebrow" style={{ display: 'block', marginBottom: 6 }}>작업 설명</label>
             <textarea
               className="sn-input"
               rows={4}
@@ -627,7 +627,7 @@ export default function MaintenancePage() {
       <BaseModal open={showLog} onClose={closeAll} title="Service task 완료 기록">
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
           <div>
-            <label className="sn-eyebrow" style={{ display: 'block', marginBottom: 6 }}>Task 유형</label>
+            <label className="sn-eyebrow" style={{ display: 'block', marginBottom: 6 }}>작업 유형</label>
             <select
               className="sn-input"
               value={logForm.maintenanceType}
@@ -639,7 +639,7 @@ export default function MaintenancePage() {
             </select>
           </div>
           <div>
-            <label className="sn-eyebrow" style={{ display: 'block', marginBottom: 6 }}>Service 담당자</label>
+            <label className="sn-eyebrow" style={{ display: 'block', marginBottom: 6 }}>서비스 담당자</label>
             <input
               className="sn-input"
               value={logForm.technician}

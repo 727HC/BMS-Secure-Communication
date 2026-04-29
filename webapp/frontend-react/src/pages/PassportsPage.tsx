@@ -227,10 +227,10 @@ export default function PassportsPage() {
   }, [passports]);
 
   const registerScopeLabel = isManufacturer
-    ? 'Manufacturer filing desk'
+    ? '제조사 등재 데스크'
     : isRegulator
-      ? 'Regulator review desk'
-      : 'Shared register view';
+      ? '규제기관 검토 데스크'
+      : '공유 등록부 뷰';
   const registerSummary = isManufacturer
     ? '제조사는 신규 여권을 접수하고, 차량 연결과 GBA 21 문서 완성도를 같은 등록부에서 확인합니다.'
     : isRegulator
@@ -360,7 +360,7 @@ export default function PassportsPage() {
 
         <div className="sn-summary-grid sn-summary-grid-3" style={{ borderBottom: '1px solid var(--color-border)' }}>
           <div className="sn-summary-lead">
-            <p className="sn-eyebrow sn-summary-title" style={{ margin: '0 0 0.4rem' }}>Filing readiness</p>
+            <p className="sn-eyebrow sn-summary-title" style={{ margin: '0 0 0.4rem' }}>등재 준비도</p>
             <p className="sn-summary-copy-strong" style={{ margin: 0, color: 'var(--color-text-1)' }}>GBA 21 · VIN · 검토 준비</p>
             <p className="sn-stat-note" style={{ margin: '0.35rem 0 0', lineHeight: 1.6 }}>
               모든 수치는 현재 등록부 조회 결과에서 계산합니다.
@@ -388,7 +388,7 @@ export default function PassportsPage() {
       <section className="sn-section-card" style={{ padding: '20px 22px', maxWidth: 1080 }}>
         <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 16, marginBottom: 16, flexWrap: 'wrap' }}>
           <div>
-            <p className="sn-eyebrow" style={{ margin: '0 0 0.35rem', color: 'var(--color-text-3)' }}>Register composition</p>
+            <p className="sn-eyebrow" style={{ margin: '0 0 0.35rem', color: 'var(--color-text-3)' }}>등록부 구성</p>
             <h2 className="sn-heading" style={{ margin: 0, fontSize: '1.125rem' }}>상태와 제조 근거</h2>
           </div>
           <p className="sn-caption" style={{ margin: 0 }}>상태, 제조사, 화학계열 분포를 현재 조회 결과로 표시합니다.</p>
@@ -426,7 +426,7 @@ export default function PassportsPage() {
         <div className="sn-section-head">
           <div className="sn-section-head-row">
             <div>
-              <p className="sn-eyebrow" style={{ margin: '0 0 0.4rem', color: 'var(--color-text-3)' }}>Filing controls</p>
+              <p className="sn-eyebrow" style={{ margin: '0 0 0.4rem', color: 'var(--color-text-3)' }}>등재 제어</p>
               <h2 className="sn-heading" style={{ margin: 0, fontSize: '1.25rem' }}>등록부 검색과 정렬</h2>
               <p className="sn-caption" style={{ margin: '0.45rem 0 0', maxWidth: '44rem' }}>
                 여권 ID, 제조 근거, 차량 연결, GBA 보완 상태를 기준으로 서류철을 좁힙니다.
@@ -501,7 +501,7 @@ export default function PassportsPage() {
           <div className="sn-section-head">
             <div className="sn-section-head-row">
               <div>
-                <p className="sn-eyebrow" style={{ margin: '0 0 0.4rem', color: 'var(--color-text-3)' }}>Dossier ledger</p>
+                <p className="sn-eyebrow" style={{ margin: '0 0 0.4rem', color: 'var(--color-text-3)' }}>자료 원장</p>
                 <h2 className="sn-heading" style={{ margin: 0, fontSize: '1.25rem' }}>여권 파일</h2>
               </div>
               <p className="sn-caption" style={{ margin: 0 }}>
@@ -511,11 +511,11 @@ export default function PassportsPage() {
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.05fr) minmax(0, 1.25fr) minmax(0, 0.9fr) minmax(0, 0.95fr) minmax(0, 0.8fr)', gap: '1rem', padding: '0.9rem 1.1rem', borderBottom: '1px solid var(--color-border)', background: 'var(--color-surface-alt)' }}>
-            <span className="sn-eyebrow">Filing reference</span>
-            <span className="sn-eyebrow">Dossier summary</span>
-            <span className="sn-eyebrow">Battery evidence</span>
-            <span className="sn-eyebrow">GBA completeness</span>
-            <span className="sn-eyebrow">Ledger update</span>
+            <span className="sn-eyebrow">등재 참조</span>
+            <span className="sn-eyebrow">자료 요약</span>
+            <span className="sn-eyebrow">배터리 근거</span>
+            <span className="sn-eyebrow">GBA 완성도</span>
+            <span className="sn-eyebrow">원장 갱신</span>
           </div>
 
           {paginatedPassports.map((p) => {

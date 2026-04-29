@@ -199,7 +199,7 @@ export default function QrScanPage() {
         <div className="sn-section-head">
           <div className="sn-section-head-row">
             <div>
-              <p className="sn-eyebrow" style={{ margin: '0 0 0.4rem', color: 'var(--color-text-3)' }}>Identify desk</p>
+              <p className="sn-eyebrow" style={{ margin: '0 0 0.4rem', color: 'var(--color-text-3)' }}>식별 데스크</p>
               <h2 className="sn-heading" style={{ margin: 0, fontSize: '1.25rem' }}>현장 식별 접수</h2>
               <p className="sn-caption" style={{ margin: '0.45rem 0 0', maxWidth: '48rem' }}>
                 QR/NFC 스캔은 브라우저에서 식별값만 읽고, 여권 조회는 확인된 ID로 `GET /api/passports/:id`를 호출합니다.
