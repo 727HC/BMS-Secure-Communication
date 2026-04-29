@@ -56,6 +56,8 @@ interface DashboardBmuRecord {
   temperature?: number;
   dischargeCycles?: number;
   statusFlags?: number;
+  signature?: string;
+  did?: string;
   [key: string]: unknown;
 }
 
@@ -1019,13 +1021,30 @@ export default function DashboardPage() {
       auditTone = 'green';
     }
 
+    let cryptoValue = '상태 확인 불가';
+    let cryptoTone: SecurityRowViewModel['tone'] = 'neutral';
+    if (bmuSource.loading) {
+      cryptoValue = '확인 중';
+    } else if (bmuRecords.length === 0) {
+      cryptoValue = 'BMU 데이터 미수신';
+    } else {
+      const signedRecords = bmuRecords.filter((r) => typeof r.signature === 'string' && r.signature && r.signature !== 'none');
+      if (signedRecords.length > 0) {
+        cryptoValue = `BMU 서명 수신 (${signedRecords.length}건)`;
+        cryptoTone = 'green';
+      } else {
+        cryptoValue = '서명 미포함 레코드';
+        cryptoTone = 'amber';
+      }
+    }
+
     return [
       { label: '인증 토큰', value: token ? '토큰 확인됨' : '상태 확인 불가', tone: token ? 'green' : 'neutral', icon: 'lock' },
       { label: '상태 엔드포인트', value: statusReachable ? '상태 응답 수신' : statusSource.loading ? '확인 중' : '상태 확인 불가', tone: statusReachable ? 'green' : 'neutral', icon: 'shield' },
       { label: '감사 접근', value: auditValue, tone: auditTone, icon: 'shield' },
-      { label: 'AES / CMAC / Ed25519', value: '상태 확인 불가', tone: 'neutral', icon: 'key' },
+      { label: 'AES / CMAC / Ed25519', value: cryptoValue, tone: cryptoTone, icon: 'key' },
     ];
-  }, [auditSource, statusSource, token]);
+  }, [auditSource, bmuRecords, bmuSource, statusSource, token]);
 
   const dashboardDataSummary = useMemo(() => {
     const authSummary = hasDashboardAuth ? `${org || 'UnknownMSP'} / ${userId}` : '인증 정보 없음';
