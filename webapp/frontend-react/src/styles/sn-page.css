@@ -11,6 +11,9 @@
 @media (max-width: 1024px) {
   .sn-page-head { padding-right: 0; }
 }
+@media (min-width: 1600px) {
+  [data-page="passport-detail"] .sn-page-head { padding-right: 0; }
+}
 .sn-page-head-main { min-width: 0; }
 .sn-page-title {
   font-family: var(--font-display);
