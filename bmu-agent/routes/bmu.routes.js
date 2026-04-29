@@ -108,6 +108,10 @@ router.post('/data', authenticateToken, requireMSP(MSP.MANUFACTURER), bmuRateLim
   if (!signature || signature === 'none') {
     return res.status(400).json({ error: 'signature required' });
   }
+  // 형식 검증: signR(64hex) + signS(64hex) = 128 lowercase hex chars
+  if (typeof signature !== 'string' || signature.length !== 128 || !/^[0-9a-f]+$/.test(signature)) {
+    return res.status(400).json({ error: 'signature must be 128 lowercase hex chars (signR||signS)' });
+  }
 
   try {
     const parsed = parseRawPayload(rawPayload);
