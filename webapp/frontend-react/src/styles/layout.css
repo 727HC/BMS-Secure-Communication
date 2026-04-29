@@ -69,6 +69,24 @@
   position: relative;
 }
 .ev-sidebar-link:hover { background: var(--color-surface-alt); color: var(--color-text-1); }
+.ev-theme-toggle {
+  width: 100%;
+  border: none;
+  background: transparent;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 12px;
+  border-radius: 14px;
+  color: var(--color-text-2);
+  font-size: 0.9375rem;
+  font-weight: 500;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.ev-theme-toggle:hover { background: var(--color-surface-alt); color: var(--color-text-1); }
+.ev-theme-toggle__icon { width: 18px; height: 18px; display: inline-flex; align-items: center; justify-content: center; font-size: 1rem; flex-shrink: 0; }
 .ev-sidebar-link.active {
   background: var(--color-surface-accent);
   color: var(--color-accent);
