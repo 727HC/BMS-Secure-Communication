@@ -1,32 +1,10 @@
 const SEED_FLAG = 'dashboard-real-seed-data';
 
-const BUCKETS = Object.freeze([
-  Object.freeze({ date: '2026-03-30', count: 6 }),
-  Object.freeze({ date: '2026-04-02', count: 8 }),
-  Object.freeze({ date: '2026-04-05', count: 7 }),
-  Object.freeze({ date: '2026-04-08', count: 11 }),
-  Object.freeze({ date: '2026-04-11', count: 12 }),
-  Object.freeze({ date: '2026-04-14', count: 14 }),
-  Object.freeze({ date: '2026-04-17', count: 11 }),
-  Object.freeze({ date: '2026-04-20', count: 13 }),
-  Object.freeze({ date: '2026-04-23', count: 10 }),
-  Object.freeze({ date: '2026-04-26', count: 8 }),
-]);
+const BUCKETS = Object.freeze([]);
 
 const EXPECTED_VALUES = Object.freeze({
-  total: 100,
-  bucketCounts: Object.freeze({
-    '2026-03-30': 6,
-    '2026-04-02': 8,
-    '2026-04-05': 7,
-    '2026-04-08': 11,
-    '2026-04-11': 12,
-    '2026-04-14': 14,
-    '2026-04-17': 11,
-    '2026-04-20': 13,
-    '2026-04-23': 10,
-    '2026-04-26': 8,
-  }),
+  total: 0,
+  bucketCounts: Object.freeze({}),
 });
 
 const MANUFACTURERS = Object.freeze([
