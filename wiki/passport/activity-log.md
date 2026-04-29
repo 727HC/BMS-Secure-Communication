@@ -16,6 +16,7 @@ status: historical
 - [[passport/activity-log/README|날짜별 활동 로그 허브]]
 
 ## 날짜별 기록
+- [[passport/activity-log/2026-04-29|2026-04-29]]
 - [[passport/activity-log/2026-04-28|2026-04-28]]
 - [[passport/activity-log/2026-04-27|2026-04-27]]
 - [[passport/activity-log/2026-04-26|2026-04-26]]
