@@ -1029,12 +1029,23 @@ export default function DashboardPage() {
       cryptoValue = 'BMU 데이터 미수신';
     } else {
       const signedRecords = bmuRecords.filter((r) => typeof r.signature === 'string' && r.signature && r.signature !== 'none');
-      if (signedRecords.length > 0) {
-        cryptoValue = `BMU 서명 수신 (${signedRecords.length}건)`;
-        cryptoTone = 'green';
-      } else {
+      if (signedRecords.length === 0) {
         cryptoValue = '서명 미포함 레코드';
         cryptoTone = 'amber';
+      } else {
+        const now = Date.now();
+        const recentSigned = signedRecords.filter((r) => {
+          if (!r.timestamp) return false;
+          const ts = new Date(r.timestamp).getTime();
+          return Number.isFinite(ts) && now - ts <= 60_000;
+        });
+        if (recentSigned.length > 0) {
+          cryptoValue = `BMU 서명 수신 (60초 ${recentSigned.length}건)`;
+          cryptoTone = 'green';
+        } else {
+          cryptoValue = `최근 60초 신호 없음 (누적 ${signedRecords.length}건)`;
+          cryptoTone = 'amber';
+        }
       }
     }
 
