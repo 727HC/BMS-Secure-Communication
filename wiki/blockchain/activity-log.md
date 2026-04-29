@@ -617,3 +617,99 @@ P2-1 변경은 ExtractMaterials 의 입력 검증만 1줄 (rate < 0 || rate > 10
 ### bmu-agent restart
 
 P2-2 INTERNAL 마스킹 효과는 bmu-agent 재기동 후 발현. Passport 측이 시점 결정 (caliper 또는 실 운영 머지 시점).
+
+---
+
+## Session 2026-04-29 — ACA-Py 잠복사고 + ledger reset + 임베디드 e2e 활성화
+
+### 의도
+
+임베디드 측이 실 BMU UART → bridge → bmu-agent → chaincode → cloud-agent → frontend 흐름의 e2e 테스트 시작 직전 단계에서 "BMU /data 가 500 INTERNAL 받음" 보고. 진단 결과 4-18 rotation 의 잠복 사고 + ledger 정리 필요로 확장.
+
+### 핵심 발견
+
+#### 1. ACA-Py LedgerTransactionError (4-18 잠복 사고)
+- 4-18 secret rotation 시 `ACAPY_SEED` 새 값 (`xZdd4Jc2pRmNIYLBuSl0BJQoiO7L4JqG`) 으로 변경됨
+- 새 seed 에서 derive 된 public DID `qkGWu6271ZdKj6a6dJNJH` 가 **von Indy ledger 에 NYM register 안 됨** — rotation 절차서 누락
+- 직전 세션들은 bmu-agent 메모리의 verkey cache (1h TTL) hit 으로 ACA-Py 호출 자체 우회 → 표면적 정상 동작
+- 오늘 bmu-agent 재기동 → cache cold → ACA-Py 첫 호출 → ACA-Py 가 startup 시 ledger 에 endpoint update 강제 submit → "verkey not found" reject → 컨테이너 즉시 종료
+- bmu-agent 가 axios connection refused 받음 → AggregateError → INTERNAL 마스킹
+
+#### 2. 진단 도구
+- `docker logs acapy-bmu` → `indy_vdr.error.VdrError: client request invalid: could not authenticate, verkey for qkGWu6271ZdKj6a6dJNJH cannot be found`
+- von ledger query `curl /ledger/domain?query=qkGWu6271ZdKj6a6dJNJH` → `total: 0`
+
+#### 3. 해결
+```
+curl -X POST http://localhost:9000/register \
+  -d '{"seed":"xZdd4Jc2pRmNIYLBuSl0BJQoiO7L4JqG","alias":"acapy-bmu","role":"TRUST_ANCHOR"}'
+docker start acapy-bmu
+# bmu-agent 재기동 (verkey cache 무효화)
+```
+
+### Ledger Reset (chaincode 1.0 / sequence 1)
+
+임베디드 측이 실 BMU 데이터 e2e 위해 caliper / dummy passport 잔재 정리 요청. 옵션 A (network down + named volumes 제거 + redeploy) 진행.
+
+```
+1. bmu-agent + cloud-agent 정지
+2. ./network.sh down
+3. docker volume rm compose_orderer.battery.com compose_peer0.{4org}.battery.com
+4. bmu-agent/cloud-agent wallet 정리 (~/wallet/*)
+5. cloud-agent MongoDB drop battery_passport
+6. ./start_passport_network.sh up + deployCC (sequence 1, version 1.0 처음부터)
+7. ACA-Py / bmu-agent / cloud-agent 재기동
+8. testmfg 재등록 (admin 으로)
+9. 임베디드 DID 로 첫 passport 등록 (PASSPORT-BMU-T9CvMCAR / DID T9CvMCARRdBqb2izCxUkmh)
+```
+
+### Cross-session 진단 — 양 세션 합의 사항
+
+#### #1 passport.currentSoc / currentTemperature 0 — 의도된 chaincode 설계
+- chaincode `RecordBMUData` 가 caliper TPS 튜닝 때 snapshot PutState 제거됨 (`bmu_tx.go:163` 주석)
+- chaincode 의 `mergeSnapshot` 은 `compose_key("snapshot", passportId)` 키 읽지만 그 키에 PutState 하는 곳 0건
+- 해결: **dashboard / UI 가 chaincode QueryPassport 가 아닌 cloud-agent (MongoDB read model) endpoint 사용** (옵션 C)
+- Passport 세션 (a) 보강 완료 — cloud-agent block listener 가 RecordBMUData 받아 MongoDB passport doc 의 `currentSoc/currentTemperature/lastBmuDataId/totalDischargeCycles` 갱신. 본 세션 검증: block 10 sync 1 doc, MongoDB passport.currentSoc=41650 갱신 확인
+
+#### #2 freshnessCounter vs fc 필드 mismatch
+- chaincode types.go: `FC uint64 json:"fc"` — wire 키 = `fc`
+- write path: bmu.routes.js 가 `freshnessCounter` 변수 → `fc` 인자로 정상 매핑
+- read path: 임베디드/UI 가 `record["freshnessCounter"]` 로 lookup 하면 None
+- 해결 (옵션 A): UI / 임베디드 read 코드가 `record.fc` 사용 — UI 에 freshnessCounter 참조 0건 확인 (no-op)
+
+#### #3 화면 56.3% SOC stale view → SOC/TEMP scale mismatch 발견
+- chaincode currentSoc=0 / cloud-agent currentSoc=41650 / 화면 56.3%
+- 56.3% 는 ledger reset 전 캐시 (browser 새로고침 안 함)
+- 추가 발견 (임베디드 보고): frontend `helpers.ts:1` SOC_SCALE_DIVISOR = 1000 잘못. **DBC 의 SOC factor = 0.001525902 (= 1/655.35)**
+- raw 41650 × 0.001525902 = 63.55% (MATLAB dataProcess 63.7% 와 일치)
+- frontend 의 `1000` 으로 나누면 41.65% (오류)
+- 해결: Passport 세션이 `helpers.ts` 의 SOC_SCALE_DIVISOR / TEMP_SCALE_DIVISOR / CellVolt 모두 DBC factor 반영
+- chaincode / cloud-agent / 임베디드 모두 변경 0건
+
+#### #4 Current 부호 처리 — 위험 없음 확인
+- bmu-parser.service.js:26 가 `buf.readFloatLE(0)` 으로 IEEE 754 float 파싱 (DBC int32 packing 가정 아님)
+- chaincode `Current float64` 그대로 저장
+- MongoDB 라이브 `current=-3.464` (방전 음수 정상)
+- frontend uint32 reinterpret 단계 없음 — 위험 0
+
+### 본 세션 산출물 (블록체인 영역)
+
+| 변경 | 결과 |
+|------|------|
+| chaincode | 0건 (raw 저장 정확, snapshot 미갱신은 의도된 설계) |
+| passport-network | 0건 (reset 만 수행) |
+| bmu-agent | 0건 |
+| cloud-agent | 0건 (Passport 세션의 (a) 보강은 별도 commit) |
+| wiki | 본 세션 기록 (이 항목) |
+
+### 운영 교훈
+
+1. **secret rotation 절차서 보강 필요** — 4-18 rotation 의 ACAPY_SEED 변경이 von ledger 의 새 DID register 단계 누락. 다음 rotation 시 같은 잠복사고 가능. wiki 의 secret rotation 절차에 "von ledger NYM register" 단계 추가 권고.
+2. **bmu-agent verkey cache (1h TTL) 가 ACA-Py 다운 사고를 잠복시킨다** — process restart 까지만 캐시 유효. caliper / e2e 가 통과해도 ACA-Py 자체 health check 별도 권고.
+3. **ledger reset 시 named volume 강제 제거 필수** — `network.sh down --volumes` 가 anonymous volume 만 제거. orderer/peer 의 named volume (`compose_orderer.battery.com` 등) 은 별도 `docker volume rm` 명시.
+4. **chaincode 의 raw 저장은 정석** — frontend 의 표시 변환은 frontend 영역. 임베디드의 DBC 와 frontend 의 helpers.ts 가 일치해야 정확.
+
+### 다음 트리거
+
+- Passport 세션의 helpers.ts 적용 결과 검증 (SOC/TEMP/CellVolt 변환)
+- 또는 다른 chaincode 작업 (P2-6 SetEvent / P2-7 history wrappers) 진행 시점
