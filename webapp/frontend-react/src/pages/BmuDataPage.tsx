@@ -387,7 +387,7 @@ export default function BmuDataPage() {
                 <div style={{ padding: '14px 16px', background: 'var(--color-surface-alt)', borderRadius: 8, border: '1px solid var(--color-border)' }}>
                   <p style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--color-text-3)', margin: '0 0 6px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>SOC</p>
                   <p className="sn-metric sn-metric-md" style={{ fontFamily: 'var(--font-mono)', color: (() => { const v = scaleSOC(latestRecord.soc); return v > 50 ? 'var(--color-text-1)' : v > 20 ? 'var(--color-warning)' : 'var(--color-danger)'; })(), margin: '0 0 4px' }}>
-                    {scaleSOC(latestRecord.soc).toFixed(1)}<span style={{ fontSize: '0.875rem', fontWeight: 500, marginLeft: 2 }}>%</span>
+                    {scaleSOC(latestRecord.soc)}<span style={{ fontSize: '0.875rem', fontWeight: 500, marginLeft: 2 }}>%</span>
                   </p>
                   {recentSlice.soc.length > 1 && (
                     <Sparkline values={recentSlice.soc} height={40} color={(() => { const v = scaleSOC(latestRecord.soc); return v > 50 ? 'var(--color-success)' : v > 20 ? 'var(--color-warning)' : 'var(--color-danger)'; })()} />
