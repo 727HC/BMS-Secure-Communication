@@ -893,8 +893,8 @@ export default function DashboardPage() {
   );
 
   const selectedPassportLabel = useMemo(() => {
-    if (passportSource.loading) return 'Fleet (여권 조회 중)';
-    if (!selectedPassportId) return passports.length ? 'Fleet (선택 대기)' : 'Fleet (배터리 없음)';
+    if (passportSource.loading) return '여권 조회 중';
+    if (!selectedPassportId) return passports.length ? '배터리 선택 대기' : '등록된 배터리 없음';
     const detail = selectedPassport?.model || selectedPassport?.serialNumber || selectedPassport?.batteryId;
     return detail ? `${selectedPassportId} · ${detail}` : selectedPassportId;
   }, [passportSource.loading, passports.length, selectedPassport, selectedPassportId]);
@@ -1141,7 +1141,7 @@ export default function DashboardPage() {
         <article className="vk-card vk-fleet">
           <div className="vk-card__head">
             <div>
-              <h2 className="vk-card__title">Fleet 디지털 트윈</h2>
+              <h2 className="vk-card__title">배터리 디지털 트윈</h2>
               <p className="vk-card__sub">Viewing: {selectedPassportLabel}</p>
             </div>
             <div
