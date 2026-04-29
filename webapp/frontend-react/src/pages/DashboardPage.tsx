@@ -1141,7 +1141,7 @@ export default function DashboardPage() {
         <article className="vk-card vk-fleet">
           <div className="vk-card__head">
             <div>
-              <h2 className="vk-card__title">배터리 디지털 트윈</h2>
+              <h2 className="vk-card__title">배터리 모니터</h2>
               <p className="vk-card__sub">Viewing: {selectedPassportLabel}</p>
             </div>
             <div
