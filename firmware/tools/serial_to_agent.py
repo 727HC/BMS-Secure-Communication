@@ -70,7 +70,7 @@ def init_spool(db_path):
 
 def build_payload(sign_record, data_record=None, did=None):
     """Build JSON payload from sign + data records."""
-    signature = sign_record['signR'] + sign_record['signS']
+    signature = (sign_record['signR'] + sign_record['signS']).lower()
     payload = {
         'fc': sign_record['fc'],
         'signature': signature,
