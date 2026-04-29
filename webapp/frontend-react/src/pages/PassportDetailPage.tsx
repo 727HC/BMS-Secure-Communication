@@ -266,7 +266,7 @@ export default function PassportDetailPage() {
           />
         );
       case 'data':
-        return <DataTab bmuRecords={bmuRecords} />;
+        return <DataTab bmuRecords={bmuRecords} passportId={passport?.passportId} />;
       case 'trust':
         return (
           <TrustTab
