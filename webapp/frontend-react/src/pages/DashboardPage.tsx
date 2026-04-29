@@ -763,7 +763,7 @@ export default function DashboardPage() {
     }
 
     setPassportSource(sourceLoading());
-    api.get<unknown>('/passports')
+    api.get<unknown>('/realtime/passports')
       .then((data) => {
         if (cancelled) return;
         setPassports(normalizeList(data, normalizePassport));
@@ -841,7 +841,7 @@ export default function DashboardPage() {
 
     setBmuRecords([]);
     setBmuSource(sourceLoading());
-    api.get<unknown>(`/bmu/records/${encodeURIComponent(selectedPassportId)}`)
+    api.get<unknown>(`/realtime/bmu/${encodeURIComponent(selectedPassportId)}`)
       .then((data) => {
         if (cancelled) return;
         setBmuRecords(normalizeList(data, normalizeBmuRecord));
