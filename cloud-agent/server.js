@@ -168,12 +168,13 @@ app.get('/api/passports/:id', async (req, res) => {
 
 // (search 라우트는 /:id 위에 배치됨 — M-1 섀도잉 수정)
 
-// GET /api/bmu/:passportId — BMU 데이터 조회
-app.get('/api/bmu/:passportId', async (req, res) => {
+// GET /api/bmu/:idOrDid — BMU 데이터 조회 (passportId 또는 DID 매칭)
+app.get('/api/bmu/:idOrDid', async (req, res) => {
   try {
     const pageSize = Math.min(parseInt(req.query.pageSize || '50', 10), 500);
+    const idOrDid = req.params.idOrDid;
     const records = await db.collection('bmuRecords')
-      .find({ passportId: req.params.passportId, status: 'VALID' })
+      .find({ status: 'VALID', $or: [{ passportId: idOrDid }, { did: idOrDid }] })
       .sort({ fc: -1 })
       .limit(pageSize)
       .toArray();
