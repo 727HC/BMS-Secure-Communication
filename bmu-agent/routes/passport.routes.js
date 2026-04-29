@@ -103,6 +103,15 @@ router.get('/', authenticateToken, async (req, res) => {
 // GET /api/passports/:id — Get passport by ID
 router.get('/:id', authenticateToken, async (req, res) => {
   try {
+    if (isDashboardPassportSeedEnabled() && /^DEV-DASH-P-/.test(req.params.id)) {
+      const records = buildDashboardPassportSeed();
+      const record = records.find((r) => r.passportId === req.params.id);
+      if (!record) {
+        return res.status(404).json({ error: `passport ${req.params.id} not found in dev seed`, category: 'NOT_FOUND' });
+      }
+      res.set('X-BMS-Dev-Seed', SEED_FLAG);
+      return res.json(record);
+    }
     const result = await fabricService.evaluateTransaction('QueryPassport', [req.params.id], req.user);
     res.json(parseResult(result));
   } catch (err) {
@@ -113,6 +122,15 @@ router.get('/:id', authenticateToken, async (req, res) => {
 // GET /api/passports/:id/history — Get passport history
 router.get('/:id/history', authenticateToken, async (req, res) => {
   try {
+    if (isDashboardPassportSeedEnabled() && /^DEV-DASH-P-/.test(req.params.id)) {
+      const records = buildDashboardPassportSeed();
+      const record = records.find((r) => r.passportId === req.params.id);
+      if (!record) {
+        return res.status(404).json({ error: `passport ${req.params.id} not found in dev seed`, category: 'NOT_FOUND' });
+      }
+      res.set('X-BMS-Dev-Seed', SEED_FLAG);
+      return res.json([{ txId: `DEV-DASH-TX-${record.passportId}`, timestamp: record.createdAt, value: record, isDelete: false }]);
+    }
     const result = await fabricService.evaluateTransaction('GetPassportHistory', [req.params.id], req.user);
     res.json(parseResult(result));
   } catch (err) {
