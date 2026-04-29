@@ -276,6 +276,7 @@ export default function BmuDataPage() {
             className="sn-btn sn-btn-accent"
             style={{
               minHeight: 44,
+              alignSelf: 'flex-end',
               cursor: !passportId.trim() || loading ? 'not-allowed' : 'pointer',
               opacity: !passportId.trim() || loading ? 0.5 : 1,
             }}
