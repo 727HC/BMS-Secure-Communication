@@ -1,0 +1,48 @@
+---
+title: "2026-05-01 (2) CSS/컴포넌트 정리 — DashboardPage 모듈화"
+date: 2026-05-01
+tags: [passport, log, refactor, dashboard]
+doc_type: log
+status: historical
+---
+# 2026-05-01 (2) CSS/컴포넌트 정리
+
+## Session 2 — DashboardPage 1598 → 784 lines (51% 감소)
+
+### Phase 1 (CSS) — 보류
+- 14개 .css 파일, 3,218줄 전수 점검
+- 모든 파일이 import 사용 중 (file-level dead 없음)
+- per-selector dead code는 dynamic class 패턴 다수(예: `vk-kpi vk-kpi--${tone}`, `bp-status-${status}`, `vk-alerts__icon--${severity}`)로 정적 grep 매칭 부정확
+- 안전한 자동 삭제 어려움 → 보류, 향후 AST 기반 분석 도구 도입 시 재시도
+
+### Phase 2 (Dashboard 컴포넌트 분리) — 4 commit 완료
+- 작업 주체: Claude Opus 4.7
+- 작업 내용:
+  1. **`components/dashboard/Glyphs.tsx` (73 lines)** — SVG 글리프 6개 + 아이콘 4개 분리
+     - AlertGlyph, ConnectorArrow, FleetGauge, NodeGlyph, SecurityGlyph, TaskGlyph
+     - KpiIcon, ChevronDownIcon, ChevronRightIcon, ExpandIcon
+     - 공통 `stroke` 객체 모듈 스코프로 통합
+  2. **`components/dashboard/lib.ts` (728 lines)** — 타입/순수 헬퍼/빌더 일괄 분리
+     - 타입 24개 (DashboardPassport, KpiCardViewModel, AlertRowViewModel 등)
+     - 상수 7개 (DASHBOARD_AUDIT_PATH, AUDIT_ALLOWED_ORGS, FLEET_LEGEND, KPI_FILTERS 등)
+     - 함수 38개 (sourceLoading/Loaded/Error, normalizePassport/Status/BmuRecord/AuditRecord, buildAlertRows/TaskRows/LedgerRows/KpiSnapshot/SnapshotSparkline/DailyKindTrend/KpiVisual, formatRelativeTime/MetricNumber/Percent, clamp01/niceCeil 등)
+     - DashboardPage에서는 사용하는 41개만 named import
+  3. **`components/dashboard/KpiTrendSparkline.tsx` (65 lines)** — sparkline SVG 렌더러 분리
+- 변경 파일: `webapp/frontend-react/src/pages/DashboardPage.tsx`, `webapp/frontend-react/src/components/dashboard/{Glyphs.tsx, lib.ts, KpiTrendSparkline.tsx}` (3 신규)
+- 검증: 매 단계 `npm run build` 통과, TS 진단 0건, 미사용 import 정리.
+- 커밋:
+  - `b899f3a` Glyph SVG 컴포넌트 추출
+  - `eaf1f2d` KPI/Chevron/Expand 아이콘 추가 분리
+  - `ddeb79a` lib.ts 일괄 추출 (728 lines)
+  - `df4a0f9` KpiTrendSparkline 분리
+
+## 결과
+- DashboardPage.tsx: **1598 → 784 lines (-51%)**
+- 파일 구성: DashboardPage(784) + lib(728) + Glyphs(73) + KpiTrendSparkline(65) = 1650 lines (+52, import/export 오버헤드)
+- 순수 helpers + SVG glyph + KPI sparkline 모두 별도 모듈
+- 다른 페이지/컴포넌트에서도 동일 헬퍼 재사용 가능
+
+## 미완료
+- **JSX 섹션 컴포넌트 분리는 보류** — KpiRow, BatteryMonitor, Dataflow, AlertCard, SecurityCard, TaskQueue, LedgerCard 등 7개로 추가 분할 가능하지만, 각 섹션이 클로저로 잡은 state/handler 다수라 prop interface 설계 필요. 다음 라운드 작업 영역.
+- 페이지별 분리(MaintenancePage, RecyclingPage, AuditLogPage 등 600-700줄 파일)도 별도 라운드.
+- CSS dead code per-selector 분석은 AST 도구 도입 후 재시도.
