@@ -5,8 +5,12 @@ import { api } from '../lib/api';
 import { scaleSOC, scaleTemp } from '../lib/helpers';
 import {
   AlertGlyph,
+  ChevronDownIcon,
+  ChevronRightIcon,
   ConnectorArrow,
+  ExpandIcon,
   FleetGauge,
+  KpiIcon,
   NodeGlyph,
   SecurityGlyph,
   TaskGlyph,
@@ -1526,35 +1530,5 @@ function KpiTrendSparkline({ label, trend }: { label: string; trend: KpiTrendVie
       </div>
     </div>
   );
-}
-
-function KpiIcon({ name }: { name: 'battery' | 'check' | 'alert' | 'chain' }) {
-  const stroke = { fill: 'none', stroke: 'currentColor', strokeWidth: 1.9, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const };
-
-  if (name === 'battery') {
-    return <svg viewBox="0 0 24 24" width="24" height="24"><rect {...stroke} x="3" y="8" width="16" height="8" rx="2"/><path {...stroke} d="M19 10.5h2v3h-2"/><path {...stroke} d="M7 12h5"/></svg>;
-  }
-
-  if (name === 'check') {
-    return <svg viewBox="0 0 24 24" width="24" height="24"><circle {...stroke} cx="12" cy="12" r="9"/><path {...stroke} d="M8.5 12.5l2.3 2.3 4.9-5.4"/></svg>;
-  }
-
-  if (name === 'alert') {
-    return <svg viewBox="0 0 24 24" width="24" height="24"><path {...stroke} d="M12 4l9 16H3z"/><path {...stroke} d="M12 9v5"/><path {...stroke} d="M12 17h.01"/></svg>;
-  }
-
-  return <svg viewBox="0 0 24 24" width="24" height="24"><rect {...stroke} x="4" y="4" width="6" height="6" rx="1.5"/><rect {...stroke} x="14" y="4" width="6" height="6" rx="1.5"/><rect {...stroke} x="9" y="14" width="6" height="6" rx="1.5"/><path {...stroke} d="M10 7h4M12 10v4"/></svg>;
-}
-
-function ChevronDownIcon() {
-  return <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M4 6l4 4 4-4" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg>;
-}
-
-function ChevronRightIcon() {
-  return <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M6 4l4 4-4 4" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg>;
-}
-
-function ExpandIcon() {
-  return <svg viewBox="0 0 18 18" width="18" height="18" aria-hidden="true"><path d="M6.5 3.5h-3v3M11.5 3.5h3v3M14.5 11.5v3h-3M3.5 11.5v3h3" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" /></svg>;
 }
 
