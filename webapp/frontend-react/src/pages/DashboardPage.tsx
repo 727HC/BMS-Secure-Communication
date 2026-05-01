@@ -1,25 +1,18 @@
-import { Fragment, useEffect, useId, useMemo, useState, type KeyboardEvent } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { api } from '../lib/api';
 import { scaleSOC, scaleTemp } from '../lib/helpers';
-import {
-  AlertGlyph,
-  ChevronDownIcon,
-  ChevronRightIcon,
-  ConnectorArrow,
-  ExpandIcon,
-  FleetGauge,
-  NodeGlyph,
-} from '../components/dashboard/Glyphs';
+import AlertCard from '../components/dashboard/AlertCard';
+import BatteryMonitor from '../components/dashboard/BatteryMonitor';
+import DataflowCard from '../components/dashboard/DataflowCard';
 import KpiRow from '../components/dashboard/KpiRow';
+import LedgerCard from '../components/dashboard/LedgerCard';
 import SecurityCard from '../components/dashboard/SecurityCard';
 import TaskQueueCard from '../components/dashboard/TaskQueueCard';
 import {
   AUDIT_ALLOWED_ORGS,
-  AUDIT_REQUIRED_LABEL,
   DASHBOARD_AUDIT_PATH,
-  FLEET_LEGEND,
   SOURCE_IDLE,
   buildAlertRows,
   buildKpiSnapshot,
@@ -62,7 +55,6 @@ export default function DashboardPage() {
   const { org, token, userId } = useAuth();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const batteryListboxId = useId();
   const requestedPassportId = searchParams.get('passportId');
   const hasDashboardAuth = Boolean(token && userId);
   const canReadAudit = org ? AUDIT_ALLOWED_ORGS.has(org) : false;
@@ -76,7 +68,6 @@ export default function DashboardPage() {
   const [statusSource, setStatusSource] = useState<DashboardSourceState>(SOURCE_IDLE);
   const [bmuSource, setBmuSource] = useState<DashboardSourceState>(SOURCE_IDLE);
   const [auditSource, setAuditSource] = useState<DashboardSourceState>(SOURCE_IDLE);
-  const [batteryMenuOpen, setBatteryMenuOpen] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -441,28 +432,10 @@ export default function DashboardPage() {
     const nextParams = new URLSearchParams(searchParams);
     nextParams.set('passportId', passportId);
     setSearchParams(nextParams, { preventScrollReset: true });
-    setBatteryMenuOpen(false);
   };
 
   const navigateDashboard = (route: DashboardRoute) => {
     navigate(route);
-  };
-
-  const handleBatteryTriggerKeyDown = (event: KeyboardEvent<HTMLButtonElement>) => {
-    if (event.key === 'Escape') {
-      event.preventDefault();
-      setBatteryMenuOpen(false);
-    }
-  };
-
-  const handleBatteryOptionKeyDown = (event: KeyboardEvent<HTMLDivElement>, passportId: string) => {
-    if (event.key === 'Enter' || event.key === ' ') {
-      event.preventDefault();
-      selectPassport(passportId);
-    } else if (event.key === 'Escape') {
-      event.preventDefault();
-      setBatteryMenuOpen(false);
-    }
   };
 
   return (
@@ -477,168 +450,27 @@ export default function DashboardPage() {
       <KpiRow kpiCards={kpiCards} />
 
       <div className="vk-grid vk-grid--fleet">
-        <article className="vk-card vk-fleet">
-          <div className="vk-card__head">
-            <div>
-              <h2 className="vk-card__title">배터리 모니터</h2>
-              <p className="vk-card__sub">Viewing: {selectedPassportLabel}</p>
-            </div>
-            <div
-              className="vk-battery-select"
-              onBlur={(event) => {
-                if (!event.currentTarget.contains(event.relatedTarget)) setBatteryMenuOpen(false);
-              }}
-            >
-              <button
-                type="button"
-                className="vk-selectbtn"
-                title={batterySelectorTitle}
-                aria-label={`배터리 선택: ${batterySelectorTitle}`}
-                aria-haspopup="listbox"
-                aria-expanded={batteryMenuOpen}
-                aria-controls={batteryMenuOpen ? batteryListboxId : undefined}
-                disabled={batterySelectorDisabled}
-                onClick={() => setBatteryMenuOpen((open) => !open)}
-                onKeyDown={handleBatteryTriggerKeyDown}
-              >
-                <span>{batterySelectorButtonLabel}</span>
-                <ChevronDownIcon />
-              </button>
-              {batteryMenuOpen ? (
-                <div id={batteryListboxId} className="vk-battery-select__menu" role="listbox" aria-label="배터리 선택">
-                  {passportOptions.map((option) => {
-                    const selected = option.id === selectedPassportId;
-                    return (
-                      <div
-                        key={option.id}
-                        role="option"
-                        aria-selected={selected}
-                        tabIndex={0}
-                        className={`vk-battery-option${selected ? ' vk-battery-option--selected' : ''}`}
-                        onClick={() => selectPassport(option.id)}
-                        onKeyDown={(event) => handleBatteryOptionKeyDown(event, option.id)}
-                      >
-                        <span className="vk-battery-option__label">{option.label}</span>
-                        <span className="vk-battery-option__meta">{option.status}</span>
-                      </div>
-                    );
-                  })}
-                </div>
-              ) : null}
-            </div>
-          </div>
-          <div className="vk-fleet__body">
-            <div className="vk-fleet__visual" aria-hidden="true">
-              <img className="vk-fleet__image" src="/dashboard-fleet-chassis-cutout.png" alt="" loading="eager" decoding="async" />
-              <span className="vk-fleet__expand">
-                <ExpandIcon />
-              </span>
-            </div>
-            <div className="vk-fleet__gauges">
-              {fleetGauges.map((g) => (
-                <FleetGauge key={g.label} label={g.label} value={g.value} tone={g.tone} />
-              ))}
-            </div>
-          </div>
-          <div className="vk-fleet__legend" aria-label="Fleet status legend">
-            {FLEET_LEGEND.map((item) => (
-              <span key={item.label} className={`vk-fleet__legend-item vk-fleet__legend-item--${item.tone}`}>
-                {item.label}
-              </span>
-            ))}
-          </div>
-        </article>
+        <BatteryMonitor
+          selectedPassportLabel={selectedPassportLabel}
+          selectedPassportId={selectedPassportId}
+          selectorTitle={batterySelectorTitle}
+          selectorButtonLabel={batterySelectorButtonLabel}
+          selectorDisabled={batterySelectorDisabled}
+          passportOptions={passportOptions}
+          onPassportSelect={selectPassport}
+          fleetGauges={fleetGauges}
+        />
 
-        <article className="vk-card vk-dataflow">
-          <div className="vk-card__head">
-            <div>
-              <div className="vk-card__titleline">
-                <h2 className="vk-card__title">데이터 파이프라인</h2>
-              </div>
-              <p className="vk-card__sub">기준 처리 단계</p>
-            </div>
-            <button type="button" className="vk-linkbtn vk-linkbtn--chevron" onClick={() => navigateDashboard('/bmu-data')}>
-              <span>상세 보기</span>
-              <ChevronRightIcon />
-            </button>
-          </div>
-          <div className="vk-dataflow__nodes">
-            {dataflowNodes.map((n, index) => (
-              <Fragment key={n.key}>
-                <div className="vk-dataflow__node">
-                  <div className="vk-dataflow__badge"><NodeGlyph name={n.key} /></div>
-                  <p className="vk-dataflow__label">{n.label}</p>
-                  <p className="vk-dataflow__val">{n.action}</p>
-                  <span className={`vk-dataflow__status vk-dataflow__status--${n.status.toLowerCase()}`}>{n.status}</span>
-                </div>
-                {index < dataflowNodes.length - 1 ? (
-                  <span className="vk-dataflow__connector" aria-hidden="true">
-                    <ConnectorArrow />
-                  </span>
-                ) : null}
-              </Fragment>
-            ))}
-          </div>
-        </article>
+        <DataflowCard dataflowNodes={dataflowNodes} onNavigate={navigateDashboard} />
       </div>
 
       <div className="vk-grid vk-grid--2">
-        <article className="vk-card">
-          <div className="vk-card__head">
-            <div>
-              <div className="vk-card__titleline">
-                <h2 className="vk-card__title">알림</h2>
-                <span className="vk-card__count">{alertRows.length}</span>
-              </div>
-              <p className="vk-card__sub">우선 확인 알림</p>
-            </div>
-            <button
-              type="button"
-              className="vk-linkbtn vk-linkbtn--chevron"
-              disabled={!canReadAudit}
-              title={canReadAudit ? '감사 로그로 이동' : AUDIT_REQUIRED_LABEL}
-              aria-label={canReadAudit ? '전체 알림 보기' : AUDIT_REQUIRED_LABEL}
-              onClick={canReadAudit ? () => navigateDashboard('/audit-log') : undefined}
-            >
-              <span>{canReadAudit ? '전체 알림 보기' : AUDIT_REQUIRED_LABEL}</span>
-              <ChevronRightIcon />
-            </button>
-          </div>
-          <ul className="vk-alerts">
-            {alertRows.length === 0 ? (
-              <li className="vk-alerts__row">
-                <span className="vk-alerts__msg" style={{ gridColumn: '1 / -1' }}>표시할 알림이 없습니다</span>
-              </li>
-            ) : alertRows.map((a) => {
-              const severity = a.severity.toLowerCase();
-              const navigateToPassport = () => {
-                if (a.navigable && a.source) navigate(`/passports/${encodeURIComponent(a.source)}`);
-              };
-              return (
-                <li
-                  key={a.key}
-                  className={`vk-alerts__row vk-alerts__row--${severity}`}
-                  onClick={a.navigable ? navigateToPassport : undefined}
-                  onKeyDown={(e) => { if (a.navigable && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); navigateToPassport(); } }}
-                  role={a.navigable ? 'button' : undefined}
-                  tabIndex={a.navigable ? 0 : undefined}
-                  style={{ cursor: a.navigable ? 'pointer' : 'default' }}
-                >
-                  <span className={`vk-alerts__icon vk-alerts__icon--${severity}`} aria-hidden="true">
-                    <AlertGlyph severity={a.severity} />
-                  </span>
-                  <span className="vk-alerts__msg">{a.message}</span>
-                  <span className="vk-alerts__id">{a.source}</span>
-                  <span className={`vk-alerts__status vk-alerts__status--${severity}`}>{a.severity}</span>
-                  <span className="vk-alerts__time">{a.time}</span>
-                  <span className="vk-alerts__chevron" aria-hidden="true">
-                    <ChevronRightIcon />
-                  </span>
-                </li>
-              );
-            })}
-          </ul>
-        </article>
+        <AlertCard
+          alertRows={alertRows}
+          canReadAudit={canReadAudit}
+          onNavigate={navigateDashboard}
+          onPassportClick={(id: string) => navigate(`/passports/${encodeURIComponent(id)}`)}
+        />
 
         <SecurityCard securityRows={securityRows} canReadAudit={canReadAudit} onNavigate={navigateDashboard} />
       </div>
@@ -646,53 +478,7 @@ export default function DashboardPage() {
       <div className="vk-grid vk-grid--ledger">
         <TaskQueueCard taskRows={taskRows} totalTaskCount={totalTaskCount} onNavigate={navigateDashboard} />
 
-        <article className="vk-card">
-          <div className="vk-card__head">
-            <div>
-              <h2 className="vk-card__title">블록체인 원장</h2>
-              <p className="vk-card__sub">최근 커밋 트랜잭션</p>
-            </div>
-            <button
-              type="button"
-              className="vk-linkbtn vk-linkbtn--chevron"
-              disabled={!canReadAudit}
-              title={canReadAudit ? '감사 로그로 이동' : AUDIT_REQUIRED_LABEL}
-              aria-label={canReadAudit ? 'Blockchain Ledger 전체 보기' : AUDIT_REQUIRED_LABEL}
-              onClick={canReadAudit ? () => navigateDashboard('/audit-log') : undefined}
-            >
-              <span>{canReadAudit ? '전체 보기' : AUDIT_REQUIRED_LABEL}</span>
-              <ChevronRightIcon />
-            </button>
-          </div>
-          <table className="vk-ledger">
-            <thead>
-              <tr>
-                <th>Tx Hash</th>
-                <th>Block / Target</th>
-                <th>Organization</th>
-                <th>Event Type</th>
-                <th>Timestamp</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {ledgerFallback ? (
-                <tr>
-                  <td colSpan={6} className="vk-ledger__time" style={{ padding: '18px 6px', textAlign: 'center' }}>{ledgerFallback}</td>
-                </tr>
-              ) : ledgerRows.map((r) => (
-                <tr key={r.key}>
-                  <td className="vk-ledger__hash">{r.tx}</td>
-                  <td className="vk-ledger__time">{r.block}</td>
-                  <td className="vk-ledger__org">{r.organization}</td>
-                  <td className="vk-ledger__type">{r.eventType}</td>
-                  <td className="vk-ledger__time">{r.timestamp}</td>
-                  <td><span className="vk-ledger__status">{r.status}</span></td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </article>
+        <LedgerCard ledgerRows={ledgerRows} ledgerFallback={ledgerFallback} canReadAudit={canReadAudit} onNavigate={navigateDashboard} />
       </div>
 
       <p className="vk-dash__foot">{dashboardDataSummary}</p>
