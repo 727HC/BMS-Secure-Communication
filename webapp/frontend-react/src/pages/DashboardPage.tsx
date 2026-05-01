@@ -10,12 +10,11 @@ import {
   ConnectorArrow,
   ExpandIcon,
   FleetGauge,
-  KpiIcon,
   NodeGlyph,
-  SecurityGlyph,
-  TaskGlyph,
 } from '../components/dashboard/Glyphs';
-import KpiTrendSparkline from '../components/dashboard/KpiTrendSparkline';
+import KpiRow from '../components/dashboard/KpiRow';
+import SecurityCard from '../components/dashboard/SecurityCard';
+import TaskQueueCard from '../components/dashboard/TaskQueueCard';
 import {
   AUDIT_ALLOWED_ORGS,
   AUDIT_REQUIRED_LABEL,
@@ -475,23 +474,7 @@ export default function DashboardPage() {
         </div>
       </header>
 
-      <div className="vk-grid vk-grid--4">
-        {kpiCards.map((k) => (
-          <article key={k.label} className={`vk-card vk-kpi vk-kpi--${k.tone}`}>
-            <div className="vk-kpi__top">
-              <div className="vk-kpi__copy">
-                <span className="vk-kpi__label">{k.label}</span>
-                <div className="vk-kpi__value">{k.value}</div>
-                <span className="vk-kpi__delta">{k.delta}</span>
-              </div>
-              <span className="vk-kpi__icon" aria-hidden="true">
-                <KpiIcon name={k.icon} />
-              </span>
-            </div>
-            <KpiTrendSparkline label={k.label} trend={k.visual.trend} />
-          </article>
-        ))}
-      </div>
+      <KpiRow kpiCards={kpiCards} />
 
       <div className="vk-grid vk-grid--fleet">
         <article className="vk-card vk-fleet">
@@ -657,77 +640,11 @@ export default function DashboardPage() {
           </ul>
         </article>
 
-        <article className="vk-card">
-          <div className="vk-card__head">
-            <div>
-              <h2 className="vk-card__title">보안 상태</h2>
-              <p className="vk-card__sub">플랫폼 보안 기준값</p>
-            </div>
-            <button
-              type="button"
-              className="vk-linkbtn"
-              disabled={!canReadAudit}
-              title={canReadAudit ? '감사 로그로 이동' : AUDIT_REQUIRED_LABEL}
-              aria-label={canReadAudit ? '보안 상태 상세 보기' : AUDIT_REQUIRED_LABEL}
-              onClick={canReadAudit ? () => navigateDashboard('/audit-log') : undefined}
-            >
-              {canReadAudit ? '상세 보기' : AUDIT_REQUIRED_LABEL}
-            </button>
-          </div>
-          <div className="vk-secbar" aria-label="보안 상태">
-            {securityRows.map((s) => (
-              <div key={s.label} className={`vk-sec vk-sec--${s.tone}`}>
-                <div className="vk-sec__icon" aria-hidden="true"><SecurityGlyph name={s.icon} /></div>
-                <div className="vk-sec__copy">
-                  <p className="vk-sec__label">{s.label}</p>
-                  <p className="vk-sec__value">{s.value}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </article>
+        <SecurityCard securityRows={securityRows} canReadAudit={canReadAudit} onNavigate={navigateDashboard} />
       </div>
 
       <div className="vk-grid vk-grid--ledger">
-        <article className="vk-card">
-          <div className="vk-card__head">
-            <div>
-              <div className="vk-card__titleline">
-                <h2 className="vk-card__title">작업 대기열</h2>
-                <span className="vk-card__count">{totalTaskCount}</span>
-              </div>
-              <p className="vk-card__sub">우선 처리 대기열</p>
-            </div>
-            <button type="button" className="vk-linkbtn vk-linkbtn--chevron" onClick={() => navigateDashboard('/passports')}>
-              <span>전체 보기</span>
-              <ChevronRightIcon />
-            </button>
-          </div>
-          <div className="vk-tasks">
-            {totalTaskCount === 0 ? (
-              <div className="vk-task vk-task--blue" style={{ gridColumn: '1 / -1', alignContent: 'center', textAlign: 'center' }}>
-                <p className="vk-task__label">대기 중인 작업이 없습니다</p>
-              </div>
-            ) : taskRows.map((t) => (
-              <button
-                key={t.label}
-                type="button"
-                className={`vk-task vk-task--${t.tone}`}
-                aria-label={`${t.label} ${t.value}${t.unit} 보기`}
-                onClick={() => navigateDashboard(t.route)}
-              >
-                <div className="vk-task__top">
-                  <div className="vk-task__icon" aria-hidden="true"><TaskGlyph name={t.icon} /></div>
-                  <p className="vk-task__label">{t.label}</p>
-                </div>
-                <p className="vk-task__count">
-                  <span className="vk-task__num">{t.value}</span>
-                  <span className="vk-task__unit">{t.unit}</span>
-                </p>
-              </button>
-            ))}
-          </div>
-        </article>
+        <TaskQueueCard taskRows={taskRows} totalTaskCount={totalTaskCount} onNavigate={navigateDashboard} />
 
         <article className="vk-card">
           <div className="vk-card__head">
