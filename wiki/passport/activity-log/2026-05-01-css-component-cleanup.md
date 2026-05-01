@@ -42,7 +42,29 @@ status: historical
 - 순수 helpers + SVG glyph + KPI sparkline 모두 별도 모듈
 - 다른 페이지/컴포넌트에서도 동일 헬퍼 재사용 가능
 
+## Phase 2.2 — JSX 섹션 컴포넌트 분리 완료 (별도 라운드)
+- KpiRow.tsx (29) — 4개 KPI 카드
+- SecurityCard.tsx (42) — 보안 상태 카드
+- TaskQueueCard.tsx (52) — 작업 대기열 카드
+- LedgerCard.tsx (61) — 블록체인 원장 테이블
+- AlertCard.tsx (70) — 알림 리스트 + onPassportClick 콜백
+- DataflowCard.tsx (44) — CMU→BMU→Agent→Blockchain→Passport 파이프라인
+- BatteryMonitor.tsx (124) — 배터리 선택 dropdown + Fleet visual + gauges (state 캡슐화)
+
+DashboardPage.tsx **1598 → 487 (-69%)**.
+파일 구성: DashboardPage(487) + lib(728) + sub-components 9개(560) = 1775 lines.
+
+각 sub-component 인터페이스:
+- 순수 presenter — props만 받고 상태 없음 (BatteryMonitor만 dropdown 로컬 state)
+- 라우팅 콜백은 onNavigate / onPassportClick으로 외부 위임
+- ViewModel 타입을 props로 받아 부모-자식 결합 최소화
+
+커밋:
+- `b899f3a`, `eaf1f2d`, `ddeb79a`, `df4a0f9` (Phase 2.1)
+- (PR #2 머지 + master 작업 시작)
+- `b899f3a` (KpiRow + SecurityCard + TaskQueueCard) — squashed 표시 위해 1개 커밋으로 묶음
+- `4e74ec6` (LedgerCard + AlertCard + DataflowCard + BatteryMonitor)
+
 ## 미완료
-- **JSX 섹션 컴포넌트 분리는 보류** — KpiRow, BatteryMonitor, Dataflow, AlertCard, SecurityCard, TaskQueue, LedgerCard 등 7개로 추가 분할 가능하지만, 각 섹션이 클로저로 잡은 state/handler 다수라 prop interface 설계 필요. 다음 라운드 작업 영역.
-- 페이지별 분리(MaintenancePage, RecyclingPage, AuditLogPage 등 600-700줄 파일)도 별도 라운드.
+- 페이지별 분리(MaintenancePage 677, RecyclingPage 706, AuditLogPage 673, PassportDetailPage 646, BmuDataPage 589, PassportsPage 644)는 별도 라운드.
 - CSS dead code per-selector 분석은 AST 도구 도입 후 재시도.
