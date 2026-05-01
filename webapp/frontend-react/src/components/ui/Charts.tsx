@@ -105,6 +105,7 @@ interface SparklineProps {
   height?: number;
   color?: string;
   fillOpacity?: number;
+  strokeWidth?: number;
   min?: number;
   max?: number;
   animate?: boolean;
@@ -113,7 +114,7 @@ interface SparklineProps {
 /* 고유 id — 복수 Sparkline이 같은 페이지에 있을 때 keyframes 충돌 방지 */
 let _sparklineCounter = 0;
 
-export function Sparkline({ values, width = 280, height = 64, color = 'var(--color-accent)', fillOpacity = 0.12, min, max, animate = true }: SparklineProps) {
+export function Sparkline({ values, width = 280, height = 64, color = 'var(--color-accent)', fillOpacity = 0.12, strokeWidth = 2, min, max, animate = true }: SparklineProps) {
   if (values.length === 0) return <svg width={width} height={height} />;
   const lo = min ?? Math.min(...values);
   const hi = max ?? Math.max(...values);
@@ -160,7 +161,7 @@ export function Sparkline({ values, width = 280, height = 64, color = 'var(--col
           d={d}
           fill="none"
           stroke={color}
-          strokeWidth={2}
+          strokeWidth={strokeWidth}
           strokeLinejoin="round"
           strokeLinecap="round"
           className={animate ? `${animId}-line` : undefined}
@@ -179,11 +180,11 @@ interface BarRowsProps {
 export function BarRows({ items, max, barColor = 'var(--color-accent)' }: BarRowsProps) {
   const m = max ?? Math.max(...items.map((i) => i.value), 1);
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 10, width: '100%' }}>
       {items.map((it) => {
         const pct = (it.value / m) * 100;
         return (
-          <div key={it.label} style={{ display: 'grid', gridTemplateColumns: 'minmax(6rem, 1fr) 2.75fr auto', alignItems: 'center', gap: 12 }}>
+          <div key={it.label} style={{ display: 'grid', gridTemplateColumns: 'minmax(8rem, 16rem) minmax(0, 1fr) 3.5rem', alignItems: 'center', gap: 16 }}>
             <span style={{ fontSize: '0.9375rem', color: 'var(--color-text-2)', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
               {it.label}
             </span>

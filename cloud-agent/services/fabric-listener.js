@@ -162,6 +162,25 @@ async function processBlock(blockNumber, blockData, db) {
                 { upsert: true }
               );
               synced++;
+
+              // bmuRecord 도착 시 해당 passport snapshot의 current* 필드 갱신
+              // (chaincode RecordBMUData가 passport state를 갱신하지 않으므로 read model 측에서 projection)
+              if (docType === 'bmuRecord' && data.passportId) {
+                const snapshotUpdate = {};
+                if (data.soc !== undefined) snapshotUpdate.currentSoc = data.soc;
+                if (data.temperature !== undefined) snapshotUpdate.currentTemperature = data.temperature;
+                if (data.soh !== undefined) snapshotUpdate.currentSoh = data.soh;
+                if (data.dischargeCycles !== undefined) snapshotUpdate.totalDischargeCycles = data.dischargeCycles;
+                if (data.recordId) snapshotUpdate.lastBmuDataId = data.recordId;
+                if (data.fc !== undefined) snapshotUpdate.lastFc = data.fc;
+                if (data.timestamp) snapshotUpdate.lastBmuTimestamp = data.timestamp;
+                if (Object.keys(snapshotUpdate).length > 0) {
+                  await db.collection('passports').updateOne(
+                    { passportId: data.passportId },
+                    { $set: { ...snapshotUpdate, _bmuProjectedAt: new Date().toISOString() } }
+                  );
+                }
+              }
             } catch {
               // non-JSON write (composite keys 등) — 무시
             }

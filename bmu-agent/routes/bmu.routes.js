@@ -8,6 +8,11 @@ const { DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE, DID_CACHE_TTL_MS, MSP } = require('../
 const { authenticateToken } = require('../middleware/auth');
 const { requireMSP } = require('../middleware/rbac');
 const { createLogger } = require('../services/logger.service');
+const { sendChaincodeError } = require('../middleware/chaincode-error');
+const {
+  SEED_FLAG,
+  isDashboardPassportSeedEnabled,
+} = require('../services/devPassportSeed.service');
 const log = createLogger('bmu');
 
 // P0-3: unsigned BMU 완전 거부 (임베디드 확인: BMU는 100% 서명 포함)
@@ -103,6 +108,10 @@ router.post('/data', authenticateToken, requireMSP(MSP.MANUFACTURER), bmuRateLim
   if (!signature || signature === 'none') {
     return res.status(400).json({ error: 'signature required' });
   }
+  // 형식 검증: signR(64hex) + signS(64hex) = 128 lowercase hex chars
+  if (typeof signature !== 'string' || signature.length !== 128 || !/^[0-9a-f]+$/.test(signature)) {
+    return res.status(400).json({ error: 'signature must be 128 lowercase hex chars (signR||signS)' });
+  }
 
   try {
     const parsed = parseRawPayload(rawPayload);
@@ -162,7 +171,7 @@ router.post('/data', authenticateToken, requireMSP(MSP.MANUFACTURER), bmuRateLim
     });
   } catch (err) {
     log.error('BMU record failed', { action: 'RecordBMUData', did, error: err.message });
-    res.status(500).json({ error: 'Internal server error' });
+    sendChaincodeError(res, err);
   }
 });
 
@@ -171,12 +180,17 @@ router.get('/records/:passportId', authenticateToken, async (req, res) => {
   try {
     const pageSize = Math.min(parseInt(req.query.pageSize || String(DEFAULT_PAGE_SIZE), 10), MAX_PAGE_SIZE);
     const bookmark = req.query.bookmark || '';
+    if (isDashboardPassportSeedEnabled() && /^DEV-DASH-P-/.test(req.params.passportId)) {
+      res.set('X-BMS-Dev-Seed', SEED_FLAG);
+      return res.json({ records: [], bookmark: '', count: 0 });
+    }
+
     const result = await fabricService.evaluateTransaction(
       'QueryBMURecordsByPassport', [req.params.passportId, String(pageSize), bookmark], req.user
     );
     res.json(JSON.parse(result.toString()));
   } catch (err) {
-    res.status(500).json({ error: 'Internal server error' });
+    sendChaincodeError(res, err);
   }
 });
 
@@ -194,7 +208,7 @@ router.post('/invalidate/:recordId', authenticateToken, requireMSP(MSP.MANUFACTU
     res.json({ success: true, recordId: req.params.recordId, status: 'INVALIDATED' });
   } catch (err) {
     log.error('BMU invalidation failed', { action: 'InvalidateBMURecord', recordId: req.params.recordId, error: err.message });
-    res.status(500).json({ error: 'Internal server error' });
+    sendChaincodeError(res, err);
   }
 });
 

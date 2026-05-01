@@ -88,8 +88,8 @@ func (c *PassportContract) CreateBatteryPassport(ctx contractapi.TransactionCont
 		return err
 	}
 
-	if passportId == "" || batteryId == "" || did == "" {
-		return fmt.Errorf("passportId, batteryId, did must not be empty")
+	if passportId == "" || batteryId == "" || did == "" || serialNumber == "" {
+		return fmt.Errorf("passportId, batteryId, did, serialNumber must not be empty")
 	}
 
 	existing, err := ctx.GetStub().GetState(passportId)
@@ -104,35 +104,56 @@ func (c *PassportContract) CreateBatteryPassport(ctx contractapi.TransactionCont
 	if err != nil {
 		return fmt.Errorf("invalid cellCount value: %v", err)
 	}
+	if cellCountVal < 0 {
+		return fmt.Errorf("cellCount must be non-negative, got %d", cellCountVal)
+	}
 
 	weightVal, err := strconv.ParseFloat(weight, 64)
 	if err != nil {
 		return fmt.Errorf("invalid weight value: %v", err)
+	}
+	if weightVal < 0 {
+		return fmt.Errorf("weight must be non-negative, got %f", weightVal)
 	}
 
 	totalEnergyVal, err := strconv.ParseFloat(totalEnergy, 64)
 	if err != nil {
 		return fmt.Errorf("invalid totalEnergy value: %v", err)
 	}
+	if totalEnergyVal < 0 {
+		return fmt.Errorf("totalEnergy must be non-negative, got %f", totalEnergyVal)
+	}
 
 	energyDensityVal, err := strconv.ParseFloat(energyDensity, 64)
 	if err != nil {
 		return fmt.Errorf("invalid energyDensity value: %v", err)
+	}
+	if energyDensityVal < 0 {
+		return fmt.Errorf("energyDensity must be non-negative, got %f", energyDensityVal)
 	}
 
 	ratedCapacityVal, err := strconv.ParseFloat(ratedCapacity, 64)
 	if err != nil {
 		return fmt.Errorf("invalid ratedCapacity value: %v", err)
 	}
+	if ratedCapacityVal < 0 {
+		return fmt.Errorf("ratedCapacity must be non-negative, got %f", ratedCapacityVal)
+	}
 
 	expectedLifespanVal, err := strconv.Atoi(expectedLifespan)
 	if err != nil {
 		return fmt.Errorf("invalid expectedLifespan value: %v", err)
 	}
+	if expectedLifespanVal < 0 {
+		return fmt.Errorf("expectedLifespan must be non-negative, got %d", expectedLifespanVal)
+	}
 
 	carbonFootprintVal, err := strconv.ParseFloat(carbonFootprint, 64)
 	if err != nil {
 		carbonFootprintVal = 0 // optional — 미입력 시 0
+	}
+	if carbonFootprintVal < 0 {
+		return fmt.Errorf("carbonFootprint must be non-negative, got %f", carbonFootprintVal)
 	}
 
 	msp, err := c.getClientMSP(ctx)
@@ -290,6 +311,10 @@ func (c *PassportContract) RequestMaintenance(ctx contractapi.TransactionContext
 	if mspErr != nil {
 		return fmt.Errorf("failed to get client MSP: %v", mspErr)
 	}
+	// P1 ownership: 바인딩한 EVManufacturer 만 정비 요청 가능
+	if passport.EvBinderMSP != msp {
+		return fmt.Errorf("access denied: passport %s is bound to %s, caller %s cannot request maintenance", passportId, passport.EvBinderMSP, msp)
+	}
 	now, tsErr := txTimestamp(ctx)
 	if tsErr != nil {
 		return fmt.Errorf("failed to get timestamp: %v", tsErr)
@@ -400,6 +425,18 @@ func (c *PassportContract) AddAccidentLog(ctx contractapi.TransactionContextInte
 		return fmt.Errorf("failed to get client MSP: %v", err)
 	}
 
+	// P1 ownership: EVManufacturer 는 바인더 본인, Service 는 정비 이력 보유 시만
+	switch msp {
+	case mspEVManufacturer:
+		if passport.EvBinderMSP != msp {
+			return fmt.Errorf("access denied: passport %s is bound to %s, caller %s cannot log accidents", passportId, passport.EvBinderMSP, msp)
+		}
+	case mspService:
+		if err := c.checkPassportAccess(ctx, &passport); err != nil {
+			return err
+		}
+	}
+
 	now, tsErr := txTimestamp(ctx)
 	if tsErr != nil {
 		return fmt.Errorf("failed to get timestamp: %v", tsErr)
@@ -452,6 +489,15 @@ func (c *PassportContract) RequestAnalysis(ctx contractapi.TransactionContextInt
 		return fmt.Errorf("passport status must be ACTIVE or MAINTENANCE for analysis request, current: %s", passport.Status)
 	}
 
+	// P1 ownership: 바인딩한 EVManufacturer 만 분석 요청 가능
+	msp, mspErr := c.getClientMSP(ctx)
+	if mspErr != nil {
+		return fmt.Errorf("failed to get client MSP: %v", mspErr)
+	}
+	if passport.EvBinderMSP != msp {
+		return fmt.Errorf("access denied: passport %s is bound to %s, caller %s cannot request analysis", passportId, passport.EvBinderMSP, msp)
+	}
+
 	now, tsErr := txTimestamp(ctx)
 	if tsErr != nil {
 		return fmt.Errorf("failed to get timestamp: %v", tsErr)
@@ -501,15 +547,24 @@ func (c *PassportContract) SubmitAnalysisResult(ctx contractapi.TransactionConte
 	if err != nil {
 		return fmt.Errorf("invalid soh value: %v", err)
 	}
+	if sohVal < 0 || sohVal > 100 {
+		return fmt.Errorf("soh must be in [0, 100], got %f", sohVal)
+	}
 
 	soceVal, err := strconv.ParseFloat(soce, 64)
 	if err != nil {
 		return fmt.Errorf("invalid soce value: %v", err)
 	}
+	if soceVal < 0 || soceVal > 100 {
+		return fmt.Errorf("soce must be in [0, 100], got %f", soceVal)
+	}
 
 	remainingLifeCycleVal, err := strconv.Atoi(remainingLifeCycle)
 	if err != nil {
 		return fmt.Errorf("invalid remainingLifeCycle value: %v", err)
+	}
+	if remainingLifeCycleVal < 0 {
+		return fmt.Errorf("remainingLifeCycle must be non-negative, got %d", remainingLifeCycleVal)
 	}
 
 	recycleAvailableVal := strings.ToLower(recycleAvailable) == "true"
@@ -556,6 +611,11 @@ func (c *PassportContract) SetRecycleAvailability(ctx contractapi.TransactionCon
 	err = json.Unmarshal(passportJSON, &passport)
 	if err != nil {
 		return fmt.Errorf("failed to unmarshal passport: %v", err)
+	}
+
+	// P2-5: DISPOSED 여권은 recycle availability 변경 불가 (기존 PRECONDITION 패턴)
+	if passport.Status == "DISPOSED" {
+		return fmt.Errorf("passport status must be ACTIVE or ANALYSIS or RECYCLING for recycle availability change, current: %s", passport.Status)
 	}
 
 	now, tsErr := txTimestamp(ctx)
@@ -605,7 +665,14 @@ func (c *PassportContract) ExtractMaterials(ctx contractapi.TransactionContextIn
 	var recyclingRates map[string]float64
 	err = json.Unmarshal([]byte(recyclingRatesJSON), &recyclingRates)
 	if err != nil {
-		return fmt.Errorf("failed to unmarshal recycling rates: %v", err)
+		return fmt.Errorf("invalid recycling rates JSON: %v", err)
+	}
+
+	// P2-4: 각 element 의 회수율은 [0, 100] % 범위. UI 가 % 단위로 입력 받음 (ExtractModal.tsx:49)
+	for material, rate := range recyclingRates {
+		if rate < 0 || rate > 100 {
+			return fmt.Errorf("invalid recycling rate for %s: must be in [0, 100], got %f", material, rate)
+		}
 	}
 
 	now, tsErr := txTimestamp(ctx)
@@ -707,6 +774,21 @@ func (c *PassportContract) CorrectPassportData(ctx contractapi.TransactionContex
 	msp, err := c.getClientMSP(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to get client MSP: %v", err)
+	}
+
+	// Ownership 검증 — fieldCorrectors 가 MSP 종류만 본 후, 호출자가 실제로
+	// 해당 여권의 발급자/바인더인지 확인. Regulator 는 보편 corrector 라 통과.
+	// requireMSP 가 이미 fieldCorrectors[fieldName] 으로 MSP 종류를 좁혔으므로
+	// 여기서 만나는 msp 는 Manufacturer / EVManufacturer / Regulator 셋 뿐.
+	switch msp {
+	case mspManufacturer:
+		if passport.CreatorMSP != msp {
+			return fmt.Errorf("access denied: passport %s was created by %s, caller %s cannot correct it", passportId, passport.CreatorMSP, msp)
+		}
+	case mspEVManufacturer:
+		if passport.EvBinderMSP != msp {
+			return fmt.Errorf("access denied: passport %s was bound by %s, caller %s cannot correct EV fields", passportId, passport.EvBinderMSP, msp)
+		}
 	}
 
 	// 정정 가능한 필드 목록 및 원래 값 추출

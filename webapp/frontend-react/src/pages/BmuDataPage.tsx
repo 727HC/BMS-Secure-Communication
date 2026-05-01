@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { api } from '../lib/api';
 import { scaleSOC, scaleTemp } from '../lib/helpers';
-import { Skeleton, SkeletonTable } from '../components/ui';
-import { Sparkline, BarRows } from '../components/ui';
+import { BarRows, PageHead, Skeleton, SkeletonTable, Sparkline } from '../components/ui';
 
 interface BmuRecord {
   recordId?: string;
@@ -32,9 +32,9 @@ function decodeStatusFlags(flags?: number): StatusBadge[] {
 }
 
 const BADGE_STYLES: Record<string, { bg: string; color: string; dot: string }> = {
-  blue:  { bg: 'rgba(59,130,246,0.1)',  color: '#2563eb', dot: '#60a5fa' },
-  green: { bg: 'rgba(34,197,94,0.1)',   color: '#059669', dot: '#34d399' },
-  red:   { bg: 'rgba(239,68,68,0.1)',   color: '#dc2626', dot: '#ef4444' },
+  blue:  { bg: 'var(--color-surface-accent)', color: 'var(--color-accent)', dot: 'var(--color-accent)' },
+  green: { bg: 'var(--color-success-soft)', color: 'var(--color-success)', dot: 'var(--color-success)' },
+  red:   { bg: 'var(--color-danger-soft)', color: 'var(--color-danger)', dot: 'var(--color-danger)' },
 };
 
 function formatTimestamp(ts?: string): string {
@@ -49,7 +49,8 @@ function formatNumber(val: unknown, decimals = 1): string {
 }
 
 export default function BmuDataPage() {
-  const [passportId, setPassportId] = useState('');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [passportId, setPassportId] = useState(() => searchParams.get('id') || '');
   const [records, setRecords] = useState<BmuRecord[]>([]);
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -72,9 +73,28 @@ export default function BmuDataPage() {
     [records]
   );
 
+  const RECORDS_PAGE_SIZE = 25;
+  const [currentPage, setCurrentPage] = useState(1);
+  const totalPages = Math.max(1, Math.ceil(sortedRecords.length / RECORDS_PAGE_SIZE));
+  const pagedRecords = useMemo(() => {
+    const start = (currentPage - 1) * RECORDS_PAGE_SIZE;
+    return sortedRecords.slice(start, start + RECORDS_PAGE_SIZE);
+  }, [sortedRecords, currentPage]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [passportId]);
+
+  useEffect(() => {
+    if (currentPage > totalPages) setCurrentPage(totalPages);
+  }, [totalPages, currentPage]);
+
+  const showingFrom = sortedRecords.length ? (currentPage - 1) * RECORDS_PAGE_SIZE + 1 : 0;
+  const showingTo = Math.min(currentPage * RECORDS_PAGE_SIZE, sortedRecords.length);
+
   // 스파크라인용 최근 15개 데이터 (오래된→최신 순)
   const recentSlice = useMemo(() => {
-    const slice = sortedRecords.slice(0, 15).reverse();
+    const slice = sortedRecords.slice(0, 60).reverse();
     return {
       soc: slice.map((r) => scaleSOC(r.soc)),
       voltage: slice.map((r) => (r.voltage != null ? Number(r.voltage) : 0)),
@@ -102,16 +122,19 @@ export default function BmuDataPage() {
       normal++;
     }
     return [
-      { label: '정상', value: normal, color: '#10b981' },
-      { label: '충전', value: charging, color: '#3b82f6' },
-      { label: '밸런싱', value: balancing, color: '#059669' },
-      { label: '결함', value: fault, color: '#ef4444' },
-      { label: '온도 이상', value: tempAbnormal, color: '#f59e0b' },
+      { label: '정상', value: normal, color: 'var(--color-success)' },
+      { label: '충전', value: charging, color: 'var(--color-accent)' },
+      { label: '밸런싱', value: balancing, color: 'var(--color-success)' },
+      { label: '결함', value: fault, color: 'var(--color-danger)' },
+      { label: '온도 이상', value: tempAbnormal, color: 'var(--color-warning)' },
     ];
   }, [sortedRecords]);
 
   // 최신 센서 스냅샷 (첫 번째 레코드)
   const latestRecord = sortedRecords[0] ?? null;
+  const requestPathLabel = hasSearched && passportId.trim()
+    ? `/api/realtime/bmu/${passportId.trim()}`
+    : '/api/realtime/bmu/:idOrDid';
 
   const fetchRecords = async (currentAutoRefresh: boolean, currentLoading: boolean) => {
     const id = passportId.trim();
@@ -123,7 +146,7 @@ export default function BmuDataPage() {
     }
     try {
       const data = await api.get<BmuRecord[] | { records?: BmuRecord[] }>(
-        `/bmu/records/${encodeURIComponent(id)}`
+        `/realtime/bmu/${encodeURIComponent(id)}`
       );
       const list = Array.isArray(data) ? data : data.records || [];
       setRecords(list);
@@ -145,13 +168,27 @@ export default function BmuDataPage() {
   };
 
   const handleSearch = () => {
-    if (passportId.trim()) {
+    const id = passportId.trim();
+    if (id) {
+      const next = new URLSearchParams(searchParams);
+      if (next.get('id') !== id) {
+        next.set('id', id);
+        setSearchParams(next, { replace: true });
+      }
       setHasSearched(false);
       setErrorMsg('');
       setAccessDenied(false);
       fetchRecords(autoRefresh, loading);
     }
   };
+
+  // F5 / 직접 URL 진입 시 ?id=... 파라미터로 자동 조회
+  useEffect(() => {
+    if (passportId.trim() && !hasSearched && !loading) {
+      fetchRecords(false, false);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     if (autoRefresh && passportId.trim()) {
@@ -177,97 +214,60 @@ export default function BmuDataPage() {
   }, [autoRefresh, passportId]);
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-      {/* HEADER */}
-      <div className="sn-page-head">
-        <div className="sn-page-head-main">
-          <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem' }}>
-            <div>
-              <p className="sn-eyebrow" style={{ margin: '0 0 0.35rem', color: 'var(--color-accent)' }}>현장 점검</p>
-              <h1 className="sn-page-title">BMU 판독 콘솔</h1>
-            </div>
-            {autoRefresh && (
-              <span
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '0.375rem',
-                  padding: '0.25rem 0.625rem',
-                  background: 'var(--color-success-soft)',
-                  border: '1px solid #bbf7d0',
-                  borderRadius: 9999,
-                  fontSize: '0.75rem',
-                  fontWeight: 600,
-                  color: 'var(--color-success)',
-                  marginLeft: '0.75rem',
-                }}
-              >
+    <div data-page="bmu-data" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+      <PageHead
+        title="BMS 실시간 데이터"
+        subtitle="배터리 여권 ID로 BMU 원장 기록을 조회하고 최신 센서 판독값, 이상 플래그, 갱신 상태를 한 화면에서 확인합니다."
+        actions={(
+          <>
+            <label className="sn-panel" style={{ minHeight: 44, display: 'inline-flex', alignItems: 'center', cursor: 'pointer', userSelect: 'none', gap: 10, padding: '0.55rem 0.9rem' }}>
+              <div style={{ position: 'relative' }}>
+                <input
+                  type="checkbox"
+                  checked={autoRefresh}
+                  onChange={(e) => setAutoRefresh(e.target.checked)}
+                  style={{ position: 'absolute', opacity: 0, width: 0, height: 0 }}
+                />
+                <div style={{ width: 40, height: 22, borderRadius: 11, background: autoRefresh ? 'var(--color-success)' : 'var(--color-border)', transition: 'background 0.2s' }} />
+                <div style={{ position: 'absolute', top: 3, left: autoRefresh ? 21 : 3, width: 16, height: 16, borderRadius: '50%', background: 'var(--color-surface)', boxShadow: 'var(--shadow-card)', transition: 'left 0.2s' }} />
+              </div>
+              <span style={{ fontSize: '0.9375rem', fontWeight: 600, color: 'var(--color-text-2)' }}>Auto refresh</span>
+              {autoRefresh && (
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontFamily: 'var(--font-mono)', fontSize: '0.875rem', fontWeight: 700, color: 'var(--color-success)' }}>
                   <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--color-success)' }} />
-                실시간
-              </span>
-            )}
-          </div>
-          <p className="sn-page-subtitle">현장 식별 후 센서 기록을 연속 판독하는 점검 화면입니다.</p>
-        </div>
+                  {countdown}s
+                </span>
+              )}
+            </label>
+          </>
+        )}
+      />
 
-        <div className="sn-panel" style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '8px 16px' }}>
-          <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer', userSelect: 'none', gap: 10 }}>
-            <div style={{ position: 'relative' }}>
-              <input
-                type="checkbox"
-                checked={autoRefresh}
-                onChange={(e) => setAutoRefresh(e.target.checked)}
-                style={{ position: 'absolute', opacity: 0, width: 0, height: 0 }}
-              />
-              <div style={{ width: 40, height: 22, borderRadius: 11, background: autoRefresh ? 'var(--color-success)' : 'var(--color-border)', transition: 'background 0.2s' }} />
-              <div style={{ position: 'absolute', top: 3, left: autoRefresh ? 21 : 3, width: 16, height: 16, borderRadius: '50%', background: 'var(--color-surface)', boxShadow: 'var(--shadow-card)', transition: 'left 0.2s' }} />
+      <section className="sn-section-card">
+        <div className="sn-section-head">
+          <div className="sn-section-head-row">
+            <div>
+              <p className="sn-eyebrow" style={{ margin: '0 0 0.4rem', color: 'var(--color-text-3)' }}>실시간 데이터 조회</p>
+              <h2 className="sn-heading" style={{ margin: 0, fontSize: '1.25rem' }}>운영 판독 기준</h2>
+              <p className="sn-caption" style={{ margin: '0.45rem 0 0', maxWidth: '48rem' }}>
+                입력한 여권 ID를 그대로 BMU record endpoint에 전달합니다. 자동 새로고침을 켜면 기존 10초 주기로 같은 ID를 다시 조회합니다.
+              </p>
             </div>
-            <span style={{ fontSize: '0.9375rem', fontWeight: 500, color: 'var(--color-text-2)' }}>자동 새로고침</span>
-          </label>
-          {autoRefresh && (
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '3px 10px', borderRadius: 20, fontFamily: "'JetBrains Mono',monospace", fontSize: '0.875rem', fontWeight: 600, color: '#059669', background: 'rgba(52,211,153,0.1)' }}>
-              <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#059669' }} />
-              {countdown}s
-            </span>
-          )}
+            <span className="sn-detail-inline-stamp">{autoRefresh ? `Live · ${countdown}s` : 'Manual pull'}</span>
+          </div>
         </div>
-      </div>
 
-      <div className="sn-panel sn-summary-grid sn-summary-grid-3">
-        <div className="sn-summary-lead">
-          <p className="sn-eyebrow sn-summary-title">판독 요약</p>
-          <p className="sn-summary-copy-strong">식별 → 라이브 판독 → 이상 플래그 확인</p>
-          <p className="sn-stat-note" style={{ margin: 0, lineHeight: 1.6 }}>
-            여권 ID를 기준으로 BMU 레코드를 불러오고 최신 행을 첫 점검 근거로 사용합니다.
-          </p>
-        </div>
-        <div>
-          <p className="sn-eyebrow sn-stat-card-title">조회 상태</p>
-          <p className="sn-stat-count">{hasSearched ? sortedRecords.length : 0}</p>
-          <p className="sn-stat-note">확인된 기록</p>
-        </div>
-        <div>
-          <p className="sn-eyebrow sn-stat-card-title" style={{ color: '#059669' }}>최근 조회</p>
-          <p className="sn-summary-copy-strong" style={{ margin: 0 }}>
-            {lastFetchedAt ? lastFetchedAt.toLocaleTimeString('ko-KR') : '대기 중'}
-          </p>
-          <p className="sn-stat-note">{autoRefresh ? '실시간 확인 중' : '수동 조회'}</p>
-        </div>
-      </div>
-
-      {/* SEARCH */}
-      <div className="sn-panel sn-toolbar" style={{ padding: '12px 16px' }}>
-        <div style={{ display: 'flex', alignItems: 'flex-end', gap: 12, width: '100%' }}>
-          <div style={{ flex: 1 }}>
-            <label className="sn-eyebrow" style={{ display: 'block', marginBottom: 8 }}>여권 ID</label>
+        <div className="sn-toolbar" style={{ padding: '0.9rem 1.25rem', background: 'var(--color-surface)' }}>
+          <div style={{ flex: 1, minWidth: 240 }}>
+            <label className="sn-eyebrow" style={{ display: 'block', marginBottom: 8 }}>여권 ID 또는 DID</label>
             <input
               value={passportId}
               onChange={(e) => setPassportId(e.target.value)}
               onKeyUp={(e) => e.key === 'Enter' && handleSearch()}
               type="text"
-              placeholder="조회할 배터리 여권 ID를 입력하세요"
+              placeholder="조회할 배터리 여권 ID 또는 DID를 입력하세요"
               className="sn-input"
-              style={{ width: '100%', fontFamily: "'JetBrains Mono',monospace", fontSize: '0.9375rem' }}
+              style={{ fontFamily: 'var(--font-mono)', fontSize: '0.9375rem' }}
             />
           </div>
           <button
@@ -275,17 +275,21 @@ export default function BmuDataPage() {
             disabled={!passportId.trim() || loading}
             className="sn-btn sn-btn-accent"
             style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 8,
+              minHeight: 44,
+              alignSelf: 'flex-end',
               cursor: !passportId.trim() || loading ? 'not-allowed' : 'pointer',
               opacity: !passportId.trim() || loading ? 0.5 : 1,
             }}
           >
-            <span style={{ fontSize: '0.9375rem', fontWeight: 600 }}>{loading ? '조회 중...' : '조회'}</span>
+            {loading ? '조회 중...' : 'Live data 조회'}
           </button>
         </div>
-      </div>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', padding: '0 1.25rem 1rem', background: 'var(--color-surface)' }}>
+          <span className="sn-detail-inline-stamp">{requestPathLabel}</span>
+          <span className="sn-detail-inline-stamp">최근 조회 {lastFetchedAt ? lastFetchedAt.toLocaleTimeString('ko-KR') : '대기 중'}</span>
+          <span className="sn-detail-inline-stamp">{autoRefresh ? '10초 자동 갱신' : '수동 갱신'}</span>
+        </div>
+      </section>
 
       {/* STATES */}
       {loading && !autoRefresh ? (
@@ -329,8 +333,8 @@ export default function BmuDataPage() {
       ) : hasSearched && errorMsg && accessDenied ? (
         <div className="sn-panel" style={{ overflow: 'hidden' }}>
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '2rem 1.5rem', textAlign: 'center' }}>
-            <div style={{ width: 56, height: 56, borderRadius: 12, background: '#fff7ed', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 18 }}>
-              <svg width="26" height="26" fill="none" stroke="#d97706" strokeWidth="1.8" viewBox="0 0 24 24">
+            <div style={{ width: 56, height: 56, borderRadius: 12, background: 'var(--color-warning-soft)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 18 }}>
+              <svg width="26" height="26" fill="none" stroke="var(--color-warning)" strokeWidth="1.8" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
               </svg>
             </div>
@@ -353,11 +357,11 @@ export default function BmuDataPage() {
         <>
           {/* 최신 센서 스냅샷 + Sparkline */}
           {latestRecord && (
-            <div className="sn-panel" style={{ padding: '16px 20px' }}>
+            <section className="sn-section-card" style={{ padding: '16px 20px' }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <span style={{ fontSize: '0.9375rem', fontWeight: 600, color: 'var(--color-text-1)' }}>최신 센서 스냅샷</span>
-                  <span style={{ fontSize: '0.875rem', color: 'var(--color-text-3)', fontFamily: "'JetBrains Mono',monospace" }}>
+                  <span style={{ fontSize: '0.9375rem', fontWeight: 700, color: 'var(--color-text-1)' }}>Latest telemetry snapshot</span>
+                  <span style={{ fontSize: '0.875rem', color: 'var(--color-text-3)', fontFamily: 'var(--font-mono)' }}>
                     {formatTimestamp(latestRecord.timestamp)}
                   </span>
                 </div>
@@ -373,7 +377,7 @@ export default function BmuDataPage() {
                   })}
                   {decodeStatusFlags(latestRecord.statusFlags).length === 0 && (
                     <span style={{ display: 'inline-flex', alignItems: 'center', padding: '2px 10px', borderRadius: 20, fontSize: '0.875rem', fontWeight: 500, background: 'var(--color-surface-alt)', color: 'var(--color-text-2)', border: '1px solid var(--color-border)' }}>
-                      <span style={{ width: 6, height: 6, borderRadius: '50%', marginRight: 6, background: '#10b981' }} />
+                      <span style={{ width: 6, height: 6, borderRadius: '50%', marginRight: 6, background: 'var(--color-success)' }} />
                       정상
                     </span>
                   )}
@@ -383,20 +387,17 @@ export default function BmuDataPage() {
                 {/* SOC */}
                 <div style={{ padding: '14px 16px', background: 'var(--color-surface-alt)', borderRadius: 8, border: '1px solid var(--color-border)' }}>
                   <p style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--color-text-3)', margin: '0 0 6px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>SOC</p>
-                  <p className="sn-metric sn-metric-md" style={{ fontFamily: "'JetBrains Mono',monospace", color: (() => { const v = scaleSOC(latestRecord.soc); return v > 50 ? 'var(--color-text-1)' : v > 20 ? '#f59e0b' : '#ef4444'; })(), margin: '0 0 4px' }}>
+                  <p className="sn-metric sn-metric-md" style={{ fontFamily: 'var(--font-mono)', color: (() => { const v = scaleSOC(latestRecord.soc); return v > 50 ? 'var(--color-text-1)' : v > 20 ? 'var(--color-warning)' : 'var(--color-danger)'; })(), margin: '0 0 4px' }}>
                     {scaleSOC(latestRecord.soc)}<span style={{ fontSize: '0.875rem', fontWeight: 500, marginLeft: 2 }}>%</span>
                   </p>
-                  <div style={{ marginBottom: 8, height: 4, borderRadius: 999, background: 'var(--color-border)' }}>
-                    <div style={{ height: '100%', borderRadius: 999, width: `${Math.min(scaleSOC(latestRecord.soc), 100)}%`, background: (() => { const v = scaleSOC(latestRecord.soc); return v > 50 ? '#10b981' : v > 20 ? '#f59e0b' : '#ef4444'; })() }} />
-                  </div>
                   {recentSlice.soc.length > 1 && (
-                    <Sparkline values={recentSlice.soc} height={40} color={(() => { const v = scaleSOC(latestRecord.soc); return v > 50 ? '#10b981' : v > 20 ? '#f59e0b' : '#ef4444'; })()} />
+                    <Sparkline values={recentSlice.soc} height={40} color={(() => { const v = scaleSOC(latestRecord.soc); return v > 50 ? 'var(--color-success)' : v > 20 ? 'var(--color-warning)' : 'var(--color-danger)'; })()} />
                   )}
                 </div>
                 {/* 전압 */}
                 <div style={{ padding: '14px 16px', background: 'var(--color-surface-alt)', borderRadius: 8, border: '1px solid var(--color-border)' }}>
                   <p style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--color-text-3)', margin: '0 0 6px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>전압</p>
-                  <p className="sn-metric sn-metric-md" style={{ fontFamily: "'JetBrains Mono',monospace", color: 'var(--color-text-1)', margin: '0 0 12px' }}>
+                  <p className="sn-metric sn-metric-md" style={{ fontFamily: 'var(--font-mono)', color: 'var(--color-text-1)', margin: '0 0 12px' }}>
                     {formatNumber(latestRecord.voltage, 2)}<span style={{ fontSize: '0.875rem', fontWeight: 500, marginLeft: 2 }}>V</span>
                   </p>
                   {recentSlice.voltage.length > 1 && (
@@ -406,7 +407,7 @@ export default function BmuDataPage() {
                 {/* 전류 */}
                 <div style={{ padding: '14px 16px', background: 'var(--color-surface-alt)', borderRadius: 8, border: '1px solid var(--color-border)' }}>
                   <p style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--color-text-3)', margin: '0 0 6px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>전류</p>
-                  <p className="sn-metric sn-metric-md" style={{ fontFamily: "'JetBrains Mono',monospace", color: 'var(--color-text-1)', margin: '0 0 12px' }}>
+                  <p className="sn-metric sn-metric-md" style={{ fontFamily: 'var(--font-mono)', color: 'var(--color-text-1)', margin: '0 0 12px' }}>
                     {formatNumber(latestRecord.current, 2)}<span style={{ fontSize: '0.875rem', fontWeight: 500, marginLeft: 2 }}>A</span>
                   </p>
                   {recentSlice.current.length > 1 && (
@@ -416,44 +417,44 @@ export default function BmuDataPage() {
                 {/* 온도 */}
                 <div style={{ padding: '14px 16px', background: 'var(--color-surface-alt)', borderRadius: 8, border: '1px solid var(--color-border)' }}>
                   <p style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--color-text-3)', margin: '0 0 6px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>온도</p>
-                  <p className="sn-metric sn-metric-md" style={{ fontFamily: "'JetBrains Mono',monospace", color: 'var(--color-text-1)', margin: '0 0 12px' }}>
+                  <p className="sn-metric sn-metric-md" style={{ fontFamily: 'var(--font-mono)', color: 'var(--color-text-1)', margin: '0 0 12px' }}>
                     {scaleTemp(latestRecord.temperature)}<span style={{ fontSize: '0.875rem', fontWeight: 500, marginLeft: 2 }}>°C</span>
                   </p>
                   {recentSlice.temperature.length > 1 && (
-                    <Sparkline values={recentSlice.temperature} height={40} color="#f59e0b" />
+                    <Sparkline values={recentSlice.temperature} height={40} color="var(--color-warning)" />
                   )}
                 </div>
               </div>
-            </div>
+            </section>
           )}
 
           {/* 이상 이벤트 분포 */}
           {eventDistribution && (
-            <div className="sn-panel" style={{ padding: '16px 20px' }}>
+            <section className="sn-section-card" style={{ padding: '16px 20px', maxWidth: 1080 }}>
               <p className="sn-eyebrow" style={{ margin: '0 0 12px', color: 'var(--color-text-2)' }}>이상 이벤트 분포</p>
               <BarRows items={eventDistribution} />
-            </div>
+            </section>
           )}
 
-          <div className="sn-panel" style={{ overflow: 'hidden' }}>
+          <section className="sn-section-card" style={{ overflow: 'hidden' }}>
             {/* TOP BAR */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 20px', borderBottom: '1px solid rgba(0,0,0,0.06)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 20px', borderBottom: '1px solid var(--color-border)' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <svg style={{ width: 16, height: 16, color: '#059669' }} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                <svg style={{ width: 16, height: 16, color: 'var(--color-success)' }} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 10h16M4 14h16M4 18h16" />
                 </svg>
                 <span style={{ fontSize: '0.9375rem', fontWeight: 600, color: 'var(--color-text-2)' }}>판독 기록</span>
-                <span style={{ display: 'inline-flex', alignItems: 'center', padding: '2px 8px', borderRadius: 20, fontFamily: "'JetBrains Mono',monospace", fontSize: '0.875rem', fontWeight: 600, color: '#059669', background: 'rgba(52,211,153,0.1)' }}>
+                <span style={{ display: 'inline-flex', alignItems: 'center', padding: '2px 8px', borderRadius: 20, fontFamily: 'var(--font-mono)', fontSize: '0.875rem', fontWeight: 600, color: 'var(--color-success)', background: 'var(--color-success-soft)' }}>
                   {records.length}건
                 </span>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                 {refreshing && (
-                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: '0.875rem', color: '#059669' }}>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: '0.875rem', color: 'var(--color-success)' }}>
                     갱신 중...
                   </span>
                 )}
-                <span style={{ padding: '2px 8px', borderRadius: 6, fontFamily: "'JetBrains Mono',monospace", fontSize: '0.875rem', color: 'var(--color-text-3)', background: 'var(--color-surface-alt)' }}>
+                <span style={{ padding: '2px 8px', borderRadius: 6, fontFamily: 'var(--font-mono)', fontSize: '0.875rem', color: 'var(--color-text-3)', background: 'var(--color-surface-alt)' }}>
                   {passportId}
                 </span>
               </div>
@@ -475,9 +476,9 @@ export default function BmuDataPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {sortedRecords.map((r, idx) => {
+                  {pagedRecords.map((r, idx) => {
                     const socVal = scaleSOC(r.soc);
-                    const socColor = socVal > 50 ? 'var(--color-text-1)' : socVal > 20 ? '#f59e0b' : '#ef4444';
+                    const socColor = socVal > 50 ? 'var(--color-text-1)' : socVal > 20 ? 'var(--color-warning)' : 'var(--color-danger)';
                     const badges = decodeStatusFlags(r.statusFlags);
                     return (
                       <tr key={r.recordId || idx}>
@@ -492,21 +493,21 @@ export default function BmuDataPage() {
                             <div style={{ width: 64, height: 6, borderRadius: 999, overflow: 'hidden', background: 'var(--color-border)' }}>
                               <div style={{ height: '100%', borderRadius: 999, width: `${Math.min(socVal, 100)}%`, background: socColor, transition: 'all 0.3s' }} />
                             </div>
-                            <span style={{ fontFamily: "'JetBrains Mono',monospace", fontWeight: 700, color: socColor }}>
-                              {socVal}
+                            <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, color: socColor, fontVariantNumeric: 'tabular-nums' }}>
+                              {socVal.toFixed(1)}
                             </span>
                           </div>
                         </td>
-                        <td style={{ whiteSpace: 'nowrap', textAlign: 'right', fontFamily: "'JetBrains Mono',monospace", color: 'var(--color-text-2)' }}>
+                        <td style={{ whiteSpace: 'nowrap', textAlign: 'right', fontFamily: 'var(--font-mono)', color: 'var(--color-text-2)' }}>
                           {formatNumber(r.voltage, 2)}
                         </td>
-                        <td style={{ whiteSpace: 'nowrap', textAlign: 'right', fontFamily: "'JetBrains Mono',monospace", color: 'var(--color-text-2)' }}>
+                        <td style={{ whiteSpace: 'nowrap', textAlign: 'right', fontFamily: 'var(--font-mono)', color: 'var(--color-text-2)' }}>
                           {formatNumber(r.current, 2)}
                         </td>
-                        <td style={{ whiteSpace: 'nowrap', textAlign: 'right', fontFamily: "'JetBrains Mono',monospace", color: 'var(--color-text-2)' }}>
+                        <td style={{ whiteSpace: 'nowrap', textAlign: 'right', fontFamily: 'var(--font-mono)', color: 'var(--color-text-2)' }}>
                           {scaleTemp(r.temperature)}
                         </td>
-                        <td style={{ whiteSpace: 'nowrap', textAlign: 'right', fontFamily: "'JetBrains Mono',monospace", color: 'var(--color-text-2)' }}>
+                        <td style={{ whiteSpace: 'nowrap', textAlign: 'right', fontFamily: 'var(--font-mono)', color: 'var(--color-text-2)' }}>
                           {r.dischargeCycles != null ? r.dischargeCycles : '-'}
                         </td>
                         <td style={{ whiteSpace: 'nowrap' }}>
@@ -548,16 +549,39 @@ export default function BmuDataPage() {
               </table>
             </div>
 
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 20px', borderTop: '1px solid rgba(0,0,0,0.06)' }}>
-              <span style={{ fontSize: '0.875rem', color: 'var(--color-text-3)' }}>총 {records.length}개 레코드</span>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 20px', borderTop: '1px solid var(--color-border)' }}>
+              <span style={{ fontSize: '0.875rem', color: 'var(--color-text-3)' }}>
+                총 {records.length}개 레코드 · {showingFrom}-{showingTo} 표시
+              </span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginRight: 12 }}>
+                <button
+                  className="sn-btn sn-btn-ghost"
+                  style={{ padding: '6px 10px', fontSize: 12 }}
+                  disabled={currentPage === 1}
+                  onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                >
+                  이전
+                </button>
+                <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.8125rem', color: 'var(--color-text-3)' }}>
+                  {currentPage} / {totalPages}
+                </span>
+                <button
+                  className="sn-btn sn-btn-ghost"
+                  style={{ padding: '6px 10px', fontSize: 12 }}
+                  disabled={currentPage === totalPages}
+                  onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                >
+                  다음
+                </button>
+              </div>
               {autoRefresh && (
-                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontFamily: "'JetBrains Mono',monospace", fontSize: '0.875rem', color: 'var(--color-text-3)' }}>
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontFamily: 'var(--font-mono)', fontSize: '0.875rem', color: 'var(--color-text-3)' }}>
                   <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--color-text-1)' }} />
                   실시간 모니터링 활성 · {countdown}s 후 갱신
                 </span>
               )}
             </div>
-          </div>
+          </section>
         </>
       ) : null}
     </div>

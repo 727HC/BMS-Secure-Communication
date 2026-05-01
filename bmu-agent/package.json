@@ -5,7 +5,8 @@
   "scripts": {
     "start": "node server.js",
     "start:legacy": "node agent_ingest_bmu.js",
-    "test": "node test-verify.js"
+    "test": "node test-verify.js",
+    "verify:dashboard-seed": "node scripts/verify-dashboard-passport-seed.js"
   },
   "keywords": [
     "battery-passport",

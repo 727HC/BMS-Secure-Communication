@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
 import { MSP_LABELS } from '../../lib/api';
+import ShellBrandLink from './ShellBrandLink';
 
 interface NavItem {
   to: string;
@@ -12,41 +13,40 @@ interface NavItem {
 
 const NAV_ITEMS: NavItem[] = [
   {
-    to: '/dashboard', label: '대시보드',
-    icon: <svg className="ev-sidebar-glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9"><path d="M3 11.5L12 4l9 7.5"/><path d="M5 10.5V20h5v-5h4v5h5v-9.5"/></svg>,
+    to: '/dashboard', label: '개요',
+    icon: <svg className="ev-sidebar-glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9"><rect x="3" y="3" width="8" height="8" rx="1"/><rect x="13" y="3" width="8" height="5" rx="1"/><rect x="3" y="13" width="8" height="8" rx="1"/><rect x="13" y="10" width="8" height="11" rx="1"/></svg>,
   },
   {
-    to: '/maintenance', label: '대기 항목',
-    icon: <svg className="ev-sidebar-glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9"><path d="M12 3v18"/><path d="M7 8h10"/><path d="M7 16h10"/></svg>,
+    to: '/maintenance', label: '작업',
+    icon: <svg className="ev-sidebar-glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9"><path d="M9 11l2 2 5-5"/><rect x="4" y="4" width="16" height="16" rx="2"/></svg>,
   },
   {
     to: '/passports', label: '배터리 여권',
-    icon: <svg className="ev-sidebar-glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9"><rect x="5" y="3" width="14" height="18" rx="2"/><line x1="8" y1="8" x2="16" y2="8"/><line x1="8" y1="12" x2="16" y2="12"/></svg>,
+    icon: <svg className="ev-sidebar-glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9"><rect x="5" y="3" width="14" height="18" rx="2"/><circle cx="12" cy="10" r="2.5"/><path d="M8 17h8"/></svg>,
   },
   {
-    to: '/materials', label: '원자재 관리',
-    icon: <svg className="ev-sidebar-glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9"><path d="M12 3l9 4.5-9 4.5-9-4.5L12 3z"/><path d="M3 12l9 4.5 9-4.5"/></svg>,
+    to: '/materials', label: '공급망',
+    icon: <svg className="ev-sidebar-glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9"><path d="M12 3l9 4.5-9 4.5-9-4.5L12 3z"/><path d="M3 12l9 4.5 9-4.5"/><path d="M3 17l9 4.5 9-4.5"/></svg>,
   },
   {
-    to: '/bmu-data', label: '배터리 데이터',
-    icon: <svg className="ev-sidebar-glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9"><path d="M4 18h4V8H4z"/><path d="M10 18h4V4h-4z"/><path d="M16 18h4v-7h-4z"/></svg>,
+    to: '/bmu-data', label: 'BMS 실시간 데이터',
+    icon: <svg className="ev-sidebar-glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9"><path d="M3 12h3l3-7 4 14 3-7h5"/></svg>,
   },
   {
-    to: '/recycling', label: '표준/재활용',
-    icon: <svg className="ev-sidebar-glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9"><path d="M7 7h11v11"/><path d="M7 17l10-10"/></svg>,
+    to: '/recycling', label: '재활용·ESG',
+    icon: <svg className="ev-sidebar-glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9"><path d="M7 20l-3-3 3-3"/><path d="M4 17h9a5 5 0 005-5"/><path d="M17 4l3 3-3 3"/><path d="M20 7h-9a5 5 0 00-5 5"/></svg>,
+  },
+  {
+    to: '/audit-log', label: '감사·원장',
+    icon: <svg className="ev-sidebar-glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9"><path d="M14 3H6a2 2 0 00-2 2v14a2 2 0 002 2h12a2 2 0 002-2V9z"/><path d="M14 3v6h6"/><path d="M8 13h8M8 17h5"/></svg>,
+  },
+  {
+    to: '/settings', label: '설정',
+    icon: <svg className="ev-sidebar-glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 00.3 1.8l.1.1a2 2 0 11-2.8 2.8l-.1-.1a1.7 1.7 0 00-1.8-.3 1.7 1.7 0 00-1 1.5V21a2 2 0 11-4 0v-.1a1.7 1.7 0 00-1-1.5 1.7 1.7 0 00-1.8.3l-.1.1a2 2 0 11-2.8-2.8l.1-.1a1.7 1.7 0 00.3-1.8 1.7 1.7 0 00-1.5-1H3a2 2 0 110-4h.1a1.7 1.7 0 001.5-1 1.7 1.7 0 00-.3-1.8l-.1-.1a2 2 0 112.8-2.8l.1.1a1.7 1.7 0 001.8.3H9a1.7 1.7 0 001-1.5V3a2 2 0 114 0v.1a1.7 1.7 0 001 1.5 1.7 1.7 0 001.8-.3l.1-.1a2 2 0 112.8 2.8l-.1.1a1.7 1.7 0 00-.3 1.8V9a1.7 1.7 0 001.5 1H21a2 2 0 110 4h-.1a1.7 1.7 0 00-1.5 1z"/></svg>,
   },
 ];
 
-const PAGE_TITLES: Record<string, string> = {
-  '/dashboard': '대시보드',
-  '/maintenance': '대기 항목',
-  '/passports': '배터리 여권',
-  '/materials': '원자재 관리',
-  '/bmu-data': '배터리 데이터',
-  '/recycling': '표준/재활용',
-  '/qr-scan': 'QR 스캔',
-  '/audit-log': '감사 로그',
-};
+const AUDIT_ALLOWED_ORGS = new Set(['ManufacturerMSP', 'RegulatorMSP']);
 
 function userInitials(userId: string | null): string {
   if (!userId) return '?';
@@ -61,9 +61,7 @@ export default function Layout({ children }: { children: ReactNode }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const orgLabel = org ? (MSP_LABELS[org] || org) : '';
-  const pageTitle =
-    PAGE_TITLES[location.pathname] ||
-    (location.pathname.startsWith('/passports/') ? '배터리 여권 상세' : 'BatteryPass');
+  const canReadAudit = org ? AUDIT_ALLOWED_ORGS.has(org) : false;
 
   const handleLogout = () => {
     logout();
@@ -73,19 +71,7 @@ export default function Layout({ children }: { children: ReactNode }) {
   return (
     <div style={{ display: 'flex', minHeight: '100vh', background: 'var(--color-bg)' }}>
       <aside className="ev-sidebar">
-        <div
-          style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '8px 8px 18px', cursor: 'pointer' }}
-          onClick={() => navigate('/dashboard')}
-        >
-          <div style={{ width: 40, height: 40, background: 'var(--color-accent)', borderRadius: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, boxShadow: 'var(--shadow-elevated)' }}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.3"><rect x="6" y="2" width="12" height="20" rx="2"/><line x1="6" y1="7" x2="18" y2="7"/><line x1="6" y1="17" x2="18" y2="17"/></svg>
-          </div>
-          <div>
-            <p style={{ fontSize: 13, fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--color-accent)', margin: '0 0 2px' }}>BATP</p>
-            <p style={{ fontSize: 18, fontWeight: 700, letterSpacing: '-0.03em', color: 'var(--color-text-1)', margin: 0 }}>BatteryPass</p>
-            <p style={{ fontSize: 13, color: 'var(--color-text-3)', margin: '2px 0 0' }}>배터리 여권 작업 공간</p>
-          </div>
-        </div>
+        <ShellBrandLink />
 
         <div className="ev-sidebar-nav" style={{ flex: 1 }}>
           <div className="ev-sidebar-section-label">주요 화면</div>
@@ -133,22 +119,28 @@ export default function Layout({ children }: { children: ReactNode }) {
         </div>
       </aside>
 
-      <div className="ev-main" style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
-        <header style={{ height: 60, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 32px', background: 'var(--color-surface)', borderBottom: '1px solid var(--color-border)', flexShrink: 0 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-            <button
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="lg:hidden"
-              style={{ padding: 6, background: 'none', border: 'none', color: 'var(--color-text-2)', cursor: 'pointer' }}
-            >
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
-            </button>
-            <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '1.125rem', fontWeight: 700, color: 'var(--color-text-1)', margin: 0, letterSpacing: '-0.02em' }}>{pageTitle}</h2>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <span style={{ fontSize: '0.9375rem', fontWeight: 600, color: 'var(--color-text-2)' }}>{userId}</span>
-            <span style={{ fontSize: '0.8125rem', fontWeight: 700, padding: '4px 10px', borderRadius: 6, background: 'var(--color-surface-accent)', color: 'var(--color-accent)' }}>{orgLabel}</span>
-          </div>
+      <div className="ev-main" style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: '100vh', position: 'relative' }}>
+        <header style={{ position: 'absolute', top: 18, right: 30, zIndex: 5, display: 'inline-flex', alignItems: 'center', gap: 12, background: 'transparent', border: 'none' }}>
+          <button
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            className="lg:hidden"
+            style={{ padding: 6, background: 'none', border: 'none', color: 'var(--color-text-2)', cursor: 'pointer' }}
+          >
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+          </button>
+          <button
+            type="button"
+            aria-label={canReadAudit ? '감사 로그 열기' : '감사 로그 (권한 필요)'}
+            title={canReadAudit ? '감사 로그' : '권한 필요'}
+            disabled={!canReadAudit}
+            onClick={canReadAudit ? () => navigate('/audit-log') : undefined}
+            style={{ position: 'relative', width: 38, height: 38, borderRadius: 10, border: '1px solid var(--color-border)', background: 'var(--color-surface)', color: 'var(--color-text-2)', cursor: canReadAudit ? 'pointer' : 'not-allowed', opacity: canReadAudit ? 1 : 0.5, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M6 8a6 6 0 0112 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10 21a2 2 0 004 0"/></svg>
+            {canReadAudit && <span style={{ position: 'absolute', top: 6, right: 7, width: 8, height: 8, borderRadius: '50%', background: '#ef4444' }} />}
+          </button>
+          <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--color-text-2)' }}>{userId}</span>
+          <span style={{ fontSize: '0.78rem', fontWeight: 700, padding: '4px 10px', borderRadius: 6, background: 'var(--color-surface-accent)', color: 'var(--color-accent)' }}>{orgLabel}</span>
         </header>
 
         <main style={{ flex: 1, padding: '24px 32px', overflowY: 'auto' }}>{children}</main>

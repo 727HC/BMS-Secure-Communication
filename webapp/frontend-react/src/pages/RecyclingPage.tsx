@@ -1,12 +1,14 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../lib/api';
+import { toastFromError } from '../lib/chaincodeErrorMessages';
 import { useAuth } from '../contexts/AuthContext';
 import { getStatusBadge } from '../lib/helpers';
-import { SkeletonCard, SkeletonTable } from '../components/ui';
-import { BarRows } from '../components/ui/Charts';
+import { BarRows, PageHead, SkeletonCard, SkeletonTable } from '../components/ui';
 import BaseModal from '../components/modals/BaseModal';
 import { ExtractModal, RecycleToggleModal, type ExtractEntry } from '../components/modals/recycling';
+
+const PAGE_SIZE = 12;
 
 interface Passport {
   passportId?: string;
@@ -40,6 +42,20 @@ function avg(nums: number[]): number | null {
   return Math.round(nums.reduce((a, b) => a + b, 0) / nums.length);
 }
 
+function hasRecoveryRates(p: Passport): boolean {
+  return p.recyclingRates != null && Object.keys(p.recyclingRates).length > 0;
+}
+
+function getLifecycleStage(p: Passport): string {
+  if (p.status === 'DISPOSED') return '폐기 승인 완료';
+  if (p.status === 'RECYCLING') return '회수·추출 진행';
+  if (hasRecoveryRates(p)) return '추출 근거 기록';
+  if (p.recycleAvailable) return '회수 가능 판정';
+  if (p.status === 'ANALYSIS') return '분석 결과 대기';
+  if (p.status === 'ACTIVE') return '분석 요청 가능';
+  return '전주기 감시';
+}
+
 export default function RecyclingPage() {
   const navigate = useNavigate();
   const { org } = useAuth();
@@ -56,6 +72,7 @@ export default function RecyclingPage() {
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<Tab>('all');
   const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const [selectedPassport, setSelectedPassport] = useState<Passport | null>(null);
   const [showAnalysis, setShowAnalysis] = useState(false);
   const [showToggle, setShowToggle] = useState(false);
@@ -94,6 +111,24 @@ export default function RecyclingPage() {
     return passports.filter(isRecyclingRelated);
   }, [passports, activeTab]);
 
+  const [currentPage, setCurrentPage] = useState(1);
+  const totalPages = Math.max(1, Math.ceil(filteredPassports.length / PAGE_SIZE));
+  const pagedPassports = useMemo(() => {
+    const start = (currentPage - 1) * PAGE_SIZE;
+    return filteredPassports.slice(start, start + PAGE_SIZE);
+  }, [filteredPassports, currentPage]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [activeTab]);
+
+  useEffect(() => {
+    if (currentPage > totalPages) setCurrentPage(totalPages);
+  }, [totalPages, currentPage]);
+
+  const showingFrom = filteredPassports.length ? (currentPage - 1) * PAGE_SIZE + 1 : 0;
+  const showingTo = Math.min(currentPage * PAGE_SIZE, filteredPassports.length);
+
   const tabCounts = {
     all: passports.filter(isRecyclingRelated).length,
     recyclable: passports.filter((p) => p.recycleAvailable === true).length,
@@ -101,14 +136,13 @@ export default function RecyclingPage() {
     disposed: passports.filter((p) => p.status === 'DISPOSED').length,
   };
 
-  const tabs: { key: Tab; label: string }[] = [
-    { key: 'all', label: '전체' },
-    { key: 'recyclable', label: '재활용가능' },
-    { key: 'recycling', label: '재활용중' },
-    { key: 'disposed', label: '폐기완료' },
+  const tabs: { key: Tab; label: string; hint: string }[] = [
+    { key: 'all', label: '전체', hint: 'lifecycle files' },
+    { key: 'recyclable', label: '재활용가능', hint: 'ready' },
+    { key: 'recycling', label: '재활용중', hint: 'in recovery' },
+    { key: 'disposed', label: '폐기완료', hint: 'authorized' },
   ];
 
-  // 평균 SOH / 잔존수명
   const avgSoh = useMemo(() => {
     const vals = passports.filter(isRecyclingRelated).map((p) => p.soh).filter((v): v is number => v != null);
     return avg(vals);
@@ -119,7 +153,6 @@ export default function RecyclingPage() {
     return avg(vals);
   }, [passports]);
 
-  // 전체 recyclingRates 원소별 평균
   const avgRates = useMemo(() => {
     const totals: Record<string, number[]> = {};
     for (const p of passports) {
@@ -134,6 +167,39 @@ export default function RecyclingPage() {
       .sort((a, b) => b.avg - a.avg);
   }, [passports]);
 
+  const lifecycleMetrics = useMemo(() => {
+    const lifecycleFiles = passports.filter(isRecyclingRelated);
+    const analysisQueue = passports.filter((p) => p.status === 'ANALYSIS').length;
+    const activeCandidates = passports.filter((p) => p.status === 'ACTIVE').length;
+    const extractionEvidence = passports.filter(hasRecoveryRates).length;
+    const readyRatio = lifecycleFiles.length > 0 ? Math.round((tabCounts.recyclable / lifecycleFiles.length) * 100) : 0;
+    return { lifecycleFiles, analysisQueue, activeCandidates, extractionEvidence, readyRatio };
+  }, [passports, tabCounts.recyclable]);
+
+  const lifecycleBreakdown = [
+    { label: '분석 요청 후보', value: lifecycleMetrics.activeCandidates, color: 'var(--color-warning)' },
+    { label: '분석 결과 대기', value: lifecycleMetrics.analysisQueue, color: 'var(--color-accent)' },
+    { label: '회수 가능 판정', value: tabCounts.recyclable, color: 'var(--color-success)' },
+    { label: '재활용 진행', value: tabCounts.recycling, color: 'var(--color-accent)' },
+    { label: '폐기 승인 완료', value: tabCounts.disposed, color: 'var(--color-text-3)' },
+  ];
+
+  const deskLabel = isEVManufacturer
+    ? 'EV제조사 분석 요청 데스크'
+    : isService
+      ? '서비스 분석 데스크'
+      : isRegulator
+        ? '규제기관 회수 권한'
+        : '생애 주기 등록부';
+
+  const pageSummary = isEVManufacturer
+    ? 'EV 제조사는 운행 중인 여권을 분석 요청으로 넘기고 회수 준비 상태를 같은 ESG 등록부에서 확인합니다.'
+    : isService
+      ? '정비·분석 조직은 분석 결과와 재활용 가능 판정을 제출해 회수 준비 근거를 남깁니다.'
+      : isRegulator
+        ? '검증기관은 회수 가능 여권의 소재 추출 근거와 폐기 승인을 lifecycle register 기준으로 관리합니다.'
+        : '조직 권한 안에서 전주기 회수 준비도, 추출 근거, 폐기 승인 상태를 확인합니다.';
+
   const closeAll = () => {
     setShowAnalysis(false);
     setShowToggle(false);
@@ -144,10 +210,15 @@ export default function RecyclingPage() {
 
   const requestAnalysis = async (passport: Passport) => {
     if (!passport.passportId) return;
+    setSubmitError(null);
     try {
       await api.post(`/analysis/${passport.passportId}/request`, {});
       await fetchPassports();
-    } catch { /* toast 생략 */ }
+    } catch (err) {
+      const { toast, debug, category } = toastFromError(err);
+      console.warn('[recycling] mutation failed', { category, debug });
+      setSubmitError(toast);
+    }
   };
 
   const openAnalysisResult = (p: Passport) => {
@@ -159,6 +230,7 @@ export default function RecyclingPage() {
   const submitAnalysisResult = async () => {
     if (!selectedPassport?.passportId) return;
     setSubmitting(true);
+    setSubmitError(null);
     try {
       await api.post(`/analysis/${selectedPassport.passportId}/result`, {
         soh: Number(analysisForm.soh),
@@ -168,7 +240,11 @@ export default function RecyclingPage() {
       });
       closeAll();
       await fetchPassports();
-    } catch { /* noop */ }
+    } catch (err) {
+      const { toast, debug, category } = toastFromError(err);
+      console.warn('[recycling] mutation failed', { category, debug });
+      setSubmitError(toast);
+    }
     finally { setSubmitting(false); }
   };
 
@@ -181,11 +257,16 @@ export default function RecyclingPage() {
   const submitRecycleToggle = async (available: boolean) => {
     if (!selectedPassport?.passportId) return;
     setSubmitting(true);
+    setSubmitError(null);
     try {
       await api.put(`/recycling/${selectedPassport.passportId}/availability`, { available });
       closeAll();
       await fetchPassports();
-    } catch { /* noop */ }
+    } catch (err) {
+      const { toast, debug, category } = toastFromError(err);
+      console.warn('[recycling] mutation failed', { category, debug });
+      setSubmitError(toast);
+    }
     finally { setSubmitting(false); }
   };
 
@@ -197,6 +278,7 @@ export default function RecyclingPage() {
   const submitExtract = async (entries: ExtractEntry[]) => {
     if (!selectedPassport?.passportId) return;
     setSubmitting(true);
+    setSubmitError(null);
     try {
       const recyclingRates: Record<string, number> = {};
       entries.forEach((e) => {
@@ -205,7 +287,11 @@ export default function RecyclingPage() {
       await api.post(`/recycling/${selectedPassport.passportId}/extract`, { recyclingRates });
       closeAll();
       await fetchPassports();
-    } catch { /* noop */ }
+    } catch (err) {
+      const { toast, debug, category } = toastFromError(err);
+      console.warn('[recycling] mutation failed', { category, debug });
+      setSubmitError(toast);
+    }
     finally { setSubmitting(false); }
   };
 
@@ -217,18 +303,23 @@ export default function RecyclingPage() {
   const submitDispose = async () => {
     if (!selectedPassport?.passportId) return;
     setSubmitting(true);
+    setSubmitError(null);
     try {
       await api.post(`/recycling/${selectedPassport.passportId}/dispose`, {});
       closeAll();
       await fetchPassports();
-    } catch { /* noop */ }
+    } catch (err) {
+      const { toast, debug, category } = toastFromError(err);
+      console.warn('[recycling] mutation failed', { category, debug });
+      setSubmitError(toast);
+    }
     finally { setSubmitting(false); }
   };
 
   if (loading) {
     return (
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '0.75rem' }}>
+      <div data-page="recycling" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '0.75rem' }}>
           {[0, 1, 2, 3, 4].map((i) => (
             <SkeletonCard key={i} lines={2} showTitle />
           ))}
@@ -239,189 +330,303 @@ export default function RecyclingPage() {
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-      <div className="sn-page-head">
-        <div className="sn-page-head-main">
-          <p className="sn-eyebrow" style={{ margin: '0.5rem 0 0.35rem', color: 'var(--color-accent)' }}>재활용 처리</p>
-          <h1 className="sn-page-title">재활용 처리</h1>
-          <p className="sn-page-subtitle">분석 요청부터 추출·폐기까지 단계별로 관리합니다.</p>
-        </div>
-        <button onClick={fetchPassports} className="sn-btn sn-btn-ghost" style={{ fontSize: '0.875rem', flexShrink: 0 }}>
-          새로고침
-        </button>
-      </div>
+    <div data-page="recycling" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+      <PageHead
+        title="재활용·ESG"
+        subtitle={pageSummary}
+        actions={(
+          <button onClick={fetchPassports} className="sn-btn sn-btn-ghost" style={{ flexShrink: 0 }}>
+            새로고침
+          </button>
+        )}
+      />
 
-      {/* 확장 summary grid: 5 카드 */}
-      <div className="sn-panel" style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '0.75rem', padding: '0.9rem 1rem' }}>
-        <div style={{ padding: '0.75rem', background: 'var(--color-surface-alt)', borderRadius: '0.5rem' }}>
-          <p className="sn-eyebrow sn-stat-card-title" style={{ margin: '0 0 0.25rem' }}>재활용 가능</p>
-          <p className="sn-info-tile-value" style={{ color: 'var(--color-success)', margin: '0 0 0.25rem' }}>{tabCounts.recyclable}</p>
-          <p className="sn-stat-note">판정 완료</p>
+      {submitError && (
+        <div role="alert" style={{ padding: '0.9rem 1rem', borderRadius: '0.85rem', background: 'var(--color-danger-soft)', color: 'var(--color-danger)', border: '1px solid var(--color-border)' }}>
+          <span style={{ fontSize: '0.9rem', lineHeight: 1.6 }}>{submitError}</span>
         </div>
-        <div style={{ padding: '0.75rem', background: 'var(--color-surface-alt)', borderRadius: '0.5rem' }}>
-          <p className="sn-eyebrow sn-stat-card-title" style={{ margin: '0 0 0.25rem', color: 'var(--color-accent)' }}>재활용 중</p>
-          <p className="sn-info-tile-value" style={{ color: 'var(--color-accent)', margin: '0 0 0.25rem' }}>{tabCounts.recycling}</p>
-          <p className="sn-stat-note">현재 처리 중</p>
-        </div>
-        <div style={{ padding: '0.75rem', background: 'var(--color-surface-alt)', borderRadius: '0.5rem' }}>
-          <p className="sn-eyebrow sn-stat-card-title" style={{ margin: '0 0 0.25rem', color: 'var(--color-text-2)' }}>폐기 완료</p>
-          <p className="sn-info-tile-value" style={{ color: 'var(--color-text-2)', margin: '0 0 0.25rem' }}>{tabCounts.disposed}</p>
-          <p className="sn-stat-note">누적</p>
-        </div>
-        <div style={{ padding: '0.75rem', background: 'var(--color-surface-alt)', borderRadius: '0.5rem' }}>
-          <p className="sn-eyebrow sn-stat-card-title" style={{ margin: '0 0 0.25rem' }}>평균 SOH</p>
-          <p className="sn-info-tile-value" style={{ margin: '0 0 0.25rem' }}>{avgSoh != null ? `${avgSoh}%` : '-'}</p>
-          <p className="sn-stat-note">관리 대상 기준</p>
-        </div>
-        <div style={{ padding: '0.75rem', background: 'var(--color-surface-alt)', borderRadius: '0.5rem' }}>
-          <p className="sn-eyebrow sn-stat-card-title" style={{ margin: '0 0 0.25rem' }}>평균 잔존수명</p>
-          <p className="sn-info-tile-value" style={{ margin: '0 0 0.25rem' }}>{avgRemaining != null ? `${avgRemaining}사이클` : '-'}</p>
-          <p className="sn-stat-note">관리 대상 기준</p>
-        </div>
-      </div>
+      )}
 
-      {/* 재활용률 구성 분석 */}
-      {avgRates.length > 0 && (
-        <div className="sn-panel" style={{ padding: '0.9rem 1rem' }}>
-          <p className="sn-eyebrow" style={{ margin: '0 0 0.75rem' }}>재활용률 구성 분석 — 전체 여권 원소별 평균</p>
+      <section className="sn-section-card">
+        <div className="sn-section-head">
+          <div className="sn-section-head-row">
+            <div>
+              <p className="sn-eyebrow" style={{ margin: '0 0 0.4rem', color: 'var(--color-text-3)' }}>{deskLabel}</p>
+              <h2 className="sn-heading" style={{ margin: 0, fontSize: '1.25rem' }}>생애 주기 등재 요약</h2>
+              <p className="sn-caption" style={{ margin: '0.45rem 0 0', maxWidth: '48rem' }}>
+                여권 필드의 SOH, 잔존 수명, 회수 가능 판정, 원소별 추출률을 기준으로 ESG 회수 준비 상태를 계산합니다.
+              </p>
+            </div>
+            <span className="sn-detail-inline-stamp">GET /api/passports</span>
+          </div>
+        </div>
+
+        <div className="sn-info-grid sn-info-grid-auto">
+          <div className="sn-info-tile">
+            <p className="sn-eyebrow" style={{ margin: '0 0 0.5rem', color: 'var(--color-success)' }}>회수 가능</p>
+            <p className="sn-info-tile-value" style={{ color: 'var(--color-success)' }}>{tabCounts.recyclable}</p>
+            <p className="sn-stat-note">재활용 가능 판정 파일</p>
+          </div>
+          <div className="sn-info-tile">
+            <p className="sn-eyebrow" style={{ margin: '0 0 0.5rem', color: 'var(--color-accent)' }}>재활용 진행</p>
+            <p className="sn-info-tile-value" style={{ color: 'var(--color-accent)' }}>{tabCounts.recycling}</p>
+            <p className="sn-stat-note">현재 회수·추출 상태</p>
+          </div>
+          <div className="sn-info-tile">
+            <p className="sn-eyebrow" style={{ margin: '0 0 0.5rem' }}>평균 SOH</p>
+            <p className="sn-info-tile-value">{avgSoh != null ? `${avgSoh}%` : '-'}</p>
+            <p className="sn-stat-note">lifecycle 대상 기준</p>
+          </div>
+          <div className="sn-info-tile">
+            <p className="sn-eyebrow" style={{ margin: '0 0 0.5rem' }}>평균 잔존수명</p>
+            <p className="sn-info-tile-value">{avgRemaining != null ? `${avgRemaining.toLocaleString('ko-KR')}` : '-'}</p>
+            <p className="sn-stat-note">cycle register value</p>
+          </div>
+        </div>
+
+        <div className="sn-summary-grid sn-summary-grid-3" style={{ borderBottom: '1px solid var(--color-border)' }}>
+          <div className="sn-summary-lead">
+            <p className="sn-eyebrow sn-summary-title">회수 준비도</p>
+            <p className="sn-summary-copy-strong" style={{ margin: 0 }}>회수 준비율 {lifecycleMetrics.readyRatio}%</p>
+            <p className="sn-stat-note" style={{ marginTop: '0.45rem', lineHeight: 1.6 }}>
+              전체 lifecycle 파일 중 재활용 가능 판정이 끝난 여권 비율입니다.
+            </p>
+          </div>
+          <div>
+            <p className="sn-eyebrow sn-stat-card-title">추출 근거</p>
+            <p className="sn-summary-copy-strong" style={{ fontFamily: 'var(--font-mono)', margin: 0 }}>{lifecycleMetrics.extractionEvidence}</p>
+            <p className="sn-stat-note">recyclingRates 보유 파일</p>
+          </div>
+          <div>
+            <p className="sn-eyebrow sn-stat-card-title">폐기 승인</p>
+            <p className="sn-summary-copy-strong" style={{ fontFamily: 'var(--font-mono)', margin: 0 }}>{tabCounts.disposed}</p>
+            <p className="sn-stat-note">DISPOSED 상태 파일</p>
+          </div>
+        </div>
+      </section>
+
+      <section className="sn-section-card" style={{ padding: '20px 22px', maxWidth: 1080 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(220px, 0.85fr) minmax(260px, 1.15fr)', gap: '1.25rem', alignItems: 'start' }}>
+          <div>
+            <p className="sn-eyebrow" style={{ margin: '0 0 0.4rem', color: 'var(--color-text-3)' }}>ESG lifecycle distribution</p>
+            <h2 className="sn-heading" style={{ margin: '0 0 0.55rem', fontSize: '1.125rem' }}>회수 단계 분포</h2>
+            <p className="sn-caption" style={{ margin: 0 }}>
+              상태값과 회수 판정 필드만 사용해 분석 요청 후보부터 폐기 승인까지의 등록부 흐름을 보여줍니다.
+            </p>
+          </div>
           <BarRows
-            items={avgRates.map(({ element, avg: rate }) => ({ label: element, value: rate, hint: '%' }))}
-            max={100}
+            items={lifecycleBreakdown.map(({ label, value, color }) => ({ label, value, color }))}
+            max={Math.max(...lifecycleBreakdown.map((item) => item.value), 1)}
           />
         </div>
+      </section>
+
+      {avgRates.length > 0 && (
+        <section className="sn-section-card" style={{ padding: '20px 22px', maxWidth: 1080 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'minmax(220px, 0.85fr) minmax(260px, 1.15fr)', gap: '1.25rem', alignItems: 'start' }}>
+            <div>
+              <p className="sn-eyebrow" style={{ margin: '0 0 0.4rem', color: 'var(--color-text-3)' }}>추출 근거</p>
+              <h2 className="sn-heading" style={{ margin: '0 0 0.55rem', fontSize: '1.125rem' }}>원소별 평균 회수율</h2>
+              <p className="sn-caption" style={{ margin: 0 }}>
+                Regulator 추출 기록의 `recyclingRates`를 원소별 평균으로 집계합니다.
+              </p>
+            </div>
+            <BarRows
+              items={avgRates.map(({ element, avg: rate }) => ({ label: element, value: rate, hint: '%' }))}
+              max={100}
+            />
+          </div>
+        </section>
       )}
 
-      <div className="sn-filter-tabs" style={{ paddingBottom: 0 }}>
-        {tabs.map((tab) => {
-          const active = activeTab === tab.key;
-          return (
-            <button
-              key={tab.key}
-              onClick={() => setActiveTab(tab.key)}
-              className="sn-filter-tab"
-              style={{
-                color: active ? 'var(--color-text-1)' : 'var(--color-text-3)',
-                borderBottomColor: active ? 'var(--color-text-1)' : 'transparent',
-              }}
-            >
-              {tab.label}
-              <span className="sn-filter-tab-chip">{tabCounts[tab.key]}</span>
-            </button>
-          );
-        })}
-      </div>
-
-      {filteredPassports.length === 0 ? (
-        <div className="sn-empty-dashed">
-          <p className="sn-caption">표시할 항목이 없습니다.</p>
+      <section className="sn-section-card">
+        <div className="sn-section-head">
+          <div className="sn-section-head-row">
+            <div>
+              <p className="sn-eyebrow" style={{ margin: '0 0 0.4rem', color: 'var(--color-text-3)' }}>생애 주기 탭</p>
+              <h2 className="sn-heading" style={{ margin: 0, fontSize: '1.25rem' }}>ESG 회수 등록부</h2>
+            </div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+              <span className="sn-detail-inline-stamp">표시 {filteredPassports.length}</span>
+              <span className="sn-detail-inline-stamp">전체 {tabCounts.all}</span>
+              <span className="sn-detail-inline-stamp">권한 {org || 'unknown'}</span>
+            </div>
+          </div>
         </div>
-      ) : (
-        <div className="sn-panel" style={{ overflow: 'hidden' }}>
-          <table className="sn-table">
-            <thead>
-              <tr>
-                <th>여권 ID</th>
-                <th>모델</th>
-                <th>상태</th>
-                <th style={{ textAlign: 'right' }}>SOH</th>
-                <th>재활용</th>
-                <th>재활용률</th>
-                <th style={{ textAlign: 'right' }}>조치</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredPassports.map((p) => {
-                const badge = getStatusBadge(p.status || 'DISPOSED');
-                const sohColor = p.soh == null ? 'var(--color-text-3)' : p.soh > 80 ? '#059669' : p.soh >= 50 ? '#d97706' : '#dc2626';
-                const rateEntries = p.recyclingRates ? Object.entries(p.recyclingRates).slice(0, 4) : [];
-                return (
-                  <tr
-                    key={p.passportId}
-                    onClick={() => p.passportId && navigate(`/passports/${p.passportId}`)}
-                    style={{ cursor: 'pointer' }}
-                  >
-                    <td>
-                      <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: '0.875rem', color: 'var(--color-text-2)' }}>
-                        {p.passportId}
-                      </span>
-                    </td>
-                    <td style={{ fontSize: '0.9375rem' }}>{p.model || '-'}</td>
-                    <td>
-                      <span className={`bp-stamp ${badge.bg} ${badge.text} ${badge.border}`}>{badge.label}</span>
-                    </td>
-                    <td style={{ textAlign: 'right', fontFamily: "'JetBrains Mono',monospace", fontSize: '0.9375rem', color: sohColor, fontWeight: 700 }}>
-                      {p.soh != null ? `${p.soh}%` : '-'}
-                    </td>
-                    <td>
-                      {p.recycleAvailable ? (
-                        <span className="bp-stamp bp-status-recycling">가능</span>
-                      ) : (
-                        <span style={{ fontSize: '0.875rem', color: 'var(--color-text-3)' }}>미판정</span>
-                      )}
-                    </td>
-                    <td>
-                      {rateEntries.length > 0 ? (
-                        <span style={{ display: 'inline-flex', flexWrap: 'wrap', gap: 4 }}>
-                          {rateEntries.map(([el, rate]) => (
-                            <span
-                              key={el}
-                              style={{
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                gap: 2,
-                                padding: '2px 7px',
-                                borderRadius: 12,
-                                background: 'var(--color-surface-alt)',
-                                border: '1px solid var(--color-border)',
-                                fontSize: '0.8125rem',
-                                color: 'var(--color-text-2)',
-                                whiteSpace: 'nowrap',
-                              }}
+
+        <div className="sn-filter-tabs" style={{ padding: '0 1.25rem' }}>
+          {tabs.map((tab) => {
+            const active = activeTab === tab.key;
+            return (
+              <button
+                key={tab.key}
+                onClick={() => setActiveTab(tab.key)}
+                className="sn-filter-tab"
+                style={{
+                  color: active ? 'var(--color-text-1)' : 'var(--color-text-3)',
+                  borderBottomColor: active ? 'var(--color-text-1)' : 'transparent',
+                }}
+              >
+                <span>{tab.label}</span>
+                <span className="sn-filter-tab-chip">{tabCounts[tab.key]}</span>
+                <span style={{ fontSize: '0.75rem', color: 'var(--color-text-3)', textTransform: 'none', letterSpacing: 0 }}>{tab.hint}</span>
+              </button>
+            );
+          })}
+        </div>
+
+        {filteredPassports.length === 0 ? (
+          <div className="sn-empty-dashed" style={{ minHeight: 220, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column' }}>
+            <p className="sn-heading" style={{ fontSize: '1.125rem', margin: '0 0 0.5rem' }}>표시할 lifecycle 파일이 없습니다.</p>
+            <p className="sn-caption" style={{ margin: 0, maxWidth: '38rem' }}>
+              분석, 회수 가능 판정, 추출 근거, 폐기 승인 상태가 기록되면 이 등록부에 표시됩니다.
+            </p>
+          </div>
+        ) : (
+          <div style={{ overflowX: 'auto', fontSize: '0.875rem' }}>
+            <table className="sn-table">
+              <thead>
+                <tr>
+                  <th>여권 ID</th>
+                  <th>Lifecycle state</th>
+                  <th>상태</th>
+                  <th style={{ textAlign: 'right' }}>SOH</th>
+                  <th style={{ textAlign: 'right' }}>잔존수명</th>
+                  <th>추출 근거</th>
+                  <th style={{ textAlign: 'right' }}>조치</th>
+                </tr>
+              </thead>
+              <tbody>
+                {pagedPassports.map((p) => {
+                  const badge = getStatusBadge(p.status || 'DISPOSED');
+                  const rateEntries = p.recyclingRates ? Object.entries(p.recyclingRates).slice(0, 4) : [];
+                  const sohTone = p.soh == null
+                    ? 'var(--color-text-3)'
+                    : p.soh > 80
+                      ? 'var(--color-success)'
+                      : p.soh >= 50
+                        ? 'var(--color-warning)'
+                        : 'var(--color-danger)';
+                  return (
+                    <tr
+                      key={p.passportId}
+                      onClick={() => p.passportId && navigate(`/passports/${p.passportId}`)}
+                      style={{ cursor: 'pointer' }}
+                    >
+                      <td>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                          <span className="sn-mono" style={{ color: 'var(--color-text-1)', fontWeight: 700 }}>{p.passportId}</span>
+                          <span style={{ fontSize: '0.875rem', color: 'var(--color-text-3)' }}>{p.model || p.manufacturerName || '모델 정보 없음'}</span>
+                        </div>
+                      </td>
+                      <td>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                          <span style={{ fontSize: '0.9375rem', fontWeight: 700, color: 'var(--color-text-1)' }}>{getLifecycleStage(p)}</span>
+                          <span style={{ fontSize: '0.875rem', color: 'var(--color-text-3)' }}>
+                            {p.vin ? `VIN ${p.vin}` : 'VIN 미연결'} · {p.recycleAvailable ? '회수 가능' : '회수 미판정'}
+                          </span>
+                        </div>
+                      </td>
+                      <td>
+                        <span className={`bp-stamp ${badge.bg} ${badge.text} ${badge.border}`}>{badge.label}</span>
+                      </td>
+                      <td style={{ textAlign: 'right', fontFamily: 'var(--font-mono)', fontSize: '0.9375rem', color: sohTone, fontWeight: 700 }}>
+                        {p.soh != null ? `${p.soh}%` : '-'}
+                      </td>
+                      <td style={{ textAlign: 'right', fontFamily: 'var(--font-mono)', fontSize: '0.9375rem', color: 'var(--color-text-1)', fontWeight: 700 }}>
+                        {p.remainingLifeCycle != null ? p.remainingLifeCycle.toLocaleString('ko-KR') : '-'}
+                      </td>
+                      <td>
+                        {rateEntries.length > 0 ? (
+                          <span style={{ display: 'inline-flex', flexWrap: 'wrap', gap: 4 }}>
+                            {rateEntries.map(([el, rate]) => (
+                              <span
+                                key={el}
+                                style={{
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: 4,
+                                  padding: '3px 8px',
+                                  borderRadius: 999,
+                                  background: 'var(--color-surface-alt)',
+                                  border: '1px solid var(--color-border)',
+                                  fontSize: '0.8125rem',
+                                  color: 'var(--color-text-2)',
+                                  whiteSpace: 'nowrap',
+                                }}
+                              >
+                                <span style={{ fontWeight: 700, color: 'var(--color-text-1)' }}>{el}</span>
+                                {rate}%
+                              </span>
+                            ))}
+                          </span>
+                        ) : (
+                          <span style={{ fontSize: '0.875rem', color: 'var(--color-text-3)' }}>근거 없음</span>
+                        )}
+                      </td>
+                      <td style={{ textAlign: 'right' }}>
+                        <div style={{ display: 'inline-flex', flexWrap: 'wrap', justifyContent: 'flex-end', gap: 6 }} onClick={(e) => e.stopPropagation()}>
+                          {canRequestAnalysis && p.status === 'ACTIVE' && (
+                            <button onClick={() => requestAnalysis(p)} className="sn-btn-sm-secondary">분석 요청</button>
+                          )}
+                          {canSubmitAnalysis && p.status === 'ANALYSIS' && (
+                            <button onClick={() => openAnalysisResult(p)} className="sn-btn-sm-primary">결과 제출</button>
+                          )}
+                          {canToggleRecycle && (
+                            <button onClick={() => openRecycleToggle(p)} className="sn-btn-sm-secondary">재활용 판정</button>
+                          )}
+                          {canExtract && p.recycleAvailable && p.status !== 'DISPOSED' && (
+                            <button onClick={() => openExtract(p)} className="sn-btn-sm-secondary">추출</button>
+                          )}
+                          {canDispose && p.status !== 'DISPOSED' && (
+                            <button
+                              onClick={() => openDispose(p)}
+                              style={{ display: 'inline-flex', alignItems: 'center', padding: '7px 12px', fontSize: 13, fontWeight: 700, background: 'var(--color-danger-soft)', color: 'var(--color-danger)', border: 'none', borderRadius: 10, cursor: 'pointer' }}
                             >
-                              <span style={{ fontWeight: 600, color: 'var(--color-text-1)' }}>{el}</span>
-                              {rate}%
-                            </span>
-                          ))}
-                        </span>
-                      ) : (
-                        <span style={{ fontSize: '0.875rem', color: 'var(--color-text-3)' }}>-</span>
-                      )}
-                    </td>
-                    <td style={{ textAlign: 'right' }}>
-                      <div style={{ display: 'inline-flex', gap: 6 }} onClick={(e) => e.stopPropagation()}>
-                        {canRequestAnalysis && p.status === 'ACTIVE' && (
-                          <button onClick={() => requestAnalysis(p)} className="sn-btn-sm-secondary">분석 요청</button>
-                        )}
-                        {canSubmitAnalysis && p.status === 'ANALYSIS' && (
-                          <button onClick={() => openAnalysisResult(p)} className="sn-btn-sm-primary">결과 제출</button>
-                        )}
-                        {canToggleRecycle && (
-                          <button onClick={() => openRecycleToggle(p)} className="sn-btn-sm-secondary">재활용 판정</button>
-                        )}
-                        {canExtract && p.recycleAvailable && p.status !== 'DISPOSED' && (
-                          <button onClick={() => openExtract(p)} className="sn-btn-sm-secondary">추출</button>
-                        )}
-                        {canDispose && p.status !== 'DISPOSED' && (
-                          <button
-                            onClick={() => openDispose(p)}
-                            style={{ display: 'inline-flex', padding: '6px 10px', fontSize: 13, fontWeight: 700, background: 'var(--color-danger-soft)', color: 'var(--color-danger)', border: 'none', borderRadius: 8, cursor: 'pointer' }}
-                          >
-                            폐기
-                          </button>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      )}
+                              폐기
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
 
-      {/* Analysis Result Modal */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: '0.9rem 1.1rem', borderTop: '1px solid var(--color-border)', background: 'var(--color-surface-alt)' }}>
+              <span className="sn-caption">
+                {filteredPassports.length}개 중 {showingFrom}-{showingTo} 표시
+              </span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <button
+                  className="sn-btn sn-btn-ghost"
+                  style={{ padding: '6px 10px', fontSize: 12 }}
+                  disabled={currentPage === 1}
+                  onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                >
+                  이전
+                </button>
+                <span className="sn-caption">{currentPage} / {totalPages}</span>
+                <button
+                  className="sn-btn sn-btn-ghost"
+                  style={{ padding: '6px 10px', fontSize: 12 }}
+                  disabled={currentPage === totalPages}
+                  onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                >
+                  다음
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </section>
+
       <BaseModal open={showAnalysis} onClose={closeAll} title="분석 결과 제출">
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+          <p className="sn-caption" style={{ margin: 0 }}>
+            분석 결과는 여권의 SOH, SOCE, 잔존 수명, 회수 가능 판정 필드로 기록됩니다.
+          </p>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
             <div>
               <label className="sn-eyebrow" style={{ display: 'block', marginBottom: 6 }}>SOH (%)</label>
@@ -468,7 +673,6 @@ export default function RecyclingPage() {
         </div>
       </BaseModal>
 
-      {/* Recycle Toggle Modal */}
       <RecycleToggleModal
         open={showToggle}
         initialValue={recycleToggleInitialValue}
@@ -477,7 +681,6 @@ export default function RecyclingPage() {
         onSubmit={submitRecycleToggle}
       />
 
-      {/* Extract Modal */}
       <ExtractModal
         open={showExtract}
         submitting={submitting}
@@ -485,7 +688,6 @@ export default function RecyclingPage() {
         onSubmit={submitExtract}
       />
 
-      {/* Dispose Confirm Modal */}
       <BaseModal open={showDispose} onClose={closeAll} title="폐기 처리 확인">
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
           <p style={{ fontSize: 15, color: 'var(--color-text-2)' }}>

@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../lib/api';
 import { getStatusBadge, STATUS_LABELS } from '../lib/helpers';
-import Spinner from '../components/ui/Spinner';
+import { PageHead, Spinner } from '../components/ui';
 
 interface Passport {
   passportId?: string;
@@ -189,56 +189,66 @@ export default function QrScanPage() {
   }, []);
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-      <div className="sn-page-head">
-        <div className="sn-page-head-main">
-          <p className="sn-eyebrow" style={{ margin: '0 0 0.35rem', color: '#0f766e' }}>식별 접수</p>
-          <h1 className="sn-page-title">식별 진입점</h1>
-          <p className="sn-page-subtitle">QR·NFC·수동 입력으로 여권을 식별하고 상세 조회로 연결합니다.</p>
-        </div>
-      </div>
+    <div data-page="qr-scan" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+      <PageHead
+        title="현장 식별 조회"
+        subtitle="현장에서 확보한 QR, NFC, 수동 식별값으로 여권 dossier를 찾고 상세 화면으로 이어갑니다."
+      />
 
-      <div className="sn-panel sn-summary-grid sn-summary-grid-3">
-        <div className="sn-summary-lead">
-          <p className="sn-eyebrow sn-summary-title">접수 요약</p>
-          <p className="sn-summary-copy-strong">카메라 · NFC · 수동 질의</p>
-          <p className="sn-stat-note" style={{ margin: 0, lineHeight: 1.6 }}>
-            현장에서 식별값을 확보한 뒤 바로 여권 상세와 데이터 조회로 이동할 수 있습니다.
-          </p>
+      <section className="sn-section-card">
+        <div className="sn-section-head">
+          <div className="sn-section-head-row">
+            <div>
+              <p className="sn-eyebrow" style={{ margin: '0 0 0.4rem', color: 'var(--color-text-3)' }}>식별 데스크</p>
+              <h2 className="sn-heading" style={{ margin: 0, fontSize: '1.25rem' }}>현장 식별 접수</h2>
+              <p className="sn-caption" style={{ margin: '0.45rem 0 0', maxWidth: '48rem' }}>
+                QR/NFC 스캔은 브라우저에서 식별값만 읽고, 여권 조회는 확인된 ID로 `GET /api/passports/:id`를 호출합니다.
+              </p>
+            </div>
+            <span className="sn-detail-inline-stamp">scan API 없음</span>
+          </div>
         </div>
-        <div>
-          <p className="sn-eyebrow sn-stat-card-title">마지막 입력</p>
-          <p className="sn-summary-copy-strong" style={{ fontFamily: 'var(--font-mono)', wordBreak: 'break-all', margin: 0 }}>
-            {scanResult || '대기 중'}
-          </p>
-          <p className="sn-stat-note">식별값</p>
+
+        <div className="sn-summary-grid sn-summary-grid-3" style={{ borderBottom: '1px solid var(--color-border)' }}>
+          <div className="sn-summary-lead">
+            <p className="sn-eyebrow sn-summary-title">접수 요약</p>
+            <p className="sn-summary-copy-strong">카메라 · NFC · 수동 질의</p>
+            <p className="sn-stat-note" style={{ margin: 0, lineHeight: 1.6 }}>
+              현장에서 식별값을 확보한 뒤 바로 여권 상세와 데이터 조회로 이동할 수 있습니다.
+            </p>
+          </div>
+          <div>
+            <p className="sn-eyebrow sn-stat-card-title">마지막 입력</p>
+            <p className="sn-summary-copy-strong" style={{ fontFamily: 'var(--font-mono)', wordBreak: 'break-all', margin: 0 }}>
+              {scanResult || '대기 중'}
+            </p>
+            <p className="sn-stat-note">식별값</p>
+          </div>
+          <div>
+            <p className="sn-eyebrow sn-stat-card-title" style={{ color: 'var(--color-success)' }}>결과 상태</p>
+            <p className="sn-summary-copy-strong" style={{ margin: 0 }}>
+              {loadingPassport ? '조회 중' : passportData ? '여권 확인' : scanError ? '조회 실패' : '대기'}
+            </p>
+            <p className="sn-stat-note">상세 연결 상태</p>
+          </div>
         </div>
-        <div>
-          <p className="sn-eyebrow sn-stat-card-title" style={{ color: '#059669' }}>결과 상태</p>
-          <p className="sn-summary-copy-strong" style={{ margin: 0 }}>
-            {loadingPassport ? '조회 중' : passportData ? '여권 확인' : scanError ? '조회 실패' : '대기'}
-          </p>
-          <p className="sn-stat-note">상세 연결 상태</p>
-        </div>
-      </div>
+      </section>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 16 }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          <div className="sn-panel" style={{ overflow: 'hidden' }}>
-            <div style={{ padding: '14px 20px', borderBottom: '1px solid rgba(0,0,0,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <span style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--color-text-1)' }}>카메라 스캔</span>
+          <section className="sn-section-card" style={{ overflow: 'hidden' }}>
+            <div style={{ padding: '14px 20px', borderBottom: '1px solid var(--color-border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <span style={{ fontSize: '0.9375rem', fontWeight: 700, color: 'var(--color-text-1)' }}>Camera QR identify</span>
               {!scanning ? (
                 <button
                   onClick={startScan}
-                  onMouseEnter={loadScannerModule}
-                  onFocus={loadScannerModule}
                   className="sn-btn sn-btn-accent"
-                  style={{ fontSize: '0.875rem', padding: '6px 12px' }}
+                  style={{ minHeight: 44, fontSize: '0.875rem', padding: '6px 14px' }}
                 >
                   카메라 열기
                 </button>
               ) : (
-                <button onClick={stopScan} className="sn-btn sn-btn-danger" style={{ fontSize: '0.875rem', padding: '6px 12px' }}>
+                <button onClick={stopScan} className="sn-btn sn-btn-danger" style={{ minHeight: 44, fontSize: '0.875rem', padding: '6px 14px' }}>
                   카메라 닫기
                 </button>
               )}
@@ -286,23 +296,23 @@ export default function QrScanPage() {
                 </div>
               )}
             </div>
-          </div>
+          </section>
 
-          <div className="sn-panel" style={{ overflow: 'hidden' }}>
-            <div style={{ padding: '14px 20px', borderBottom: '1px solid rgba(0,0,0,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <section className="sn-section-card" style={{ overflow: 'hidden' }}>
+            <div style={{ padding: '14px 20px', borderBottom: '1px solid var(--color-border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <span style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--color-text-1)' }}>NFC 스캔</span>
-                <span style={{ fontSize: '0.8125rem', padding: '1px 6px', borderRadius: 4, background: NFC_SUPPORTED ? '#eff6ff' : '#fef2f2', color: NFC_SUPPORTED ? '#2563eb' : '#dc2626' }}>
+                <span style={{ fontSize: '0.9375rem', fontWeight: 700, color: 'var(--color-text-1)' }}>NFC identify</span>
+                <span style={{ fontSize: '0.8125rem', padding: '1px 6px', borderRadius: 4, background: NFC_SUPPORTED ? 'var(--color-surface-accent)' : 'var(--color-danger-soft)', color: NFC_SUPPORTED ? 'var(--color-accent)' : 'var(--color-danger)' }}>
                   {NFC_SUPPORTED ? 'Web NFC' : '미지원'}
                 </span>
               </div>
               {NFC_SUPPORTED && !nfcScanning && (
-                <button onClick={startNfc} className="sn-btn sn-btn-accent" style={{ fontSize: '0.875rem', padding: '6px 12px' }}>
+                <button onClick={startNfc} className="sn-btn sn-btn-accent" style={{ minHeight: 44, fontSize: '0.875rem', padding: '6px 14px' }}>
                   NFC 활성화
                 </button>
               )}
               {NFC_SUPPORTED && nfcScanning && (
-                <button onClick={stopNfc} className="sn-btn sn-btn-danger" style={{ fontSize: '0.875rem', padding: '6px 12px' }}>
+                <button onClick={stopNfc} className="sn-btn sn-btn-danger" style={{ minHeight: 44, fontSize: '0.875rem', padding: '6px 14px' }}>
                   NFC 중지
                 </button>
               )}
@@ -310,7 +320,7 @@ export default function QrScanPage() {
             <div style={{ padding: '24px 16px', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
               {NFC_SUPPORTED && nfcScanning && (
                 <>
-                  <p style={{ fontSize: '0.9375rem', fontWeight: 500, color: '#2563eb', margin: '0 0 4px' }}>NFC 대기 중...</p>
+                  <p style={{ fontSize: '0.9375rem', fontWeight: 600, color: 'var(--color-accent)', margin: '0 0 4px' }}>NFC 대기 중...</p>
                   <p style={{ fontSize: '0.9375rem', color: 'var(--color-text-3)' }}>배터리에 붙어 있는 NFC 태그를 기기에 가까이 대세요</p>
                 </>
               )}
@@ -321,10 +331,10 @@ export default function QrScanPage() {
                 <p style={{ fontSize: '0.9375rem', color: 'var(--color-text-3)' }}>현재 환경에서는 Web NFC를 지원하지 않습니다.</p>
               )}
             </div>
-          </div>
+          </section>
 
-          <div className="sn-panel" style={{ padding: '12px 16px' }}>
-            <h2 style={{ fontSize: '0.9375rem', fontWeight: 600, color: 'var(--color-text-1)', margin: '0 0 6px' }}>수동 입력</h2>
+          <section className="sn-section-card" style={{ padding: '14px 18px' }}>
+            <h2 style={{ fontSize: '0.9375rem', fontWeight: 700, color: 'var(--color-text-1)', margin: '0 0 6px' }}>Manual passport lookup</h2>
             <p style={{ fontSize: '0.875rem', color: 'var(--color-text-3)', margin: '0 0 10px' }}>
               형식 예시: <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.875rem' }}>PASSPORT-…</span>
               {' '}/{' '}
@@ -347,6 +357,7 @@ export default function QrScanPage() {
                 disabled={!manualId.trim()}
                 className="sn-btn sn-btn-accent"
                 style={{
+                  minHeight: 44,
                   padding: '8px 18px',
                   opacity: !manualId.trim() ? 0.4 : 1,
                   cursor: !manualId.trim() ? 'not-allowed' : 'pointer',
@@ -355,17 +366,17 @@ export default function QrScanPage() {
                 조회
               </button>
             </div>
-          </div>
+          </section>
         </div>
 
         <div>
           {loadingPassport ? (
             <Spinner />
           ) : passportData ? (
-            <div className="sn-panel" style={{ overflow: 'hidden' }}>
-              <div style={{ padding: '14px 20px', borderBottom: '1px solid rgba(0,0,0,0.06)', display: 'flex', alignItems: 'center', gap: 8 }}>
-                <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#16a34a', display: 'inline-block' }} />
-                <span style={{ fontSize: '0.875rem', fontWeight: 600, color: '#16a34a' }}>식별 결과 확인됨</span>
+            <section className="sn-section-card" style={{ overflow: 'hidden' }}>
+              <div style={{ padding: '14px 20px', borderBottom: '1px solid var(--color-border)', display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--color-success)', display: 'inline-block' }} />
+                <span style={{ fontSize: '0.9375rem', fontWeight: 700, color: 'var(--color-success)' }}>식별 결과 확인됨</span>
               </div>
               <div style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 16 }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -383,7 +394,7 @@ export default function QrScanPage() {
                     { k: '총 에너지', v: passportData.totalEnergy ? `${passportData.totalEnergy} kWh` : '-', mono: false },
                     { k: 'VIN', v: passportData.vin || '미바인딩', mono: true },
                   ].map(({ k, v, mono }) => (
-                    <div key={k} style={{ background: 'var(--color-surface-alt)', boxShadow: 'inset 0 0 0 1px rgba(0,0,0,0.06)', borderRadius: 8, padding: '8px 10px' }}>
+                    <div key={k} style={{ background: 'var(--color-surface-alt)', boxShadow: 'inset 0 0 0 1px var(--color-border)', borderRadius: 8, padding: '8px 10px' }}>
                       <p className="sn-eyebrow" style={{ margin: 0 }}>{k}</p>
                       <p
                         style={{
@@ -409,7 +420,7 @@ export default function QrScanPage() {
                     { k: '여권 ID', v: passportData.passportId, metric: true },
                     { k: '시리얼번호', v: passportData.serialNumber || '-', metric: false },
                   ].map(({ k, v, metric }) => (
-                    <div key={k} style={{ background: 'var(--color-surface-alt)', boxShadow: 'inset 0 0 0 1px rgba(0,0,0,0.06)', borderRadius: 8, padding: '8px 10px' }}>
+                    <div key={k} style={{ background: 'var(--color-surface-alt)', boxShadow: 'inset 0 0 0 1px var(--color-border)', borderRadius: 8, padding: '8px 10px' }}>
                       <p className="sn-eyebrow" style={{ margin: 0 }}>{k}</p>
                       {metric ? (
                         <p className="sn-metric sn-metric-md" style={{ fontFamily: 'var(--font-mono)', color: 'var(--color-text-2)', margin: '3px 0 0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
@@ -425,9 +436,9 @@ export default function QrScanPage() {
                 </div>
 
                 {passportData.did && (
-                  <div style={{ background: '#f0fdf4', boxShadow: 'inset 0 0 0 1px rgba(22,163,74,0.2)', borderRadius: 8, padding: '10px 12px' }}>
-                    <p className="sn-eyebrow" style={{ color: '#16a34a', margin: 0 }}>DID</p>
-                    <p style={{ fontFamily: 'var(--font-mono)', fontSize: '0.8125rem', color: '#16a34a', margin: '4px 0 0', wordBreak: 'break-all' }}>
+                  <div style={{ background: 'var(--color-success-soft)', boxShadow: 'inset 0 0 0 1px var(--color-border)', borderRadius: 8, padding: '10px 12px' }}>
+                    <p className="sn-eyebrow" style={{ color: 'var(--color-success)', margin: 0 }}>DID</p>
+                    <p style={{ fontFamily: 'var(--font-mono)', fontSize: '0.8125rem', color: 'var(--color-success)', margin: '4px 0 0', wordBreak: 'break-all' }}>
                       {passportData.did}
                     </p>
                   </div>
@@ -441,17 +452,17 @@ export default function QrScanPage() {
                   여권 상세 보기 →
                 </button>
               </div>
-            </div>
+            </section>
           ) : scanError ? (
-            <div className="sn-panel" style={{ padding: '28px 24px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center' }}>
-              <div style={{ width: 44, height: 44, borderRadius: '50%', background: '#fef2f2', border: '1px solid rgba(239,68,68,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 14 }}>
-                <svg width="22" height="22" fill="none" stroke="#ef4444" strokeWidth="1.5" viewBox="0 0 24 24">
+            <section className="sn-section-card" style={{ padding: '28px 24px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center' }}>
+              <div style={{ width: 44, height: 44, borderRadius: '50%', background: 'var(--color-danger-soft)', border: '1px solid var(--color-border)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 14 }}>
+                <svg width="22" height="22" fill="none" stroke="var(--color-danger)" strokeWidth="1.5" viewBox="0 0 24 24">
                   <circle cx="12" cy="12" r="10" />
                   <line x1="12" y1="8" x2="12" y2="12" />
                   <line x1="12" y1="16" x2="12.01" y2="16" />
                 </svg>
               </div>
-              <p style={{ fontSize: '0.9375rem', fontWeight: 600, color: '#dc2626', margin: '0 0 6px' }}>조회 실패</p>
+              <p style={{ fontSize: '0.9375rem', fontWeight: 700, color: 'var(--color-danger)', margin: '0 0 6px' }}>조회 실패</p>
               <p style={{ fontSize: '0.9375rem', color: 'var(--color-text-3)', margin: '0 0 16px', lineHeight: 1.6 }}>{scanError}</p>
               <button
                 onClick={() => { setScanError(null); setScanResult(null); }}
@@ -460,9 +471,9 @@ export default function QrScanPage() {
               >
                 다시 시도
               </button>
-            </div>
+            </section>
           ) : (
-            <div className="sn-panel" style={{ padding: 48, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center' }}>
+            <section className="sn-section-card" style={{ padding: 48, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center' }}>
               <div style={{ width: 56, height: 56, borderRadius: 12, background: 'var(--color-surface-alt)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 16 }}>
                 <svg width="28" height="28" fill="none" stroke="var(--color-text-3)" strokeWidth="1.5" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -470,7 +481,7 @@ export default function QrScanPage() {
               </div>
               <p style={{ fontSize: '0.9375rem', fontWeight: 500, color: 'var(--color-text-2)', margin: '0 0 6px' }}>식별값을 입력하거나 스캔해 조회를 시작하세요</p>
               <p style={{ fontSize: '0.9375rem', color: 'var(--color-text-3)' }}>조회 결과가 여기에 표시됩니다</p>
-            </div>
+            </section>
           )}
         </div>
       </div>

@@ -2,18 +2,17 @@ import { type ReactNode } from 'react';
 
 interface PageHeadProps {
   eyebrow?: string;
-  eyebrowColor?: string;
   title: string;
   subtitle?: ReactNode;
   actions?: ReactNode;
 }
 
-export default function PageHead({ eyebrow, eyebrowColor, title, subtitle, actions }: PageHeadProps) {
+export default function PageHead({ eyebrow, title, subtitle, actions }: PageHeadProps) {
   return (
     <div className="sn-page-head">
       <div className="sn-page-head-main">
         {eyebrow && (
-          <p className="sn-eyebrow" style={{ margin: '0 0 0.35rem', color: eyebrowColor }}>
+          <p className="sn-eyebrow" style={{ margin: '0 0 0.35rem' }}>
             {eyebrow}
           </p>
         )}

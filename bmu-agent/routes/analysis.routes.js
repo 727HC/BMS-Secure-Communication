@@ -4,13 +4,14 @@ const { authenticateToken } = require('../middleware/auth');
 const { requireMSP } = require('../middleware/rbac');
 const fabricService = require('../services/fabric.service');
 const { MSP } = require('../config/constants');
+const { sendChaincodeError } = require('../middleware/chaincode-error');
 
 router.post('/:id/request', authenticateToken, requireMSP(MSP.EV_MANUFACTURER), async (req, res) => {
   try {
     await fabricService.submitTransaction('RequestAnalysis', [req.params.id], req.user);
     res.json({ success: true, passportId: req.params.id, status: 'ANALYSIS' });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    sendChaincodeError(res, err);
   }
 });
 
@@ -27,7 +28,7 @@ router.post('/:id/result', authenticateToken, requireMSP(MSP.SERVICE), async (re
     ], req.user);
     res.json({ success: true, passportId: req.params.id });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    sendChaincodeError(res, err);
   }
 });
 

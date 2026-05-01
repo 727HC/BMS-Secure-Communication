@@ -1,6 +1,8 @@
-import { useEffect, useMemo, useState, type FormEvent } from 'react';
+import * as React from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { api } from '../lib/api';
+import { toastFromError } from '../lib/chaincodeErrorMessages';
 import { useAuth } from '../contexts/AuthContext';
 
 type Tab = 'login' | 'register';
@@ -60,7 +62,7 @@ export default function LoginPage() {
 
   const goLanding = () => navigate('/');
 
-  const handleSubmit = async (e: FormEvent) => {
+  const handleSubmit = async (e: React.SyntheticEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!userId || !password) {
       setErrorMsg('아이디와 비밀번호를 입력해주세요.');
@@ -85,7 +87,9 @@ export default function LoginPage() {
         navigate('/dashboard');
       }
     } catch (err: unknown) {
-      setErrorMsg(err instanceof Error ? err.message : '요청 처리 중 오류가 발생했습니다.');
+      const { toast, debug, category } = toastFromError(err);
+      console.warn('[login] auth failed', { category, debug });
+      setErrorMsg(toast);
     } finally {
       setLoading(false);
     }
@@ -93,6 +97,7 @@ export default function LoginPage() {
 
   return (
     <div
+      data-page="login"
       className="min-h-screen overflow-hidden px-6 py-10 lg:px-10"
       style={{ background: 'var(--color-bg)', color: 'var(--color-text-2)' }}
     >

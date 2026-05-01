@@ -6,6 +6,12 @@ const { authenticateToken } = require('../middleware/auth');
 const { requireMSP } = require('../middleware/rbac');
 const fabricService = require('../services/fabric.service');
 const { MSP, DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE } = require('../config/constants');
+const {
+  SEED_FLAG,
+  isDashboardPassportSeedEnabled,
+  buildDashboardPassportSeed,
+  paginateDashboardSeed,
+} = require('../services/devPassportSeed.service');
 
 // Vehicle image upload config — static tree 밖에 저장하여 직접 접근 차단
 const fs = require('fs');
@@ -28,17 +34,11 @@ const upload = multer({ storage, limits: { fileSize: 5 * 1024 * 1024 }, fileFilt
 }});
 
 const { createLogger } = require('../services/logger.service');
+const { sendChaincodeError } = require('../middleware/chaincode-error');
 const log = createLogger('passport');
 
 function parseResult(buffer) {
   return JSON.parse(buffer.toString());
-}
-
-function mapPassportErrorStatus(err) {
-  const msg = String(err?.message || '').toLowerCase();
-  if (msg.includes('does not exist') || msg.includes('not found')) return 404;
-  if (msg.includes('access denied') || msg.includes('not authorized') || msg.includes('permission')) return 403;
-  return 500;
 }
 
 // POST /api/passports — Create battery passport
@@ -71,7 +71,7 @@ router.post('/', authenticateToken, requireMSP(MSP.MANUFACTURER), async (req, re
     res.json({ success: true, passportId });
   } catch (err) {
     log.error('CreateBatteryPassport failed', { action: 'CreateBatteryPassport', error: err.message });
-    res.status(500).json({ error: 'Internal server error' });
+    sendChaincodeError(res, err);
   }
 });
 
@@ -83,33 +83,58 @@ router.get('/', authenticateToken, async (req, res) => {
       MAX_PAGE_SIZE
     );
     const bookmark = req.query.bookmark || '';
+    if (isDashboardPassportSeedEnabled()) {
+      const records = buildDashboardPassportSeed();
+      const paginatedResult = paginateDashboardSeed(records, pageSize, bookmark);
+      res.set('X-BMS-Dev-Seed', SEED_FLAG);
+      return res.json(paginatedResult);
+    }
+
     const result = await fabricService.evaluateTransaction(
       'QueryPassportsWithPagination', [String(pageSize), bookmark], req.user
     );
     res.json(parseResult(result));
   } catch (err) {
     log.error('QueryPassportsWithPagination failed', { action: 'QueryPassportsWithPagination', error: err.message, stack: err.stack?.split('\n').slice(0,3).join(' | ') });
-    res.status(500).json({ error: 'Internal server error' });
+    sendChaincodeError(res, err);
   }
 });
 
 // GET /api/passports/:id — Get passport by ID
 router.get('/:id', authenticateToken, async (req, res) => {
   try {
+    if (isDashboardPassportSeedEnabled() && /^DEV-DASH-P-/.test(req.params.id)) {
+      const records = buildDashboardPassportSeed();
+      const record = records.find((r) => r.passportId === req.params.id);
+      if (!record) {
+        return res.status(404).json({ error: `passport ${req.params.id} not found in dev seed`, category: 'NOT_FOUND' });
+      }
+      res.set('X-BMS-Dev-Seed', SEED_FLAG);
+      return res.json(record);
+    }
     const result = await fabricService.evaluateTransaction('QueryPassport', [req.params.id], req.user);
     res.json(parseResult(result));
   } catch (err) {
-    res.status(mapPassportErrorStatus(err)).json({ error: err.message });
+    sendChaincodeError(res, err);
   }
 });
 
 // GET /api/passports/:id/history — Get passport history
 router.get('/:id/history', authenticateToken, async (req, res) => {
   try {
+    if (isDashboardPassportSeedEnabled() && /^DEV-DASH-P-/.test(req.params.id)) {
+      const records = buildDashboardPassportSeed();
+      const record = records.find((r) => r.passportId === req.params.id);
+      if (!record) {
+        return res.status(404).json({ error: `passport ${req.params.id} not found in dev seed`, category: 'NOT_FOUND' });
+      }
+      res.set('X-BMS-Dev-Seed', SEED_FLAG);
+      return res.json([{ txId: `DEV-DASH-TX-${record.passportId}`, timestamp: record.createdAt, value: record, isDelete: false }]);
+    }
     const result = await fabricService.evaluateTransaction('GetPassportHistory', [req.params.id], req.user);
     res.json(parseResult(result));
   } catch (err) {
-    res.status(mapPassportErrorStatus(err)).json({ error: err.message });
+    sendChaincodeError(res, err);
   }
 });
 
@@ -125,7 +150,7 @@ router.put('/:id/bind', authenticateToken, requireMSP(MSP.EV_MANUFACTURER), asyn
     ], req.user);
     res.json({ success: true, passportId: req.params.id, vin });
   } catch (err) {
-    res.status(500).json({ error: 'Internal server error' });
+    sendChaincodeError(res, err);
   }
 });
 
@@ -183,7 +208,7 @@ router.post('/:id/materials', authenticateToken, requireMSP(MSP.MANUFACTURER), a
     ], req.user);
     res.json({ success: true, passportId: req.params.id, linked: materialIds });
   } catch (err) {
-    res.status(500).json({ error: 'Internal server error' });
+    sendChaincodeError(res, err);
   }
 });
 
@@ -199,7 +224,7 @@ router.post('/:id/correct', authenticateToken, requireMSP(MSP.MANUFACTURER, MSP.
     ], req.user);
     res.json({ success: true, passportId: req.params.id, fieldName, newValue });
   } catch (err) {
-    res.status(500).json({ error: 'Internal server error' });
+    sendChaincodeError(res, err);
   }
 });
 
@@ -209,7 +234,7 @@ router.get('/:id/corrections', authenticateToken, async (req, res) => {
     const result = await fabricService.evaluateTransaction('QueryCorrectionHistory', [req.params.id], req.user);
     res.json(parseResult(result));
   } catch (err) {
-    res.status(mapPassportErrorStatus(err)).json({ error: err.message });
+    sendChaincodeError(res, err);
   }
 });
 
@@ -225,7 +250,7 @@ router.put('/:id/regulatory-verification', authenticateToken, requireMSP(MSP.REG
     );
     res.json(result?.length ? parseResult(result) : { success: true, passportId: req.params.id, status });
   } catch (err) {
-    res.status(500).json({ error: 'Internal server error' });
+    sendChaincodeError(res, err);
   }
 });
 
@@ -241,7 +266,7 @@ router.put('/:id/physical-verification', authenticateToken, requireMSP(MSP.MANUF
     );
     res.json(result?.length ? parseResult(result) : { success: true, passportId: req.params.id });
   } catch (err) {
-    res.status(500).json({ error: 'Internal server error' });
+    sendChaincodeError(res, err);
   }
 });
 

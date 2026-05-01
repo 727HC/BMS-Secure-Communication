@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../lib/api';
+import { toastFromError } from '../lib/chaincodeErrorMessages';
 import { getStatusBadge, scaleSOC } from '../lib/helpers';
 import { useAuth } from '../contexts/AuthContext';
 import PassportCreateModal, { type PassportCreateFormData } from '../components/modals/passports/PassportCreateModal';
-import { DonutChart, BarRows, LegendStack, Skeleton, SkeletonTable } from '../components/ui';
+import { DonutChart, BarRows, LegendStack, PageHead, Skeleton, SkeletonTable } from '../components/ui';
 
 interface Passport {
   passportId?: string;
@@ -102,6 +103,7 @@ export default function PassportsPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [creating, setCreating] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   const isManufacturer = org === 'ManufacturerMSP';
   const isRegulator = org === 'RegulatorMSP';
@@ -224,12 +226,16 @@ export default function PassportsPage() {
       .map(([label, value]) => ({ label, value, color: CHEMISTRY_COLORS[label] || '#94a3b8' }));
   }, [passports]);
 
-  const registerEnglishTitle = isManufacturer ? '발급 목록' : isRegulator ? '검토 목록' : '배터리 여권';
-  const registerSummary = isManufacturer
-    ? '발급 대기, 차량 연결, 제출 준비 상태를 한눈에 확인합니다.'
+  const registerScopeLabel = isManufacturer
+    ? '제조사 등재 데스크'
     : isRegulator
-    ? '검토 대기와 서류 보완, 재활용 전환 대상을 차례대로 확인합니다.'
-    : '여권 상태와 정비 필요 여부를 목록에서 바로 확인합니다.';
+      ? '규제기관 검토 데스크'
+      : '공유 등록부 뷰';
+  const registerSummary = isManufacturer
+    ? '제조사는 신규 여권을 접수하고, 차량 연결과 GBA 21 문서 완성도를 같은 등록부에서 확인합니다.'
+    : isRegulator
+      ? '검증기관은 검토 대기 문서, 보완 필요 항목, 회수 전환 대상을 등록부 기준으로 확인합니다.'
+      : '조직 권한 안에서 열람 가능한 배터리 여권과 상태 증빙을 등록부 기준으로 확인합니다.';
 
   const viewDetail = (id?: string) => id && navigate(`/passports/${id}`);
   const openIssueFlow = () => setShowCreateModal(true);
@@ -237,6 +243,7 @@ export default function PassportsPage() {
 
   const submitCreate = async (data: PassportCreateFormData) => {
     setCreating(true);
+    setSubmitError(null);
     try {
       const created = await api.post<{ passportId?: string }>('/passports', data);
       const nextPassportId = created.passportId || data.passportId;
@@ -251,16 +258,34 @@ export default function PassportsPage() {
         .catch(() => {
           // 목록 새로고침 실패는 생성 성공/상세 이동을 막지 않는다.
         });
+    } catch (err) {
+      const { toast, debug, category } = toastFromError(err);
+      console.warn('[passports] mutation failed', { category, debug });
+      setSubmitError(toast);
     } finally {
       setCreating(false);
     }
   };
 
+  const hasActiveFilters = Boolean(searchQuery || filterStatus || gbaFilter !== 'all');
+  const showingFrom = filteredPassports.length ? (currentPage - 1) * PAGE_SIZE + 1 : 0;
+  const showingTo = Math.min(currentPage * PAGE_SIZE, filteredPassports.length);
+
   if (loading) {
     return (
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-        {/* 커버 info-tile 4개 skeleton */}
+      <div data-page="passports" style={{ display: 'flex', flexDirection: 'column', gap: 16, minHeight: 520 }}>
+        <div className="sn-page-head">
+          <div className="sn-page-head-main" style={{ width: '100%', maxWidth: 720 }}>
+            <Skeleton width="28%" height={12} style={{ marginBottom: 12 }} />
+            <Skeleton width="46%" height={34} style={{ marginBottom: 12 }} />
+            <Skeleton width="72%" height={16} />
+          </div>
+        </div>
         <div className="sn-section-card">
+          <div className="sn-section-head">
+            <Skeleton width="34%" height={16} style={{ marginBottom: 12 }} />
+            <Skeleton width="58%" height={12} />
+          </div>
           <div className="sn-info-grid sn-info-grid-auto">
             {[0, 1, 2, 3].map((i) => (
               <div key={i} className="sn-info-tile">
@@ -270,106 +295,143 @@ export default function PassportsPage() {
             ))}
           </div>
         </div>
-        {/* 리스트 row 5개 skeleton */}
         <SkeletonTable rows={5} cols={5} />
       </div>
     );
   }
 
   return (
-    <div className="space-y-4">
-      <div className="sn-page-head">
-        <div className="sn-page-head-main">
-          <p className="sn-eyebrow" style={{ marginBottom: '0.5rem' }}>여권 목록</p>
-          <h1 className="sn-page-title">배터리 여권</h1>
-          <p className="sn-heading" style={{ fontSize: '1rem', marginTop: '0.375rem' }}>{registerEnglishTitle}</p>
-          <p className="sn-caption" style={{ marginTop: '0.375rem', maxWidth: '42rem' }}>{registerSummary}</p>
-        </div>
-        <div className="sn-page-actions">
-          <div className="sn-kpi-mini">
-            <p className="sn-eyebrow" style={{ marginBottom: '0.3rem' }}>등록 현황</p>
-            <p style={{ fontFamily: 'var(--font-mono)', fontSize: '1.1rem', fontWeight: 700, color: 'var(--color-text-1)' }}>{filteredPassports.length}</p>
-          </div>
-          {isManufacturer && (
-            <button onClick={openIssueFlow} className="sn-btn sn-btn-accent" style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-              <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
-                <line x1="12" y1="5" x2="12" y2="19" />
-                <line x1="5" y1="12" x2="19" y2="12" />
-              </svg>
-              여권 발급
-            </button>
-          )}
-        </div>
-      </div>
+    <div data-page="passports" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+      <PageHead
+        title="배터리 여권 등록부"
+        subtitle={registerSummary}
+        actions={isManufacturer ? (
+          <button onClick={openIssueFlow} className="sn-btn sn-btn-accent" style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+            <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5" aria-hidden="true">
+              <line x1="12" y1="5" x2="12" y2="19" />
+              <line x1="5" y1="12" x2="19" y2="12" />
+            </svg>
+            발급 접수
+          </button>
+        ) : undefined}
+      />
 
-      {/* 분포 대시보드 패널 */}
-      <section className="sn-section-card" style={{ padding: '20px 22px' }}>
-        <p className="sn-eyebrow" style={{ margin: '0 0 16px', color: 'var(--color-text-3)' }}>분포 대시보드</p>
-        <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: 32, alignItems: 'start' }}>
-          {/* 좌: 도넛 + 범례 */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
+      {submitError && (
+        <div role="alert" style={{ padding: '0.9rem 1rem', borderRadius: '0.85rem', background: 'var(--color-danger-soft)', color: 'var(--color-danger)', border: '1px solid var(--color-border)' }}>
+          <span style={{ fontSize: '0.9rem', lineHeight: 1.6 }}>{submitError}</span>
+        </div>
+      )}
+
+      <section className="sn-section-card">
+        <div className="sn-section-head">
+          <div className="sn-section-head-row">
+            <div>
+              <p className="sn-eyebrow" style={{ margin: '0 0 0.4rem', color: 'var(--color-text-3)' }}>{registerScopeLabel}</p>
+              <h2 className="sn-heading" style={{ margin: 0, fontSize: '1.25rem' }}>등록 파일 요약</h2>
+              <p className="sn-caption" style={{ margin: '0.45rem 0 0', maxWidth: '46rem' }}>
+                실시간 조회 결과를 여권 파일, 운영 상태, 보완 필요 문서 기준으로 정리합니다.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="sn-info-grid sn-info-grid-auto">
+          <div className="sn-info-tile">
+            <p className="sn-eyebrow" style={{ margin: '0 0 0.5rem' }}>전체 등재</p>
+            <p className="sn-info-tile-value">{totalCount}</p>
+            <p className="sn-stat-note">등록부에 올라온 여권</p>
+          </div>
+          <div className="sn-info-tile">
+            <p className="sn-eyebrow" style={{ margin: '0 0 0.5rem', color: 'var(--color-success)' }}>운행 등재</p>
+            <p className="sn-info-tile-value">{activeCount}</p>
+            <p className="sn-stat-note">ACTIVE 상태 파일</p>
+          </div>
+          <div className="sn-info-tile">
+            <p className="sn-eyebrow" style={{ margin: '0 0 0.5rem', color: 'var(--color-warning)' }}>점검 문서</p>
+            <p className="sn-info-tile-value">{maintenanceCount}</p>
+            <p className="sn-stat-note">정비 또는 분석 중</p>
+          </div>
+          <div className="sn-info-tile">
+            <p className="sn-eyebrow" style={{ margin: '0 0 0.5rem' }}>회수 파일</p>
+            <p className="sn-info-tile-value">{endOfLifeCount}</p>
+            <p className="sn-stat-note">재활용·폐기 상태</p>
+          </div>
+        </div>
+
+        <div className="sn-summary-grid sn-summary-grid-3" style={{ borderBottom: '1px solid var(--color-border)' }}>
+          <div className="sn-summary-lead">
+            <p className="sn-eyebrow sn-summary-title" style={{ margin: '0 0 0.4rem' }}>등재 준비도</p>
+            <p className="sn-summary-copy-strong" style={{ margin: 0, color: 'var(--color-text-1)' }}>GBA 21 · VIN · 검토 준비</p>
+            <p className="sn-stat-note" style={{ margin: '0.35rem 0 0', lineHeight: 1.6 }}>
+              모든 수치는 현재 등록부 조회 결과에서 계산합니다.
+            </p>
+          </div>
+          <div>
+            <p className="sn-eyebrow sn-stat-card-title">평균 GBA 21</p>
+            <p className="sn-metric sn-metric-md sn-stat-count">{avgGba}<span className="sn-metric-unit">%</span></p>
+            <p className="sn-stat-note">필수 필드 충족률</p>
+          </div>
+          <div>
+            <p className="sn-eyebrow sn-stat-card-title">검토 가능</p>
+            <p className="sn-metric sn-metric-md sn-stat-count">{reviewReadyCount}</p>
+            <p className="sn-stat-note">GBA 완료 및 VIN 연결</p>
+          </div>
+        </div>
+
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', padding: '0.9rem 1.25rem', background: 'var(--color-surface-alt)' }}>
+          <span className="sn-detail-inline-stamp">VIN 대기 {vinPendingCount}</span>
+          <span className="sn-detail-inline-stamp">GBA 평균 {avgGba}%</span>
+          <span className="sn-detail-inline-stamp">검토 가능 {reviewReadyCount}</span>
+        </div>
+      </section>
+
+      <section className="sn-section-card" style={{ padding: '20px 22px', maxWidth: 1080 }}>
+        <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 16, marginBottom: 16, flexWrap: 'wrap' }}>
+          <div>
+            <p className="sn-eyebrow" style={{ margin: '0 0 0.35rem', color: 'var(--color-text-3)' }}>등록부 구성</p>
+            <h2 className="sn-heading" style={{ margin: 0, fontSize: '1.125rem' }}>상태와 제조 근거</h2>
+          </div>
+          <p className="sn-caption" style={{ margin: 0 }}>상태, 제조사, 화학계열 분포를 현재 조회 결과로 표시합니다.</p>
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(17rem, auto) minmax(0, 1fr)', gap: 32, alignItems: 'start' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 20, flexWrap: 'wrap' }}>
             <DonutChart
               segments={statusDistSegments.length ? statusDistSegments : [{ label: '없음', value: 1, color: 'var(--color-border)' }]}
               size={150}
               thickness={18}
-              centerLabel="전체"
+              centerLabel="register"
               centerValue={String(totalCount)}
             />
             <LegendStack items={statusLegendItems} />
           </div>
 
-          {/* 우: 제조사 top5 + chemistry 분포 */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 28 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
             <div>
-              <p className="sn-eyebrow" style={{ margin: '0 0 12px', color: 'var(--color-text-3)' }}>제조사 상위 5</p>
+              <p className="sn-eyebrow" style={{ margin: '0 0 12px', color: 'var(--color-text-3)' }}>제조사 파일 상위 5</p>
               {manufacturerBarItems.length > 0
                 ? <BarRows items={manufacturerBarItems} />
-                : <p className="sn-caption" style={{ margin: 0 }}>데이터 없음</p>}
+                : <p className="sn-caption" style={{ margin: 0 }}>표시할 제조사 데이터가 없습니다.</p>}
             </div>
             <div>
-              <p className="sn-eyebrow" style={{ margin: '0 0 12px', color: 'var(--color-text-3)' }}>화학 종류 분포</p>
+              <p className="sn-eyebrow" style={{ margin: '0 0 12px', color: 'var(--color-text-3)' }}>화학계열 문서 분포</p>
               {chemistryBarItems.length > 0
                 ? <BarRows items={chemistryBarItems} />
-                : <p className="sn-caption" style={{ margin: 0 }}>데이터 없음</p>}
+                : <p className="sn-caption" style={{ margin: 0 }}>표시할 화학계열 데이터가 없습니다.</p>}
             </div>
-          </div>
-        </div>
-
-        {/* 인라인 보조 지표 row */}
-        <div style={{ display: 'flex', gap: 32, flexWrap: 'wrap', marginTop: 20, paddingTop: 16, borderTop: '1px solid var(--color-border)' }}>
-          <div>
-            <p className="sn-eyebrow" style={{ margin: '0 0 4px', color: 'var(--color-text-3)' }}>평균 GBA 21</p>
-            <span className="sn-metric sn-metric-md">{avgGba}<span style={{ fontSize: '1rem', fontWeight: 600, marginLeft: 3 }}>%</span></span>
-          </div>
-          <div>
-            <p className="sn-eyebrow" style={{ margin: '0 0 4px', color: 'var(--color-text-3)' }}>VIN 연결 대기</p>
-            <span className="sn-metric sn-metric-md">{vinPendingCount}<span style={{ fontSize: '1rem', fontWeight: 600, marginLeft: 3 }}>건</span></span>
-          </div>
-          <div>
-            <p className="sn-eyebrow" style={{ margin: '0 0 4px', color: 'var(--color-text-3)' }}>즉시 검토 가능</p>
-            <span className="sn-metric sn-metric-md">{reviewReadyCount}<span style={{ fontSize: '1rem', fontWeight: 600, marginLeft: 3 }}>건</span></span>
           </div>
         </div>
       </section>
 
-      {/* COVER — 4 info-tile */}
       <section className="sn-section-card">
-        <div className="sn-info-grid sn-info-grid-auto">
-          <div className="sn-info-tile">
-            <p className="sn-eyebrow" style={{ marginBottom: '0.5rem' }}>전체 등록</p>
-            <p className="sn-info-tile-value">{totalCount}</p>
-          </div>
-          <div className="sn-info-tile">
-            <p className="sn-eyebrow" style={{ marginBottom: '0.5rem' }}>운행 중</p>
-            <p className="sn-info-tile-value">{activeCount}</p>
-          </div>
-          <div className="sn-info-tile">
-            <p className="sn-eyebrow" style={{ marginBottom: '0.5rem' }}>정비·분석 중</p>
-            <p className="sn-info-tile-value">{maintenanceCount}</p>
-          </div>
-          <div className="sn-info-tile">
-            <p className="sn-eyebrow" style={{ marginBottom: '0.5rem' }}>회수·폐기</p>
-            <p className="sn-info-tile-value">{endOfLifeCount}</p>
+        <div className="sn-section-head">
+          <div className="sn-section-head-row">
+            <div>
+              <p className="sn-eyebrow" style={{ margin: '0 0 0.4rem', color: 'var(--color-text-3)' }}>등재 제어</p>
+              <h2 className="sn-heading" style={{ margin: 0, fontSize: '1.25rem' }}>등록부 검색과 정렬</h2>
+              <p className="sn-caption" style={{ margin: '0.45rem 0 0', maxWidth: '44rem' }}>
+                여권 ID, 제조 근거, 차량 연결, GBA 보완 상태를 기준으로 서류철을 좁힙니다.
+              </p>
+            </div>
           </div>
         </div>
 
@@ -378,7 +440,7 @@ export default function PassportsPage() {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             type="text"
-            placeholder="여권 ID, 배터리 ID, DID, 시리얼, 모델, 제조사, VIN 검색..."
+            placeholder="여권 ID, 배터리 ID, DID, 시리얼, 모델, 제조사, VIN으로 등록부 검색"
             className="sn-input"
             style={{ flex: 1, minWidth: 220 }}
           />
@@ -404,7 +466,7 @@ export default function PassportsPage() {
           </select>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
             <span style={{ fontSize: '0.875rem', color: 'var(--color-text-3)' }}>정렬</span>
-            {([{ v: 'latest', l: '최신순' }, { v: 'gba', l: 'GBA' }] as const).map((s) => {
+            {([{ v: 'latest', l: '최근 갱신' }, { v: 'gba', l: '보완 우선' }] as const).map((s) => {
               const active = sortBy === s.v;
               return (
                 <button
@@ -414,7 +476,7 @@ export default function PassportsPage() {
                   style={{
                     fontSize: '0.875rem',
                     padding: '0.3rem 0.55rem',
-                    background: active ? 'rgba(0,0,0,0.04)' : 'none',
+                    background: active ? 'var(--color-surface-alt)' : 'none',
                     border: 'none',
                     cursor: 'pointer',
                     borderRadius: 3,
@@ -428,29 +490,49 @@ export default function PassportsPage() {
           </div>
         </div>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', padding: '0 1.25rem 1rem', background: 'var(--color-surface)' }}>
-          <span className="sn-detail-inline-stamp">검색으로 후보 좁히기</span>
-          <span className="sn-detail-inline-stamp">규제 준수 상태 먼저 확인</span>
-          <span className="sn-detail-inline-stamp">VIN 연결 여부 검토</span>
+          <span className="sn-detail-inline-stamp">검색 후보 {filteredPassports.length}</span>
+          <span className="sn-detail-inline-stamp">필터 {hasActiveFilters ? '적용' : '전체'}</span>
+          <span className="sn-detail-inline-stamp">페이지 {currentPage}/{totalPages}</span>
         </div>
       </section>
 
-      {/* LIST */}
       {filteredPassports.length > 0 ? (
-        <div style={{ border: '1px solid var(--color-border)', borderRadius: '1.25rem', overflow: 'hidden', background: 'var(--color-surface)', boxShadow: 'var(--shadow-card)' }}>
+        <div className="sn-section-card">
+          <div className="sn-section-head">
+            <div className="sn-section-head-row">
+              <div>
+                <p className="sn-eyebrow" style={{ margin: '0 0 0.4rem', color: 'var(--color-text-3)' }}>자료 원장</p>
+                <h2 className="sn-heading" style={{ margin: 0, fontSize: '1.25rem' }}>여권 파일</h2>
+              </div>
+              <p className="sn-caption" style={{ margin: 0 }}>
+                {filteredPassports.length}개 중 {showingFrom}-{showingTo} 표시
+              </p>
+            </div>
+          </div>
+
           <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.05fr) minmax(0, 1.25fr) minmax(0, 0.9fr) minmax(0, 0.95fr) minmax(0, 0.8fr)', gap: '1rem', padding: '0.9rem 1.1rem', borderBottom: '1px solid var(--color-border)', background: 'var(--color-surface-alt)' }}>
-            <span className="sn-eyebrow">여권 ID</span>
-            <span className="sn-eyebrow">모델 및 상태</span>
-            <span className="sn-eyebrow">배터리 상태</span>
-            <span className="sn-eyebrow">규제 준수</span>
-            <span className="sn-eyebrow">최근 갱신</span>
+            <span className="sn-eyebrow">등재 참조</span>
+            <span className="sn-eyebrow">자료 요약</span>
+            <span className="sn-eyebrow">배터리 근거</span>
+            <span className="sn-eyebrow">GBA 완성도</span>
+            <span className="sn-eyebrow">원장 갱신</span>
           </div>
 
           {paginatedPassports.map((p) => {
             const badge = getStatusBadge(p.status || 'DISPOSED');
+            const gbaPct = getGbaPct(p);
             return (
               <div
                 key={p.passportId}
                 onClick={() => viewDetail(p.passportId)}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    viewDetail(p.passportId);
+                  }
+                }}
                 style={{ padding: '1rem 1.1rem', borderBottom: '1px solid var(--color-border)', cursor: 'pointer', transition: 'background 0.2s' }}
                 onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--color-surface-accent)')}
                 onMouseLeave={(e) => (e.currentTarget.style.background = 'var(--color-surface)')}
@@ -470,6 +552,9 @@ export default function PassportsPage() {
                     <p style={{ marginTop: '0.35rem', fontSize: '0.9375rem', color: 'var(--color-text-2)' }}>
                       {p.manufacturerName || '제조사 미기록'} · {p.chemistry || '화학 정보 없음'}
                     </p>
+                    <p style={{ marginTop: '0.35rem', fontSize: '0.875rem', color: 'var(--color-text-3)' }}>
+                      {p.vin ? `VIN ${p.vin}` : 'VIN 등록 대기'}
+                    </p>
                   </div>
                   <div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
@@ -487,12 +572,12 @@ export default function PassportsPage() {
                   <div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                       <div style={{ flex: 1, height: 6, background: 'var(--color-border)', borderRadius: 3, overflow: 'hidden' }}>
-                        <div style={{ height: '100%', width: `${getGbaPct(p)}%`, background: getGbaPct(p) === 100 ? '#10b981' : '#f59e0b' }} />
+                        <div style={{ height: '100%', width: `${gbaPct}%`, background: gbaPct === 100 ? 'var(--color-success)' : 'var(--color-warning)' }} />
                       </div>
-                      <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.9375rem', fontWeight: 600, color: 'var(--color-text-1)' }}>{getGbaPct(p)}%</span>
+                      <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.9375rem', fontWeight: 600, color: 'var(--color-text-1)' }}>{gbaPct}%</span>
                     </div>
                     <p style={{ marginTop: '0.35rem', fontSize: '0.9375rem', color: 'var(--color-text-3)' }}>
-                      {getGbaPct(p) === 100 ? '필수 항목 충족' : '문서 보완 필요'}
+                      {gbaPct === 100 ? '필수 항목 충족' : '문서 보완 필요'}
                     </p>
                   </div>
                   <div>
@@ -510,8 +595,7 @@ export default function PassportsPage() {
 
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: '0.9rem 1.1rem', borderTop: '1px solid var(--color-border)', background: 'var(--color-surface-alt)' }}>
             <span className="sn-caption">
-              {filteredPassports.length}개 중 {filteredPassports.length ? (currentPage - 1) * PAGE_SIZE + 1 : 0}-
-              {Math.min(currentPage * PAGE_SIZE, filteredPassports.length)} 표시
+              {filteredPassports.length}개 중 {showingFrom}-{showingTo} 표시
             </span>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <button
@@ -535,11 +619,16 @@ export default function PassportsPage() {
           </div>
         </div>
       ) : (
-        <div style={{ padding: '2rem', textAlign: 'center', border: '1px dashed var(--color-border)', borderRadius: '0.5rem' }}>
-          <p style={{ fontSize: '1rem', color: 'var(--color-text-3)', marginBottom: '0.75rem' }}>
-            {searchQuery || filterStatus
-              ? '검색 조건에 맞는 여권이 없습니다. 검색어나 필터를 다시 확인하세요.'
-              : '등록된 여권이 없습니다. 검색 조건을 변경하거나 새 여권을 발급하세요.'}
+        <div className="sn-empty-dashed" style={{ minHeight: 220, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column' }}>
+          <p className="sn-heading" style={{ fontSize: '1.125rem', margin: '0 0 0.5rem' }}>
+            표시할 등록 파일이 없습니다.
+          </p>
+          <p className="sn-caption" style={{ margin: 0, maxWidth: '36rem' }}>
+            {hasActiveFilters
+              ? '검색어, 상태, GBA 필터를 조정해 등록부를 다시 확인하세요.'
+              : isManufacturer
+                ? '아직 등재된 배터리 여권이 없습니다. 발급 접수 후 이 등록부에서 확인할 수 있습니다.'
+                : '제조사가 여권을 발급하면 이 등록부에서 열람할 수 있습니다.'}
           </p>
         </div>
       )}

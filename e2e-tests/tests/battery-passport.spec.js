@@ -17,6 +17,17 @@ async function getToken(request, org) {
   return data.token;
 }
 
+async function seedBrowserAuth(page, auth) {
+  await page.addInitScript((d) => {
+    sessionStorage.setItem('auth_token', d.token);
+    sessionStorage.setItem('auth_userId', d.userId);
+    sessionStorage.setItem('auth_org', d.mspId);
+    localStorage.setItem('bp_token', d.token);
+    localStorage.setItem('bp_userId', d.userId);
+    localStorage.setItem('bp_orgMsp', d.mspId);
+  }, auth);
+}
+
 // ============================================================
 // 1. 서버 상태 확인
 // ============================================================
@@ -32,7 +43,8 @@ test.describe('1. 서버 상태', () => {
 
   test('프론트엔드 index.html 로드', async ({ page }) => {
     await page.goto(BASE);
-    await expect(page).toHaveTitle(/배터리|Battery|BMS|Passport/i);
+    await expect(page).toHaveTitle('VELKERN');
+    await expect(page.locator('[data-page="landing"]')).toBeVisible();
   });
 });
 
@@ -72,9 +84,9 @@ test.describe('2. 인증', () => {
 // ============================================================
 test.describe('3. 프론트엔드 로그인', () => {
   test('로그인 폼 표시 및 로그인 성공', async ({ page }) => {
-    await page.goto(`${BASE}/#login`);
+    await page.goto(`${BASE}/login`);
 
-    const loginHeading = page.getByRole('heading', { name: '로그인' });
+    const loginHeading = page.getByRole('heading', { name: '로그인' }).first();
     const userInput = page.getByPlaceholder('예: issuer.operator.01');
     const passwordInput = page.getByPlaceholder('비밀번호 입력');
 
@@ -82,13 +94,13 @@ test.describe('3. 프론트엔드 로그인', () => {
     await expect(userInput).toBeVisible();
     await expect(passwordInput).toBeVisible();
 
-    await page.getByRole('button', { name: '제조사 여권 발급 · 원자재 등록 · 데이터 정정' }).click();
+    await page.getByRole('button', { name: /제조사/ }).first().click();
     await userInput.fill(E2E_ADMIN_USER);
     await passwordInput.fill(E2E_ADMIN_PASSWORD);
     await page.locator('form').getByRole('button', { name: '로그인' }).click();
 
-    await expect(page).toHaveURL(/#dashboard/);
-    await expect.poll(async () => page.evaluate(() => localStorage.getItem('bp_token'))).toBeTruthy();
+    await expect(page).toHaveURL(/\/dashboard$/);
+    await expect.poll(async () => page.evaluate(() => sessionStorage.getItem('auth_token') || localStorage.getItem('bp_token'))).toBeTruthy();
   });
 });
 
@@ -104,13 +116,8 @@ test.describe('4. 대시보드', () => {
     const data = await res.json();
 
     // 토큰 설정 후 대시보드 이동
-    await page.goto(BASE);
-    await page.evaluate((d) => {
-      localStorage.setItem('bp_token', d.token);
-      localStorage.setItem('bp_userId', d.userId);
-      localStorage.setItem('bp_orgMsp', d.mspId);
-    }, data);
-    await page.goto(`${BASE}/#dashboard`);
+    await seedBrowserAuth(page, data);
+    await page.goto(`${BASE}/dashboard`);
     await page.waitForTimeout(3000);
 
     // 페이지 내 컨텐츠 존재 확인
@@ -172,13 +179,34 @@ test.describe('5. 배터리 여권 API', () => {
   });
 
   test('여권 상세 조회', async ({ request }) => {
-    // 첫 번째 여권 조회
-    const listRes = await request.get(`${API}/passports?pageSize=1`, {
+    const ts = Date.now();
+    const passportId = `PASSPORT-QA-DETAIL-${ts}`;
+    const createRes = await request.post(`${API}/passports`, {
       headers: { Authorization: `Bearer ${token}` },
+      data: {
+        passportId,
+        batteryId: `DETAIL-BAT-${ts}`,
+        did: `QA-DETAIL-DID-${ts}`,
+        model: 'QA Detail Model',
+        serialNumber: `DETAIL-SN-${ts}`,
+        manufacturerName: 'QA Manufacturer',
+        manufactureCountry: 'KR',
+        cellManufacturer: 'QA Cell',
+        cellManufactureCountry: 'KR',
+        manufactureDate: '2026-03-28',
+        cellType: 'Prismatic',
+        chemistry: 'NMC811',
+        cellCount: 96,
+        weight: 450,
+        totalEnergy: 72.6,
+        energyDensity: 161,
+        ratedCapacity: 180,
+        expectedLifespan: 3000,
+        voltageRange: '280-403V',
+        temperatureRange: '-20~60°C',
+      },
     });
-    const list = await listRes.json();
-    const passportId = (list.records || list)[0]?.passportId;
-    if (!passportId) return test.skip();
+    expect(createRes.ok()).toBeTruthy();
 
     const res = await request.get(`${API}/passports/${passportId}`, {
       headers: { Authorization: `Bearer ${token}` },
@@ -253,6 +281,7 @@ test.describe('7. BMU 데이터', () => {
 
   test('BMU 데이터 — rawPayload 누락 시 400', async ({ request }) => {
     const res = await request.post(`${API}/bmu/data`, {
+      headers: { Authorization: `Bearer ${token}` },
       data: { did: 'test', signature: 'test' },
     });
     expect(res.status()).toBe(400);
@@ -260,6 +289,7 @@ test.describe('7. BMU 데이터', () => {
 
   test('BMU 데이터 — 서명 누락 시 400', async ({ request }) => {
     const res = await request.post(`${API}/bmu/data`, {
+      headers: { Authorization: `Bearer ${token}` },
       data: { rawPayload: 'aabb', did: 'test' },
     });
     expect(res.status()).toBe(400);
@@ -267,6 +297,7 @@ test.describe('7. BMU 데이터', () => {
 
   test('BMU 데이터 — DID 누락 시 400', async ({ request }) => {
     const res = await request.post(`${API}/bmu/data`, {
+      headers: { Authorization: `Bearer ${token}` },
       data: { rawPayload: 'aabb', signature: 'test' },
     });
     expect(res.status()).toBe(400);
@@ -307,10 +338,14 @@ test.describe('7. BMU 데이터', () => {
 // ============================================================
 test.describe('8. DID 서비스', () => {
   test('DID verkey 조회', async ({ request }) => {
-    // 기존 DID가 있으면 조회
-    const res = await request.get(`${API}/did/verkey/NONEXISTENT`);
-    // ACA-Py 연결 여부에 따라 500 또는 다른 응답
-    expect([200, 500]).toContain(res.status());
+    const unauth = await request.get(`${API}/did/verkey/NONEXISTENT`);
+    expect(unauth.status()).toBe(401);
+
+    const token = await getToken(request, ORGS[0]);
+    const res = await request.get(`${API}/did/verkey/NONEXISTENT`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    expect([200, 404, 500]).toContain(res.status());
   });
 
   test('DID 등록 — 필수 필드 누락 시 400', async ({ request }) => {
@@ -376,19 +411,14 @@ test.describe('11. 프론트엔드 네비게이션', () => {
       data: { userId: E2E_ADMIN_USER, password: E2E_ADMIN_PASSWORD, orgNum: 1 },
     });
     const data = await res.json();
-    await page.goto(BASE);
-    await page.evaluate((d) => {
-      localStorage.setItem('bp_token', d.token);
-      localStorage.setItem('bp_userId', d.userId);
-      localStorage.setItem('bp_orgMsp', d.mspId);
-    }, data);
+    await seedBrowserAuth(page, data);
   });
 
   const pages = ['dashboard', 'passports', 'bmu-data', 'materials', 'maintenance', 'recycling', 'qr-scan', 'audit-log'];
 
   for (const pg of pages) {
     test(`${pg} 페이지 로드`, async ({ page }) => {
-      await page.goto(`${BASE}/#${pg}`);
+      await page.goto(`${BASE}/${pg}`);
       await page.waitForTimeout(1500);
       // 페이지가 에러 없이 로드되는지 확인
       const errors = [];
@@ -413,14 +443,9 @@ test.describe('12. 여권 상세 탭', () => {
     const passportId = (list.records || list)[0]?.passportId;
     if (!passportId) return test.skip();
 
-    await page.goto(BASE);
-    await page.evaluate((d) => {
-      localStorage.setItem('bp_token', d.token);
-      localStorage.setItem('bp_userId', d.userId);
-      localStorage.setItem('bp_orgMsp', d.mspId);
-    }, { token, userId: 'admin', mspId: 'ManufacturerMSP' });
+    await seedBrowserAuth(page, { token, userId: 'admin', mspId: 'ManufacturerMSP' });
 
-    await page.goto(`${BASE}/#passport-detail?passportId=${passportId}`);
+    await page.goto(`${BASE}/passports/${passportId}`);
     await page.waitForTimeout(2000);
 
     // 탭 버튼들 확인
@@ -443,15 +468,10 @@ test.describe('12. 여권 상세 탭', () => {
     const passportId = (list.records || list)[0]?.passportId;
     if (!passportId) return test.skip();
 
-    await page.goto(BASE);
-    await page.evaluate((d) => {
-      localStorage.setItem('bp_token', d.token);
-      localStorage.setItem('bp_userId', d.userId);
-      localStorage.setItem('bp_orgMsp', d.mspId);
-    }, { token, userId: 'admin', mspId: 'ManufacturerMSP' });
+    await seedBrowserAuth(page, { token, userId: 'admin', mspId: 'ManufacturerMSP' });
 
     // compliance 탭으로 이동
-    await page.goto(`${BASE}/#passport-detail?passportId=${passportId}&tab=compliance`);
+    await page.goto(`${BASE}/passports/${passportId}?tab=compliance`);
     await page.waitForTimeout(2000);
 
     // 새로고침

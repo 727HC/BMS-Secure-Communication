@@ -4,6 +4,7 @@ const { authenticateToken } = require('../middleware/auth');
 const { requireMSP } = require('../middleware/rbac');
 const fabricService = require('../services/fabric.service');
 const { MSP } = require('../config/constants');
+const { sendChaincodeError } = require('../middleware/chaincode-error');
 
 router.put('/:id/availability', authenticateToken, requireMSP(MSP.SERVICE, MSP.REGULATOR), async (req, res) => {
   const { available } = req.body;
@@ -16,7 +17,7 @@ router.put('/:id/availability', authenticateToken, requireMSP(MSP.SERVICE, MSP.R
     ], req.user);
     res.json({ success: true, passportId: req.params.id, recycleAvailable: available });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    sendChaincodeError(res, err);
   }
 });
 
@@ -31,7 +32,7 @@ router.post('/:id/extract', authenticateToken, requireMSP(MSP.REGULATOR), async 
     ], req.user);
     res.json({ success: true, passportId: req.params.id, status: 'RECYCLING' });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    sendChaincodeError(res, err);
   }
 });
 
@@ -40,7 +41,7 @@ router.post('/:id/dispose', authenticateToken, requireMSP(MSP.REGULATOR), async 
     await fabricService.submitTransaction('DisposeBattery', [req.params.id], req.user);
     res.json({ success: true, passportId: req.params.id, status: 'DISPOSED' });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    sendChaincodeError(res, err);
   }
 });
 
