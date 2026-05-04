@@ -11,6 +11,8 @@ import {
   type Material,
 } from '../components/modals/materials';
 import MaterialsTable from '../components/materials/MaterialsTable';
+import MaterialsFilterBar from '../components/materials/MaterialsFilterBar';
+import MaterialsSummaryCard from '../components/materials/MaterialsSummaryCard';
 
 const CATEGORY_KEYWORDS: { label: string; keywords: string[] }[] = [
   { label: '리튬', keywords: ['리튬', 'lithium', 'li'] },
@@ -162,75 +164,22 @@ export default function MaterialsPage() {
         </div>
       )}
 
-      <section className="sn-section-card">
-        <div className="sn-section-head">
-          <div className="sn-section-head-row">
-            <div>
-              <p className="sn-eyebrow" style={{ margin: '0 0 0.4rem', color: 'var(--color-text-3)' }}>등록부 제어</p>
-              <h2 className="sn-heading" style={{ margin: 0, fontSize: '1.25rem' }}>공급망 검색</h2>
-              <p className="sn-caption" style={{ margin: '0.45rem 0 0', maxWidth: '44rem' }}>
-                자재 ID, 소재명, 원산지, 공급사, 인증번호로 등재 파일을 좁힙니다.
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div className="sn-toolbar" style={{ padding: '0.9rem 1.25rem', background: 'var(--color-surface)' }}>
-          <input
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            type="text"
-            placeholder="자재 ID, 소재명, 원산지, 공급사, 인증번호로 등록부 검색"
-            className="sn-input"
-            style={{ flex: 1, minWidth: 220 }}
-          />
-        </div>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', padding: '0 1.25rem 1rem', background: 'var(--color-surface)' }}>
-          <span className="sn-detail-inline-stamp">검색 후보 {filteredMaterials.length}</span>
-          <span className="sn-detail-inline-stamp">검색 {hasSearch ? '적용' : '전체'}</span>
-          <span className="sn-detail-inline-stamp">페이지 {currentPage}/{totalPages}</span>
-        </div>
-      </section>
+      <MaterialsFilterBar
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
+        filteredCount={filteredMaterials.length}
+        hasSearch={hasSearch}
+        currentPage={currentPage}
+        totalPages={totalPages}
+      />
 
       {!loading && filteredMaterials.length > 0 && (
-        <section className="sn-section-card">
-          <div className="sn-section-head">
-            <div className="sn-section-head-row">
-              <div>
-                <p className="sn-eyebrow" style={{ margin: '0 0 0.4rem', color: 'var(--color-text-3)' }}>등록부 요약</p>
-                <h2 className="sn-heading" style={{ margin: 0, fontSize: '1.25rem' }}>공급망 파일 요약</h2>
-                <p className="sn-caption" style={{ margin: '0.45rem 0 0', maxWidth: '44rem' }}>
-                  현재 조회 결과를 등재 파일, 인증 근거, 원산지 범위 기준으로 정리합니다.
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div className="sn-info-grid sn-info-grid-auto">
-            <div className="sn-info-tile">
-              <p className="sn-eyebrow" style={{ margin: '0 0 0.5rem' }}>등록 파일</p>
-              <p className="sn-info-tile-value">{filteredMaterials.length}</p>
-              <p className="sn-stat-note">검색 결과 기준</p>
-            </div>
-            <div className="sn-info-tile">
-              <p className="sn-eyebrow" style={{ margin: '0 0 0.5rem', color: 'var(--color-success)' }}>인증 근거</p>
-              <p className="sn-info-tile-value" style={{ color: 'var(--color-success)' }}>{certifiedCount}</p>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginTop: '0.65rem' }}>
-                <div style={{ flex: 1, height: 4, background: 'var(--color-border)', borderRadius: 2, overflow: 'hidden' }}>
-                  <div style={{ height: '100%', background: 'var(--color-success)', borderRadius: 2, width: `${certifiedRatio}%` }} />
-                </div>
-                <span style={{ fontSize: '0.8125rem', color: 'var(--color-text-3)', whiteSpace: 'nowrap' }}>
-                  {certifiedRatio}%
-                </span>
-              </div>
-            </div>
-            <div className="sn-info-tile">
-              <p className="sn-eyebrow" style={{ margin: '0 0 0.5rem', color: 'var(--color-accent)' }}>원산지 범위</p>
-              <p className="sn-info-tile-value" style={{ color: 'var(--color-accent)' }}>{originUniqueCount}</p>
-              <p className="sn-stat-note">고유 원산지 수</p>
-            </div>
-          </div>
-        </section>
+        <MaterialsSummaryCard
+          filteredCount={filteredMaterials.length}
+          certifiedCount={certifiedCount}
+          certifiedRatio={certifiedRatio}
+          originUniqueCount={originUniqueCount}
+        />
       )}
 
       {!loading && materials.length > 0 && (
