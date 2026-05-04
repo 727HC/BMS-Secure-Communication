@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { api } from '../lib/api';
 import { toastFromError } from '../lib/chaincodeErrorMessages';
 import { useAuth } from '../contexts/AuthContext';
-import { BarRows, DonutChart, LegendStack, PageHead, SkeletonCard, SkeletonTable } from '../components/ui';
+import { PageHead, SkeletonCard, SkeletonTable } from '../components/ui';
 import BaseModal from '../components/modals/BaseModal';
 import { AccidentLogModal, type AccidentFormData } from '../components/modals/maintenance';
 import {
@@ -13,6 +13,7 @@ import {
 } from '../components/maintenance/lib';
 import MaintenanceSummaryCard from '../components/maintenance/MaintenanceSummaryCard';
 import MaintenanceTable from '../components/maintenance/MaintenanceTable';
+import MaintenanceDistributionCard from '../components/maintenance/MaintenanceDistributionCard';
 
 export default function MaintenancePage() {
   const { org, userId } = useAuth();
@@ -292,44 +293,12 @@ export default function MaintenancePage() {
 
       <MaintenanceSummaryCard docketScopeLabel={docketScopeLabel} docketSummary={docketSummary} extStats={extStats} tabCounts={tabCounts} />
 
-      <section className="sn-section-card" style={{ padding: '20px 22px', maxWidth: 1080 }}>
-        <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 16, marginBottom: 16, flexWrap: 'wrap' }}>
-          <div>
-            <p className="sn-eyebrow" style={{ margin: '0 0 0.35rem', color: 'var(--color-text-3)' }}>문서 구성</p>
-            <h2 className="sn-heading" style={{ margin: 0, fontSize: '1.125rem' }}>작업 유형과 기록 분포</h2>
-          </div>
-          <p className="sn-caption" style={{ margin: 0 }}>모든 수치는 현재 여권 조회 결과에서 계산합니다.</p>
-        </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(17rem, auto) 1fr', gap: 32, alignItems: 'start' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 20, flexWrap: 'wrap' }}>
-            <DonutChart
-              segments={donutSegments}
-              size={150}
-              thickness={18}
-              centerValue={String(donutTotal)}
-              centerLabel="docket"
-            />
-            <LegendStack items={donutSegments} />
-          </div>
-          <div>
-            <p className="sn-eyebrow" style={{ margin: '0 0 12px', color: 'var(--color-text-3)' }}>
-              Service type ledger
-            </p>
-            <BarRows items={maintenanceTypeBreakdown} />
-          </div>
-        </div>
-      </section>
-
-      {/* 평균 정비 간격 보조 행 */}
-      {extStats.avgIntervalDays !== null && (
-        <div className="sn-panel" style={{ padding: '10px 20px', display: 'flex', alignItems: 'center', gap: 16 }}>
-          <span style={{ fontSize: '0.9375rem', fontWeight: 600, color: 'var(--color-text-2)' }}>Average service interval</span>
-          <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: '0.9375rem', fontWeight: 700, color: 'var(--color-text-1)' }}>
-            {extStats.avgIntervalDays}일
-          </span>
-          <span style={{ fontSize: '0.875rem', color: 'var(--color-text-3)' }}>여권 생성일 → 최신 정비 기준</span>
-        </div>
-      )}
+      <MaintenanceDistributionCard
+        donutSegments={donutSegments}
+        donutTotal={donutTotal}
+        maintenanceTypeBreakdown={maintenanceTypeBreakdown}
+        avgIntervalDays={extStats.avgIntervalDays}
+      />
 
       <MaintenanceTable
         tabs={tabs}
