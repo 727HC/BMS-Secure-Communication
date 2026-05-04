@@ -1,28 +1,30 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { api } from '../lib/api';
 import { scaleSOC, scaleTemp } from '../lib/helpers';
 import { BarRows, PageHead } from '../components/ui';
-import { type BmuRecord } from '../components/bmu-data/lib';
 import BmuRecordsTable from '../components/bmu-data/BmuRecordsTable';
 import BmuSnapshotCard from '../components/bmu-data/BmuSnapshotCard';
 import BmuSearchPanel from '../components/bmu-data/BmuSearchPanel';
 import BmuStateView from '../components/bmu-data/BmuStateView';
+import { useBmuDataFetcher } from '../components/bmu-data/useBmuDataFetcher';
 
 export default function BmuDataPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [passportId, setPassportId] = useState(() => searchParams.get('id') || '');
-  const [records, setRecords] = useState<BmuRecord[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [refreshing, setRefreshing] = useState(false);
   const [autoRefresh, setAutoRefresh] = useState(false);
-  const [hasSearched, setHasSearched] = useState(false);
-  const [errorMsg, setErrorMsg] = useState('');
-  const [accessDenied, setAccessDenied] = useState(false);
-  const [lastFetchedAt, setLastFetchedAt] = useState<Date | null>(null);
-  const [countdown, setCountdown] = useState(10);
-  const intervalRef = useRef<number | null>(null);
-  const countdownRef = useRef<number | null>(null);
+
+  const {
+    records,
+    loading,
+    refreshing,
+    hasSearched,
+    errorMsg,
+    accessDenied,
+    lastFetchedAt,
+    countdown,
+    fetchRecords,
+    resetSearchState,
+  } = useBmuDataFetcher({ passportId, autoRefresh });
 
   const sortedRecords = useMemo(
     () =>
@@ -97,37 +99,6 @@ export default function BmuDataPage() {
     ? `/api/realtime/bmu/${passportId.trim()}`
     : '/api/realtime/bmu/:idOrDid';
 
-  const fetchRecords = async (currentAutoRefresh: boolean, currentLoading: boolean) => {
-    const id = passportId.trim();
-    if (!id) return;
-    if (currentAutoRefresh && !currentLoading) {
-      setRefreshing(true);
-    } else {
-      setLoading(true);
-    }
-    try {
-      const data = await api.get<BmuRecord[] | { records?: BmuRecord[] }>(
-        `/realtime/bmu/${encodeURIComponent(id)}`
-      );
-      const list = Array.isArray(data) ? data : data.records || [];
-      setRecords(list);
-      setHasSearched(true);
-      setLastFetchedAt(new Date());
-      setErrorMsg('');
-      setAccessDenied(false);
-    } catch (e: unknown) {
-      setRecords([]);
-      setHasSearched(true);
-      setLastFetchedAt(null);
-      const msg = e instanceof Error ? e.message : 'BMU 데이터 조회 실패';
-      setErrorMsg(msg);
-      setAccessDenied(/access denied|권한/i.test(msg));
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  };
-
   const handleSearch = () => {
     const id = passportId.trim();
     if (id) {
@@ -136,43 +107,10 @@ export default function BmuDataPage() {
         next.set('id', id);
         setSearchParams(next, { replace: true });
       }
-      setHasSearched(false);
-      setErrorMsg('');
-      setAccessDenied(false);
+      resetSearchState();
       fetchRecords(autoRefresh, loading);
     }
   };
-
-  // F5 / 직접 URL 진입 시 ?id=... 파라미터로 자동 조회
-  useEffect(() => {
-    if (passportId.trim() && !hasSearched && !loading) {
-      fetchRecords(false, false);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  useEffect(() => {
-    if (autoRefresh && passportId.trim()) {
-      intervalRef.current = window.setInterval(() => {
-        fetchRecords(true, false);
-      }, 10000);
-      countdownRef.current = window.setInterval(() => {
-        setCountdown((c) => (c <= 1 ? 10 : c - 1));
-      }, 1000);
-      setCountdown(10);
-    }
-    return () => {
-      if (intervalRef.current !== null) {
-        clearInterval(intervalRef.current);
-        intervalRef.current = null;
-      }
-      if (countdownRef.current !== null) {
-        clearInterval(countdownRef.current);
-        countdownRef.current = null;
-      }
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [autoRefresh, passportId]);
 
   return (
     <div data-page="bmu-data" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
