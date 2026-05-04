@@ -1,9 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { api } from '../lib/api';
-import { toastFromError } from '../lib/chaincodeErrorMessages';
 import { useAuth } from '../contexts/AuthContext';
 import { PageHead, SkeletonCard, SkeletonTable } from '../components/ui';
-import { AccidentLogModal, MaintenanceLogModal, MaintenanceRequestModal, type AccidentFormData } from '../components/modals/maintenance';
+import { AccidentLogModal, MaintenanceLogModal, MaintenanceRequestModal } from '../components/modals/maintenance';
 import {
   PAGE_SIZE,
   type Passport,
@@ -12,6 +11,7 @@ import {
 import MaintenanceSummaryCard from '../components/maintenance/MaintenanceSummaryCard';
 import MaintenanceTable from '../components/maintenance/MaintenanceTable';
 import MaintenanceDistributionCard from '../components/maintenance/MaintenanceDistributionCard';
+import { useMaintenanceMutations } from '../components/maintenance/useMaintenanceMutations';
 
 export default function MaintenancePage() {
   const { org, userId } = useAuth();
@@ -24,9 +24,6 @@ export default function MaintenancePage() {
   const [passports, setPassports] = useState<Passport[]>([]);
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<Tab>('all');
-  const [submitting, setSubmitting] = useState(false);
-  const [submitError, setSubmitError] = useState<string | null>(null);
-
   const [selectedPassport, setSelectedPassport] = useState<Passport | null>(null);
   const [showRequest, setShowRequest] = useState(false);
   const [showLog, setShowLog] = useState(false);
@@ -205,56 +202,20 @@ export default function MaintenancePage() {
     setSelectedPassport(null);
   };
 
-  const submitRequest = async () => {
-    if (!selectedPassport?.passportId) return;
-    setSubmitting(true);
-    setSubmitError(null);
-    try {
-      await api.post(`/maintenance/${selectedPassport.passportId}/request`, requestForm);
-      closeAll();
-      await fetchPassports();
-    } catch (err) {
-      const { toast, debug, category } = toastFromError(err);
-      console.warn('[maintenance] mutation failed', { category, debug });
-      setSubmitError(toast);
-    } finally {
-      setSubmitting(false);
-    }
-  };
+  const {
+    submitting,
+    submitError,
+    submitRequest: submitRequestFn,
+    submitLog: submitLogFn,
+    submitAccident,
+  } = useMaintenanceMutations({
+    selectedPassport,
+    onAfterSuccess: fetchPassports,
+    onClose: closeAll,
+  });
 
-  const submitLog = async () => {
-    if (!selectedPassport?.passportId) return;
-    setSubmitting(true);
-    setSubmitError(null);
-    try {
-      await api.post(`/maintenance/${selectedPassport.passportId}/log`, logForm);
-      closeAll();
-      await fetchPassports();
-    } catch (err) {
-      const { toast, debug, category } = toastFromError(err);
-      console.warn('[maintenance] mutation failed', { category, debug });
-      setSubmitError(toast);
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  const submitAccident = async (data: AccidentFormData) => {
-    if (!selectedPassport?.passportId) return;
-    setSubmitting(true);
-    setSubmitError(null);
-    try {
-      await api.post(`/maintenance/${selectedPassport.passportId}/accident`, data);
-      closeAll();
-      await fetchPassports();
-    } catch (err) {
-      const { toast, debug, category } = toastFromError(err);
-      console.warn('[maintenance] mutation failed', { category, debug });
-      setSubmitError(toast);
-    } finally {
-      setSubmitting(false);
-    }
-  };
+  const submitRequest = () => submitRequestFn(requestForm);
+  const submitLog = () => submitLogFn(logForm);
 
   if (loading) {
     return (
