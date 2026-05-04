@@ -13,17 +13,20 @@ import { useRecyclingMutations } from '../components/recycling/useRecyclingMutat
 import { useRecyclingAnalytics } from '../components/recycling/useRecyclingAnalytics';
 import { useRecyclingData } from '../components/recycling/useRecyclingData';
 import { useRecyclingLabels } from '../components/recycling/useRecyclingLabels';
+import { useRecyclingPermissions } from '../components/recycling/useRecyclingPermissions';
 
 export default function RecyclingPage() {
   const { org } = useAuth();
-  const isEVManufacturer = org === 'EVManufacturerMSP';
-  const isService = org === 'ServiceMSP';
-  const isRegulator = org === 'RegulatorMSP';
-  const canRequestAnalysis = isEVManufacturer;
-  const canSubmitAnalysis = isService;
-  const canToggleRecycle = isService || isRegulator;
-  const canExtract = isRegulator;
-  const canDispose = isRegulator;
+  const {
+    isEVManufacturer,
+    isService,
+    isRegulator,
+    canRequestAnalysis,
+    canSubmitAnalysis,
+    canToggleRecycle,
+    canExtract,
+    canDispose,
+  } = useRecyclingPermissions(org);
 
   const [activeTab, setActiveTab] = useState<Tab>('all');
   const [selectedPassport, setSelectedPassport] = useState<Passport | null>(null);
