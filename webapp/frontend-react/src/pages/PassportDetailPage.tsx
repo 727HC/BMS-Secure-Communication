@@ -1,8 +1,7 @@
-import { Suspense, useEffect, useMemo, useState } from 'react';
+import { Suspense, useMemo, useState } from 'react';
 import PassportDetailModalRouter, { type ModalKey } from '../components/passport-detail/PassportDetailModalRouter';
 import PassportDetailTabRouter, { type DetailTab } from '../components/passport-detail/PassportDetailTabRouter';
 import { useNavigate, useParams } from 'react-router-dom';
-import { api } from '../lib/api';
 import { useAuth } from '../contexts/AuthContext';
 import { getStatusBadge } from '../lib/helpers';
 import { PageHead, SkeletonCard } from '../components/ui';
@@ -10,8 +9,8 @@ import PassportDetailSkeleton from '../components/passport-detail/PassportDetail
 import PassportDetailNotFound from '../components/passport-detail/PassportDetailNotFound';
 import { computeGbaCompliance, complianceGrade } from '../components/passport-detail/helpers';
 import PassportDetailHero from '../components/passport-detail/PassportDetailHero';
-import type { Passport, BmuRecord, Credential, IssuerCatalogItem } from '../components/passport-detail/types';
 import { usePassportMutations } from '../components/passport-detail/usePassportMutations';
+import { usePassportDetailData } from '../components/passport-detail/usePassportDetailData';
 
 const TABS: { key: DetailTab; label: string }[] = [
   { key: 'identity', label: '개요' },
@@ -31,10 +30,6 @@ function DetailSectionFallback() {
   );
 }
 
-function errorMessage(reason: unknown) {
-  return reason instanceof Error ? reason.message : '여권을 불러오지 못했습니다.';
-}
-
 export default function PassportDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -45,83 +40,19 @@ export default function PassportDetailPage() {
   const isRegulator = org === 'RegulatorMSP';
   const isManufacturer = org === 'ManufacturerMSP';
 
-  const [passport, setPassport] = useState<Passport | null>(null);
-  const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<DetailTab>('identity');
-  const [bmuRecords, setBmuRecords] = useState<BmuRecord[]>([]);
-  const [vcList, setVcList] = useState<Credential[]>([]);
   const [openModal, setOpenModal] = useState<ModalKey>(null);
   const [selectedVcId, setSelectedVcId] = useState<string | null>(null);
-  const [fetchError, setFetchError] = useState<string | null>(null);
-  const [issuers, setIssuers] = useState<IssuerCatalogItem[]>([]);
 
-  const fetchAll = async () => {
-    if (!id) {
-      setPassport(null);
-      setBmuRecords([]);
-      setFetchError('요청한 여권 ID가 없습니다.');
-      setLoading(false);
-      return;
-    }
-    setLoading(true);
-    setFetchError(null);
-    try {
-      const [p, bmu] = await Promise.allSettled([
-        api.get<Passport>(`/realtime/passports/${encodeURIComponent(id)}`),
-        api.get<{ records?: BmuRecord[] } | BmuRecord[]>(`/realtime/bmu/${encodeURIComponent(id)}`),
-      ]);
-      if (p.status === 'fulfilled') {
-        setPassport(p.value);
-      } else {
-        setPassport(null);
-        setFetchError(errorMessage(p.reason));
-      }
-      if (bmu.status === 'fulfilled') {
-        const data = bmu.value;
-        setBmuRecords(Array.isArray(data) ? data : data.records || []);
-      } else {
-        setBmuRecords([]);
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchAll();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [id]);
-
-  useEffect(() => {
-    if (!id || activeTab !== 'trust') return;
-    let cancelled = false;
-    (async () => {
-      try {
-        const data = await api.get<{ credentials?: Credential[] } | Credential[]>(`/vc/passport/${encodeURIComponent(id)}`);
-        if (!cancelled) setVcList(Array.isArray(data) ? data : data.credentials || []);
-      } catch {
-        if (!cancelled) setVcList([]);
-      }
-      if (org === 'RegulatorMSP') {
-        try {
-          const issuerData = await api.get<{ issuers: string[] }>('/vc/issuers');
-          const names = issuerData.issuers || [];
-          const catalog = await Promise.all(names.map(async (issuerMsp) => {
-            try {
-              const typeData = await api.get<{ issuerMsp: string; types: string[] }>(`/vc/issuers/${encodeURIComponent(issuerMsp)}/types`);
-              return { issuerMsp, types: typeData.types || [] };
-            } catch {
-              return { issuerMsp, types: [] };
-            }
-          }));
-          if (!cancelled) setIssuers(catalog);
-        } catch {
-          if (!cancelled) setIssuers([]);
-        }
-      }
-    })();
-    return () => { cancelled = true; };
-  }, [activeTab, id, org]);
+  const {
+    passport,
+    bmuRecords,
+    vcList,
+    issuers,
+    loading,
+    fetchError,
+    refetch: fetchAll,
+  } = usePassportDetailData({ id, activeTab, org });
 
   const gbaCompliance = useMemo(() => computeGbaCompliance(passport), [passport]);
   const grade = useMemo(() => complianceGrade(gbaCompliance.pct), [gbaCompliance]);
