@@ -5,8 +5,6 @@ import { PageHead, SkeletonCard, SkeletonTable } from '../components/ui';
 import { AnalysisResultModal, DisposeConfirmModal, ExtractModal, RecycleToggleModal } from '../components/modals/recycling';
 import {
   PAGE_SIZE,
-  avg,
-  hasRecoveryRates,
   isRecyclingRelated,
   type Passport,
   type Tab,
@@ -15,6 +13,7 @@ import RecyclingSummaryCard from '../components/recycling/RecyclingSummaryCard';
 import RecyclingTable from '../components/recycling/RecyclingTable';
 import RecyclingDistributionCard from '../components/recycling/RecyclingDistributionCard';
 import { useRecyclingMutations } from '../components/recycling/useRecyclingMutations';
+import { useRecyclingAnalytics } from '../components/recycling/useRecyclingAnalytics';
 
 export default function RecyclingPage() {
   const { org } = useAuth();
@@ -100,46 +99,7 @@ export default function RecyclingPage() {
     { key: 'disposed', label: '폐기완료', hint: 'authorized' },
   ];
 
-  const avgSoh = useMemo(() => {
-    const vals = passports.filter(isRecyclingRelated).map((p) => p.soh).filter((v): v is number => v != null);
-    return avg(vals);
-  }, [passports]);
-
-  const avgRemaining = useMemo(() => {
-    const vals = passports.filter(isRecyclingRelated).map((p) => p.remainingLifeCycle).filter((v): v is number => v != null);
-    return avg(vals);
-  }, [passports]);
-
-  const avgRates = useMemo(() => {
-    const totals: Record<string, number[]> = {};
-    for (const p of passports) {
-      if (!p.recyclingRates) continue;
-      for (const [k, v] of Object.entries(p.recyclingRates)) {
-        if (!totals[k]) totals[k] = [];
-        totals[k].push(v);
-      }
-    }
-    return Object.entries(totals)
-      .map(([k, vs]) => ({ element: k, avg: Math.round(vs.reduce((a, b) => a + b, 0) / vs.length) }))
-      .sort((a, b) => b.avg - a.avg);
-  }, [passports]);
-
-  const lifecycleMetrics = useMemo(() => {
-    const lifecycleFiles = passports.filter(isRecyclingRelated);
-    const analysisQueue = passports.filter((p) => p.status === 'ANALYSIS').length;
-    const activeCandidates = passports.filter((p) => p.status === 'ACTIVE').length;
-    const extractionEvidence = passports.filter(hasRecoveryRates).length;
-    const readyRatio = lifecycleFiles.length > 0 ? Math.round((tabCounts.recyclable / lifecycleFiles.length) * 100) : 0;
-    return { lifecycleFiles, analysisQueue, activeCandidates, extractionEvidence, readyRatio };
-  }, [passports, tabCounts.recyclable]);
-
-  const lifecycleBreakdown = [
-    { label: '분석 요청 후보', value: lifecycleMetrics.activeCandidates, color: 'var(--color-warning)' },
-    { label: '분석 결과 대기', value: lifecycleMetrics.analysisQueue, color: 'var(--color-accent)' },
-    { label: '회수 가능 판정', value: tabCounts.recyclable, color: 'var(--color-success)' },
-    { label: '재활용 진행', value: tabCounts.recycling, color: 'var(--color-accent)' },
-    { label: '폐기 승인 완료', value: tabCounts.disposed, color: 'var(--color-text-3)' },
-  ];
+  const { avgSoh, avgRemaining, avgRates, lifecycleMetrics, lifecycleBreakdown } = useRecyclingAnalytics(passports, tabCounts);
 
   const deskLabel = isEVManufacturer
     ? 'EV제조사 분석 요청 데스크'
