@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../lib/api';
 import { toastFromError } from '../lib/chaincodeErrorMessages';
@@ -7,7 +7,6 @@ import PassportCreateModal, { type PassportCreateFormData } from '../components/
 import { PageHead, Skeleton, SkeletonTable } from '../components/ui';
 import {
   PAGE_SIZE,
-  getGbaPct,
   type GbaFilter,
   type ListResponse,
   type Passport,
@@ -17,17 +16,15 @@ import PassportsListCard from '../components/passports/PassportsListCard';
 import PassportsDistributionCard from '../components/passports/PassportsDistributionCard';
 import PassportsFilterBar from '../components/passports/PassportsFilterBar';
 import { usePassportsAnalytics } from '../components/passports/usePassportsAnalytics';
+import { usePassportsData } from '../components/passports/usePassportsData';
 
 export default function PassportsPage() {
   const navigate = useNavigate();
   const { org } = useAuth();
-  const [passports, setPassports] = useState<Passport[]>([]);
-  const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
   const [sortBy, setSortBy] = useState<'latest' | 'gba'>('latest');
   const [gbaFilter, setGbaFilter] = useState<GbaFilter>('all');
-  const [currentPage, setCurrentPage] = useState(1);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [creating, setCreating] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -35,62 +32,16 @@ export default function PassportsPage() {
   const isManufacturer = org === 'ManufacturerMSP';
   const isRegulator = org === 'RegulatorMSP';
 
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const data = await api.get<ListResponse<Passport> | Passport[]>('/passports');
-        const list = Array.isArray(data) ? data : data.records || [];
-        if (!cancelled) setPassports(list);
-      } catch {
-        if (!cancelled) setPassports([]);
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    })();
-    return () => { cancelled = true; };
-  }, []);
-
-  const filteredPassports = useMemo(() => {
-    let list = passports;
-    if (filterStatus) list = list.filter((p) => p.status === filterStatus);
-    if (searchQuery) {
-      const q = searchQuery.toLowerCase();
-      list = list.filter((p) =>
-        (p.serialNumber || '').toLowerCase().includes(q) ||
-        (p.passportId || '').toLowerCase().includes(q) ||
-        (p.batteryId || '').toLowerCase().includes(q) ||
-        (p.did || '').toLowerCase().includes(q) ||
-        (p.model || '').toLowerCase().includes(q) ||
-        (p.manufacturerName || '').toLowerCase().includes(q) ||
-        (p.vin || '').toLowerCase().includes(q)
-      );
-    }
-    if (gbaFilter === 'complete') list = list.filter((p) => getGbaPct(p) === 100);
-    if (gbaFilter === 'incomplete') list = list.filter((p) => getGbaPct(p) < 100);
-    if (sortBy === 'latest') {
-      list = [...list].sort((a, b) =>
-        String(b.updatedAt || b.createdAt || '').localeCompare(String(a.updatedAt || a.createdAt || ''))
-      );
-    } else if (sortBy === 'gba') {
-      list = [...list].sort((a, b) => getGbaPct(a) - getGbaPct(b));
-    }
-    return list;
-  }, [passports, filterStatus, searchQuery, sortBy, gbaFilter]);
-
-  const totalPages = Math.max(1, Math.ceil(filteredPassports.length / PAGE_SIZE));
-  const paginatedPassports = useMemo(() => {
-    const start = (currentPage - 1) * PAGE_SIZE;
-    return filteredPassports.slice(start, start + PAGE_SIZE);
-  }, [filteredPassports, currentPage]);
-
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [searchQuery, filterStatus, sortBy, gbaFilter]);
-
-  useEffect(() => {
-    if (currentPage > totalPages) setCurrentPage(totalPages);
-  }, [totalPages, currentPage]);
+  const {
+    passports,
+    setPassports,
+    filteredPassports,
+    paginatedPassports,
+    loading,
+    currentPage,
+    setCurrentPage,
+    totalPages,
+  } = usePassportsData({ searchQuery, filterStatus, gbaFilter, sortBy });
 
   const {
     totalCount,
