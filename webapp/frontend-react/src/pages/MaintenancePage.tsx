@@ -3,10 +3,8 @@ import { api } from '../lib/api';
 import { toastFromError } from '../lib/chaincodeErrorMessages';
 import { useAuth } from '../contexts/AuthContext';
 import { PageHead, SkeletonCard, SkeletonTable } from '../components/ui';
-import BaseModal from '../components/modals/BaseModal';
-import { AccidentLogModal, type AccidentFormData } from '../components/modals/maintenance';
+import { AccidentLogModal, MaintenanceLogModal, MaintenanceRequestModal, type AccidentFormData } from '../components/modals/maintenance';
 import {
-  MAINTENANCE_TYPES,
   PAGE_SIZE,
   type Passport,
   type Tab,
@@ -321,79 +319,23 @@ export default function MaintenancePage() {
         onOpenAccident={openAccident}
       />
 
-      {/* REQUEST MODAL */}
-      <BaseModal open={showRequest} onClose={closeAll} title="Service task 접수">
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-          <div>
-            <label className="sn-eyebrow" style={{ display: 'block', marginBottom: 6 }}>작업 유형</label>
-            <select
-              className="sn-input"
-              value={requestForm.maintenanceType}
-              onChange={(e) => setRequestForm({ ...requestForm, maintenanceType: e.target.value })}
-            >
-              {MAINTENANCE_TYPES.map((t) => (
-                <option key={t.value} value={t.value}>{t.label}</option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="sn-eyebrow" style={{ display: 'block', marginBottom: 6 }}>작업 설명</label>
-            <textarea
-              className="sn-input"
-              rows={4}
-              value={requestForm.description}
-              onChange={(e) => setRequestForm({ ...requestForm, description: e.target.value })}
-            />
-          </div>
-          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
-            <button onClick={closeAll} className="sn-btn sn-btn-ghost">취소</button>
-            <button onClick={submitRequest} disabled={submitting} className="sn-btn sn-btn-accent">
-              {submitting ? '등록 중...' : '접수 등록'}
-            </button>
-          </div>
-        </div>
-      </BaseModal>
+      <MaintenanceRequestModal
+        open={showRequest}
+        submitting={submitting}
+        form={requestForm}
+        onChange={setRequestForm}
+        onClose={closeAll}
+        onSubmit={submitRequest}
+      />
 
-      {/* LOG MODAL */}
-      <BaseModal open={showLog} onClose={closeAll} title="Service task 완료 기록">
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-          <div>
-            <label className="sn-eyebrow" style={{ display: 'block', marginBottom: 6 }}>작업 유형</label>
-            <select
-              className="sn-input"
-              value={logForm.maintenanceType}
-              onChange={(e) => setLogForm({ ...logForm, maintenanceType: e.target.value })}
-            >
-              {MAINTENANCE_TYPES.map((t) => (
-                <option key={t.value} value={t.value}>{t.label}</option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="sn-eyebrow" style={{ display: 'block', marginBottom: 6 }}>서비스 담당자</label>
-            <input
-              className="sn-input"
-              value={logForm.technician}
-              onChange={(e) => setLogForm({ ...logForm, technician: e.target.value })}
-            />
-          </div>
-          <div>
-            <label className="sn-eyebrow" style={{ display: 'block', marginBottom: 6 }}>완료 설명</label>
-            <textarea
-              className="sn-input"
-              rows={4}
-              value={logForm.description}
-              onChange={(e) => setLogForm({ ...logForm, description: e.target.value })}
-            />
-          </div>
-          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
-            <button onClick={closeAll} className="sn-btn sn-btn-ghost">취소</button>
-            <button onClick={submitLog} disabled={submitting} className="sn-btn sn-btn-accent">
-              {submitting ? '등록 중...' : '완료 기록'}
-            </button>
-          </div>
-        </div>
-      </BaseModal>
+      <MaintenanceLogModal
+        open={showLog}
+        submitting={submitting}
+        form={logForm}
+        onChange={setLogForm}
+        onClose={closeAll}
+        onSubmit={submitLog}
+      />
 
       {/* ACCIDENT MODAL */}
       <AccidentLogModal
