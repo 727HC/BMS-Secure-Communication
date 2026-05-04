@@ -1,11 +1,8 @@
-import { useEffect, useMemo, useState } from 'react';
-import { api } from '../lib/api';
+import { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { PageHead, SkeletonCard, SkeletonTable } from '../components/ui';
 import { AnalysisResultModal, DisposeConfirmModal, ExtractModal, RecycleToggleModal } from '../components/modals/recycling';
 import {
-  PAGE_SIZE,
-  isRecyclingRelated,
   type Passport,
   type Tab,
 } from '../components/recycling/lib';
@@ -14,6 +11,7 @@ import RecyclingTable from '../components/recycling/RecyclingTable';
 import RecyclingDistributionCard from '../components/recycling/RecyclingDistributionCard';
 import { useRecyclingMutations } from '../components/recycling/useRecyclingMutations';
 import { useRecyclingAnalytics } from '../components/recycling/useRecyclingAnalytics';
+import { useRecyclingData } from '../components/recycling/useRecyclingData';
 
 export default function RecyclingPage() {
   const { org } = useAuth();
@@ -26,8 +24,6 @@ export default function RecyclingPage() {
   const canExtract = isRegulator;
   const canDispose = isRegulator;
 
-  const [passports, setPassports] = useState<Passport[]>([]);
-  const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<Tab>('all');
   const [selectedPassport, setSelectedPassport] = useState<Passport | null>(null);
   const [showAnalysis, setShowAnalysis] = useState(false);
@@ -43,54 +39,19 @@ export default function RecyclingPage() {
   });
   const [recycleToggleInitialValue, setRecycleToggleInitialValue] = useState(false);
 
-  const fetchPassports = async () => {
-    setLoading(true);
-    try {
-      const data = await api.get<Passport[] | { records?: Passport[] }>('/passports');
-      const list = Array.isArray(data) ? data : data.records || [];
-      setPassports(list);
-    } catch {
-      setPassports([]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchPassports();
-  }, []);
-
-  const filteredPassports = useMemo(() => {
-    if (activeTab === 'recyclable') return passports.filter((p) => p.recycleAvailable === true);
-    if (activeTab === 'recycling') return passports.filter((p) => p.status === 'RECYCLING');
-    if (activeTab === 'disposed') return passports.filter((p) => p.status === 'DISPOSED');
-    return passports.filter(isRecyclingRelated);
-  }, [passports, activeTab]);
-
-  const [currentPage, setCurrentPage] = useState(1);
-  const totalPages = Math.max(1, Math.ceil(filteredPassports.length / PAGE_SIZE));
-  const pagedPassports = useMemo(() => {
-    const start = (currentPage - 1) * PAGE_SIZE;
-    return filteredPassports.slice(start, start + PAGE_SIZE);
-  }, [filteredPassports, currentPage]);
-
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [activeTab]);
-
-  useEffect(() => {
-    if (currentPage > totalPages) setCurrentPage(totalPages);
-  }, [totalPages, currentPage]);
-
-  const showingFrom = filteredPassports.length ? (currentPage - 1) * PAGE_SIZE + 1 : 0;
-  const showingTo = Math.min(currentPage * PAGE_SIZE, filteredPassports.length);
-
-  const tabCounts = {
-    all: passports.filter(isRecyclingRelated).length,
-    recyclable: passports.filter((p) => p.recycleAvailable === true).length,
-    recycling: passports.filter((p) => p.status === 'RECYCLING').length,
-    disposed: passports.filter((p) => p.status === 'DISPOSED').length,
-  };
+  const {
+    passports,
+    filteredPassports,
+    pagedPassports,
+    loading,
+    currentPage,
+    setCurrentPage,
+    totalPages,
+    showingFrom,
+    showingTo,
+    tabCounts,
+    fetchPassports,
+  } = useRecyclingData({ activeTab });
 
   const tabs: { key: Tab; label: string; hint: string }[] = [
     { key: 'all', label: '전체', hint: 'lifecycle files' },
