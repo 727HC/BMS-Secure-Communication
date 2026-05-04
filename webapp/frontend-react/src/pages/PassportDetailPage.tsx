@@ -3,7 +3,6 @@ import PassportDetailModalRouter, { type ModalKey } from '../components/passport
 import PassportDetailTabRouter, { type DetailTab } from '../components/passport-detail/PassportDetailTabRouter';
 import { useNavigate, useParams } from 'react-router-dom';
 import { api } from '../lib/api';
-import { toastFromError } from '../lib/chaincodeErrorMessages';
 import { useAuth } from '../contexts/AuthContext';
 import { getStatusBadge } from '../lib/helpers';
 import { PageHead, SkeletonCard } from '../components/ui';
@@ -12,18 +11,7 @@ import PassportDetailNotFound from '../components/passport-detail/PassportDetail
 import { computeGbaCompliance, complianceGrade } from '../components/passport-detail/helpers';
 import PassportDetailHero from '../components/passport-detail/PassportDetailHero';
 import type { Passport, BmuRecord, Credential, IssuerCatalogItem } from '../components/passport-detail/types';
-import type { BindFormData } from '../components/modals/passport-detail/BindModal';
-import type { MaintenanceRequestFormData } from '../components/modals/passport-detail/MaintenanceRequestModal';
-import type { MaintenanceLogFormData } from '../components/modals/passport-detail/MaintenanceLogModal';
-import type { AnalysisResultFormData } from '../components/modals/passport-detail/AnalysisResultModal';
-import type { CorrectionFormData } from '../components/modals/passport-detail/CorrectionModal';
-import type { VcIssueFormData } from '../components/modals/passport-detail/VcIssueModal';
-import type { VcRevokeFormData } from '../components/modals/passport-detail/VcRevokeModal';
-import type { VcRequestFormData } from '../components/modals/passport-detail/VcRequestModal';
-import type { VcApproveFormData } from '../components/modals/passport-detail/VcApproveModal';
-import type { VcRejectFormData } from '../components/modals/passport-detail/VcRejectModal';
-import type { RegulatoryVerificationFormData } from '../components/modals/passport-detail/RegulatoryVerificationModal';
-import type { PhysicalVerificationFormData } from '../components/modals/passport-detail/PhysicalVerificationModal';
+import { usePassportMutations } from '../components/passport-detail/usePassportMutations';
 
 const TABS: { key: DetailTab; label: string }[] = [
   { key: 'identity', label: '개요' },
@@ -64,8 +52,6 @@ export default function PassportDetailPage() {
   const [vcList, setVcList] = useState<Credential[]>([]);
   const [openModal, setOpenModal] = useState<ModalKey>(null);
   const [selectedVcId, setSelectedVcId] = useState<string | null>(null);
-  const [submitting, setSubmitting] = useState(false);
-  const [submitError, setSubmitError] = useState<string | null>(null);
   const [fetchError, setFetchError] = useState<string | null>(null);
   const [issuers, setIssuers] = useState<IssuerCatalogItem[]>([]);
 
@@ -145,67 +131,13 @@ export default function PassportDetailPage() {
     setSelectedVcId(null);
   };
 
-  const withSubmit = async (fn: () => Promise<unknown>) => {
-    setSubmitting(true);
-    setSubmitError(null);
-    try {
-      await fn();
-      closeAll();
-      await fetchAll();
-    } catch (err) {
-      const { toast, debug, category } = toastFromError(err);
-      console.warn('[passport-detail] mutation failed', { category, debug });
-      setSubmitError(toast);
-    }
-    finally { setSubmitting(false); }
-  };
-
-  const handleBind = (data: BindFormData) =>
-    passport?.passportId && withSubmit(() => api.put(`/passports/${passport.passportId}/bind`, data));
-  const handleMaintenanceRequest = (data: MaintenanceRequestFormData) =>
-    passport?.passportId && withSubmit(() => api.post(`/maintenance/${passport.passportId}/request`, data));
-  const handleMaintenanceLog = (data: MaintenanceLogFormData) =>
-    passport?.passportId && withSubmit(() => api.post(`/maintenance/${passport.passportId}/log`, data));
-  const handleAnalysisRequest = () =>
-    passport?.passportId && withSubmit(() => api.post(`/analysis/${passport.passportId}/request`, {}));
-  const handleAnalysisResult = (data: AnalysisResultFormData) =>
-    passport?.passportId && withSubmit(() =>
-      api.post(`/analysis/${passport.passportId}/result`, {
-        soh: Number(data.soh),
-        soce: Number(data.soce),
-        remainingLifeCycle: Number(data.remainingLifeCycle),
-        recycleAvailable: data.recycleAvailable,
-      })
-    );
-  const handleDispose = () =>
-    passport?.passportId && withSubmit(() => api.post(`/recycling/${passport.passportId}/dispose`, {}));
-  const handleCorrect = (data: CorrectionFormData) =>
-    passport?.passportId && withSubmit(() => api.post(`/passports/${passport.passportId}/correct`, data));
-  const handleVcIssue = (data: VcIssueFormData) =>
-    passport?.passportId && withSubmit(() => api.post('/vc/issue', { passportId: passport.passportId, ...data }));
-  const handleVcRequest = (data: VcRequestFormData) =>
-    passport?.passportId && withSubmit(() => api.post('/vc/request', { passportId: passport.passportId, credType: data.credType }));
-  const handleVcApprove = (data: VcApproveFormData) =>
-    withSubmit(() => api.post(`/vc/request/${encodeURIComponent(data.requestId)}/approve`, {}));
-  const handleVcReject = (data: VcRejectFormData) =>
-    withSubmit(() => api.post(`/vc/request/${encodeURIComponent(data.requestId)}/reject`, { reason: data.reason }));
-  const handleVcRevoke = (data: VcRevokeFormData) =>
-    selectedVcId && withSubmit(() => api.post('/vc/revoke', { credentialId: selectedVcId, reason: data.reason }));
-  const handleRegulatoryVerification = (data: RegulatoryVerificationFormData) =>
-    passport?.passportId && withSubmit(() => api.put(`/passports/${passport.passportId}/regulatory-verification`, {
-      status: data.status,
-      evidenceIds: data.evidenceIds.split(',').map((v) => v.trim()).filter(Boolean),
-    }));
-  const handlePhysicalVerification = (data: PhysicalVerificationFormData) =>
-    passport?.passportId && withSubmit(() => api.put(`/passports/${passport.passportId}/physical-verification`, {
-      signals: {
-        socMatched: data.socMatched,
-        didMatched: data.didMatched,
-        vinMatched: data.vinMatched,
-        fcMatched: data.fcMatched,
-      },
-      reason: data.reason,
-    }));
+  const mutations = usePassportMutations({
+    passport,
+    selectedVcId,
+    onAfterSuccess: fetchAll,
+    onClose: closeAll,
+  });
+  const { submitting, submitError } = mutations;
 
   const openVerifyModal = (credentialId: string) => {
     setSelectedVcId(credentialId);
@@ -392,22 +324,7 @@ export default function PassportDetailPage() {
           submitting={submitting}
           selectedVcId={selectedVcId}
           onClose={closeAll}
-          handlers={{
-            onBind: handleBind,
-            onMaintenanceRequest: handleMaintenanceRequest,
-            onMaintenanceLog: handleMaintenanceLog,
-            onAnalysisRequest: handleAnalysisRequest,
-            onAnalysisResult: handleAnalysisResult,
-            onDispose: handleDispose,
-            onCorrect: handleCorrect,
-            onVcIssue: handleVcIssue,
-            onVcRequest: handleVcRequest,
-            onVcApprove: handleVcApprove,
-            onVcReject: handleVcReject,
-            onVcRevoke: handleVcRevoke,
-            onRegulatoryVerification: handleRegulatoryVerification,
-            onPhysicalVerification: handlePhysicalVerification,
-          }}
+          handlers={mutations.handlers}
         />
       </Suspense>
     </div>
