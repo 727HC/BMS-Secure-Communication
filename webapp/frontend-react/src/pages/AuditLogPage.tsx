@@ -1,70 +1,33 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { api } from '../lib/api';
+import { useMemo, useState } from 'react';
 import { PageHead, Skeleton, SkeletonRows } from '../components/ui';
 import {
   ACTION_OPTIONS,
   METHOD_COLORS,
   isWithinHours,
-  type LogRecord,
-  type LogsResponse,
 } from '../components/audit-log/lib';
 import AuditLogTable from '../components/audit-log/AuditLogTable';
 import AuditDistributionCharts from '../components/audit-log/AuditDistributionCharts';
 import AuditFilterBar from '../components/audit-log/AuditFilterBar';
 import AuditSummaryCard from '../components/audit-log/AuditSummaryCard';
+import { useAuditLogFetcher } from '../components/audit-log/useAuditLogFetcher';
 
 export default function AuditLogPage() {
-  const [logs, setLogs] = useState<LogRecord[]>([]);
-  const [total, setTotal] = useState(0);
-  const [loading, setLoading] = useState(false);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState<10 | 25 | 50 | 100>(10);
   const [filterAction, setFilterAction] = useState('');
   const [filterWriteOnly, setFilterWriteOnly] = useState(true);
   const [autoRefresh, setAutoRefresh] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
-  const [errorMsg, setErrorMsg] = useState('');
-  const intervalRef = useRef<number | null>(null);
+
+  const { logs, total, loading, errorMsg, fetchLogs } = useAuditLogFetcher({
+    page,
+    pageSize,
+    filterAction,
+    filterWriteOnly,
+    autoRefresh,
+  });
 
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
-
-  const fetchLogs = useCallback(async () => {
-    setLoading(true);
-    try {
-      const params = new URLSearchParams({ page: String(page), limit: String(pageSize) });
-      if (filterAction) params.set('action', filterAction);
-      if (filterWriteOnly) params.set('writeOnly', 'true');
-      const data = await api.get<LogsResponse>(`/audit?${params.toString()}`);
-      setLogs(data.records || []);
-      setTotal(data.total || 0);
-      setErrorMsg('');
-    } catch (e: unknown) {
-      setLogs([]);
-      setTotal(0);
-      setErrorMsg(e instanceof Error ? e.message : 'Audit ledger를 불러오지 못했습니다.');
-    } finally {
-      setLoading(false);
-    }
-  }, [filterAction, filterWriteOnly, page, pageSize]);
-
-  useEffect(() => {
-    fetchLogs();
-  }, [fetchLogs]);
-
-  useEffect(() => {
-    if (autoRefresh) {
-      intervalRef.current = window.setInterval(fetchLogs, 5000);
-    } else if (intervalRef.current !== null) {
-      clearInterval(intervalRef.current);
-      intervalRef.current = null;
-    }
-    return () => {
-      if (intervalRef.current !== null) {
-        clearInterval(intervalRef.current);
-        intervalRef.current = null;
-      }
-    };
-  }, [autoRefresh, fetchLogs]);
 
   const activeActionLabel = useMemo(() => {
     const found = ACTION_OPTIONS.find((item) => item.value === filterAction);
