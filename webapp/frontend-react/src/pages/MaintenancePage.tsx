@@ -13,14 +13,17 @@ import { useMaintenanceMutations } from '../components/maintenance/useMaintenanc
 import { useMaintenanceAnalytics } from '../components/maintenance/useMaintenanceAnalytics';
 import { useMaintenanceData } from '../components/maintenance/useMaintenanceData';
 import { useMaintenanceLabels } from '../components/maintenance/useMaintenanceLabels';
+import { useMaintenancePermissions } from '../components/maintenance/useMaintenancePermissions';
 
 export default function MaintenancePage() {
   const { org, userId } = useAuth();
-  const isEVManufacturer = org === 'EVManufacturerMSP';
-  const isService = org === 'ServiceMSP';
-  const canRequestMaintenance = isEVManufacturer;
-  const canLogMaintenance = isService;
-  const canLogAccident = isEVManufacturer || isService;
+  const {
+    isEVManufacturer,
+    isService,
+    canRequestMaintenance,
+    canLogMaintenance,
+    canLogAccident,
+  } = useMaintenancePermissions(org);
 
   const [activeTab, setActiveTab] = useState<Tab>('all');
   const [selectedPassport, setSelectedPassport] = useState<Passport | null>(null);
