@@ -13,14 +13,7 @@ import { usePassportMutations } from '../components/passport-detail/usePassportM
 import { usePassportDetailData } from '../components/passport-detail/usePassportDetailData';
 import { usePassportDossierLabels } from '../components/passport-detail/usePassportDossierLabels';
 import PassportDetailFocusPanel from '../components/passport-detail/PassportDetailFocusPanel';
-
-const TABS: { key: DetailTab; label: string }[] = [
-  { key: 'identity', label: '개요' },
-  { key: 'compliance', label: '규제·소재' },
-  { key: 'traceability', label: '운영 이력' },
-  { key: 'data', label: '진단 데이터' },
-  { key: 'trust', label: '증빙' },
-];
+import PassportDetailTabNav from '../components/passport-detail/PassportDetailTabNav';
 
 function DetailSectionFallback() {
   return (
@@ -162,19 +155,7 @@ export default function PassportDetailPage() {
 
       <PassportDetailFocusPanel />
 
-      <div className="sn-detail-index">
-        <div className="sn-detail-index-track">
-          {TABS.map((t) => (
-            <button
-              key={t.key}
-              onClick={() => setActiveTab(t.key)}
-              className={`sn-detail-index-tab${activeTab === t.key ? ' active' : ''}`}
-            >
-              {t.label}
-            </button>
-          ))}
-        </div>
-      </div>
+      <PassportDetailTabNav activeTab={activeTab} onTabChange={setActiveTab} />
 
       <div className="sn-detail-tab-sheet">
         <Suspense fallback={<DetailSectionFallback />}>
