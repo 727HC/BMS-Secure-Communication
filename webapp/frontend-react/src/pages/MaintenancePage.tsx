@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { PageHead, SkeletonCard, SkeletonTable } from '../components/ui';
+import { PageDataLoadingSkeleton, PageHead } from '../components/ui';
 import { AccidentLogModal, MaintenanceLogModal, MaintenanceRequestModal } from '../components/modals/maintenance';
 import {
   type Passport,
@@ -104,16 +104,13 @@ export default function MaintenancePage() {
 
   if (loading) {
     return (
-      <div data-page="maintenance" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-        {/* summary grid skeleton */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14 }}>
-          {[0, 1, 2, 3].map((i) => (
-            <SkeletonCard key={i} lines={2} showTitle />
-          ))}
-        </div>
-        {/* 테이블 skeleton */}
-        <SkeletonTable rows={5} cols={8} />
-      </div>
+      <PageDataLoadingSkeleton
+        dataPage="maintenance"
+        summaryCount={4}
+        summaryGridStyle={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14 }}
+        tableRows={5}
+        tableCols={8}
+      />
     );
   }
 

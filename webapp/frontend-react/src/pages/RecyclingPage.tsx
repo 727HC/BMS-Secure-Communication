@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { PageHead, SkeletonCard, SkeletonTable } from '../components/ui';
+import { PageDataLoadingSkeleton, PageHead } from '../components/ui';
 import { AnalysisResultModal, DisposeConfirmModal, ExtractModal, RecycleToggleModal } from '../components/modals/recycling';
 import {
   type Passport,
@@ -126,14 +126,13 @@ export default function RecyclingPage() {
 
   if (loading) {
     return (
-      <div data-page="recycling" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '0.75rem' }}>
-          {[0, 1, 2, 3, 4].map((i) => (
-            <SkeletonCard key={i} lines={2} showTitle />
-          ))}
-        </div>
-        <SkeletonTable rows={5} cols={7} />
-      </div>
+      <PageDataLoadingSkeleton
+        dataPage="recycling"
+        summaryCount={5}
+        summaryGridStyle={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '0.75rem' }}
+        tableRows={5}
+        tableCols={7}
+      />
     );
   }
 

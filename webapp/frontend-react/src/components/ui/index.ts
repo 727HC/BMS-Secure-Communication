@@ -6,4 +6,5 @@ export { DonutChart, Sparkline, BarRows, LegendStack } from './Charts';
 export { BatteryOutline, ArcGauge } from './BatteryGauge';
 export type { BatteryOutlineProps, ArcGaugeProps } from './BatteryGauge';
 export { Skeleton, SkeletonRows, SkeletonCard, SkeletonTable } from './Skeleton';
+export { default as PageDataLoadingSkeleton } from './PageDataLoadingSkeleton';
 export { default as BrandMark, BrandGlyph } from './BrandMark';
