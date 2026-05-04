@@ -4,7 +4,9 @@ import { api } from '../lib/api';
 import { toastFromError } from '../lib/chaincodeErrorMessages';
 import { useAuth } from '../contexts/AuthContext';
 import { getStatusBadge } from '../lib/helpers';
-import { PageHead, Skeleton, SkeletonCard } from '../components/ui';
+import { PageHead, SkeletonCard } from '../components/ui';
+import PassportDetailSkeleton from '../components/passport-detail/PassportDetailSkeleton';
+import PassportDetailNotFound from '../components/passport-detail/PassportDetailNotFound';
 import { computeGbaCompliance, complianceGrade } from '../components/passport-detail/helpers';
 import PassportDetailHero from '../components/passport-detail/PassportDetailHero';
 import type { Passport, BmuRecord, Credential, IssuerCatalogItem } from '../components/passport-detail/types';
@@ -325,64 +327,18 @@ export default function PassportDetailPage() {
   };
 
   if (loading) {
-    return (
-      <div data-page="passport-detail" style={{ display: 'flex', flexDirection: 'column', gap: 16, maxWidth: 1320, width: '100%', margin: '0 auto' }}>
-        {/* 히어로 skeleton */}
-        <div style={{ background: 'var(--color-surface)', padding: '1.5rem 1.75rem', borderRadius: '1rem', border: '1px solid var(--color-border)', display: 'flex', flexDirection: 'column', gap: 16 }}>
-          <Skeleton width="40%" height={28} />
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 20 }}>
-            {[0, 1, 2, 3].map((i) => (
-              <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 }}>
-                <Skeleton width={120} height={120} radius={60} />
-                <Skeleton width="60%" height={12} />
-              </div>
-            ))}
-          </div>
-        </div>
-        {/* 탭 skeleton */}
-        <div style={{ display: 'flex', gap: 4 }}>
-          {[0, 1, 2, 3, 4].map((i) => (
-            <Skeleton key={i} width={80} height={36} radius={8} />
-          ))}
-        </div>
-        {/* 탭 시트 안 카드 3개 */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-          {[0, 1, 2].map((i) => (
-            <SkeletonCard key={i} lines={3} showTitle />
-          ))}
-        </div>
-      </div>
-    );
+    return <PassportDetailSkeleton />;
   }
   if (!passport) {
     return (
-      <div data-page="passport-detail" style={{ display: 'flex', flexDirection: 'column', gap: 16, maxWidth: 1320, width: '100%', margin: '0 auto' }}>
-        <PageHead
-          title="Dossier unavailable"
-          subtitle={fetchError || '요청한 여권을 찾을 수 없습니다. ID와 접근 권한을 확인하세요.'}
-          actions={(
-            <button onClick={() => navigate('/passports')} className="sn-detail-secondary-btn">
-              ← 여권 등록부
-            </button>
-          )}
-        />
-        <div className="sn-detail-dossier">
-          <div className="sn-detail-dossier-head">
-            <div>
-              <p className="sn-eyebrow" style={{ margin: '0 0 0.35rem', color: 'var(--color-text-3)' }}>조회 결과</p>
-              <h2 className="sn-detail-dossier-title">상세 파일을 열 수 없습니다</h2>
-            </div>
-            <span className="sn-detail-inline-stamp">{id || 'ID 없음'}</span>
-          </div>
-          <div style={{ padding: '18px 20px' }}>
-            <p className="sn-caption" style={{ margin: 0, maxWidth: '46rem', lineHeight: 1.7 }}>
-              등록부에 없는 ID이거나 현재 조직 권한으로 열람할 수 없는 dossier입니다. 여권 등록부에서 ID를 다시 조회하거나 권한이 있는 조직 계정으로 접속하세요.
-            </p>
-          </div>
-        </div>
-      </div>
+      <PassportDetailNotFound
+        passportId={id}
+        fetchError={fetchError}
+        onBack={() => navigate('/passports')}
+      />
     );
   }
+
 
   const badge = getStatusBadge(passport.status || 'DISPOSED');
   const warningMessages = [
