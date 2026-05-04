@@ -4,7 +4,7 @@ import { api } from '../lib/api';
 import { toastFromError } from '../lib/chaincodeErrorMessages';
 import { useAuth } from '../contexts/AuthContext';
 import PassportCreateModal, { type PassportCreateFormData } from '../components/modals/passports/PassportCreateModal';
-import { PageHead, Skeleton, SkeletonTable } from '../components/ui';
+import { PageHead } from '../components/ui';
 import {
   PAGE_SIZE,
   type GbaFilter,
@@ -17,6 +17,7 @@ import PassportsDistributionCard from '../components/passports/PassportsDistribu
 import PassportsFilterBar from '../components/passports/PassportsFilterBar';
 import { usePassportsAnalytics } from '../components/passports/usePassportsAnalytics';
 import { usePassportsData } from '../components/passports/usePassportsData';
+import PassportsLoadingSkeleton from '../components/passports/PassportsLoadingSkeleton';
 
 export default function PassportsPage() {
   const navigate = useNavigate();
@@ -103,32 +104,7 @@ export default function PassportsPage() {
   const showingTo = Math.min(currentPage * PAGE_SIZE, filteredPassports.length);
 
   if (loading) {
-    return (
-      <div data-page="passports" style={{ display: 'flex', flexDirection: 'column', gap: 16, minHeight: 520 }}>
-        <div className="sn-page-head">
-          <div className="sn-page-head-main" style={{ width: '100%', maxWidth: 720 }}>
-            <Skeleton width="28%" height={12} style={{ marginBottom: 12 }} />
-            <Skeleton width="46%" height={34} style={{ marginBottom: 12 }} />
-            <Skeleton width="72%" height={16} />
-          </div>
-        </div>
-        <div className="sn-section-card">
-          <div className="sn-section-head">
-            <Skeleton width="34%" height={16} style={{ marginBottom: 12 }} />
-            <Skeleton width="58%" height={12} />
-          </div>
-          <div className="sn-info-grid sn-info-grid-auto">
-            {[0, 1, 2, 3].map((i) => (
-              <div key={i} className="sn-info-tile">
-                <Skeleton width="60%" height={12} style={{ marginBottom: 10 }} />
-                <Skeleton width="40%" height={28} />
-              </div>
-            ))}
-          </div>
-        </div>
-        <SkeletonTable rows={5} cols={5} />
-      </div>
-    );
+    return <PassportsLoadingSkeleton />;
   }
 
   return (
