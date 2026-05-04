@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useState } from 'react';
 import { toastFromError } from '../lib/chaincodeErrorMessages';
 import { api } from '../lib/api';
 import { useAuth } from '../contexts/AuthContext';
@@ -14,95 +14,33 @@ import MaterialsTable from '../components/materials/MaterialsTable';
 import MaterialsFilterBar from '../components/materials/MaterialsFilterBar';
 import MaterialsSummaryCard from '../components/materials/MaterialsSummaryCard';
 import MaterialsStateView from '../components/materials/MaterialsStateView';
-
-const CATEGORY_KEYWORDS: { label: string; keywords: string[] }[] = [
-  { label: '리튬', keywords: ['리튬', 'lithium', 'li'] },
-  { label: '니켈', keywords: ['니켈', 'nickel', 'ni'] },
-  { label: '코발트', keywords: ['코발트', 'cobalt', 'co'] },
-  { label: '망간', keywords: ['망간', 'manganese', 'mn'] },
-];
-
-function categorize(name: string): string {
-  const lower = name.toLowerCase();
-  for (const cat of CATEGORY_KEYWORDS) {
-    if (cat.keywords.some((k) => lower.includes(k))) return cat.label;
-  }
-  return '기타';
-}
+import { useMaterialsData } from '../components/materials/useMaterialsData';
 
 export default function MaterialsPage() {
   const PAGE_SIZE = 12;
   const { org } = useAuth();
   const isManufacturer = org === 'ManufacturerMSP';
 
-  const [materials, setMaterials] = useState<Material[]>([]);
-  const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [selectedMaterial, setSelectedMaterial] = useState<Material | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
-  const [currentPage, setCurrentPage] = useState(1);
 
-  const fetchMaterials = async () => {
-    setLoading(true);
-    try {
-      const data = await api.get<Material[] | { records?: Material[]; materials?: Material[] }>('/materials');
-      const list = Array.isArray(data) ? data : data.records || data.materials || [];
-      setMaterials(list);
-    } catch {
-      setMaterials([]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchMaterials();
-  }, []);
-
-  const filteredMaterials = useMemo(() => {
-    if (!searchQuery) return materials;
-    const q = searchQuery.toLowerCase();
-    return materials.filter((m) =>
-      (m.materialId || '').toLowerCase().includes(q) ||
-      (m.name || '').toLowerCase().includes(q) ||
-      (m.origin || '').toLowerCase().includes(q) ||
-      (m.supplier || '').toLowerCase().includes(q) ||
-      (m.certificationId || '').toLowerCase().includes(q)
-    );
-  }, [materials, searchQuery]);
-
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [searchQuery]);
-
-  const totalPages = Math.max(1, Math.ceil(filteredMaterials.length / PAGE_SIZE));
-  const paginatedMaterials = useMemo(() => {
-    const start = (currentPage - 1) * PAGE_SIZE;
-    return filteredMaterials.slice(start, start + PAGE_SIZE);
-  }, [filteredMaterials, currentPage]);
-
-  useEffect(() => {
-    if (currentPage > totalPages) setCurrentPage(totalPages);
-  }, [currentPage, totalPages]);
-
-  const certifiedCount = filteredMaterials.filter((m) => m.certificationId).length;
-
-  const originUniqueCount = useMemo(() => {
-    const origins = filteredMaterials.map((m) => m.origin).filter(Boolean);
-    return new Set(origins).size;
-  }, [filteredMaterials]);
-
-  const categoryDist = useMemo(() => {
-    const counts: Record<string, number> = {};
-    for (const m of materials) {
-      const cat = categorize(m.name || '');
-      counts[cat] = (counts[cat] || 0) + 1;
-    }
-    return counts;
-  }, [materials]);
+  const {
+    materials,
+    filteredMaterials,
+    paginatedMaterials,
+    loading,
+    currentPage,
+    setCurrentPage,
+    totalPages,
+    certifiedCount,
+    originUniqueCount,
+    categoryDist,
+    fetchMaterials,
+  } = useMaterialsData({ pageSize: PAGE_SIZE, searchQuery });
 
   const openCreateModal = () => setShowCreateModal(true);
   const closeCreateModal = () => setShowCreateModal(false);
