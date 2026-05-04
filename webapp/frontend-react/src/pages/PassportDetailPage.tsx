@@ -1,5 +1,6 @@
-import { lazy, Suspense, useEffect, useMemo, useState } from 'react';
+import { Suspense, useEffect, useMemo, useState } from 'react';
 import PassportDetailModalRouter, { type ModalKey } from '../components/passport-detail/PassportDetailModalRouter';
+import PassportDetailTabRouter, { type DetailTab } from '../components/passport-detail/PassportDetailTabRouter';
 import { useNavigate, useParams } from 'react-router-dom';
 import { api } from '../lib/api';
 import { toastFromError } from '../lib/chaincodeErrorMessages';
@@ -24,21 +25,13 @@ import type { VcRejectFormData } from '../components/modals/passport-detail/VcRe
 import type { RegulatoryVerificationFormData } from '../components/modals/passport-detail/RegulatoryVerificationModal';
 import type { PhysicalVerificationFormData } from '../components/modals/passport-detail/PhysicalVerificationModal';
 
-type Tab = 'identity' | 'compliance' | 'traceability' | 'data' | 'trust';
-
-const TABS: { key: Tab; label: string }[] = [
+const TABS: { key: DetailTab; label: string }[] = [
   { key: 'identity', label: '개요' },
   { key: 'compliance', label: '규제·소재' },
   { key: 'traceability', label: '운영 이력' },
   { key: 'data', label: '진단 데이터' },
   { key: 'trust', label: '증빙' },
 ];
-
-const IdentityTab = lazy(() => import('../components/passport-detail/IdentityTab'));
-const ComplianceTab = lazy(() => import('../components/passport-detail/ComplianceTab'));
-const TraceabilityTab = lazy(() => import('../components/passport-detail/TraceabilityTab'));
-const DataTab = lazy(() => import('../components/passport-detail/DataTab'));
-const TrustTab = lazy(() => import('../components/passport-detail/TrustTab'));
 
 function DetailSectionFallback() {
   return (
@@ -66,7 +59,7 @@ export default function PassportDetailPage() {
 
   const [passport, setPassport] = useState<Passport | null>(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<Tab>('identity');
+  const [activeTab, setActiveTab] = useState<DetailTab>('identity');
   const [bmuRecords, setBmuRecords] = useState<BmuRecord[]>([]);
   const [vcList, setVcList] = useState<Credential[]>([]);
   const [openModal, setOpenModal] = useState<ModalKey>(null);
@@ -224,53 +217,6 @@ export default function PassportDetailPage() {
     setOpenModal('vcRevoke');
   };
 
-  const renderActiveTab = () => {
-    if (!passport) return null;
-
-    switch (activeTab) {
-      case 'identity':
-        return <IdentityTab passport={passport} />;
-      case 'compliance':
-        return (
-          <ComplianceTab
-            passport={passport}
-            gbaCompliance={gbaCompliance}
-            complianceGrade={grade}
-            vcList={vcList}
-            canUpdateRegulatory={isRegulator}
-            onUpdateRegulatory={() => setOpenModal('regVerify')}
-          />
-        );
-      case 'traceability':
-        return (
-          <TraceabilityTab
-            passport={passport}
-            bmuRecords={bmuRecords}
-            canVerifyPhysical={isManufacturer || isRegulator}
-            onVerifyPhysical={() => setOpenModal('physicalVerify')}
-          />
-        );
-      case 'data':
-        return <DataTab bmuRecords={bmuRecords} passportId={passport?.passportId} />;
-      case 'trust':
-        return (
-          <TrustTab
-            passport={passport}
-            vcList={vcList}
-            onVerify={openVerifyModal}
-            onRevoke={openRevokeModal}
-            canRequest={isManufacturer || isEV || isService}
-            canApproveOrReject={isRegulator || org === 'ManufacturerMSP'}
-            onRequest={() => setOpenModal('vcRequest')}
-            onApprove={() => setOpenModal('vcApprove')}
-            onReject={() => setOpenModal('vcReject')}
-            issuers={issuers}
-          />
-        );
-      default:
-        return null;
-    }
-  };
 
 
   if (loading) {
@@ -414,7 +360,29 @@ export default function PassportDetailPage() {
 
       <div className="sn-detail-tab-sheet">
         <Suspense fallback={<DetailSectionFallback />}>
-          {renderActiveTab()}
+          {passport && (
+            <PassportDetailTabRouter
+              activeTab={activeTab}
+              passport={passport}
+              gbaCompliance={gbaCompliance}
+              grade={grade}
+              vcList={vcList}
+              bmuRecords={bmuRecords}
+              issuers={issuers}
+              org={org}
+              isManufacturer={isManufacturer}
+              isEV={isEV}
+              isService={isService}
+              isRegulator={isRegulator}
+              onUpdateRegulatory={() => setOpenModal('regVerify')}
+              onVerifyPhysical={() => setOpenModal('physicalVerify')}
+              onVerifyVc={openVerifyModal}
+              onRevokeVc={openRevokeModal}
+              onRequestVc={() => setOpenModal('vcRequest')}
+              onApproveVc={() => setOpenModal('vcApprove')}
+              onRejectVc={() => setOpenModal('vcReject')}
+            />
+          )}
         </Suspense>
       </div>
 
