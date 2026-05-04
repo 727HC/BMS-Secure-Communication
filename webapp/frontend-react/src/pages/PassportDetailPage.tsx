@@ -1,4 +1,5 @@
 import { lazy, Suspense, useEffect, useMemo, useState } from 'react';
+import PassportDetailModalRouter, { type ModalKey } from '../components/passport-detail/PassportDetailModalRouter';
 import { useNavigate, useParams } from 'react-router-dom';
 import { api } from '../lib/api';
 import { toastFromError } from '../lib/chaincodeErrorMessages';
@@ -33,29 +34,11 @@ const TABS: { key: Tab; label: string }[] = [
   { key: 'trust', label: '증빙' },
 ];
 
-type ModalKey = 'bind' | 'mRequest' | 'mLog' | 'aRequest' | 'aResult' | 'dispose' | 'correct' | 'vcIssue' | 'vcVerify' | 'vcRevoke' | 'vcRequest' | 'vcApprove' | 'vcReject' | 'regVerify' | 'physicalVerify' | null;
-
 const IdentityTab = lazy(() => import('../components/passport-detail/IdentityTab'));
 const ComplianceTab = lazy(() => import('../components/passport-detail/ComplianceTab'));
 const TraceabilityTab = lazy(() => import('../components/passport-detail/TraceabilityTab'));
 const DataTab = lazy(() => import('../components/passport-detail/DataTab'));
 const TrustTab = lazy(() => import('../components/passport-detail/TrustTab'));
-
-const BindModal = lazy(() => import('../components/modals/passport-detail/BindModal'));
-const MaintenanceRequestModal = lazy(() => import('../components/modals/passport-detail/MaintenanceRequestModal'));
-const MaintenanceLogModal = lazy(() => import('../components/modals/passport-detail/MaintenanceLogModal'));
-const AnalysisRequestModal = lazy(() => import('../components/modals/passport-detail/AnalysisRequestModal'));
-const AnalysisResultModal = lazy(() => import('../components/modals/passport-detail/AnalysisResultModal'));
-const DisposeModal = lazy(() => import('../components/modals/passport-detail/DisposeModal'));
-const CorrectionModal = lazy(() => import('../components/modals/passport-detail/CorrectionModal'));
-const VcIssueModal = lazy(() => import('../components/modals/passport-detail/VcIssueModal'));
-const VcVerifyModal = lazy(() => import('../components/modals/passport-detail/VcVerifyModal'));
-const VcRevokeModal = lazy(() => import('../components/modals/passport-detail/VcRevokeModal'));
-const VcRequestModal = lazy(() => import('../components/modals/passport-detail/VcRequestModal'));
-const VcApproveModal = lazy(() => import('../components/modals/passport-detail/VcApproveModal'));
-const VcRejectModal = lazy(() => import('../components/modals/passport-detail/VcRejectModal'));
-const RegulatoryVerificationModal = lazy(() => import('../components/modals/passport-detail/RegulatoryVerificationModal'));
-const PhysicalVerificationModal = lazy(() => import('../components/modals/passport-detail/PhysicalVerificationModal'));
 
 function DetailSectionFallback() {
   return (
@@ -289,42 +272,6 @@ export default function PassportDetailPage() {
     }
   };
 
-  const renderActiveModal = () => {
-    switch (openModal) {
-      case 'bind':
-        return <BindModal open submitting={submitting} onClose={closeAll} onSubmit={handleBind} />;
-      case 'mRequest':
-        return <MaintenanceRequestModal open submitting={submitting} onClose={closeAll} onSubmit={handleMaintenanceRequest} />;
-      case 'mLog':
-        return <MaintenanceLogModal open submitting={submitting} onClose={closeAll} onSubmit={handleMaintenanceLog} />;
-      case 'aRequest':
-        return <AnalysisRequestModal open submitting={submitting} onClose={closeAll} onSubmit={handleAnalysisRequest} />;
-      case 'aResult':
-        return <AnalysisResultModal open submitting={submitting} onClose={closeAll} onSubmit={handleAnalysisResult} />;
-      case 'dispose':
-        return <DisposeModal open submitting={submitting} onClose={closeAll} onSubmit={handleDispose} />;
-      case 'correct':
-        return <CorrectionModal open submitting={submitting} onClose={closeAll} onSubmit={handleCorrect} />;
-      case 'vcIssue':
-        return <VcIssueModal open submitting={submitting} onClose={closeAll} onSubmit={handleVcIssue} />;
-      case 'vcRequest':
-        return <VcRequestModal open submitting={submitting} onClose={closeAll} onSubmit={handleVcRequest} />;
-      case 'vcApprove':
-        return <VcApproveModal open submitting={submitting} onClose={closeAll} onSubmit={handleVcApprove} />;
-      case 'vcReject':
-        return <VcRejectModal open submitting={submitting} onClose={closeAll} onSubmit={handleVcReject} />;
-      case 'vcVerify':
-        return <VcVerifyModal open credentialId={selectedVcId} onClose={closeAll} />;
-      case 'vcRevoke':
-        return <VcRevokeModal open submitting={submitting} credentialId={selectedVcId} onClose={closeAll} onSubmit={handleVcRevoke} />;
-      case 'regVerify':
-        return <RegulatoryVerificationModal open submitting={submitting} onClose={closeAll} onSubmit={handleRegulatoryVerification} />;
-      case 'physicalVerify':
-        return <PhysicalVerificationModal open submitting={submitting} onClose={closeAll} onSubmit={handlePhysicalVerification} />;
-      default:
-        return null;
-    }
-  };
 
   if (loading) {
     return <PassportDetailSkeleton />;
@@ -472,7 +419,28 @@ export default function PassportDetailPage() {
       </div>
 
       <Suspense fallback={null}>
-        {renderActiveModal()}
+        <PassportDetailModalRouter
+          openModal={openModal}
+          submitting={submitting}
+          selectedVcId={selectedVcId}
+          onClose={closeAll}
+          handlers={{
+            onBind: handleBind,
+            onMaintenanceRequest: handleMaintenanceRequest,
+            onMaintenanceLog: handleMaintenanceLog,
+            onAnalysisRequest: handleAnalysisRequest,
+            onAnalysisResult: handleAnalysisResult,
+            onDispose: handleDispose,
+            onCorrect: handleCorrect,
+            onVcIssue: handleVcIssue,
+            onVcRequest: handleVcRequest,
+            onVcApprove: handleVcApprove,
+            onVcReject: handleVcReject,
+            onVcRevoke: handleVcRevoke,
+            onRegulatoryVerification: handleRegulatoryVerification,
+            onPhysicalVerification: handlePhysicalVerification,
+          }}
+        />
       </Suspense>
     </div>
   );
