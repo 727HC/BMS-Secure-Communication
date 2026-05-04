@@ -7,54 +7,15 @@ import { getStatusBadge } from '../lib/helpers';
 import { BarRows, PageHead, SkeletonCard, SkeletonTable } from '../components/ui';
 import BaseModal from '../components/modals/BaseModal';
 import { ExtractModal, RecycleToggleModal, type ExtractEntry } from '../components/modals/recycling';
-
-const PAGE_SIZE = 12;
-
-interface Passport {
-  passportId?: string;
-  status?: string;
-  model?: string;
-  manufacturerName?: string;
-  vin?: string;
-  recycleAvailable?: boolean;
-  soh?: number;
-  soce?: number;
-  remainingLifeCycle?: number;
-  recyclingRates?: Record<string, number>;
-  [key: string]: unknown;
-}
-
-type Tab = 'all' | 'recyclable' | 'recycling' | 'disposed';
-
-function isRecyclingRelated(p: Passport): boolean {
-  return (
-    p.recycleAvailable === true ||
-    p.status === 'ACTIVE' ||
-    p.status === 'ANALYSIS' ||
-    p.status === 'RECYCLING' ||
-    p.status === 'DISPOSED' ||
-    (p.recyclingRates != null && Object.keys(p.recyclingRates).length > 0)
-  );
-}
-
-function avg(nums: number[]): number | null {
-  if (nums.length === 0) return null;
-  return Math.round(nums.reduce((a, b) => a + b, 0) / nums.length);
-}
-
-function hasRecoveryRates(p: Passport): boolean {
-  return p.recyclingRates != null && Object.keys(p.recyclingRates).length > 0;
-}
-
-function getLifecycleStage(p: Passport): string {
-  if (p.status === 'DISPOSED') return '폐기 승인 완료';
-  if (p.status === 'RECYCLING') return '회수·추출 진행';
-  if (hasRecoveryRates(p)) return '추출 근거 기록';
-  if (p.recycleAvailable) return '회수 가능 판정';
-  if (p.status === 'ANALYSIS') return '분석 결과 대기';
-  if (p.status === 'ACTIVE') return '분석 요청 가능';
-  return '전주기 감시';
-}
+import {
+  PAGE_SIZE,
+  avg,
+  getLifecycleStage,
+  hasRecoveryRates,
+  isRecyclingRelated,
+  type Passport,
+  type Tab,
+} from '../components/recycling/lib';
 
 export default function RecyclingPage() {
   const navigate = useNavigate();

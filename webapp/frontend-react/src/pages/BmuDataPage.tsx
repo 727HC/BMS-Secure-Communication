@@ -3,50 +3,13 @@ import { useSearchParams } from 'react-router-dom';
 import { api } from '../lib/api';
 import { scaleSOC, scaleTemp } from '../lib/helpers';
 import { BarRows, PageHead, Skeleton, SkeletonTable, Sparkline } from '../components/ui';
-
-interface BmuRecord {
-  recordId?: string;
-  timestamp?: string;
-  soc?: number;
-  voltage?: number;
-  current?: number;
-  temperature?: number;
-  dischargeCycles?: number;
-  statusFlags?: number;
-  [key: string]: unknown;
-}
-
-interface StatusBadge {
-  label: string;
-  color: 'blue' | 'green' | 'red';
-}
-
-function decodeStatusFlags(flags?: number): StatusBadge[] {
-  const num = typeof flags === 'number' ? flags : parseInt(String(flags), 10);
-  if (isNaN(num)) return [];
-  const badges: StatusBadge[] = [];
-  if (num & 0x01) badges.push({ label: '충전중', color: 'blue' });
-  if (num & 0x02) badges.push({ label: '밸런싱', color: 'green' });
-  if (num & 0x04) badges.push({ label: '결함', color: 'red' });
-  return badges;
-}
-
-const BADGE_STYLES: Record<string, { bg: string; color: string; dot: string }> = {
-  blue:  { bg: 'var(--color-surface-accent)', color: 'var(--color-accent)', dot: 'var(--color-accent)' },
-  green: { bg: 'var(--color-success-soft)', color: 'var(--color-success)', dot: 'var(--color-success)' },
-  red:   { bg: 'var(--color-danger-soft)', color: 'var(--color-danger)', dot: 'var(--color-danger)' },
-};
-
-function formatTimestamp(ts?: string): string {
-  if (!ts) return '-';
-  try { return new Date(ts).toLocaleString('ko-KR'); }
-  catch { return ts; }
-}
-
-function formatNumber(val: unknown, decimals = 1): string {
-  if (val == null) return '-';
-  return Number(val).toFixed(decimals);
-}
+import {
+  BADGE_STYLES,
+  decodeStatusFlags,
+  formatNumber,
+  formatTimestamp,
+  type BmuRecord,
+} from '../components/bmu-data/lib';
 
 export default function BmuDataPage() {
   const [searchParams, setSearchParams] = useSearchParams();

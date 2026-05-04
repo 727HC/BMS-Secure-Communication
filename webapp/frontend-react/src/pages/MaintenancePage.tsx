@@ -7,59 +7,13 @@ import { getStatusBadge } from '../lib/helpers';
 import { BarRows, DonutChart, LegendStack, PageHead, SkeletonCard, SkeletonTable } from '../components/ui';
 import BaseModal from '../components/modals/BaseModal';
 import { AccidentLogModal, type AccidentFormData } from '../components/modals/maintenance';
-
-const PAGE_SIZE = 12;
-
-interface MaintenanceLog {
-  timestamp?: string;
-  maintenanceType?: string;
-  description?: string;
-  technician?: string;
-}
-
-interface AccidentLog {
-  timestamp?: string;
-  severity?: string;
-  description?: string;
-  reporter?: string;
-}
-
-interface Passport {
-  passportId?: string;
-  status?: string;
-  vin?: string;
-  model?: string;
-  manufacturerName?: string;
-  createdAt?: string;
-  maintenanceLogs?: MaintenanceLog[];
-  accidentLogs?: AccidentLog[];
-  [key: string]: unknown;
-}
-
-type Tab = 'all' | 'maintenance' | 'accident';
-
-const MAINTENANCE_TYPES = [
-  { value: 'routine', label: '정기점검' },
-  { value: 'repair', label: '수리' },
-  { value: 'recall', label: '리콜' },
-  { value: 'emergency', label: '긴급' },
-];
-
-function formatTimestamp(ts?: string): string {
-  if (!ts) return '-';
-  try { return new Date(ts).toLocaleString('ko-KR'); }
-  catch { return ts; }
-}
-
-function latestMaintenanceTimestamp(logs?: MaintenanceLog[]): string {
-  if (!logs || logs.length === 0) return '-';
-  const sorted = [...logs].sort((a, b) => {
-    const tA = a.timestamp ? new Date(a.timestamp).getTime() : 0;
-    const tB = b.timestamp ? new Date(b.timestamp).getTime() : 0;
-    return tB - tA;
-  });
-  return formatTimestamp(sorted[0].timestamp);
-}
+import {
+  MAINTENANCE_TYPES,
+  PAGE_SIZE,
+  latestMaintenanceTimestamp,
+  type Passport,
+  type Tab,
+} from '../components/maintenance/lib';
 
 export default function MaintenancePage() {
   const navigate = useNavigate();
