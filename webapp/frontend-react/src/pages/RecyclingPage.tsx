@@ -1,9 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { api } from '../lib/api';
-import { toastFromError } from '../lib/chaincodeErrorMessages';
 import { useAuth } from '../contexts/AuthContext';
 import { PageHead, SkeletonCard, SkeletonTable } from '../components/ui';
-import { AnalysisResultModal, DisposeConfirmModal, ExtractModal, RecycleToggleModal, type ExtractEntry } from '../components/modals/recycling';
+import { AnalysisResultModal, DisposeConfirmModal, ExtractModal, RecycleToggleModal } from '../components/modals/recycling';
 import {
   PAGE_SIZE,
   avg,
@@ -15,6 +14,7 @@ import {
 import RecyclingSummaryCard from '../components/recycling/RecyclingSummaryCard';
 import RecyclingTable from '../components/recycling/RecyclingTable';
 import RecyclingDistributionCard from '../components/recycling/RecyclingDistributionCard';
+import { useRecyclingMutations } from '../components/recycling/useRecyclingMutations';
 
 export default function RecyclingPage() {
   const { org } = useAuth();
@@ -30,8 +30,6 @@ export default function RecyclingPage() {
   const [passports, setPassports] = useState<Passport[]>([]);
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<Tab>('all');
-  const [submitting, setSubmitting] = useState(false);
-  const [submitError, setSubmitError] = useState<string | null>(null);
   const [selectedPassport, setSelectedPassport] = useState<Passport | null>(null);
   const [showAnalysis, setShowAnalysis] = useState(false);
   const [showToggle, setShowToggle] = useState(false);
@@ -167,18 +165,19 @@ export default function RecyclingPage() {
     setSelectedPassport(null);
   };
 
-  const requestAnalysis = async (passport: Passport) => {
-    if (!passport.passportId) return;
-    setSubmitError(null);
-    try {
-      await api.post(`/analysis/${passport.passportId}/request`, {});
-      await fetchPassports();
-    } catch (err) {
-      const { toast, debug, category } = toastFromError(err);
-      console.warn('[recycling] mutation failed', { category, debug });
-      setSubmitError(toast);
-    }
-  };
+  const {
+    submitting,
+    submitError,
+    requestAnalysis,
+    submitAnalysisResult: submitAnalysisResultFn,
+    submitRecycleToggle,
+    submitExtract,
+    submitDispose,
+  } = useRecyclingMutations({
+    selectedPassport,
+    onAfterSuccess: fetchPassports,
+    onClose: closeAll,
+  });
 
   const openAnalysisResult = (p: Passport) => {
     setSelectedPassport(p);
@@ -186,26 +185,7 @@ export default function RecyclingPage() {
     setShowAnalysis(true);
   };
 
-  const submitAnalysisResult = async () => {
-    if (!selectedPassport?.passportId) return;
-    setSubmitting(true);
-    setSubmitError(null);
-    try {
-      await api.post(`/analysis/${selectedPassport.passportId}/result`, {
-        soh: Number(analysisForm.soh),
-        soce: Number(analysisForm.soce),
-        remainingLifeCycle: Number(analysisForm.remainingLifeCycle),
-        recycleAvailable: analysisForm.recycleAvailable,
-      });
-      closeAll();
-      await fetchPassports();
-    } catch (err) {
-      const { toast, debug, category } = toastFromError(err);
-      console.warn('[recycling] mutation failed', { category, debug });
-      setSubmitError(toast);
-    }
-    finally { setSubmitting(false); }
-  };
+  const submitAnalysisResult = () => submitAnalysisResultFn(analysisForm);
 
   const openRecycleToggle = (p: Passport) => {
     setSelectedPassport(p);
@@ -213,66 +193,14 @@ export default function RecyclingPage() {
     setShowToggle(true);
   };
 
-  const submitRecycleToggle = async (available: boolean) => {
-    if (!selectedPassport?.passportId) return;
-    setSubmitting(true);
-    setSubmitError(null);
-    try {
-      await api.put(`/recycling/${selectedPassport.passportId}/availability`, { available });
-      closeAll();
-      await fetchPassports();
-    } catch (err) {
-      const { toast, debug, category } = toastFromError(err);
-      console.warn('[recycling] mutation failed', { category, debug });
-      setSubmitError(toast);
-    }
-    finally { setSubmitting(false); }
-  };
-
   const openExtract = (p: Passport) => {
     setSelectedPassport(p);
     setShowExtract(true);
   };
 
-  const submitExtract = async (entries: ExtractEntry[]) => {
-    if (!selectedPassport?.passportId) return;
-    setSubmitting(true);
-    setSubmitError(null);
-    try {
-      const recyclingRates: Record<string, number> = {};
-      entries.forEach((e) => {
-        if (e.key.trim()) recyclingRates[e.key.trim()] = Number(e.value);
-      });
-      await api.post(`/recycling/${selectedPassport.passportId}/extract`, { recyclingRates });
-      closeAll();
-      await fetchPassports();
-    } catch (err) {
-      const { toast, debug, category } = toastFromError(err);
-      console.warn('[recycling] mutation failed', { category, debug });
-      setSubmitError(toast);
-    }
-    finally { setSubmitting(false); }
-  };
-
   const openDispose = (p: Passport) => {
     setSelectedPassport(p);
     setShowDispose(true);
-  };
-
-  const submitDispose = async () => {
-    if (!selectedPassport?.passportId) return;
-    setSubmitting(true);
-    setSubmitError(null);
-    try {
-      await api.post(`/recycling/${selectedPassport.passportId}/dispose`, {});
-      closeAll();
-      await fetchPassports();
-    } catch (err) {
-      const { toast, debug, category } = toastFromError(err);
-      console.warn('[recycling] mutation failed', { category, debug });
-      setSubmitError(toast);
-    }
-    finally { setSubmitting(false); }
   };
 
   if (loading) {
