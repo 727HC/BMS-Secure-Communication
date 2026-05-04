@@ -16,6 +16,7 @@ status: historical
 - [[passport/activity-log/README|날짜별 활동 로그 허브]]
 
 ## 날짜별 기록
+- [[passport/activity-log/2026-05-04|2026-05-04 5개 페이지 헬퍼 분리]]
 - [[passport/activity-log/2026-05-01-css-component-cleanup|2026-05-01 (2) CSS/컴포넌트 정리]]
 - [[passport/activity-log/2026-05-01|2026-05-01]]
 - [[passport/activity-log/2026-04-29|2026-04-29]]
