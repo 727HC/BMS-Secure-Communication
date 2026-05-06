@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { toastFromError } from '../lib/chaincodeErrorMessages';
 import { api } from '../lib/api';
 import { useAuth } from '../contexts/AuthContext';
+import { useOrgRoles } from '../lib/useOrgRoles';
 import { PageHead } from '../components/ui';
 import { BarRows } from '../components/ui/Charts';
 import {
@@ -19,7 +20,7 @@ import { useMaterialsData } from '../components/materials/useMaterialsData';
 export default function MaterialsPage() {
   const PAGE_SIZE = 12;
   const { org } = useAuth();
-  const isManufacturer = org === 'ManufacturerMSP';
+  const { isManufacturer } = useOrgRoles(org);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [showCreateModal, setShowCreateModal] = useState(false);
