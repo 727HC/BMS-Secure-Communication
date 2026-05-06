@@ -16,6 +16,8 @@ status: historical
 - [[passport/activity-log/README|날짜별 활동 로그 허브]]
 
 ## 날짜별 기록
+- [[passport/activity-log/2026-05-06-test-coverage|2026-05-06 (2) 전체 단위 테스트 커버리지 (1257/168)]]
+- [[passport/activity-log/2026-05-06|2026-05-06 페이지 라벨/권한 훅 통합 + useOrgRoles]]
 - [[passport/activity-log/2026-05-04|2026-05-04 5개 페이지 헬퍼 분리]]
 - [[passport/activity-log/2026-05-01-css-component-cleanup|2026-05-01 (2) CSS/컴포넌트 정리]]
 - [[passport/activity-log/2026-05-01|2026-05-01]]
