@@ -1,7 +1,7 @@
+import { useOrgRoles } from '../../lib/useOrgRoles';
+
 export function useRecyclingPermissions(org: string | null) {
-  const isEVManufacturer = org === 'EVManufacturerMSP';
-  const isService = org === 'ServiceMSP';
-  const isRegulator = org === 'RegulatorMSP';
+  const { isEVManufacturer, isService, isRegulator } = useOrgRoles(org);
   return {
     isEVManufacturer,
     isService,

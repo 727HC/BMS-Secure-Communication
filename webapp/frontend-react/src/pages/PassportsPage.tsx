@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { api } from '../lib/api';
 import { toastFromError } from '../lib/chaincodeErrorMessages';
 import { useAuth } from '../contexts/AuthContext';
+import { useOrgRoles } from '../lib/useOrgRoles';
 import PassportCreateModal, { type PassportCreateFormData } from '../components/modals/passports/PassportCreateModal';
 import { PageHead } from '../components/ui';
 import {
@@ -31,8 +32,7 @@ export default function PassportsPage() {
   const [creating, setCreating] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
-  const isManufacturer = org === 'ManufacturerMSP';
-  const isRegulator = org === 'RegulatorMSP';
+  const { isManufacturer, isRegulator } = useOrgRoles(org);
 
   const {
     passports,

@@ -3,6 +3,7 @@ import PassportDetailModalRouter, { type ModalKey } from '../components/passport
 import PassportDetailTabRouter, { type DetailTab } from '../components/passport-detail/PassportDetailTabRouter';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { useOrgRoles } from '../lib/useOrgRoles';
 import { getStatusBadge } from '../lib/helpers';
 import { PageHead, SkeletonCard } from '../components/ui';
 import PassportDetailSkeleton from '../components/passport-detail/PassportDetailSkeleton';
@@ -29,11 +30,7 @@ export default function PassportDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { org } = useAuth();
-
-  const isEV = org === 'EVManufacturerMSP';
-  const isService = org === 'ServiceMSP';
-  const isRegulator = org === 'RegulatorMSP';
-  const isManufacturer = org === 'ManufacturerMSP';
+  const { isManufacturer, isEVManufacturer: isEV, isService, isRegulator } = useOrgRoles(org);
 
   const [activeTab, setActiveTab] = useState<DetailTab>('identity');
   const [openModal, setOpenModal] = useState<ModalKey>(null);

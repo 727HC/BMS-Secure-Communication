@@ -1,6 +1,7 @@
+import { useOrgRoles } from '../../lib/useOrgRoles';
+
 export function useMaintenancePermissions(org: string | null) {
-  const isEVManufacturer = org === 'EVManufacturerMSP';
-  const isService = org === 'ServiceMSP';
+  const { isEVManufacturer, isService } = useOrgRoles(org);
   return {
     isEVManufacturer,
     isService,
