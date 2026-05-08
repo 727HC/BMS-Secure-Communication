@@ -13,6 +13,7 @@ Frame format (52 bytes):
 """
 
 import argparse
+import hashlib
 import struct
 import time
 import math
@@ -45,6 +46,8 @@ except ImportError:
 UART_SYNC_0 = 0xAA
 UART_SYNC_1 = 0x55
 BATTERY_DATA_SIZE = 48
+BMS_BINDING_CODE_SIZE = 4
+BMS_BINDING_CODE_OFFSET = 44
 NUM_CELLS = 11
 
 
@@ -67,6 +70,25 @@ def encode_cell_voltage(voltage: float) -> int:
 def encode_cell_soc(soc: float) -> int:
     """Encode cell SOC (0.0~1.0) to uint8 (0~255)"""
     return max(0, min(255, int(soc * 255)))
+
+
+def compute_bms_binding_code(bms_management_id: str) -> int:
+    """Derive a 32-bit signed-payload binding hint from a canonical BMS management ID."""
+    digest = hashlib.sha256(bms_management_id.strip().encode("utf-8")).digest()
+    return struct.unpack("<I", digest[:BMS_BINDING_CODE_SIZE])[0]
+
+
+def parse_bms_binding_code(value):
+    """Parse a decimal or 0x-prefixed uint32 binding code for reserved[4]."""
+    if value is None or value == "":
+        return None
+    try:
+        parsed = int(str(value).strip(), 0)
+    except ValueError as exc:
+        raise argparse.ArgumentTypeError("bms binding code must be decimal or 0x-prefixed uint32") from exc
+    if parsed < 0 or parsed > 0xFFFFFFFF:
+        raise argparse.ArgumentTypeError("bms binding code must fit uint32")
+    return parsed
 
 
 def crc8_maxim(data: bytes) -> int:
@@ -155,7 +177,7 @@ class BatterySimulator:
         self.freshness_counter += 1
 
 
-def pack_battery_data(state: dict) -> bytes:
+def pack_battery_data(state: dict, bms_binding_code: int = 0) -> bytes:
     """Pack battery state into 48-byte binary structure (BatteryData_t)"""
 
     data = struct.pack("<f", state["current_A"])                            # 4B
@@ -176,7 +198,7 @@ def pack_battery_data(state: dict) -> bytes:
     data += struct.pack("B", state["status_flags"])     # 1B
     data += struct.pack("B", state["cell_count"])       # 1B
     data += struct.pack("<I", state["freshness_counter"])  # 4B FC
-    data += b"\x00" * 4                                    # 4B reserved
+    data += struct.pack("<I", bms_binding_code & 0xFFFFFFFF) # 4B reserved[4] / bmsBindingCode32
 
     assert len(data) == BATTERY_DATA_SIZE, f"Data size mismatch: {len(data)} != {BATTERY_DATA_SIZE}"
     return data
@@ -217,7 +239,17 @@ def main():
                         help="UDP destination IP (default: 127.0.0.1)")
     parser.add_argument("--udp-port", type=int, default=5005,
                         help="UDP destination port (default: 5005)")
+    parser.add_argument("--bms-management-id", type=str, default=None,
+                        help="Canonical BMS management identifier; SHA-256 first 32 bits go to reserved[4] in direct UART mode")
+    parser.add_argument("--bms-binding-code", type=parse_bms_binding_code, default=None,
+                        help="Explicit uint32 binding code for reserved[4] (decimal or 0x-prefixed)")
     args = parser.parse_args()
+
+    bms_binding_code = args.bms_binding_code
+    if bms_binding_code is None and args.bms_management_id:
+        bms_binding_code = compute_bms_binding_code(args.bms_management_id)
+    if bms_binding_code is None:
+        bms_binding_code = 0
 
     sim = BatterySimulator()
 
@@ -240,13 +272,16 @@ def main():
         print("DRY RUN mode (no UART)")
 
     print(f"Sending battery data every {args.period*1000:.0f}ms")
+    print(f"BMS binding: 0x{bms_binding_code:08x} stored in payload bytes 44..47")
+    if args.udp and bms_binding_code:
+        print("NOTE: UDP mode sends Simulink-format doubles; run dataProcess.py with the same BMS binding option to inject reserved[4].")
     print("Press Ctrl+C to stop\n")
 
     frame_num = 0
     try:
         while True:
             state = sim.step(args.period)
-            battery_bytes = pack_battery_data(state)
+            battery_bytes = pack_battery_data(state, bms_binding_code)
             frame = build_uart_frame(battery_bytes)
 
             if udp_sock:

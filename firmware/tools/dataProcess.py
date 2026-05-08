@@ -24,6 +24,7 @@ import struct
 import time
 import sys
 import argparse
+import hashlib
 
 try:
     import serial
@@ -40,6 +41,8 @@ SIMULINK_PACKET_SIZE = 216  # 27 doubles * 8 bytes
 
 NUM_CELLS = 11
 BATTERY_DATA_SIZE = 48
+BMS_BINDING_CODE_SIZE = 4
+BMS_BINDING_CODE_OFFSET = 44
 
 UART_SYNC_0 = 0xAA
 UART_SYNC_1 = 0x55
@@ -62,6 +65,25 @@ def encode_cell_voltage(v: float) -> int:
 
 def encode_cell_soc(s: float) -> int:
     return max(0, min(255, int(s * 255)))
+
+
+def compute_bms_binding_code(bms_management_id: str) -> int:
+    """Derive a 32-bit signed-payload binding hint from a canonical BMS management ID."""
+    digest = hashlib.sha256(bms_management_id.strip().encode("utf-8")).digest()
+    return struct.unpack("<I", digest[:BMS_BINDING_CODE_SIZE])[0]
+
+
+def parse_bms_binding_code(value):
+    """Parse a decimal or 0x-prefixed uint32 binding code for reserved[4]."""
+    if value is None or value == "":
+        return None
+    try:
+        parsed = int(str(value).strip(), 0)
+    except ValueError as exc:
+        raise argparse.ArgumentTypeError("bms binding code must be decimal or 0x-prefixed uint32") from exc
+    if parsed < 0 or parsed > 0xFFFFFFFF:
+        raise argparse.ArgumentTypeError("bms binding code must fit uint32")
+    return parsed
 
 
 def crc8_maxim(data: bytes) -> int:
@@ -101,7 +123,7 @@ def parse_simulink_packet(data: bytes) -> dict:
 # ============================================================================
 #  Compress to 48-byte BatteryData_t
 # ============================================================================
-def compress_to_battery_data(parsed: dict, timestamp_ms: int) -> bytes:
+def compress_to_battery_data(parsed: dict, timestamp_ms: int, bms_binding_code: int = 0) -> bytes:
     """Compress parsed Simulink data to 48-byte BatteryData_t structure"""
 
     data = struct.pack("<f", float(parsed["current_A"]))                     # 4B
@@ -122,7 +144,7 @@ def compress_to_battery_data(parsed: dict, timestamp_ms: int) -> bytes:
     data += struct.pack("B", 0x00)                       # 1B status_flags
     data += struct.pack("B", NUM_CELLS)                  # 1B cell_count
     data += struct.pack("<I", 0)                           # 4B freshness_counter placeholder (CMU will overwrite)
-    data += b"\x00" * 4                                    # 4B reserved[4]
+    data += struct.pack("<I", bms_binding_code & 0xFFFFFFFF) # 4B reserved[4] / bmsBindingCode32
 
     assert len(data) == BATTERY_DATA_SIZE
     return data
@@ -152,7 +174,17 @@ def main():
                         help=f"UDP listen IP (default: {SIMULINK_UDP_IP})")
     parser.add_argument("--udp-port", type=int, default=SIMULINK_UDP_PORT,
                         help=f"UDP listen port (default: {SIMULINK_UDP_PORT})")
+    parser.add_argument("--bms-management-id", type=str, default=None,
+                        help="Canonical BMS management identifier; SHA-256 first 32 bits go to reserved[4]")
+    parser.add_argument("--bms-binding-code", type=parse_bms_binding_code, default=None,
+                        help="Explicit uint32 binding code for reserved[4] (decimal or 0x-prefixed)")
     args = parser.parse_args()
+
+    bms_binding_code = args.bms_binding_code
+    if bms_binding_code is None and args.bms_management_id:
+        bms_binding_code = compute_bms_binding_code(args.bms_management_id)
+    if bms_binding_code is None:
+        bms_binding_code = 0
 
     # Open UART
     try:
@@ -166,6 +198,7 @@ def main():
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     sock.bind((args.udp_ip, args.udp_port))
     print(f"UDP:  Listening on {args.udp_ip}:{args.udp_port}")
+    print(f"BMS binding: 0x{bms_binding_code:08x} stored in payload bytes 44..47")
     print(f"Waiting for Simulink data ({SIMULINK_PACKET_SIZE} bytes/packet)...")
     print("Press Ctrl+C to stop\n")
 
@@ -188,7 +221,7 @@ def main():
             elapsed_ms = int((time.time() - start_time) * 1000)
 
             # Compress and frame
-            battery_bytes = compress_to_battery_data(parsed, elapsed_ms)
+            battery_bytes = compress_to_battery_data(parsed, elapsed_ms, bms_binding_code)
             frame = build_uart_frame(battery_bytes)
 
             # Send via UART with pacing (wait for TX complete + inter-frame gap)

@@ -212,9 +212,38 @@ BMU 수신:
 | 38 | `status_flags` | 1B | uint8 | b0=charging, b1=balancing, b2=fault |
 | 39 | `cell_count` | 1B | uint8 | 활성 셀 수 (11) |
 | 40 | `freshness_counter` | 4B | uint32 | FC (anti-replay) |
-| 44 | `reserved[4]` | 4B | uint8 | 예약 |
+| 44 | `reserved[4]` | 4B | uint32 LE | v1.1 `bmsBindingCode32` 또는 0 |
 
 CAN DBC 파일: `BMS_SecureComm.dbc` (스케일링 factor/offset 포함)
+
+### BMS management identifier binding (v1.1)
+
+- 기존 48-byte `BatteryData_t` 크기는 유지한다.
+- payload bytes `44..47`의 기존 `reserved[4]`를 `bmsBindingCode32`로 재해석할 수 있다.
+- 값은 `SHA-256(canonical BMS management identifier)`의 첫 4바이트를 little-endian `uint32`로 저장한다.
+- 기본값 `0x00000000`은 legacy/미사용을 뜻하므로 기존 parser와 호환된다.
+- BMU는 전체 48B payload를 Ed25519로 서명하고 Agent는 같은 48B로 `dataHash`를 만들기 때문에, 이 4B 힌트도 서명/해시에 포함된다.
+- 32-bit 힌트는 충돌 리스크가 있으므로 full `bmsManagementId`는 Passport/Chaincode binding record에 저장하고, Agent는 `bmsBindingCode32`를 비교 신호로 사용해야 한다. 장기 v2에서는 더 큰 signed metadata 또는 payload 확장이 필요하다.
+
+
+Blockchain binding values:
+
+```text
+bmsManagementId: BMS-MGMT-001
+bmsBindingId: did:battery:001#BMS-MGMT-001
+bmsBindingCode32: 0x2c9a0e0c
+evidenceHash: b3c37ed2cdd2831cc0c212445905ced4a20ea51e129bff2e7418deddf7223178
+```
+
+`evidenceHash`는 `{bmsManagementId,bmsBindingId,bmsBindingCode32}` canonical JSON의 SHA-256이다.
+
+Producer tools:
+
+```bash
+python firmware/tools/dataProcess.py --bms-management-id BMS-MGMT-001
+python firmware/tools/battery_simulator.py --dry-run --bms-management-id BMS-MGMT-001
+python firmware/tools/test_bms_identifier_payload.py
+```
 
 ---
 

@@ -193,6 +193,8 @@ typedef struct {
  *  Parallel Assembly Configuration
  *============================================================================*/
 #define NUM_CELLS_PARALLEL          11U     /* Number of parallel cell assemblies */
+#define BMS_BINDING_CODE_OFFSET      44U     /* reserved[4] offset in BatteryData_t */
+#define BMS_BINDING_CODE_SIZE        4U      /* uint32 LE bmsBindingCode32 */
 
 /*============================================================================
  *  Data Structures
@@ -213,7 +215,7 @@ typedef struct __attribute__((packed)) {
     uint8_t  status_flags;                      /*  1B : b0=charging b1=bal b2=fault     */
     uint8_t  cell_count;                        /*  1B : number of active cells          */
     uint32_t freshness_counter;                  /*  4B : FC (big-endian in CMAC input)   */
-    uint8_t  reserved[4];                       /*  4B : reserved / future use           */
+    uint8_t  reserved[4];                       /*  4B : v1.1 bmsBindingCode32 LE or 0   */
 } BatteryData_t;
 /* static_assert: 4+4+2+2+2+11+11+2+1+1+4+4 = 48 */
 
