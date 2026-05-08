@@ -55,6 +55,26 @@ describe('PassportCreateModal', () => {
     expect(options.length).toBe(12);
   });
 
+  it('renders 3rd-year extension fields when expanded', () => {
+    const { getByText } = render(<PassportCreateModal open={true} submitting={false} onClose={vi.fn()} onSubmit={vi.fn()} />);
+    fireEvent.click(getByText('+ 상세 사양 입력 (GBA 필드)'));
+    expect(getByText('3차년도 전주기 / 확장 속성')).not.toBeNull();
+    expect(getByText('제조 공정')).not.toBeNull();
+    expect(getByText('폐기 방법')).not.toBeNull();
+    expect(getByText('재활용 원료 비율 JSON')).not.toBeNull();
+    expect(getByText('확장 정보 JSON')).not.toBeNull();
+  });
+
+  it('blocks submit when extension JSON is invalid', () => {
+    const { getByText, getByPlaceholderText } = render(<PassportCreateModal open={true} submitting={false} onClose={vi.fn()} onSubmit={vi.fn()} />);
+    fireEvent.change(getByPlaceholderText('예: BMU-DEVICE-001'), { target: { value: 'SN1' } });
+    fireEvent.change(getByPlaceholderText('예: did:sov:abc123'), { target: { value: 'did:x' } });
+    fireEvent.click(getByText('+ 상세 사양 입력 (GBA 필드)'));
+    fireEvent.change(getByPlaceholderText('예: {"bmsProfile":"BMS-v3","oracle":"verified"}'), { target: { value: '{bad' } });
+    expect(getByText('올바른 JSON 객체가 아닙니다.')).not.toBeNull();
+    expect((getByText('여권 발급') as HTMLButtonElement).disabled).toBe(true);
+  });
+
   it('shows 발급 중... while submitting', () => {
     const { getByText, getByPlaceholderText } = render(<PassportCreateModal open={true} submitting={true} onClose={vi.fn()} onSubmit={vi.fn()} />);
     fireEvent.change(getByPlaceholderText('예: BMU-DEVICE-001'), { target: { value: 'X' } });

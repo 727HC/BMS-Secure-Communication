@@ -1,6 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { api } from '../../lib/api';
 import type { Passport, BmuRecord, Credential, IssuerCatalogItem } from './types';
+
+const DETAIL_REFRESH_MS = 3000;
 
 function errorMessage(reason: unknown) {
   return reason instanceof Error ? reason.message : '여권을 불러오지 못했습니다.';
@@ -20,15 +22,15 @@ export function usePassportDetailData({ id, activeTab, org }: Args) {
   const [issuers, setIssuers] = useState<IssuerCatalogItem[]>([]);
   const [fetchError, setFetchError] = useState<string | null>(null);
 
-  const fetchAll = async () => {
+  const fetchAll = useCallback(async ({ silent = false }: { silent?: boolean } = {}) => {
     if (!id) {
       setPassport(null);
       setBmuRecords([]);
       setFetchError('요청한 여권 ID가 없습니다.');
-      setLoading(false);
+      if (!silent) setLoading(false);
       return;
     }
-    setLoading(true);
+    if (!silent) setLoading(true);
     setFetchError(null);
     try {
       const [p, bmu] = await Promise.allSettled([
@@ -48,14 +50,17 @@ export function usePassportDetailData({ id, activeTab, org }: Args) {
         setBmuRecords([]);
       }
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
-  };
+  }, [id]);
 
   useEffect(() => {
     fetchAll();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [id]);
+    const intervalId = window.setInterval(() => {
+      fetchAll({ silent: true });
+    }, DETAIL_REFRESH_MS);
+    return () => window.clearInterval(intervalId);
+  }, [fetchAll]);
 
   useEffect(() => {
     if (!id || activeTab !== 'trust') return;

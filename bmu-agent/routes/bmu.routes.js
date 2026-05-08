@@ -7,12 +7,21 @@ const { parseRawPayload } = require('../services/bmu-parser.service');
 const { DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE, DID_CACHE_TTL_MS, MSP } = require('../config/constants');
 const { authenticateToken } = require('../middleware/auth');
 const { requireMSP } = require('../middleware/rbac');
+const { createRateLimiter } = require('../middleware/rate-limit');
 const { createLogger } = require('../services/logger.service');
 const { sendChaincodeError } = require('../middleware/chaincode-error');
+const {
+  validateId,
+  validateText,
+  validatePageSize,
+  validateBookmark,
+  firstError,
+} = require('../utils/request-validation');
 const {
   SEED_FLAG,
   isDashboardPassportSeedEnabled,
 } = require('../services/devPassportSeed.service');
+const { recordRuntimeBmuSnapshot } = require('../services/runtimeBmuSnapshot.service');
 const log = createLogger('bmu');
 
 // P0-3: unsigned BMU 완전 거부 (임베디드 확인: BMU는 100% 서명 포함)
@@ -20,35 +29,74 @@ const log = createLogger('bmu');
 // Rate limit for /api/bmu/data — sliding window per IP
 const BMU_RATE_LIMIT = parseInt(process.env.BMU_RATE_LIMIT || '200', 10); // max requests per window
 const BMU_RATE_WINDOW_MS = parseInt(process.env.BMU_RATE_WINDOW_MS || '60000', 10); // 1 min
-const rateBuckets = new Map();
-// Purge expired rate-limit buckets every 5 minutes
-setInterval(() => {
-  const now = Date.now();
-  for (const [key, bucket] of rateBuckets) {
-    if (now - bucket.start > BMU_RATE_WINDOW_MS) rateBuckets.delete(key);
-  }
-}, 5 * 60 * 1000).unref();
-
-function bmuRateLimit(req, res, next) {
-  const key = req.ip;
-  const now = Date.now();
-  let bucket = rateBuckets.get(key);
-  if (!bucket || now - bucket.start > BMU_RATE_WINDOW_MS) {
-    bucket = { start: now, count: 0 };
-    rateBuckets.set(key, bucket);
-  }
-  bucket.count++;
-  if (bucket.count > BMU_RATE_LIMIT) {
-    return res.status(429).json({ error: 'rate limit exceeded' });
-  }
-  next();
-}
+const bmuRateLimit = createRateLimiter({
+  windowMs: BMU_RATE_WINDOW_MS,
+  max: BMU_RATE_LIMIT,
+  keyFn: (req) => req.ip || 'unknown',
+});
 
 // P1-8: DID → passportId cache with TTL + Promise deduplication
 const CACHE_TTL = DID_CACHE_TTL_MS;
 const DID_CACHE_MAX = parseInt(process.env.DID_CACHE_MAX || '500', 10);
 const didPassportCache = new Map();
 const didPassportPending = new Map();
+
+function validationError(res, error) {
+  return res.status(400).json({ error, category: 'VAL' });
+}
+
+function isBmuBindingRequired() {
+  return /^(1|true|yes|on)$/i.test(String(process.env.BMU_BINDING_REQUIRED || ''));
+}
+
+function deriveBmsBindingCode32(canonicalId) {
+  return crypto.createHash('sha256').update(canonicalId).digest().readUInt32LE(0);
+}
+
+function normalizePassportBinding(passport) {
+  const bmsManagementId = typeof passport?.bmsManagementId === 'string' ? passport.bmsManagementId.trim() : '';
+  const storedCode = Number(passport?.bmsBindingCode32 || 0);
+  if (!bmsManagementId) {
+    return {
+      bound: false,
+      bmsManagementId: '',
+      expectedCode32: 0,
+      storedCode32: storedCode,
+    };
+  }
+  return {
+    bound: true,
+    bmsManagementId,
+    expectedCode32: deriveBmsBindingCode32(bmsManagementId),
+    storedCode32: storedCode,
+  };
+}
+
+function evaluateBmsIdentifierMatch(passport, parsed) {
+  const binding = normalizePassportBinding(passport);
+  if (!binding.bound) {
+    return {
+      ...binding,
+      matched: null,
+      reason: 'BMS management identifier not bound',
+    };
+  }
+  const storedMatches = binding.storedCode32 === 0 || binding.storedCode32 === binding.expectedCode32;
+  const payloadMatches = parsed.bmsBindingCode32 === binding.expectedCode32;
+  return {
+    ...binding,
+    matched: storedMatches && payloadMatches,
+    reason: storedMatches && payloadMatches ? 'matched' : 'BMS binding code mismatch',
+  };
+}
+
+function readPagination(req) {
+  const pageSize = validatePageSize(req.query.pageSize, DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE);
+  if (pageSize.error) return { error: pageSize.error };
+  const bookmark = validateBookmark(req.query.bookmark);
+  if (bookmark.error) return { error: bookmark.error };
+  return { pageSize: pageSize.value, bookmark: bookmark.value };
+}
 
 // Evict expired + oldest entries when cache exceeds max size
 function evictCache() {
@@ -63,10 +111,10 @@ function evictCache() {
   }
 }
 
-async function resolvePassportId(did) {
+async function resolvePassportForDid(did, options = {}) {
   const cached = didPassportCache.get(did);
-  if (cached && Date.now() - cached.ts < CACHE_TTL) {
-    return cached.passportId;
+  if (!options.forceRefresh && cached && Date.now() - cached.ts < CACHE_TTL) {
+    return cached.passport;
   }
 
   if (didPassportPending.has(did)) {
@@ -79,8 +127,8 @@ async function resolvePassportId(did) {
       const passport = JSON.parse(result.toString());
       if (passport && passport.passportId) {
         evictCache();
-        didPassportCache.set(did, { passportId: passport.passportId, ts: Date.now() });
-        return passport.passportId;
+        didPassportCache.set(did, { passport, ts: Date.now() });
+        return passport;
       }
       return null;
     } finally {
@@ -97,24 +145,26 @@ router.post('/data', authenticateToken, requireMSP(MSP.MANUFACTURER), bmuRateLim
   const { rawPayload, signature, did: reqDid } = req.body;
   const did = reqDid;
 
-  if (!rawPayload) {
-    return res.status(400).json({ error: 'rawPayload required' });
-  }
-  if (!did) {
-    return res.status(400).json({ error: 'did required' });
-  }
+  const bodyError = firstError(
+    validateText(rawPayload, 'rawPayload', { min: 1, max: 512 }),
+    validateId(did, 'did', { max: 256, pattern: /^[A-Za-z0-9._:-]+$/ })
+  );
+  if (bodyError) return validationError(res, bodyError);
 
   // P0-3: 서명 필수 (BMU는 항상 Ed25519 서명 포함)
   if (!signature || signature === 'none') {
-    return res.status(400).json({ error: 'signature required' });
+    return validationError(res, 'signature required');
   }
   // 형식 검증: signR(64hex) + signS(64hex) = 128 lowercase hex chars
   if (typeof signature !== 'string' || signature.length !== 128 || !/^[0-9a-f]+$/.test(signature)) {
-    return res.status(400).json({ error: 'signature must be 128 lowercase hex chars (signR||signS)' });
+    return validationError(res, 'signature must be 128 lowercase hex chars (signR||signS)');
   }
 
   try {
     const parsed = parseRawPayload(rawPayload);
+    if (isBmuBindingRequired() && parsed.bmsBindingCode32 === 0) {
+      return validationError(res, 'bmsBindingCode32 required');
+    }
 
     // Ed25519 서명 검증 (P0-3: 위에서 signature 필수 검증 완료)
     const verifyTarget = Buffer.from(rawPayload, 'hex');
@@ -127,23 +177,35 @@ router.post('/data', authenticateToken, requireMSP(MSP.MANUFACTURER), bmuRateLim
       .update(Buffer.from(rawPayload, 'hex'))
       .digest('hex');
 
-    let passportId;
+    let passport;
     try {
-      passportId = await resolvePassportId(did);
+      passport = await resolvePassportForDid(did);
     } catch (err) {
       log.warn('DID->passport lookup failed', { did, error: err.message });
       return res.status(502).json({ error: `failed to resolve passport for DID ${did}` });
     }
 
-    if (!passportId) {
+    if (!passport?.passportId) {
       return res.status(404).json({ error: `no passport found for DID ${did}` });
+    }
+    const passportId = passport.passportId;
+    if (!passport.bmsManagementId && parsed.bmsBindingCode32 !== 0) {
+      passport = await resolvePassportForDid(did, { forceRefresh: true }) || passport;
+    }
+    const bmsIdentifier = evaluateBmsIdentifierMatch(passport, parsed);
+    if (isBmuBindingRequired() && !bmsIdentifier.bound) {
+      return validationError(res, 'BMS management identifier required');
+    }
+    if (bmsIdentifier.bound && !bmsIdentifier.matched) {
+      return validationError(
+        res,
+        `BMS binding code mismatch: payload bmsBindingCode32 ${parsed.bmsBindingCode32} does not match expected ${bmsIdentifier.expectedCode32}`
+      );
     }
 
     const recordId = `BMU-${crypto.randomUUID()}`;
     const timestamp = new Date().toISOString();
-
-    // BMU 데이터는 제조사 admin으로 기록 (M2M 통신)
-    await fabricService.submitTransaction('RecordBMUData', [
+    const baseArgs = [
       recordId, passportId, did, dataHash,
       signature,
       String(parsed.freshnessCounter), String(parsed.soc),
@@ -151,11 +213,35 @@ router.post('/data', authenticateToken, requireMSP(MSP.MANUFACTURER), bmuRateLim
       String(parsed.temperature), String(parsed.cellCount),
       String(parsed.statusFlags), String(parsed.dischargeCycles),
       timestamp,
-    ]);
+    ];
+    const txName = bmsIdentifier.bound ? 'RecordBMUDataWithPayload' : 'RecordBMUData';
+    const txArgs = bmsIdentifier.bound ? [...baseArgs, rawPayload] : baseArgs;
+
+    // BMU 데이터는 제조사 admin으로 기록 (M2M 통신)
+    await fabricService.submitTransaction(txName, txArgs);
+    recordRuntimeBmuSnapshot({
+      recordId,
+      passportId,
+      did,
+      dataHash,
+      soc: parsed.soc,
+      voltage: parsed.voltage,
+      current: parsed.current,
+      temperature: parsed.temperature,
+      cellCount: parsed.cellCount,
+      statusFlags: parsed.statusFlags,
+      dischargeCycles: parsed.dischargeCycles,
+      timestamp,
+      bmsBindingCode32: parsed.bmsBindingCode32,
+      bmsBindingCodeHex: parsed.bmsBindingCodeHex,
+    });
 
     log.info('BMU recorded', {
-      action: 'RecordBMUData', recordId, passportId,
+      action: txName, recordId, passportId,
       did, fc: parsed.freshnessCounter, soc: parsed.soc,
+      bmsBindingCode32: parsed.bmsBindingCode32,
+      bmsBindingCodeHex: parsed.bmsBindingCodeHex,
+      bmsIdentifierMatched: bmsIdentifier.matched,
       voltage: parsed.voltage, temperature: parsed.temperature,
       statusFlags: parsed.statusFlags, dischargeCycles: parsed.dischargeCycles,
       data: { soc: parsed.soc, voltage: parsed.voltage, current: parsed.current, temperature: parsed.temperature },
@@ -167,10 +253,21 @@ router.post('/data', authenticateToken, requireMSP(MSP.MANUFACTURER), bmuRateLim
         soc: parsed.soc, voltage: parsed.voltage, current: parsed.current,
         temperature: parsed.temperature, cellCount: parsed.cellCount,
         dischargeCycles: parsed.dischargeCycles, statusFlags: parsed.statusFlags,
+        bmsBindingCode32: parsed.bmsBindingCode32,
+        bmsBindingCodeHex: parsed.bmsBindingCodeHex,
+      },
+      bindingSignals: {
+        didMatched: true,
+        bmsIdentifierMatched: bmsIdentifier.matched,
+        expectedBmsBindingCode32: bmsIdentifier.expectedCode32 || undefined,
+        storedBmsBindingCode32: bmsIdentifier.storedCode32 || undefined,
       },
     });
   } catch (err) {
     log.error('BMU record failed', { action: 'RecordBMUData', did, error: err.message });
+    if (/^rawPayload /.test(err.message)) {
+      return validationError(res, err.message);
+    }
     sendChaincodeError(res, err);
   }
 });
@@ -178,8 +275,11 @@ router.post('/data', authenticateToken, requireMSP(MSP.MANUFACTURER), bmuRateLim
 // GET /api/bmu/records/:passportId
 router.get('/records/:passportId', authenticateToken, async (req, res) => {
   try {
-    const pageSize = Math.min(parseInt(req.query.pageSize || String(DEFAULT_PAGE_SIZE), 10), MAX_PAGE_SIZE);
-    const bookmark = req.query.bookmark || '';
+    const idError = validateId(req.params.passportId, 'passportId');
+    if (idError) return validationError(res, idError);
+    const pagination = readPagination(req);
+    if (pagination.error) return validationError(res, pagination.error);
+    const { pageSize, bookmark } = pagination;
     if (isDashboardPassportSeedEnabled() && /^DEV-DASH-P-/.test(req.params.passportId)) {
       res.set('X-BMS-Dev-Seed', SEED_FLAG);
       return res.json({ records: [], bookmark: '', count: 0 });
@@ -197,9 +297,11 @@ router.get('/records/:passportId', authenticateToken, async (req, res) => {
 // POST /api/bmu/invalidate/:recordId — Invalidate a BMU record
 router.post('/invalidate/:recordId', authenticateToken, requireMSP(MSP.MANUFACTURER, MSP.REGULATOR), async (req, res) => {
   const { reason } = req.body;
-  if (!reason) {
-    return res.status(400).json({ error: 'reason required' });
-  }
+  const bodyError = firstError(
+    validateId(req.params.recordId, 'recordId'),
+    validateText(reason, 'reason', { min: 1, max: 512 })
+  );
+  if (bodyError) return validationError(res, bodyError);
   try {
     await fabricService.submitTransaction('InvalidateBMURecord', [
       req.params.recordId, reason,

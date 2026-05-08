@@ -21,6 +21,11 @@ PORT=3001                                   # 서버 포트
 FABRIC_ORG=1|2|3|4                          # 소속 조직 (1=Manufacturer, 4=Regulator)
 ALLOW_OPEN_REGISTRATION=false               # true면 /auth/register 공개 (개발용)
 BMU_RATE_LIMIT=200                          # /api/bmu/data IP당 1분 한도
+BMU_BINDING_REQUIRED=false                  # true면 rawPayload bytes 44..47 bmsBindingCode32=0 거부
+BMS_MANAGEMENT_ID=BMS-MGMT-001              # 초기 BMS binding 기본 canonical ID
+BMS_BINDING_ID=did:battery:001#BMS-MGMT-001 # 초기 BMS binding 기본 DID fragment
+BMS_BINDING_CODE32=0x2c9a0e0c               # SHA-256(BMS_MANAGEMENT_ID) first32LE
+BMS_EVIDENCE_HASH=b3c37ed2cdd2831cc0c212445905ced4a20ea51e129bff2e7418deddf7223178 # canonical binding evidence SHA-256
 DID_CACHE_MAX=500                           # DID→passportId 캐시 크기
 JWT_SECRET=...                              # 토큰 서명 비밀
 ```
@@ -50,6 +55,7 @@ React 빌드(`webapp/frontend-react/dist/`)가 있으면 `/`에서 자동 서빙
 /api/auth              POST  /login, /register
 /api/passports         GET|POST /, GET /:id, GET /:id/history, GET /:id/corrections
                        PUT  /:id/bind, /:id/regulatory-verification, /:id/physical-verification
+                       POST /:id/extended-attributes, /:id/bms-binding, /:id/source-verification
                        POST /:id/correct, /:id/materials, /:id/vehicle-image
                        GET  /:id/vehicle-image
 /api/materials         GET, POST /
@@ -78,12 +84,30 @@ POST /api/bmu/data
   ↓ 서명 필수 체크 → Ed25519 verifySignature
   ↓ dataHash = SHA-256(rawPayload)
   ↓ DID → passportId 캐시 조회 (Promise dedup, TTL)
-  ↓ parseRawPayload — SOC/전압/전류/온도/셀 voltage·SOC[11]/플래그 디코드
-  ↓ Fabric submitTransaction('RecordBMUData', [...])
+  ↓ parseRawPayload — SOC/전압/전류/온도/셀 voltage·SOC[11]/플래그/bmsBindingCode32 디코드
+  ↓ passport에 bmsManagementId가 있으면 bmsBindingCode32 비교
+  ↓ Fabric submitTransaction('RecordBMUDataWithPayload', [..., rawPayload]) 또는 legacy 'RecordBMUData'
   ↓ 체인코드가 원장에 기록
 ```
 
-`parseRawPayload`는 raw soc_u16 그대로 반환 (보정 없음). `dataHash` 무결성 유지 — 저장된 soc는 rawPayload 안의 값과 1:1 대응.
+`parseRawPayload`는 raw soc_u16 그대로 반환 (보정 없음). bytes 44..47은 v1.1 `bmsBindingCode32`(little-endian uint32, `0=legacy`)로 노출한다. `dataHash`는 전체 48B `rawPayload` 기준이므로 `bmsBindingCode32`도 자동 포함된다.
+
+## 3차년도 확장 속성 / BMS binding
+
+초기 `CreateBatteryPassport` 인자 순서는 유지한다. 발급 직후 다음 Passport API가 live chaincode Version 1.4 / Sequence 5 트랜잭션을 호출한다. Fabric client는 chaincode name `passport-contract`로 호출하므로 Agent에서 sequence를 별도 지정하지 않는다.
+
+- `POST /api/passports/:id/extended-attributes` → `SetPassportExtendedAttributes`
+- `POST /api/passports/:id/bms-binding` → `BindBMSIdentifier`
+- `POST /api/passports/:id/source-verification` → `RecordSourceVerification`
+
+기본 BMS 값은 임베디드/BMU 세션 확정값을 따른다.
+
+```text
+bmsManagementId: BMS-MGMT-001
+bmsBindingId: did:battery:001#BMS-MGMT-001
+bmsBindingCode32: 0x2c9a0e0c
+evidenceHash: b3c37ed2cdd2831cc0c212445905ced4a20ea51e129bff2e7418deddf7223178
+```
 
 ## 구조화 로깅
 

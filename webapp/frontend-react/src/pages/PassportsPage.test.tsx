@@ -138,7 +138,50 @@ describe('PassportsPage', () => {
     fireEvent.change(getByPlaceholderText('예: did:sov:abc123'), { target: { value: 'did:x' } });
     fireEvent.submit(container.querySelector('form') as HTMLFormElement);
     await waitFor(() => expect(apiPostMock).toHaveBeenCalledWith('/passports', expect.any(Object)));
+    expect(apiPostMock.mock.calls[0][1]).not.toHaveProperty('extensionInfo');
+    await waitFor(() => expect(apiPostMock).toHaveBeenCalledWith('/passports/P-NEW/bms-binding', {
+      reason: 'initial BMS binding',
+    }));
+    expect(apiPostMock).toHaveBeenCalledWith('/passports/P-NEW/source-verification', expect.objectContaining({
+      sourceType: 'BMS_BINDING',
+      sourceId: 'did:battery:001#BMS-MGMT-001',
+      dataHash: 'b3c37ed2cdd2831cc0c212445905ced4a20ea51e129bff2e7418deddf7223178',
+      result: true,
+    }));
     await waitFor(() => expect(lastPath).toBe('/passports/P-NEW'));
     await waitFor(() => expect(apiGetMock).toHaveBeenCalledWith('/passports'));
+  });
+
+  it('applies 3rd-year extension fields via SetPassportExtendedAttributes endpoint after create', async () => {
+    sessionStorage.setItem('auth_org', 'ManufacturerMSP');
+    apiPostMock.mockResolvedValue({ passportId: 'P-NEW' });
+    apiGetMock.mockResolvedValue({ records: [{ passportId: 'P-NEW' } as Passport] });
+    const { container, getByText, getByPlaceholderText } = renderPage();
+    fireEvent.click(getByText('발급 접수'));
+    fireEvent.change(getByPlaceholderText('예: BMU-DEVICE-001'), { target: { value: 'SN1' } });
+    fireEvent.change(getByPlaceholderText('예: did:sov:abc123'), { target: { value: 'did:x' } });
+    fireEvent.click(getByText('+ 상세 사양 입력 (GBA 필드)'));
+    fireEvent.change(getByPlaceholderText('예: formation-inspection-sealing'), { target: { value: ' formation ' } });
+    fireEvent.change(getByPlaceholderText('예: certified-recycler-transfer'), { target: { value: ' certified ' } });
+    fireEvent.change(getByPlaceholderText('예: {"cobalt":12.5,"lithium":8.1}'), { target: { value: '{ "cobalt": 12.5 }' } });
+    fireEvent.change(getByPlaceholderText('예: {"bmsProfile":"BMS-v3","oracle":"verified"}'), { target: { value: '{ "bmsProfile": "BMS-v3" }' } });
+    fireEvent.submit(container.querySelector('form') as HTMLFormElement);
+
+    await waitFor(() => expect(apiPostMock).toHaveBeenCalledWith('/passports', expect.any(Object)));
+    await waitFor(() => expect(apiPostMock).toHaveBeenCalledWith('/passports/P-NEW/extended-attributes', {
+      manufacturingProcess: 'formation',
+      disposalMethod: 'certified',
+      recycledElementContent: '{"cobalt":12.5}',
+      extensionInfo: '{"bmsProfile":"BMS-v3"}',
+      reason: '초기 발급 시 3차년도 확장 속성 등록',
+    }));
+    expect(apiPostMock).toHaveBeenCalledWith('/passports/P-NEW/bms-binding', { reason: 'initial BMS binding' });
+    expect(apiPostMock).toHaveBeenCalledWith('/passports/P-NEW/source-verification', expect.objectContaining({
+      details: {
+        bmsManagementId: 'BMS-MGMT-001',
+        bmsBindingId: 'did:battery:001#BMS-MGMT-001',
+        bmsBindingCode32: '0x2c9a0e0c',
+      },
+    }));
   });
 });

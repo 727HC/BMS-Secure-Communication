@@ -69,7 +69,28 @@ describe('toastFromError — VAL refinements', () => {
   });
 
   it('DID mismatch', () => {
-    expect(toastFromError(new ApiError('DID mismatch', 400, 'VAL')).toast).toContain('DID');
+    expect(toastFromError(new ApiError('holder DID mismatch: passport P1 is registered to DID did:1, not did:2', 400, 'VAL')).toast).toContain('DID');
+  });
+
+  it('RFC3339 expiry and timestamp errors', () => {
+    expect(toastFromError(new ApiError('invalid expiresAt value: parsing time "2026-05-08"', 400, 'VAL')).toast)
+      .toContain('RFC3339');
+    expect(toastFromError(new ApiError('invalid timestamp value: parsing time "2026-05-08"', 400, 'VAL')).toast)
+      .toContain('RFC3339');
+  });
+
+  it('dataHash and missing signature errors', () => {
+    expect(toastFromError(new ApiError('dataHash must be 64-character hex SHA-256', 400, 'VAL')).toast)
+      .toContain('해시');
+    expect(toastFromError(new ApiError('recordId, passportId, did, dataHash, signature, timestamp must not be empty', 400, 'VAL')).toast)
+      .toContain('서명');
+  });
+
+  it('BMS binding and rawPayload errors', () => {
+    expect(toastFromError(new ApiError('BMS binding code mismatch: payload bmsBindingCode32 1', 400, 'VAL')).toast)
+      .toContain('BMS');
+    expect(toastFromError(new ApiError('rawPayload must be 48 bytes, got 47', 400, 'VAL')).toast)
+      .toContain('페이로드');
   });
 
   it('falls back to category default for unknown VAL message', () => {

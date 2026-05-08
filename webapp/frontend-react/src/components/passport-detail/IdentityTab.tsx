@@ -6,6 +6,7 @@ import type { Passport } from './types';
 export default function IdentityTab({ passport }: { passport: Passport }) {
   const voltage = parseVoltageRange(passport.voltageRange);
   const temp = parseTempRange(passport.temperatureRange);
+  const soceValue = typeof passport.soce === 'number' && passport.soce > 0 ? `${passport.soce}%` : '미수집';
   const formatExtraValue = (value: unknown) => {
     if (value == null || value === '') return '정보 없음';
     if (typeof value === 'object') {
@@ -75,7 +76,7 @@ export default function IdentityTab({ passport }: { passport: Passport }) {
             <SpecRow k="확장 정보" v={formatExtraValue(passport.extensionInfo)} />
             <SpecRow k="SOC" v={passport.currentSoc != null ? `${scaleSOC(passport.currentSoc)}%` : '--%'} />
             <SpecRow k="SOH" v={passport.currentSoh != null ? `${passport.currentSoh}%` : '--%'} />
-            <SpecRow k="SOCE" v={passport.soce != null ? `${passport.soce}%` : '--%'} />
+            <SpecRow k="SOCE" v={soceValue} />
             <SpecRow k="누적 방전" v={passport.totalDischargeCycles != null ? `${passport.totalDischargeCycles} 사이클` : '-'} />
             <div style={{ flex: 1 }} />
             <div style={{ flex: 1 }} />

@@ -49,9 +49,10 @@ describe('IdentityTab', () => {
     expect(getByText('V123')).not.toBeNull();
   });
 
-  it('renders --% for missing SOC/SOH/SOCE', () => {
-    const { getAllByText } = render(<IdentityTab passport={buildPassport()} />);
-    expect(getAllByText('--%').length).toBeGreaterThanOrEqual(3);
+  it('renders --% for missing SOC/SOH and 미수집 for missing SOCE', () => {
+    const { getAllByText, getByText } = render(<IdentityTab passport={buildPassport()} />);
+    expect(getAllByText('--%').length).toBeGreaterThanOrEqual(2);
+    expect(getByText('미수집')).not.toBeNull();
   });
 
   it('formats SOH as N% when present', () => {
@@ -62,6 +63,11 @@ describe('IdentityTab', () => {
   it('formats SOC via scaleSOC (≤100 passthrough)', () => {
     const { getByText } = render(<IdentityTab passport={buildPassport({ currentSoc: 75 })} />);
     expect(getByText('75%')).not.toBeNull();
+  });
+
+  it('hides default SOCE=0 as 미수집', () => {
+    const { getByText } = render(<IdentityTab passport={buildPassport({ soce: 0 })} />);
+    expect(getByText('미수집')).not.toBeNull();
   });
 
   it('renders 정보 없음 fallback for missing manufacturingProcess/disposalMethod', () => {

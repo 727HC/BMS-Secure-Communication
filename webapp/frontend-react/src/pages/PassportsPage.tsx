@@ -21,6 +21,61 @@ import { usePassportsData } from '../components/passports/usePassportsData';
 import PassportsLoadingSkeleton from '../components/passports/PassportsLoadingSkeleton';
 import { usePassportsLabels } from '../components/passports/usePassportsLabels';
 
+const INITIAL_EXTENDED_FIELDS = [
+  'manufacturingProcess',
+  'disposalMethod',
+  'recycledElementContent',
+  'extensionInfo',
+] as const;
+type InitialExtendedField = typeof INITIAL_EXTENDED_FIELDS[number];
+type PassportCreatePayload = Omit<PassportCreateFormData, InitialExtendedField>;
+const INITIAL_BMS_BINDING_SOURCE = {
+  sourceType: 'BMS_BINDING',
+  sourceId: 'did:battery:001#BMS-MGMT-001',
+  dataHash: 'b3c37ed2cdd2831cc0c212445905ced4a20ea51e129bff2e7418deddf7223178',
+  result: true,
+  details: {
+    bmsManagementId: 'BMS-MGMT-001',
+    bmsBindingId: 'did:battery:001#BMS-MGMT-001',
+    bmsBindingCode32: '0x2c9a0e0c',
+  },
+};
+
+function buildCreatePayload(data: PassportCreateFormData): PassportCreatePayload {
+  const {
+    manufacturingProcess: _manufacturingProcess,
+    disposalMethod: _disposalMethod,
+    recycledElementContent: _recycledElementContent,
+    extensionInfo: _extensionInfo,
+    ...payload
+  } = data;
+  return payload;
+}
+
+function normalizeExtendedValue(fieldName: InitialExtendedField, value: string): string {
+  const trimmed = value.trim();
+  if (fieldName === 'recycledElementContent' || fieldName === 'extensionInfo') {
+    return JSON.stringify(JSON.parse(trimmed));
+  }
+  return trimmed;
+}
+
+function buildInitialExtendedAttributes(data: PassportCreateFormData) {
+  const payload = {
+    manufacturingProcess: data.manufacturingProcess.trim(),
+    disposalMethod: data.disposalMethod.trim(),
+    recycledElementContent: data.recycledElementContent.trim()
+      ? normalizeExtendedValue('recycledElementContent', data.recycledElementContent)
+      : '',
+    extensionInfo: data.extensionInfo.trim()
+      ? normalizeExtendedValue('extensionInfo', data.extensionInfo)
+      : '',
+    reason: '초기 발급 시 3차년도 확장 속성 등록',
+  };
+  const hasValue = INITIAL_EXTENDED_FIELDS.some((fieldName) => Boolean(payload[fieldName]));
+  return hasValue ? payload : null;
+}
+
 export default function PassportsPage() {
   const navigate = useNavigate();
   const { org } = useAuth();
@@ -69,8 +124,16 @@ export default function PassportsPage() {
     setCreating(true);
     setSubmitError(null);
     try {
-      const created = await api.post<{ passportId?: string }>('/passports', data);
+      const created = await api.post<{ passportId?: string }>('/passports', buildCreatePayload(data));
       const nextPassportId = created.passportId || data.passportId;
+      const extendedAttributes = buildInitialExtendedAttributes(data);
+      if (extendedAttributes) {
+        await api.post(`/passports/${encodeURIComponent(nextPassportId)}/extended-attributes`, extendedAttributes);
+      }
+      await api.post(`/passports/${encodeURIComponent(nextPassportId)}/bms-binding`, {
+        reason: 'initial BMS binding',
+      });
+      await api.post(`/passports/${encodeURIComponent(nextPassportId)}/source-verification`, INITIAL_BMS_BINDING_SOURCE);
       closeIssueFlow();
       navigate(`/passports/${nextPassportId}`);
 

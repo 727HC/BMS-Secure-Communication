@@ -11,6 +11,9 @@ status: current
 
 ## 현재 기준 문서
 - [[passport/overview|세션 개요]]
+- [[passport/live-bmu-runtime-2026-05-08|2026-05-08 MATLAB/BMU live runtime 기준]]
+- [[passport/bms-1-3-year-mapping-2026-05-08|BMS PDF 1~3차년도 Passport 반영 매핑]]
+- [[passport/cross-session-handoff-2026-05-08|2026-05-08 4세션 전달 내용 및 리스크]]
 - [[passport/frontend|프론트엔드 구조]]
 - [[passport/design-tokens|디자인 토큰]]
 - [[passport/ui-references|UI 레퍼런스]]

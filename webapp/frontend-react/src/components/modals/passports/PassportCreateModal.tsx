@@ -24,6 +24,10 @@ export interface PassportCreateFormData {
   voltageRange: string;
   temperatureRange: string;
   carbonFootprint: string;
+  manufacturingProcess: string;
+  disposalMethod: string;
+  recycledElementContent: string;
+  extensionInfo: string;
 }
 
 interface Props {
@@ -57,11 +61,32 @@ function emptyForm(): PassportCreateFormData {
     voltageRange: '',
     temperatureRange: '',
     carbonFootprint: '',
+    manufacturingProcess: '',
+    disposalMethod: '',
+    recycledElementContent: '',
+    extensionInfo: '',
   };
 }
 
 const CHEMISTRY_OPTIONS = ['NCM', 'NCA', 'LFP', 'LMO', 'LTO', 'Solid-State', '기타'];
 const CELL_TYPE_OPTIONS = ['Pouch', 'Cylindrical', 'Prismatic'];
+const JSON_FIELD_HINTS = {
+  recycledElementContent: '예: {"cobalt":12.5,"lithium":8.1}',
+  extensionInfo: '예: {"bmsProfile":"BMS-v3","oracle":"verified"}',
+} as const;
+
+function getJsonObjectError(value: string): string | null {
+  if (!value.trim()) return null;
+  try {
+    const parsed = JSON.parse(value);
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+      return 'JSON 객체 형태로 입력하세요.';
+    }
+  } catch {
+    return '올바른 JSON 객체가 아닙니다.';
+  }
+  return null;
+}
 
 export default function PassportCreateModal({ open, submitting, onClose, onSubmit }: Props) {
   const [form, setForm] = useState<PassportCreateFormData>(emptyForm);
@@ -74,7 +99,11 @@ export default function PassportCreateModal({ open, submitting, onClose, onSubmi
     }
   }, [open]);
 
-  const isValid = Boolean(form.passportId && form.batteryId && form.serialNumber && form.did);
+  const recycledElementContentError = getJsonObjectError(form.recycledElementContent);
+  const extensionInfoError = getJsonObjectError(form.extensionInfo);
+  const isValid = Boolean(form.passportId && form.batteryId && form.serialNumber && form.did)
+    && !recycledElementContentError
+    && !extensionInfoError;
 
   const handleSubmit = (e: React.SyntheticEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -95,7 +124,7 @@ export default function PassportCreateModal({ open, submitting, onClose, onSubmi
     <BaseModal open={open} onClose={onClose} title="배터리 여권 발급" maxWidth={720}>
       <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
         <p className="sn-caption" style={{ margin: 0 }}>
-          필수 필드를 입력하면 여권이 즉시 발급됩니다. 상세 사양은 함께 입력하거나 발급 후 상세 화면에서 데이터 정정으로 보완할 수 있습니다.
+          필수 필드를 입력하면 여권을 발급하고, 3차년도 확장 속성은 발급 직후 정정 원장으로 자동 보완합니다.
         </p>
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
@@ -223,6 +252,53 @@ export default function PassportCreateModal({ open, submitting, onClose, onSubmi
               <div>
                 <label className="sn-eyebrow" style={eyebrow}>탄소발자국 (kgCO₂e)</label>
                 <input type="number" step="0.1" className="sn-input" value={form.carbonFootprint} onChange={(e) => update('carbonFootprint', e.target.value)} placeholder="예: 4500" />
+              </div>
+            </div>
+
+            <div style={{ borderTop: '1px solid var(--color-border)', paddingTop: 14 }}>
+              <p className="sn-eyebrow" style={{ margin: '0 0 10px' }}>3차년도 전주기 / 확장 속성</p>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+                <div>
+                  <label className="sn-eyebrow" style={eyebrow}>제조 공정</label>
+                  <input className="sn-input" value={form.manufacturingProcess} onChange={(e) => update('manufacturingProcess', e.target.value)} placeholder="예: formation-inspection-sealing" />
+                </div>
+                <div>
+                  <label className="sn-eyebrow" style={eyebrow}>폐기 방법</label>
+                  <input className="sn-input" value={form.disposalMethod} onChange={(e) => update('disposalMethod', e.target.value)} placeholder="예: certified-recycler-transfer" />
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginTop: 14 }}>
+                <div>
+                  <label className="sn-eyebrow" style={eyebrow}>재활용 원료 비율 JSON</label>
+                  <textarea
+                    className="sn-input"
+                    rows={4}
+                    value={form.recycledElementContent}
+                    onChange={(e) => update('recycledElementContent', e.target.value)}
+                    placeholder={JSON_FIELD_HINTS.recycledElementContent}
+                  />
+                  {recycledElementContentError && (
+                    <p role="alert" className="sn-caption" style={{ margin: '6px 0 0', color: 'var(--color-danger)' }}>
+                      {recycledElementContentError}
+                    </p>
+                  )}
+                </div>
+                <div>
+                  <label className="sn-eyebrow" style={eyebrow}>확장 정보 JSON</label>
+                  <textarea
+                    className="sn-input"
+                    rows={4}
+                    value={form.extensionInfo}
+                    onChange={(e) => update('extensionInfo', e.target.value)}
+                    placeholder={JSON_FIELD_HINTS.extensionInfo}
+                  />
+                  {extensionInfoError && (
+                    <p role="alert" className="sn-caption" style={{ margin: '6px 0 0', color: 'var(--color-danger)' }}>
+                      {extensionInfoError}
+                    </p>
+                  )}
+                </div>
               </div>
             </div>
           </div>

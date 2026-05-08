@@ -14,6 +14,16 @@ const MAX_AUDIT_SIZE = 50 * 1024 * 1024; // 50MB rotation
 const MEMORY_BUFFER_SIZE = 1000; // recent logs in memory for fast queries
 let auditStream = null;
 let currentAuditSize = 0;
+const REDACTED = '[REDACTED]';
+const SENSITIVE_KEYS = new Set([
+  'password',
+  'token',
+  'secret',
+  'signature',
+  'rawPayload',
+  'privateKey',
+  'authorization',
+]);
 
 // Ensure directory exists
 if (!fs.existsSync(AUDIT_DIR)) {
@@ -159,11 +169,22 @@ function extractTargetId(url) {
 
 function sanitizeBody(body) {
   if (!body) return undefined;
-  const clean = { ...body };
-  delete clean.password;
-  delete clean.token;
-  delete clean.secret;
-  delete clean.signature;
+  if (Array.isArray(body)) {
+    return body.map((item) => sanitizeBody(item));
+  }
+  if (typeof body !== 'object') {
+    return body;
+  }
+  const clean = {};
+  for (const [key, value] of Object.entries(body)) {
+    if (SENSITIVE_KEYS.has(key)) {
+      clean[key] = REDACTED;
+    } else if (value && typeof value === 'object') {
+      clean[key] = sanitizeBody(value);
+    } else {
+      clean[key] = value;
+    }
+  }
   return clean;
 }
 
@@ -192,4 +213,4 @@ function getAuditLogs(query = {}) {
   };
 }
 
-module.exports = { auditMiddleware, getAuditLogs };
+module.exports = { auditMiddleware, getAuditLogs, sanitizeBody };

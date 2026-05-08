@@ -4,20 +4,38 @@ const authService = require('../services/auth.service');
 const { authenticateToken } = require('../middleware/auth');
 const { MSP } = require('../config/constants');
 const { createLogger } = require('../services/logger.service');
+const {
+  validateId,
+  validateText,
+  validateInteger,
+  firstError,
+} = require('../utils/request-validation');
 const log = createLogger('auth');
 
 const isOpenReg = process.env.ALLOW_OPEN_REGISTRATION === 'true';
+const USER_ID_OPTIONS = { max: 64, pattern: /^[A-Za-z0-9._-]+$/ };
+
+function validateAuthBody({ userId, password, orgNum }) {
+  return firstError(
+    validateId(userId, 'userId', USER_ID_OPTIONS),
+    validateText(password, 'password', { min: 1, max: 256 }),
+    validateInteger(orgNum, 'orgNum', { min: 1, max: 4 })
+  );
+}
+
+function validationError(res, error) {
+  return res.status(400).json({ error, category: 'VAL' });
+}
 
 // POST /api/auth/register (production: 인증 필요, dev: ALLOW_OPEN_REGISTRATION=true로 개방)
 router.post('/register', ...(isOpenReg ? [] : [authenticateToken]), async (req, res) => {
   const { userId, password, orgNum } = req.body;
 
-  if (!userId || !password || !orgNum) {
-    return res.status(400).json({ error: 'userId, password, orgNum required' });
-  }
+  const bodyError = validateAuthBody({ userId, password, orgNum });
+  if (bodyError) return validationError(res, bodyError);
 
   try {
-    const targetOrgNum = parseInt(orgNum, 10);
+    const targetOrgNum = Number(String(orgNum).trim());
     const caller = req.user || null;
 
     if (!isOpenReg) {
@@ -54,12 +72,11 @@ router.post('/register', ...(isOpenReg ? [] : [authenticateToken]), async (req, 
 router.post('/login', async (req, res) => {
   const { userId, password, orgNum } = req.body;
 
-  if (!userId || !password || !orgNum) {
-    return res.status(400).json({ error: 'userId, password, orgNum required' });
-  }
+  const bodyError = validateAuthBody({ userId, password, orgNum });
+  if (bodyError) return validationError(res, bodyError);
 
   try {
-    const result = await authService.login(userId, password, parseInt(orgNum, 10));
+    const result = await authService.login(userId, password, Number(String(orgNum).trim()));
     res.json({ success: true, ...result });
   } catch (err) {
     log.error('Login failed', { action: 'login', error: err.message });

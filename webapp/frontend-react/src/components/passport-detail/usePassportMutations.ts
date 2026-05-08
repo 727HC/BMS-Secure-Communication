@@ -18,6 +18,13 @@ interface Return {
   handlers: ModalHandlers;
 }
 
+function normalizeDateInputToRfc3339(value: string | undefined): string {
+  const raw = value?.trim() ?? '';
+  if (!raw) return '';
+  if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) return `${raw}T00:00:00Z`;
+  return raw;
+}
+
 export function usePassportMutations({
   passport,
   selectedVcId,
@@ -65,7 +72,12 @@ export function usePassportMutations({
     onCorrect: (data) =>
       passport?.passportId && withSubmit(() => api.post(`/passports/${passport.passportId}/correct`, data)),
     onVcIssue: (data) =>
-      passport?.passportId && withSubmit(() => api.post('/vc/issue', { passportId: passport.passportId, ...data })),
+      passport?.passportId && withSubmit(() => api.post('/vc/issue', {
+        passportId: passport.passportId,
+        ...data,
+        holderDid: passport.did || '',
+        expiresAt: normalizeDateInputToRfc3339(data.expiresAt),
+      })),
     onVcRequest: (data) =>
       passport?.passportId && withSubmit(() => api.post('/vc/request', { passportId: passport.passportId, credType: data.credType })),
     onVcApprove: (data) =>
@@ -86,6 +98,7 @@ export function usePassportMutations({
           didMatched: data.didMatched,
           vinMatched: data.vinMatched,
           fcMatched: data.fcMatched,
+          bmsIdentifierMatched: data.bmsIdentifierMatched,
         },
         reason: data.reason,
       })),

@@ -16,6 +16,12 @@ status: historical
 - [[passport/activity-log/README|날짜별 활동 로그 허브]]
 
 ## 날짜별 기록
+- [[passport/activity-log/2026-05-08-chaincode-sequence5-bms-binding|2026-05-08 chaincode sequence 5 BMS binding 반영]]
+- [[passport/activity-log/2026-05-08-embedded-bms-binding-ingest|2026-05-08 임베디드 BMS binding handoff 반영]]
+- [[passport/activity-log/2026-05-08-vc-holder-expiry-contract|2026-05-08 VC holder DID/expiry 계약 동기화]]
+- [[passport/activity-log/2026-05-08-passport-code-review-fixes|2026-05-08 Passport 코드 리뷰 및 수정]]
+- [[passport/activity-log/2026-05-08-passport-review-goal-intake|2026-05-08 Passport 코드 리뷰/수정 goal 인테이크]]
+- [[passport/activity-log/2026-05-08-bmu-agent-hardening|2026-05-08 BMU parser 무결성 + bmu-agent 부트스트랩 정리]]
 - [[passport/activity-log/2026-05-06-test-coverage|2026-05-06 (2) 전체 단위 테스트 커버리지 (1257/168)]]
 - [[passport/activity-log/2026-05-06|2026-05-06 페이지 라벨/권한 훅 통합 + useOrgRoles]]
 - [[passport/activity-log/2026-05-04|2026-05-04 5개 페이지 헬퍼 분리]]

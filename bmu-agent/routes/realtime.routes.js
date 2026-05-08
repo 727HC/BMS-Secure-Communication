@@ -10,6 +10,14 @@
 
 const express = require('express');
 const { authenticateToken } = require('../middleware/auth');
+const fabricService = require('../services/fabric.service');
+const { DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE } = require('../config/constants');
+const { validatePageSize, validateBookmark } = require('../utils/request-validation');
+const { sendChaincodeError } = require('../middleware/chaincode-error');
+const {
+  overlayPassportWithLatestBmu,
+  overlayPassportPageWithLatestBmu,
+} = require('../services/passportSnapshotOverlay.service');
 
 const router = express.Router();
 
@@ -31,35 +39,106 @@ async function proxyGet(path, query = '') {
   return { status: r.status, body };
 }
 
+function parseResult(buffer) {
+  return JSON.parse(buffer.toString());
+}
+
+function readPagination(req) {
+  const pageSize = validatePageSize(req.query.pageSize, DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE);
+  if (pageSize.error) return { error: pageSize.error };
+  const bookmark = validateBookmark(req.query.bookmark);
+  if (bookmark.error) return { error: bookmark.error };
+  return { pageSize: pageSize.value, bookmark: bookmark.value };
+}
+
+async function queryBmuRecords(passportId, req, pageSizeOverride) {
+  const pagination = readPagination(req);
+  if (pagination.error) {
+    const err = new Error(pagination.error);
+    err.status = 400;
+    err.category = 'VAL';
+    throw err;
+  }
+  const pageSize = pageSizeOverride || pagination.pageSize;
+  const result = await fabricService.evaluateTransaction(
+    'QueryBMURecordsByPassport',
+    [passportId, String(pageSize), pagination.bookmark],
+    req.user
+  );
+  return parseResult(result);
+}
+
 router.get('/passports', authenticateToken, async (req, res) => {
   try {
     const qs = new URLSearchParams(req.query).toString();
-    const { status, body } = await proxyGet('/api/passports', qs ? `?${qs}` : '');
-    res.status(status).json(body);
+    try {
+      const { status, body } = await proxyGet('/api/passports', qs ? `?${qs}` : '');
+      if (status >= 200 && status < 300 && !body?.error) {
+        return res.status(status).json(await overlayPassportPageWithLatestBmu(body, req.user));
+      }
+    } catch {
+      // cloud-agent read model is optional. Fall back to Fabric below.
+    }
+
+    const pagination = readPagination(req);
+    if (pagination.error) {
+      return res.status(400).json({ error: pagination.error, category: 'VAL' });
+    }
+    const result = await fabricService.evaluateTransaction(
+      'QueryPassportsWithPagination',
+      [String(pagination.pageSize), pagination.bookmark],
+      req.user
+    );
+    return res.json(await overlayPassportPageWithLatestBmu(parseResult(result), req.user));
   } catch (err) {
-    res.status(502).json({ error: 'cloud-agent unreachable', detail: err.message });
+    sendChaincodeError(res, err);
   }
 });
 
 router.get('/passports/:id', authenticateToken, async (req, res) => {
   try {
-    const { status, body } = await proxyGet(`/api/passports/${encodeURIComponent(req.params.id)}`);
-    res.status(status).json(body);
+    try {
+      const { status, body } = await proxyGet(`/api/passports/${encodeURIComponent(req.params.id)}`);
+      if (status === 200 && !body?.error) {
+        return res.status(status).json(body);
+      }
+    } catch {
+      // cloud-agent read model is optional. Fall back to Fabric so live BMU data
+      // remains visible in the battery passport during local MATLAB/HIL runs.
+    }
+
+    const passport = parseResult(await fabricService.evaluateTransaction(
+      'QueryPassport',
+      [req.params.id],
+      req.user
+    ));
+    return res.json(await overlayPassportWithLatestBmu(passport, req.user));
   } catch (err) {
-    res.status(502).json({ error: 'cloud-agent unreachable', detail: err.message });
+    if (err.status) return res.status(err.status).json({ error: err.message, category: err.category });
+    sendChaincodeError(res, err);
   }
 });
 
 router.get('/bmu/:passportId', authenticateToken, async (req, res) => {
   try {
     const qs = new URLSearchParams(req.query).toString();
-    const { status, body } = await proxyGet(
-      `/api/bmu/${encodeURIComponent(req.params.passportId)}`,
-      qs ? `?${qs}` : ''
-    );
-    res.status(status).json(body);
+    try {
+      const { status, body } = await proxyGet(
+        `/api/bmu/${encodeURIComponent(req.params.passportId)}`,
+        qs ? `?${qs}` : ''
+      );
+      if (status === 200 && !body?.error) {
+        return res.status(status).json(body);
+      }
+    } catch {
+      // cloud-agent read model is optional; Fabric ledger is the fallback source.
+    }
+
+    const bmu = await queryBmuRecords(req.params.passportId, req);
+    return res.json(bmu);
   } catch (err) {
-    res.status(502).json({ error: 'cloud-agent unreachable', detail: err.message });
+    if (err.status) return res.status(err.status).json({ error: err.message, category: err.category });
+    sendChaincodeError(res, err);
   }
 });
 

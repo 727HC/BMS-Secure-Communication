@@ -36,6 +36,26 @@ describe('TraceabilityTab', () => {
     expect(getByText('일치 (Verified)')).not.toBeNull();
   });
 
+  it('renders BMS binding codes and physical bmsIdentifierMatched signal', () => {
+    const passport = basePassport({
+      bmsManagementId: 'BMS-MGMT-001',
+      bmsBindingId: 'did:battery:001#BMS-MGMT-001',
+      bmsBindingCode32: 0x2c9a0e0c,
+      physicalHistoryVerification: { signals: { bmsIdentifierMatched: true } },
+    });
+    const records = [{
+      recordId: 'R1',
+      timestamp: '2026-05-04T00:00:00Z',
+      bmsBindingCode32: 0x2c9a0e0c,
+      rawPayloadHashVerified: true,
+    } as unknown as BmuRecord];
+    const { getByText, getAllByText } = render(<TraceabilityTab passport={passport} bmuRecords={records} canVerifyPhysical={false} onVerifyPhysical={vi.fn()} />);
+    expect(getByText('BMS-MGMT-001')).not.toBeNull();
+    expect(getAllByText('0x2c9a0e0c').length).toBeGreaterThanOrEqual(2);
+    expect(getByText('did:battery:001#BMS-MGMT-001')).not.toBeNull();
+    expect(getByText('검증됨')).not.toBeNull();
+  });
+
   it('renders 불일치 (Pending) when SOC differs', () => {
     const passport = basePassport({ currentSoc: 70 });
     const records = [{ recordId: 'R1', soc: 80, timestamp: '2026-05-04T00:00:00Z' } as unknown as BmuRecord];

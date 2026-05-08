@@ -5,12 +5,22 @@ const { requireMSP } = require('../middleware/rbac');
 const fabricService = require('../services/fabric.service');
 const { MSP } = require('../config/constants');
 const { sendChaincodeError } = require('../middleware/chaincode-error');
+const { validateBoolean, validateObject, validateId, firstError } = require('../utils/request-validation');
+
+function validationError(res, error) {
+  return res.status(400).json({ error, category: 'VAL' });
+}
+
+router.param('id', (req, res, next, id) => {
+  const idError = validateId(id, 'passportId');
+  if (idError) return validationError(res, idError);
+  next();
+});
 
 router.put('/:id/availability', authenticateToken, requireMSP(MSP.SERVICE, MSP.REGULATOR), async (req, res) => {
   const { available } = req.body;
-  if (typeof available !== 'boolean') {
-    return res.status(400).json({ error: 'available (boolean) required' });
-  }
+  const bodyError = validateBoolean(available, 'available');
+  if (bodyError) return validationError(res, bodyError);
   try {
     await fabricService.submitTransaction('SetRecycleAvailability', [
       req.params.id, String(available),
@@ -23,9 +33,16 @@ router.put('/:id/availability', authenticateToken, requireMSP(MSP.SERVICE, MSP.R
 
 router.post('/:id/extract', authenticateToken, requireMSP(MSP.REGULATOR), async (req, res) => {
   const { recyclingRates } = req.body;
-  if (!recyclingRates) {
-    return res.status(400).json({ error: 'recyclingRates required (JSON object)' });
-  }
+  const bodyError = firstError(
+    validateObject(recyclingRates, 'recyclingRates', { maxKeys: 64 }),
+    ...Object.entries(recyclingRates || {}).map(([material, rate]) =>
+      validateId(material, 'recyclingRates material') ||
+      (typeof rate === 'number' && Number.isFinite(rate) && rate >= 0 && rate <= 100
+        ? null
+        : `recyclingRates.${material} must be a number between 0 and 100`)
+    )
+  );
+  if (bodyError) return validationError(res, bodyError);
   try {
     await fabricService.submitTransaction('ExtractMaterials', [
       req.params.id, JSON.stringify(recyclingRates),

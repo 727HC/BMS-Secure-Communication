@@ -14,6 +14,7 @@ export default function TraceabilityTab({ passport, bmuRecords, canVerifyPhysica
   const isSocMatched = latestBmu && passport.currentSoc != null
     ? latestBmu.soc === passport.currentSoc
     : false;
+  const bmsIdentifierMatched = passport.physicalHistoryVerification?.signals?.bmsIdentifierMatched;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
@@ -48,6 +49,19 @@ export default function TraceabilityTab({ passport, bmuRecords, canVerifyPhysica
             />
             <SpecRow k="백엔드 검증 상태" v={passport.physicalHistoryVerification?.status || '-'} />
             <SpecRow k="검증 시각" v={passport.physicalHistoryVerification?.verifiedAt ? formatDate(passport.physicalHistoryVerification.verifiedAt) : '-'} />
+          </div>
+          <div className="sn-detail-spec-row">
+            <SpecRow k="BMS 관리 식별자" v={passport.bmsManagementId || '-'} />
+            <SpecRow k="원장 BMS binding code" v={passport.bmsBindingCode32 != null ? `0x${passport.bmsBindingCode32.toString(16).padStart(8, '0')}` : '-'} />
+            <SpecRow k="최근 BMU binding code" v={latestBmu?.bmsBindingCode32 != null ? `0x${latestBmu.bmsBindingCode32.toString(16).padStart(8, '0')}` : '-'} />
+          </div>
+          <div className="sn-detail-spec-row">
+            <SpecRow
+              k="BMS 식별자 비교"
+              v={bmsIdentifierMatched == null ? '미검증' : (bmsIdentifierMatched ? '일치 (Verified)' : '불일치 (Mismatch)')}
+            />
+            <SpecRow k="rawPayload 해시 검증" v={latestBmu?.rawPayloadHashVerified == null ? '-' : (latestBmu.rawPayloadHashVerified ? '검증됨' : '미검증')} />
+            <SpecRow k="BMS binding ID" v={passport.bmsBindingId || '-'} />
           </div>
         </div>
       </div>

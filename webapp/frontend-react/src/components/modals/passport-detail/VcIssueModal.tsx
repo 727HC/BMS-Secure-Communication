@@ -10,18 +10,24 @@ export interface VcIssueFormData {
 interface Props {
   open: boolean;
   submitting: boolean;
+  passportDid?: string;
   onClose: () => void;
   onSubmit: (data: VcIssueFormData) => void;
 }
 
-const EMPTY: VcIssueFormData = { credType: 'BATTERY_PASSPORT', holderDid: '', expiresAt: '' };
+const EMPTY = { credType: 'BATTERY_PASSPORT', expiresAt: '' };
 
-export default function VcIssueModal({ open, submitting, onClose, onSubmit }: Props) {
-  const [form, setForm] = useState<VcIssueFormData>(EMPTY);
+export default function VcIssueModal({ open, submitting, passportDid = '', onClose, onSubmit }: Props) {
+  const [form, setForm] = useState(EMPTY);
+  const holderDid = passportDid.trim();
 
   const handleClose = () => {
     setForm(EMPTY);
     onClose();
+  };
+
+  const handleSubmit = () => {
+    onSubmit({ ...form, holderDid });
   };
 
   return (
@@ -33,16 +39,24 @@ export default function VcIssueModal({ open, submitting, onClose, onSubmit }: Pr
           onChange={(e) => setForm({ ...form, credType: e.target.value })}
         >
           <option value="BATTERY_PASSPORT">BATTERY_PASSPORT</option>
+          <option value="BATTERY_HEALTH">BATTERY_HEALTH</option>
           <option value="MAINTENANCE">MAINTENANCE</option>
-          <option value="ANALYSIS">ANALYSIS</option>
-          <option value="RECYCLE">RECYCLE</option>
+          <option value="COMPLIANCE">COMPLIANCE</option>
+          <option value="RECYCLING">RECYCLING</option>
         </select>
-        <input
-          className="sn-input"
-          placeholder="Holder DID"
-          value={form.holderDid}
-          onChange={(e) => setForm({ ...form, holderDid: e.target.value })}
-        />
+        <label style={{ display: 'flex', flexDirection: 'column', gap: 6, color: '#64748b', fontSize: 12 }}>
+          Passport DID
+          <input
+            aria-label="Passport DID"
+            className="sn-input"
+            readOnly
+            placeholder="여권 DID 없음"
+            value={holderDid}
+          />
+        </label>
+        <p style={{ margin: 0, color: '#64748b', fontSize: 12, lineHeight: 1.5 }}>
+          VC holder는 원장 여권 DID와 동일해야 합니다. 다른 소유자 DID는 발급되지 않습니다.
+        </p>
         <input
           className="sn-input"
           type="date"
@@ -51,7 +65,7 @@ export default function VcIssueModal({ open, submitting, onClose, onSubmit }: Pr
         />
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
           <button onClick={handleClose} className="sn-btn sn-btn-ghost">취소</button>
-          <button onClick={() => onSubmit(form)} disabled={submitting} className="sn-btn sn-btn-accent">
+          <button onClick={handleSubmit} disabled={submitting || !holderDid} className="sn-btn sn-btn-accent">
             {submitting ? '처리 중...' : '발급'}
           </button>
         </div>

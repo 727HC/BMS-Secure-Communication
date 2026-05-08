@@ -13,7 +13,7 @@ describe('usePassportMutations', () => {
   function setup(passportId: string | null = 'P1', selectedVcId: string | null = null) {
     const onAfterSuccess = vi.fn();
     const onClose = vi.fn();
-    const passport = passportId ? { passportId } : null;
+    const passport = passportId ? { passportId, did: `did:web:bms:${passportId}` } : null;
     const { result } = renderHook(() =>
       usePassportMutations({ passport, selectedVcId, onAfterSuccess, onClose })
     );
@@ -92,15 +92,26 @@ describe('usePassportMutations', () => {
     expect(String(fetchMock.mock.calls[0][0])).toContain('/passports/P7/correct');
   });
 
-  it('onVcIssue spreads form into body alongside passportId', async () => {
+  it('onVcIssue pins holderDid to passport.did and converts date-only expiry to RFC3339', async () => {
     fetchMock.mockResolvedValue(ok());
     const { result } = setup('P8');
     await act(async () => {
-      await result.current.handlers.onVcIssue({ credType: 'cert', issuerMsp: 'MSP' } as any);
+      await result.current.handlers.onVcIssue({
+        credType: 'cert',
+        issuerMsp: 'MSP',
+        holderDid: 'did:web:wrong-owner',
+        expiresAt: '2026-05-08',
+      } as any);
     });
     expect(String(fetchMock.mock.calls[0][0])).toContain('/vc/issue');
     const body = JSON.parse((fetchMock.mock.calls[0][1] as { body: string }).body);
-    expect(body).toEqual({ passportId: 'P8', credType: 'cert', issuerMsp: 'MSP' });
+    expect(body).toEqual({
+      passportId: 'P8',
+      credType: 'cert',
+      issuerMsp: 'MSP',
+      holderDid: 'did:web:bms:P8',
+      expiresAt: '2026-05-08T00:00:00Z',
+    });
   });
 
   it('onVcRequest POSTs only credType (not other fields)', async () => {
@@ -158,12 +169,23 @@ describe('usePassportMutations', () => {
     const { result } = setup('P14');
     await act(async () => {
       await result.current.handlers.onPhysicalVerification({
-        socMatched: true, didMatched: false, vinMatched: true, fcMatched: false, reason: 'r',
+        socMatched: true,
+        didMatched: false,
+        vinMatched: true,
+        fcMatched: false,
+        bmsIdentifierMatched: true,
+        reason: 'r',
       } as any);
     });
     const body = JSON.parse((fetchMock.mock.calls[0][1] as { body: string }).body);
     expect(body).toEqual({
-      signals: { socMatched: true, didMatched: false, vinMatched: true, fcMatched: false },
+      signals: {
+        socMatched: true,
+        didMatched: false,
+        vinMatched: true,
+        fcMatched: false,
+        bmsIdentifierMatched: true,
+      },
       reason: 'r',
     });
   });

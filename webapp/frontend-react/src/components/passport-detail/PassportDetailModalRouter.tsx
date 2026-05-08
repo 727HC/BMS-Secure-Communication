@@ -54,6 +54,7 @@ interface Props {
   openModal: ModalKey;
   submitting: boolean;
   selectedVcId: string | null;
+  passportDid?: string;
   onClose: () => void;
   handlers: ModalHandlers;
 }
@@ -62,6 +63,7 @@ export default function PassportDetailModalRouter({
   openModal,
   submitting,
   selectedVcId,
+  passportDid,
   onClose,
   handlers,
 }: Props) {
@@ -81,7 +83,7 @@ export default function PassportDetailModalRouter({
     case 'correct':
       return <CorrectionModal open submitting={submitting} onClose={onClose} onSubmit={handlers.onCorrect} />;
     case 'vcIssue':
-      return <VcIssueModal open submitting={submitting} onClose={onClose} onSubmit={handlers.onVcIssue} />;
+      return <VcIssueModal open submitting={submitting} passportDid={passportDid} onClose={onClose} onSubmit={handlers.onVcIssue} />;
     case 'vcRequest':
       return <VcRequestModal open submitting={submitting} onClose={onClose} onSubmit={handlers.onVcRequest} />;
     case 'vcApprove':

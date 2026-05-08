@@ -8,10 +8,10 @@ describe('PhysicalVerificationModal', () => {
     expect(container.firstChild).toBeNull();
   });
 
-  it('renders 4 checkboxes (initially all checked) + textarea', () => {
+  it('renders 5 checkboxes (initially all checked) + textarea', () => {
     const { container, getByPlaceholderText } = render(<PhysicalVerificationModal open={true} submitting={false} onClose={vi.fn()} onSubmit={vi.fn()} />);
     const checkboxes = container.querySelectorAll('input[type="checkbox"]') as NodeListOf<HTMLInputElement>;
-    expect(checkboxes.length).toBe(4);
+    expect(checkboxes.length).toBe(5);
     checkboxes.forEach((c) => expect(c.checked).toBe(true));
     expect(getByPlaceholderText('검증 근거를 입력하세요')).not.toBeNull();
   });
@@ -31,7 +31,7 @@ describe('PhysicalVerificationModal', () => {
     expect(first.checked).toBe(false);
   });
 
-  it('submits all 5 fields with toggled state', () => {
+  it('submits all physical binding signals with toggled state', () => {
     const onSubmit = vi.fn();
     const { container, getByText, getByPlaceholderText } = render(<PhysicalVerificationModal open={true} submitting={false} onClose={vi.fn()} onSubmit={onSubmit} />);
     const cbs = container.querySelectorAll('input[type="checkbox"]') as NodeListOf<HTMLInputElement>;
@@ -39,7 +39,12 @@ describe('PhysicalVerificationModal', () => {
     fireEvent.change(getByPlaceholderText('검증 근거를 입력하세요'), { target: { value: '검증' } });
     fireEvent.click(getByText('검증 저장'));
     expect(onSubmit).toHaveBeenCalledWith({
-      socMatched: true, didMatched: false, vinMatched: true, fcMatched: true, reason: '검증',
+      socMatched: true,
+      didMatched: false,
+      vinMatched: true,
+      fcMatched: true,
+      bmsIdentifierMatched: true,
+      reason: '검증',
     });
   });
 

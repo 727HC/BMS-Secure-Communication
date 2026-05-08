@@ -33,9 +33,35 @@ const FIELD_OPTIONS: { value: string; label: string }[] = [
   { value: 'voltageRange', label: '전압 범위 (voltageRange)' },
   { value: 'temperatureRange', label: '온도 범위 (temperatureRange)' },
   { value: 'carbonFootprint', label: '탄소발자국 (carbonFootprint)' },
+  { value: 'manufacturingProcess', label: '제조 공정 (manufacturingProcess)' },
+  { value: 'disposalMethod', label: '폐기 방법 (disposalMethod)' },
+  { value: 'recycledElementContent', label: '재활용 원료 비율 JSON (recycledElementContent)' },
+  { value: 'extensionInfo', label: '확장 정보 JSON (extensionInfo)' },
+  { value: 'vin', label: '차대번호 (vin)' },
+  { value: 'installDate', label: '장착일 (installDate)' },
+  { value: 'evManufacturer', label: 'EV 제조사 (evManufacturer)' },
+  { value: 'evAssemblyCountry', label: 'EV 조립국 (evAssemblyCountry)' },
 ];
 
 const EMPTY: CorrectionFormData = { fieldName: '', newValue: '', reason: '' };
+const JSON_FIELD_HINTS: Record<string, string> = {
+  recycledElementContent: '예: {"cobalt":12.5,"lithium":8.1}',
+  extensionInfo: '예: {"bmsProfile":"BMS-v3","oracle":"verified"}',
+};
+const JSON_FIELDS = new Set(Object.keys(JSON_FIELD_HINTS));
+
+function getJsonFieldError(fieldName: string, value: string): string | null {
+  if (!JSON_FIELDS.has(fieldName) || !value.trim()) return null;
+  try {
+    const parsed = JSON.parse(value);
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+      return 'JSON 객체 형태로 입력하세요.';
+    }
+  } catch {
+    return '올바른 JSON 객체가 아닙니다.';
+  }
+  return null;
+}
 
 export default function CorrectionModal({ open, submitting, onClose, onSubmit }: Props) {
   const [form, setForm] = useState<CorrectionFormData>(EMPTY);
@@ -45,7 +71,9 @@ export default function CorrectionModal({ open, submitting, onClose, onSubmit }:
     onClose();
   };
 
-  const canSubmit = Boolean(form.fieldName && form.newValue && form.reason) && !submitting;
+  const jsonFieldError = getJsonFieldError(form.fieldName, form.newValue);
+  const canSubmit = Boolean(form.fieldName && form.newValue && form.reason) && !jsonFieldError && !submitting;
+  const valuePlaceholder = JSON_FIELD_HINTS[form.fieldName] || '변경할 값을 입력';
 
   return (
     <BaseModal open={open} onClose={handleClose} title="데이터 정정">
@@ -65,12 +93,32 @@ export default function CorrectionModal({ open, submitting, onClose, onSubmit }:
         </div>
         <div>
           <label className="sn-eyebrow" style={{ display: 'block', marginBottom: 6 }}>새 값</label>
-          <input
-            className="sn-input"
-            placeholder="변경할 값을 입력"
-            value={form.newValue}
-            onChange={(e) => setForm({ ...form, newValue: e.target.value })}
-          />
+          {JSON_FIELDS.has(form.fieldName) ? (
+            <textarea
+              className="sn-input"
+              rows={4}
+              placeholder={valuePlaceholder}
+              value={form.newValue}
+              onChange={(e) => setForm({ ...form, newValue: e.target.value })}
+            />
+          ) : (
+            <input
+              className="sn-input"
+              placeholder={valuePlaceholder}
+              value={form.newValue}
+              onChange={(e) => setForm({ ...form, newValue: e.target.value })}
+            />
+          )}
+          {JSON_FIELD_HINTS[form.fieldName] && (
+            <p className="sn-caption" style={{ margin: '6px 0 0' }}>
+              이 필드는 체인코드가 JSON 문자열로 검증합니다. 객체 형태를 그대로 입력하세요.
+            </p>
+          )}
+          {jsonFieldError && (
+            <p role="alert" className="sn-caption" style={{ margin: '6px 0 0', color: 'var(--color-danger)' }}>
+              {jsonFieldError}
+            </p>
+          )}
         </div>
         <div>
           <label className="sn-eyebrow" style={{ display: 'block', marginBottom: 6 }}>사유</label>

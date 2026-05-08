@@ -5,7 +5,11 @@ import PassportDetailModalRouter, { type ModalHandlers, type ModalKey } from './
 
 const stub = (name: string) => ({
   default: (props: Record<string, unknown>) => (
-    <div data-testid={name} data-credential-id={String(props.credentialId ?? '')} />
+    <div
+      data-testid={name}
+      data-credential-id={String(props.credentialId ?? '')}
+      data-passport-did={String(props.passportDid ?? '')}
+    />
   ),
 });
 
@@ -50,6 +54,7 @@ function renderWith(openModal: ModalKey, selectedVcId: string | null = null) {
         openModal={openModal}
         submitting={false}
         selectedVcId={selectedVcId}
+        passportDid="did:web:bms:P1"
         onClose={vi.fn()}
         handlers={handlers}
       />
@@ -89,6 +94,11 @@ describe('PassportDetailModalRouter', () => {
   it('passes credentialId to VcRevokeModal', async () => {
     const { findByTestId } = renderWith('vcRevoke', 'VC-2');
     expect((await findByTestId('VcRevokeModal')).getAttribute('data-credential-id')).toBe('VC-2');
+  });
+
+  it('passes passportDid to VcIssueModal', async () => {
+    const { findByTestId } = renderWith('vcIssue');
+    expect((await findByTestId('VcIssueModal')).getAttribute('data-passport-did')).toBe('did:web:bms:P1');
   });
 
   it('returns null when openModal is null', () => {

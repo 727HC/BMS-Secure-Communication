@@ -3,6 +3,9 @@
 // Sync history:
 // - @311a48e: 초기 contract (138 unique templates)
 // - @cbd2304: ExtractMaterials JSON prefix 통일 (§3.6 예외 제거)
+// - 2026-05-08 activity-log sync: VC holder DID binding, RFC3339 timestamp/expiry,
+//   SHA-256 dataHash, BMU signature presence validation 추가 반영.
+// - 2026-05-08 sequence 5 live sync: BMS binding/source verification validation 추가 반영.
 //
 // chaincode 에러 → 한국어 토스트 매핑. wiki §4 dictionary와 1:1 대응.
 // bmu-agent/middleware/chaincode-error.js가 응답에 category를 부여하므로
@@ -21,6 +24,13 @@ const CATEGORY_TOAST: Record<ApiErrorCategory, string> = {
 
 function refineMessage(category: ApiErrorCategory, raw: string): string {
   if (category === 'VAL') {
+    if (/signature.*must not be empty|missing signature/i.test(raw)) return 'BMU 서명이 누락되었습니다.';
+    if (/rawPayload must|invalid rawPayload/i.test(raw)) return 'BMU 원시 페이로드 형식이 올바르지 않습니다.';
+    if (/BMS .*mismatch|BMS management identifier must be bound|bmsBindingCode32 required/i.test(raw)) return 'BMS 관리 식별자 바인딩이 일치하지 않습니다.';
+    if (/dataHash must be 64-character hex SHA-256|invalid dataHash/i.test(raw)) return '데이터 해시 형식이 올바르지 않습니다.';
+    if (/invalid expiresAt value|expiresAt must be RFC3339|malformed expiresAt/i.test(raw)) return 'VC 만료일은 RFC3339 형식이어야 합니다.';
+    if (/invalid timestamp value|timestamp must be RFC3339|malformed timestamp/i.test(raw)) return '타임스탬프는 RFC3339 형식이어야 합니다.';
+    if (/holder DID mismatch|DID mismatch/i.test(raw)) return '여권에 등록된 DID와 일치하지 않습니다.';
     if (/must not be empty/.test(raw)) return '필수 입력값이 누락되었습니다.';
     if (/must be in \[0, 100\]/.test(raw)) return 'SOH/SOCE는 0과 100 사이 값이어야 합니다.';
     if (/must be non-negative/.test(raw)) return '음수는 입력할 수 없습니다.';
@@ -31,7 +41,6 @@ function refineMessage(category: ApiErrorCategory, raw: string): string {
     if (/^invalid regulatory status/.test(raw)) return '허용되지 않는 검증 상태값입니다.';
     if (/unknown signal key/.test(raw)) return '허용되지 않는 신호 키입니다.';
     if (/is not correctable/.test(raw)) return '이 필드는 정정 대상이 아닙니다.';
-    if (/DID mismatch/.test(raw)) return '여권에 등록된 DID와 일치하지 않습니다.';
     if (/fc \d+ must be greater/.test(raw)) return 'BMU 신선도 카운터(FC) 가 이전 기록보다 작거나 같습니다.';
   }
   if (category === 'NOT_FOUND') {

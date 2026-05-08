@@ -9,6 +9,10 @@
 // - @311a48e: 초기 contract (138 unique templates)
 // - @cbd2304: ExtractMaterials JSON prefix `failed to unmarshal recycling rates:` →
 //   `invalid recycling rates JSON:` 로 통일. §3.6 예외 paragraph 삭제, 미들웨어 특이 분기 제거.
+// - 2026-05-08 activity-log sync: VC holder DID binding, RFC3339 timestamp/expiry,
+//   SHA-256 dataHash, BMU signature presence validation 추가 반영.
+// - 2026-05-08 sequence 5 live sync: SetPassportExtendedAttributes, BindBMSIdentifier,
+//   RecordBMUDataWithPayload, RecordSourceVerification validation 추가 반영.
 
 const FABRIC_WRAP_PREFIXES = [
   'Failed to evaluate transaction: ',
@@ -72,7 +76,7 @@ function mapChaincodeError(rawMsg) {
   }
 
   // VAL — §3.2
-  if (/(must not be empty|must be non-negative|must be in \[|invalid |unknown |field '.*' is not correctable|DID mismatch|fc \d+ must be greater)/.test(msg)) {
+  if (/(must not be empty|must be non-negative|must be in \[|invalid |unknown |field '.*' is not correctable|DID mismatch|holder DID mismatch|BMS .*mismatch|fc \d+ must be greater|must be 64-character hex SHA-256|missing signature|malformed (expiresAt|timestamp)|rawPayload must|dataHash mismatch|result must be a boolean)/i.test(msg)) {
     return { status: 400, category: 'VAL' };
   }
 

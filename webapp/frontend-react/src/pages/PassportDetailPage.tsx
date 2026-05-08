@@ -187,6 +187,7 @@ export default function PassportDetailPage() {
           openModal={openModal}
           submitting={submitting}
           selectedVcId={selectedVcId}
+          passportDid={passport?.did}
           onClose={closeAll}
           handlers={mutations.handlers}
         />

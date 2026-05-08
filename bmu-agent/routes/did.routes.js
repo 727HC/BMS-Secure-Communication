@@ -5,8 +5,17 @@ const { authenticateToken } = require('../middleware/auth');
 const { requireMSP } = require('../middleware/rbac');
 const { MSP } = require('../config/constants');
 const { createLogger } = require('../services/logger.service');
+const { validateId, validateText, firstError } = require('../utils/request-validation');
 
 const log = createLogger('did');
+
+function validationError(res, error) {
+  return res.status(400).json({ error, category: 'VAL' });
+}
+
+function validateDid(value, fieldName = 'did') {
+  return validateId(value, fieldName, { max: 256, pattern: /^[A-Za-z0-9._:-]+$/ });
+}
 
 // POST /api/did/register — Register DID on Indy ledger (JWT+RBAC or admin API key)
 // x-api-key fallback is dev-only; production requires JWT+RBAC
@@ -23,9 +32,12 @@ router.post('/register', (req, res, next) => {
 }, async (req, res) => {
 
   const { did, verkey, role } = req.body;
-  if (!did || !verkey) {
-    return res.status(400).json({ error: 'did, verkey required' });
-  }
+  const bodyError = firstError(
+    validateDid(did),
+    validateText(verkey, 'verkey', { min: 1, max: 256 }),
+    validateText(role, 'role', { max: 64, required: false })
+  );
+  if (bodyError) return validationError(res, bodyError);
 
   try {
     const result = await didService.registerDID(did, verkey, role);
@@ -52,6 +64,8 @@ router.post('/register', (req, res, next) => {
 // GET /api/did/verkey/:did — Get public key for DID
 router.get('/verkey/:did', authenticateToken, async (req, res) => {
   try {
+    const didError = validateDid(req.params.did);
+    if (didError) return validationError(res, didError);
     const verkey = await didService.getVerkey(req.params.did);
     res.json({ did: req.params.did, verkey, encoding: 'base58' });
   } catch (err) {
@@ -62,9 +76,12 @@ router.get('/verkey/:did', authenticateToken, async (req, res) => {
 // POST /api/did/verify — Verify signature
 router.post('/verify', authenticateToken, async (req, res) => {
   const { did, msg, signature } = req.body;
-  if (!did || !msg || !signature) {
-    return res.status(400).json({ error: 'did, msg, signature required' });
-  }
+  const bodyError = firstError(
+    validateDid(did),
+    validateText(msg, 'msg', { min: 1, max: 4096 }),
+    validateText(signature, 'signature', { min: 1, max: 512 })
+  );
+  if (bodyError) return validationError(res, bodyError);
 
   try {
     const valid = await didService.verifySignature(did, msg, signature);

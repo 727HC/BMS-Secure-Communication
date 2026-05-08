@@ -12,12 +12,19 @@
 //  38      1    uint8   status_flags      (b0=charging, b1=balancing, b2=fault)
 //  39      1    uint8   cell_count
 //  40      4    uint32  freshness_counter
-//  44      4    uint8[] reserved[4]
+//  44      4    uint32  bmsBindingCode32  (v1.1: SHA-256(canonical BMS ID) first 4 bytes, LE; 0=legacy)
 // Total: 48 bytes
 
 const PAYLOAD_SIZE = 48;
 
+function toUint32Hex(value) {
+  return `0x${value.toString(16).padStart(8, '0')}`;
+}
+
 function parseRawPayload(hexString) {
+  if (typeof hexString !== 'string' || !/^[0-9a-fA-F]+$/.test(hexString) || hexString.length % 2 !== 0) {
+    throw new Error('rawPayload must be an even-length hex string');
+  }
   const buf = Buffer.from(hexString, 'hex');
   if (buf.length !== PAYLOAD_SIZE) {
     throw new Error(`rawPayload size mismatch: expected ${PAYLOAD_SIZE} bytes, got ${buf.length}`);
@@ -48,23 +55,16 @@ function parseRawPayload(hexString) {
     cellSocs.push(+(buf.readUInt8(25 + i) / 255.0 * 100).toFixed(1));
   }
 
-  // soc_u16 검증: cell_soc 평균과 10%p 이상 차이나면 cell_soc 평균으로 보정
-  const cellSocAvg = cellSocs.reduce((a, b) => a + b, 0) / cellSocs.length;
-  const socPct = socRaw / 655.35;
-  let soc = socRaw;
-  if (Math.abs(socPct - cellSocAvg) > 10) {
-    soc = Math.round(cellSocAvg * 655.35);
-  }
-
   const timestampMs = buf.readUInt16LE(36);
   const statusFlags = buf.readUInt8(38);
   const cellCount = buf.readUInt8(39);
   const freshnessCounter = buf.readUInt32LE(40);
+  const bmsBindingCode32 = buf.readUInt32LE(44);
 
   return {
     current: +current.toFixed(3),
     voltage: +voltage.toFixed(3),
-    soc,
+    soc: socRaw,
     dischargeCycles,
     temperature,
     cellVoltages,
@@ -76,10 +76,13 @@ function parseRawPayload(hexString) {
     isFault: !!(statusFlags & 0x04),
     cellCount: cellCount || 11,
     freshnessCounter,
+    bmsBindingCode32,
+    bmsBindingCodeHex: toUint32Hex(bmsBindingCode32),
   };
 }
 
 module.exports = {
   parseRawPayload,
   PAYLOAD_SIZE,
+  toUint32Hex,
 };

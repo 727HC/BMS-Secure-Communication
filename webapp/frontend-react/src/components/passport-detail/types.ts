@@ -21,6 +21,8 @@ export interface BmuRecord {
   temperature?: number;
   dischargeCycles?: number;
   statusFlags?: number;
+  bmsBindingCode32?: number;
+  rawPayloadHashVerified?: boolean;
 }
 
 export interface Credential {
@@ -47,6 +49,7 @@ export interface PhysicalHistoryVerification {
     didMatched?: boolean;
     vinMatched?: boolean;
     fcMatched?: boolean;
+    bmsIdentifierMatched?: boolean;
   };
 }
 
@@ -89,6 +92,9 @@ export interface Passport {
   carbonFootprint?: string;
   recycledElementContent?: string;
   extensionInfo?: string;
+  bmsManagementId?: string;
+  bmsBindingId?: string;
+  bmsBindingCode32?: number;
   regulatoryVerificationStatus?: 'VERIFIED' | 'PARTIAL' | 'PENDING' | 'FAILED' | string;
   regulatoryVerifiedAt?: string;
   regulatoryVerifier?: string;

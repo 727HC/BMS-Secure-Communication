@@ -6,6 +6,7 @@ export interface PhysicalVerificationFormData {
   didMatched: boolean;
   vinMatched: boolean;
   fcMatched: boolean;
+  bmsIdentifierMatched: boolean;
   reason: string;
 }
 
@@ -21,6 +22,7 @@ const EMPTY: PhysicalVerificationFormData = {
   didMatched: true,
   vinMatched: true,
   fcMatched: true,
+  bmsIdentifierMatched: true,
   reason: '',
 };
 
@@ -39,7 +41,7 @@ export default function PhysicalVerificationModal({ open, submitting, onClose, o
   return (
     <BaseModal open={open} onClose={handleClose} title="실물-이력 검증">
       <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-        {(['socMatched', 'didMatched', 'vinMatched', 'fcMatched'] as const).map((key) => (
+        {(['socMatched', 'didMatched', 'vinMatched', 'fcMatched', 'bmsIdentifierMatched'] as const).map((key) => (
           <label key={key} style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 14, color: '#334155' }}>
             <input type="checkbox" checked={form[key]} onChange={() => toggle(key)} />
             {key}
