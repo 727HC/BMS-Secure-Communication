@@ -4,27 +4,94 @@ const { readRecentLogs } = require('../utils/log-reader');
 const { addQueryError, queryErrorReport } = require('../utils/query-errors');
 
 const LOG_READ_LIMIT = 1000;
+const TX_LOG_CATEGORIES = new Set([
+  'fabric',
+  'bmu',
+  'vc',
+  'maintenance',
+  'recycling',
+  'analysis',
+  'passport',
+  'source',
+  'physical',
+  'verification',
+  'regulatory',
+]);
+const SEQUENCE3_TX_NAMES = [
+  'SetPassportExtendedAttributes',
+  'BindBMSIdentifier',
+  'RecordSourceVerification',
+  'RecordBMUDataWithPayload',
+  'RecordBMUData',
+];
+
+function lower(value) {
+  return String(value || '').toLowerCase();
+}
+
+function normalizeBindingCode(value) {
+  if (value === undefined || value === null || value === '') return null;
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return `0x${(value >>> 0).toString(16).padStart(8, '0')}`;
+  }
+  const text = String(value).trim().toLowerCase();
+  if (/^0x[0-9a-f]+$/.test(text)) return `0x${parseInt(text, 16).toString(16).padStart(8, '0')}`;
+  if (/^[0-9]+$/.test(text)) return `0x${(parseInt(text, 10) >>> 0).toString(16).padStart(8, '0')}`;
+  return text;
+}
+
+function flattenPayloadCandidate(entry) {
+  const candidates = [entry, entry.data, entry.requestBody, entry.body, entry.payload].filter(Boolean);
+  const merged = {};
+  for (const candidate of candidates) {
+    if (candidate && typeof candidate === 'object' && !Array.isArray(candidate)) Object.assign(merged, candidate);
+  }
+  return merged;
+}
+
+function sequence3TxName(entry) {
+  return entry.function || entry.action || 'unknown';
+}
+
+function isSequence3Tx(entry) {
+  const name = lower(sequence3TxName(entry));
+  const text = lower([entry.message, entry.error, entry.details, JSON.stringify(flattenPayloadCandidate(entry))].filter(Boolean).join(' '));
+  return SEQUENCE3_TX_NAMES.some((tx) => name === lower(tx) || text.includes(lower(tx)));
+}
+
+function sequence3Fields(entry) {
+  const payload = flattenPayloadCandidate(entry);
+  const physicalVerification = payload.physicalVerification || payload.physical || {};
+  const signals = physicalVerification.signals || payload.signals || {};
+  const fields = {
+    bmsManagementId: payload.bmsManagementId || payload.bmsManagementIdentifier || null,
+    bmsBindingId: payload.bmsBindingId || null,
+    bmsBindingCode32: normalizeBindingCode(payload.bmsBindingCode32 || payload.bindingCode32 || payload.bmsBindingCode),
+    rawPayloadHashVerified: payload.rawPayloadHashVerified ?? payload.payloadHashVerified ?? null,
+    bmsIdentifierMatched: signals.bmsIdentifierMatched ?? payload.bmsIdentifierMatched ?? null,
+    evidenceHash: payload.evidenceHash || null,
+  };
+  return Object.fromEntries(Object.entries(fields).filter(([, value]) => value !== null && value !== undefined && value !== ''));
+}
 
 // Parse structured logs to extract transaction events
 function extractTxFromLogs(hours) {
   const since = new Date(Date.now() - hours * 3600000).toISOString();
   const { logs } = readRecentLogs(LOG_READ_LIMIT, { since });
 
-  const txLogs = logs.filter((l) =>
-    (l.category === 'fabric' || l.category === 'bmu' ||
-    l.category === 'vc' || l.category === 'maintenance' ||
-    l.category === 'recycling' || l.category === 'analysis') &&
-    (l.function || l.action)
-  );
+  const txLogs = logs.filter((l) => (l.function || l.action) && (
+    TX_LOG_CATEGORIES.has(l.category) || isSequence3Tx(l)
+  ));
 
   return txLogs.map((l) => ({
     timestamp: l.timestamp,
-    function: l.function || l.action || 'unknown',
+    function: sequence3TxName(l),
     category: l.category,
     success: l.level !== 'error',
     passportId: l.passportId || null,
     details: l.message,
     duration: l.durationMs || null,
+    sequence3: isSequence3Tx(l) ? sequence3Fields(l) : undefined,
   }));
 }
 

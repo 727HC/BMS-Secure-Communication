@@ -98,6 +98,8 @@ node src/index.js
 | `search` | 함수명 검색 | `function_name` (필수), `limit` |
 
 - **정확도**: 비트랜잭션 lifecycle 로그(연결·게이트웨이 등) 제외, `function \|\| action` 있는 로그만 카운트
+- **Sequence 3 tx 인식**: `SetPassportExtendedAttributes`, `BindBMSIdentifier`, `RecordSourceVerification`, `RecordBMUDataWithPayload`, 기존 `RecordBMUData`를 모두 tx 이벤트로 표시
+- **Sequence 3 field 표시**: 해당 tx 로그에 값이 있으면 `sequence3.bmsManagementId`, `bmsBindingId`, `bmsBindingCode32`, `rawPayloadHashVerified`, `bmsIdentifierMatched`, `evidenceHash`를 함께 표시
 - **중복제거**: `timestamp\|category\|message` 키로 Set 기반 중복제거 (tee+logger 이중 기록 대응)
 - **query error**: Fabric enrich/count 실패 시 `fabricQuery.errors[]`에 function/target/type/message 노출
 
@@ -153,8 +155,17 @@ node src/index.js
 관찰 항목:
 - `/api/status`: Fabric 연결, channel, contract, org
 - `/api/audit`: 감사 total/write/failure/action/statusCode trend (`PASSPORT_AUDIT_TOKEN` 필요)
-- BMU: record count, invalidation count, ingestion error rate, freshness counter anomaly
-- VC: verification success/failure trend
+- BMU: record count, invalidation count, ingestion failure trend, ingestion error rate, stale/freshness counter anomaly
+- BMU monitoring events: `missingSignature`, `invalidRawPayload`, `staleFC`, `didMismatch`, `bindingCode`를 `trends.bmu.monitoringEvents.*`에서 분리 표시
+- 3차년도 증적 경로: 각 BMU monitoring event는 `evidencePath.route = ["BMU","Agent","Fabric","Passport/MCP"]`를 포함
+- Sequence 3 BMS binding: `trends.sequence3BmsBinding`에 확정값과 관찰값을 비교 표시
+  - `bmsManagementId`: `BMS-MGMT-001`
+  - `bmsBindingId`: `did:battery:001#BMS-MGMT-001`
+  - `bmsBindingCode32`: `0x2c9a0e0c`
+  - `evidenceHash`: `b3c37ed2cdd2831cc0c212445905ced4a20ea51e129bff2e7418deddf7223178`
+  - `rawPayloadHashVerified`, `physicalVerification.signals.bmsIdentifierMatched`, source verification latest/records
+- VC: issue failure trend와 verification success/failure trend 분리
+- validation category: holder DID mismatch, malformed `expiresAt`, malformed timestamp, invalid rawPayload, invalid `dataHash`, missing signature, stale FC, DID mismatch, binding code zero/mismatch, VC issue 400/VAL
 - 오류: validation error category count, chaincode `INTERNAL` error trend
 - 규제/물리 검증: recycling/compliance/VC verify와 maintenance/analysis/BMU signature 관련 상태
 
@@ -167,9 +178,12 @@ node src/index.js
 - Passport audit middleware 특성상 GET probe도 감사 로그 1건을 남길 수 있지만, 원장/업무 데이터 mutation은 없다.
 
 Alert/handoff payload 예시는 `monitor_passport`의 `observation_plan` 또는 `trends` 응답에 포함된다. 주요 handoff 대상:
-- ingestion error rate / freshness counter anomaly → 배터리여권 + 임베디드
+- ingestion error rate / BMU validation spike / stale FC / freshness counter anomaly → 배터리여권 + 임베디드
+- binding code zero/mismatch → 배터리여권 + 블록체인 + 임베디드
+- Sequence 3 binding drift → 배터리여권 + 블록체인 + 임베디드
 - chaincode `INTERNAL` error trend → 블록체인 + 배터리여권
-- VC verification drift → 배터리여권 + 블록체인
+- VC issue validation spike / VC verification drift → 배터리여권 + 블록체인
+- regulatory/physical verification status drift → 배터리여권
 
 ### Resource: `agent-logs`
 
@@ -244,6 +258,11 @@ printf '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"monitor_
 # 8. Query error 노출 회귀 확인
 #    fabricClient.evaluate를 monkey patch해 "state type mismatch"를 던지고
 #    tx/bmu/vc/system 응답의 fabricQuery.errors[].type=DOC_TYPE_MISMATCH 확인
+
+# 9. Passport validation category 회귀 확인
+#    passport-monitor._private.buildTrendSummary에 holder DID mismatch, malformed expiresAt,
+#    malformed timestamp, invalid dataHash, missing signature 샘플을 넣고
+#    validationErrorCategoryCount, vc.issueFailureTrend, bmu.ingestionFailureTrend 분리 확인
 ```
 
 규칙:

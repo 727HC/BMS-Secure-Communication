@@ -45,7 +45,10 @@ MCP Client (Claude Code) ← stdio → index.js ←→ tools/*.js ←→ Fabric 
 - throw 기반 에러 signaling
 - 입력값 cross-validation
 - Passport 관찰 출력의 민감 필드 추가 redaction
-- BMU ingestion error rate, invalidation, freshness counter anomaly, VC verification trend, chaincode `INTERNAL` error trend 집계
+- BMU ingestion failure trend/error rate, invalidation, freshness counter anomaly, VC issue failure trend, VC verification trend, chaincode `INTERNAL` error trend 집계
+- BMU monitoring event 분리 표시: missing signature, invalid rawPayload, stale FC, DID mismatch, binding code zero/mismatch
+- 3차년도 증적 경로는 `BMU -> Agent -> Fabric -> Passport/MCP`로 명시
+- validation category 집계: holder DID mismatch, malformed `expiresAt`, malformed timestamp, invalid rawPayload, invalid `dataHash`, missing signature, stale FC, VC issue 400/VAL, DID mismatch, binding code zero/mismatch
 - Fabric query error 정규화: `DOC_TYPE_MISMATCH`, `DECODE_FAILURE`, `FABRIC_EVALUATE_ERROR`, `MONITOR_CONFIGURATION_ERROR`, `QUERY_ERROR`
 
 ## 함께 보는 문서
