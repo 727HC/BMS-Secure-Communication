@@ -1,6 +1,7 @@
 // Tool 1: Fabric Transaction Monitoring
 const fabricClient = require('../utils/fabric-client');
 const { readRecentLogs } = require('../utils/log-reader');
+const { addQueryError, queryErrorReport } = require('../utils/query-errors');
 
 const LOG_READ_LIMIT = 1000;
 
@@ -32,6 +33,7 @@ async function execute(params) {
 
   switch (action) {
     case 'recent': {
+      const queryErrors = [];
       // Primary source: actual transaction logs
       const logRecords = extractTxFromLogs(hours)
         .map((r) => ({ ...r, source: 'log' }));
@@ -55,7 +57,12 @@ async function execute(params) {
               duration: null,
               source: 'fabric',
             }));
-        } catch { /* Fabric unavailable — log-only results */ }
+        } catch (err) {
+          addQueryError(queryErrors, err, {
+            functionName: 'QueryBMURecordsByPassport',
+            target: passport_id,
+          });
+        }
       }
 
       const records = [...logRecords, ...fabricRecords]
@@ -65,11 +72,13 @@ async function execute(params) {
       return {
         action: 'recent',
         count: records.length,
+        fabricQuery: queryErrorReport(queryErrors),
         transactions: records,
       };
     }
 
     case 'stats': {
+      const queryErrors = [];
       const logTxs = extractTxFromLogs(hours);
 
       // Count by function
@@ -88,11 +97,13 @@ async function execute(params) {
       const tps = hours > 0 ? (total / (hours * 3600)).toFixed(4) : 0;
 
       // Query passport count from Fabric
-      let passportCount = 0;
+      let passportCount = null;
       try {
         const result = await fabricClient.evaluate('QueryPassportsWithPagination', '1', '');
         passportCount = result.count || 0;
-      } catch { /* ignore */ }
+      } catch (err) {
+        addQueryError(queryErrors, err, { functionName: 'QueryPassportsWithPagination' });
+      }
 
       return {
         action: 'stats',
@@ -103,6 +114,7 @@ async function execute(params) {
         byStatus,
         byFunction,
         passportCount,
+        fabricQuery: queryErrorReport(queryErrors),
       };
     }
 
@@ -115,6 +127,7 @@ async function execute(params) {
       const matched = logTxs
         .filter((tx) => tx.function && tx.function.toLowerCase().includes(function_name.toLowerCase()))
         .slice(-limit);
+      const queryErrors = [];
 
       // If searching for BMU and passport_id is given, also query Fabric
       let fabricResults = [];
@@ -132,7 +145,12 @@ async function execute(params) {
             voltage: r.voltage,
             temperature: r.temperature,
           }));
-        } catch { /* ignore */ }
+        } catch (err) {
+          addQueryError(queryErrors, err, {
+            functionName: 'QueryBMURecordsByPassport',
+            target: passport_id,
+          });
+        }
       }
 
       return {
@@ -140,6 +158,7 @@ async function execute(params) {
         functionFilter: function_name,
         logMatches: matched.length,
         fabricMatches: fabricResults.length,
+        fabricQuery: queryErrorReport(queryErrors),
         results: [...matched, ...fabricResults].slice(0, limit),
       };
     }

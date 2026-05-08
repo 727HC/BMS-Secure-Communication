@@ -108,3 +108,92 @@ OMC 플러그인 업데이트 → MCP 서버로 시스템 상태 확인 → C3 g
 - filter-repo는 문자열 치환이라 **코드 로직까지 영향** — 블록체인 세션이 리뷰로 잡았지만, 각 세션이 자기 영역 재검증하는 루틴 필요
 - `.env`는 gitignored지만 dead var는 로컬에서도 정리해야 "시크릿 제거" 목표와 일치 — 운영자 영역이라도 세션 스코프 안이면 자가 정리
 - `git log -5 --oneline -- path/` 형태는 `--` 없이 쓰면 revision parse 실패 — path 분리자 기본 사용
+
+---
+
+## Session 3 (2026-05-08)
+
+### 요약
+Passport 세션 handoff의 MCP 요청을 수신해 `mcp-monitor`에 Passport 3차년도 관찰 표면을 추가했다. 원장/Passport 업무 데이터 쓰기 없이 `/api/status`, `/api/audit` 또는 `logs/audit.log` 기반으로 BMU/VC/error trend를 확인한다.
+
+### 작업 내용
+1. **신규 도구 추가** — `monitor_passport`
+   - `status`: `GET /api/status` live probe
+   - `audit`: `GET /api/audit` 또는 local `logs/audit.log` fallback
+   - `trends`: BMU record count, invalidation, ingestion error rate, freshness counter anomaly, VC verification trend, regulatory/physical verification status, validation category, chaincode `INTERNAL` trend 집계
+   - `observation_plan`: 3차년도 기능시험 관찰 항목, pass/fail 기준, alert/handoff payload 예시
+2. **읽기 전용 유지**
+   - HTTP는 `GET`만 사용
+   - `PASSPORT_AUDIT_TOKEN`은 외부 사전 발급 JWT만 사용, login/password flow 없음
+   - `submitTransaction`/axios write method 없음 확인
+3. **민감값 보호**
+   - MCP 출력에서 `password/token/secret/signature/rawPayload/privateKey/authorization` 추가 redaction
+4. **문서 갱신**
+   - `mcp-monitor/README.md` 도구/환경변수/검증 절차 업데이트
+   - `wiki/mcp/overview.md` 현재 기준 도구 표면 업데이트
+
+### 변경 파일
+- `mcp-monitor/src/index.js`
+- `mcp-monitor/src/tools/passport-monitor.js`
+- `mcp-monitor/.env.example`
+- `mcp-monitor/README.md`
+- `wiki/mcp/overview.md`
+- `wiki/mcp/activity-log.md`
+
+### 검증
+- `cd mcp-monitor && node -c src/index.js && node -c src/utils/fabric-client.js && node -c src/utils/log-reader.js && node -c src/tools/tx-monitor.js && node -c src/tools/bmu-monitor.js && node -c src/tools/vc-monitor.js && node -c src/tools/system-status.js && node -c src/tools/passport-monitor.js` — PASS
+- `cd mcp-monitor && npm ls --depth=0` — PASS
+- JSON-RPC `tools/list` — `monitor_passport` 등록 확인 PASS
+- JSON-RPC `monitor_passport.observation_plan` — 관찰 항목/검증 기준 반환 PASS
+- JSON-RPC `monitor_passport.status` — `/api/status` HTTP 200, `fabric=connected`, `org=ManufacturerMSP` PASS
+- JSON-RPC `monitor_passport.trends` — local audit fallback, BMU/VC/error trend 반환 PASS
+- Node assert probe — BMU 실패, freshness anomaly, VC verification trend 탐지 PASS
+- `grep -R -E "submitTransaction[[:space:]]*\(|axios\.(post|put|patch|delete)[[:space:]]*\(" -n mcp-monitor/src` — write-call 없음 PASS
+
+### 미완료 / 리스크
+- `/api/audit` API 경로는 `PASSPORT_AUDIT_TOKEN`이 없으면 호출하지 않고 local log fallback을 사용한다. 운영 identity는 Passport 세션과 별도 합의 필요.
+- 현재 live 로그에는 BMU freshness counter 실패가 관찰된다. 임베디드/Passport handoff 대상으로 분류해야 한다.
+- 대규모 부하/공인시험 임계값은 아직 별도 QA 목표에서 확정해야 한다.
+
+### 교훈
+- Passport 감사 로그가 실제로는 `rawPayload`를 포함할 수 있어 MCP 출력 단계 redaction이 필요했다.
+- read-only 검증은 문자열 존재 grep보다 실제 write-call expression grep으로 해야 false positive를 줄일 수 있다.
+
+---
+
+## Session 4 (2026-05-08)
+
+### 요약
+블록체인/체인코드 리뷰에서 전달된 rich-query fail-closed 변경을 MCP monitor에 반영했다. `docType` mismatch, typed state loader 오류, malformed rich-query decode 오류가 보조 Fabric query 경로에서 더 이상 조용히 skip되지 않고 응답에 드러난다.
+
+### 작업 내용
+1. **query error 정규화 유틸 추가**
+   - `DOC_TYPE_MISMATCH`, `DECODE_FAILURE`, `FABRIC_EVALUATE_ERROR`, `MONITOR_CONFIGURATION_ERROR`, `QUERY_ERROR` 분류
+   - `function`, `target`, `message` 포함
+2. **silent fallback 제거**
+   - `monitor_transactions`: Fabric enrich/passport count/search 실패를 `fabricQuery.errors[]`에 노출
+   - `monitor_bmu`: passport scan 및 per-passport BMU query 실패를 `fabricQuery.errors[]`에 노출
+   - `monitor_vc`: credential passport/type query 실패를 `fabricQuery.errors[]`와 type별 `error`에 노출
+   - `system_status`: Fabric connectivity probe 실패를 `fabricQuery.errors[]`에 노출
+3. **문서 갱신**
+   - `mcp-monitor/CLAUDE.md`, `mcp-monitor/README.md`, `wiki/mcp/overview.md`에 query error 노출 원칙 반영
+
+### 변경 파일
+- `mcp-monitor/src/utils/query-errors.js`
+- `mcp-monitor/src/tools/tx-monitor.js`
+- `mcp-monitor/src/tools/bmu-monitor.js`
+- `mcp-monitor/src/tools/vc-monitor.js`
+- `mcp-monitor/src/tools/system-status.js`
+- `mcp-monitor/CLAUDE.md`
+- `mcp-monitor/README.md`
+- `wiki/mcp/overview.md`
+- `wiki/mcp/activity-log.md`
+
+### 검증
+- `node -c` 대상 전체 PASS
+- monkey patch 회귀 검증: `fabricClient.evaluate`가 `state type mismatch`를 throw할 때 tx/bmu/vc/system 응답에 `fabricQuery.errors[].type = DOC_TYPE_MISMATCH` 노출 PASS
+- silent catch 검색: `catch { /* ignore */`, `query failed`, `Fabric unavailable` 잔여 없음 PASS
+
+### 미완료 / 리스크
+- 실제 malformed ledger document 주입은 MCP 세션의 read-only 원칙상 수행하지 않았다. 대신 throw monkey patch로 fail-closed error surface를 검증했다.
+- primary query 경로는 기존처럼 MCP `isError`로 실패한다. secondary/enrichment query 경로는 partial result + `fabricQuery.errors[]`를 반환한다.

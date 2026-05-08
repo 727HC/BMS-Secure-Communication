@@ -18,7 +18,7 @@ MCP Client (Claude Code) ←stdio→ index.js ←→ tools/*.js ←→ Fabric / 
 
 - **Read-only**: 블록체인에 쓰기 없음, evaluateTransaction만 사용
 - **Hybrid data**: Fabric 쿼리 + 구조화 JSON 로그 (logs/agent.log) 이중 소스
-- **4 Tools**: monitor_transactions, monitor_bmu, monitor_vc, system_status
+- **5 Tools**: monitor_transactions, monitor_bmu, monitor_vc, system_status, monitor_passport
 
 ## Key Decisions
 
@@ -26,6 +26,7 @@ MCP Client (Claude Code) ←stdio→ index.js ←→ tools/*.js ←→ Fabric / 
 - 로그 중복제거: tee + logger 이중 기록 대응 (timestamp|category|message 키)
 - BMU 레코드: status=INVALIDATED 필터링 필수
 - VC 쿼리: org MSP에 따라 데이터 범위 다름 → dataScope 필드 포함
+- Fabric rich-query/type decode 오류: 조용히 skip하지 말고 `fabricQuery` 또는 MCP `isError`로 노출
 - 에러: throw로 통일 → index.js catch에서 isError: true 설정
 
 ## Don'ts
@@ -64,7 +65,7 @@ MCP Client (Claude Code) ←stdio→ index.js ←→ tools/*.js ←→ Fabric / 
 
 ```bash
 # 구문 검증 (PostToolUse hook이 자동 실행하지만 수동으로도 가능)
-node -c src/index.js && node -c src/utils/fabric-client.js && node -c src/utils/log-reader.js && node -c src/tools/tx-monitor.js && node -c src/tools/bmu-monitor.js && node -c src/tools/vc-monitor.js && node -c src/tools/system-status.js
+node -c src/index.js && node -c src/utils/fabric-client.js && node -c src/utils/log-reader.js && node -c src/utils/query-errors.js && node -c src/tools/tx-monitor.js && node -c src/tools/bmu-monitor.js && node -c src/tools/vc-monitor.js && node -c src/tools/system-status.js && node -c src/tools/passport-monitor.js
 
 # 의존성 확인
 cd mcp-monitor && npm ls --depth=0

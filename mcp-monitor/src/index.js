@@ -9,6 +9,7 @@ const txMonitor = require('./tools/tx-monitor');
 const bmuMonitor = require('./tools/bmu-monitor');
 const vcMonitor = require('./tools/vc-monitor');
 const systemStatus = require('./tools/system-status');
+const passportMonitor = require('./tools/passport-monitor');
 
 const server = new McpServer({
   name: 'bms-blockchain-monitor',
@@ -116,6 +117,34 @@ server.tool(
   async (params) => {
     try {
       const result = await systemStatus.execute(params);
+      return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
+    } catch (err) {
+      return { content: [{ type: 'text', text: `Error: ${err.message}` }], isError: true };
+    }
+  }
+);
+
+// ============================================================
+// Tool 5: Passport API Observability
+// ============================================================
+
+server.tool(
+  'monitor_passport',
+  'Passport API와 감사 로그를 읽기 전용으로 관찰한다. /api/status, /api/audit, BMU ingestion/invalidation/error trend, VC verification trend, 3차년도 기능시험 alert payload를 제공',
+  {
+    action: z.enum(['status', 'audit', 'trends', 'observation_plan']).describe(
+      'status: /api/status GET probe, audit: /api/audit 또는 audit.log 조회, trends: BMU/VC/error trend 집계, observation_plan: 관찰 항목/alert/검증 기준'
+    ),
+    hours: z.number().min(0.1).max(720).optional().default(24).describe('trend/audit 집계 시간 범위'),
+    limit: z.number().int().min(1).max(500).optional().default(50).describe('조회/집계할 최대 항목 수'),
+    source: z.enum(['auto', 'api', 'local']).optional().default('auto').describe(
+      'audit/trends 소스: auto는 PASSPORT_AUDIT_TOKEN 있으면 /api/audit, 없으면 logs/audit.log'
+    ),
+    include_examples: z.boolean().optional().default(true).describe('alert/handoff payload 예시 포함 여부'),
+  },
+  async (params) => {
+    try {
+      const result = await passportMonitor.execute(params);
       return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
     } catch (err) {
       return { content: [{ type: 'text', text: `Error: ${err.message}` }], isError: true };

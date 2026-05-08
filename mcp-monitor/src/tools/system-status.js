@@ -2,6 +2,7 @@
 const { execSync } = require('child_process');
 const axios = require('axios');
 const fabricClient = require('../utils/fabric-client');
+const { addQueryError, queryErrorReport } = require('../utils/query-errors');
 
 const AGENT_URL = process.env.AGENT_URL || 'http://localhost:3001';
 const VON_URL = process.env.VON_URL || 'http://localhost:9000';
@@ -122,10 +123,13 @@ async function checkFabricStatus(verbose) {
 
   // Check Fabric connectivity via the client
   let fabricConnected = false;
+  const queryErrors = [];
   try {
     await fabricClient.evaluate('QueryPassportsWithPagination', '1', '');
     fabricConnected = true;
-  } catch { /* ignore */ }
+  } catch (err) {
+    addQueryError(queryErrors, err, { functionName: 'QueryPassportsWithPagination' });
+  }
 
   const result = {
     connected: fabricConnected,
@@ -135,6 +139,7 @@ async function checkFabricStatus(verbose) {
     couchdb: couchdbs.map((c) => ({ name: c.name, status: c.running ? 'up' : 'down' })),
     totalContainers: fabricContainers.length,
     allHealthy: fabricContainers.every((c) => c.running),
+    fabricQuery: queryErrorReport(queryErrors),
   };
 
   if (verbose) {

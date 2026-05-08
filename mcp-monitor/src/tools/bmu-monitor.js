@@ -1,6 +1,7 @@
 // Tool 2: BMU Data Anomaly Detection
 const fabricClient = require('../utils/fabric-client');
 const { readRecentLogs } = require('../utils/log-reader');
+const { addQueryError, queryErrorReport } = require('../utils/query-errors');
 
 // Runtime thresholds (can be changed via thresholds action)
 const thresholds = {
@@ -69,6 +70,7 @@ async function execute(params) {
   switch (action) {
     case 'anomalies': {
       let allRecords = [];
+      const queryErrors = [];
 
       if (passport_id) {
         // Query specific passport's BMU records
@@ -93,15 +95,25 @@ async function execute(params) {
           const passports = await fabricClient.evaluate('QueryPassportsWithPagination', '10', '');
           const ids = (passports.records || passports || []).map((p) => p.passportId).filter(Boolean);
           const perPassport = String(Math.ceil(limit / 5));
+          const scanIds = ids.slice(0, 5);
           const results = await Promise.allSettled(
-            ids.slice(0, 5).map((pid) =>
+            scanIds.map((pid) =>
               fabricClient.evaluate('QueryBMURecordsByPassport', pid, perPassport, '')
             )
           );
-          for (const r of results) {
-            if (r.status === 'fulfilled') allRecords.push(...filterValid(r.value.records));
+          for (const [idx, r] of results.entries()) {
+            if (r.status === 'fulfilled') {
+              allRecords.push(...filterValid(r.value.records));
+            } else {
+              addQueryError(queryErrors, r.reason, {
+                functionName: 'QueryBMURecordsByPassport',
+                target: scanIds[idx],
+              });
+            }
           }
-        } catch { /* ignore */ }
+        } catch (err) {
+          addQueryError(queryErrors, err, { functionName: 'QueryPassportsWithPagination' });
+        }
       }
 
       // Check each record for anomalies
@@ -125,6 +137,7 @@ async function execute(params) {
         action: 'anomalies',
         totalRecordsScanned: allRecords.length,
         anomalyCount: anomalyRecords.length,
+        fabricQuery: queryErrorReport(queryErrors),
         thresholds: { ...thresholds },
         anomalies: anomalyRecords.slice(0, limit),
       };
@@ -137,14 +150,16 @@ async function execute(params) {
           const passports = await fabricClient.evaluate('QueryPassportsWithPagination', '20', '');
           const ids = (passports.records || passports || []).map((p) => p.passportId).filter(Boolean);
           const latestByPassport = [];
+          const queryErrors = [];
 
+          const scanIds = ids.slice(0, 10);
           const results = await Promise.allSettled(
-            ids.slice(0, 10).map((pid) =>
+            scanIds.map((pid) =>
               fabricClient.evaluate('QueryBMURecordsByPassport', pid, '1', '')
                 .then((result) => ({ pid, records: result.records || [] }))
             )
           );
-          for (const res of results) {
+          for (const [idx, res] of results.entries()) {
             if (res.status === 'fulfilled') {
               const { pid } = res.value;
               const valid = filterValid(res.value.records);
@@ -162,12 +177,18 @@ async function execute(params) {
                 dischargeCycles: r.dischargeCycles,
                 anomalies: checkAnomalies(r),
               });
+            } else {
+              addQueryError(queryErrors, res.reason, {
+                functionName: 'QueryBMURecordsByPassport',
+                target: scanIds[idx],
+              });
             }
           }
 
           return {
             action: 'latest',
             count: latestByPassport.length,
+            fabricQuery: queryErrorReport(queryErrors),
             records: latestByPassport,
           };
         } catch (err) {

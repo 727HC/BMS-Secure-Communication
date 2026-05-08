@@ -1,6 +1,7 @@
 // Tool 3: VC (Verifiable Credential) Event Tracking
 const fabricClient = require('../utils/fabric-client');
 const { readRecentLogs } = require('../utils/log-reader');
+const { addQueryError, queryErrorReport } = require('../utils/query-errors');
 
 const CRED_TYPES = ['BATTERY_PASSPORT', 'BATTERY_HEALTH', 'MAINTENANCE', 'COMPLIANCE', 'RECYCLING'];
 
@@ -43,6 +44,7 @@ async function execute(params) {
 
       // Also query Fabric for credentials by passport if specified
       let fabricCreds = [];
+      const queryErrors = [];
       if (passport_id) {
         try {
           const result = await fabricClient.evaluate(
@@ -58,7 +60,12 @@ async function execute(params) {
             issuerDid: c.issuerDid,
             holderDid: c.holderDid,
           }));
-        } catch { /* ignore */ }
+        } catch (err) {
+          addQueryError(queryErrors, err, {
+            functionName: 'QueryCredentialsByPassport',
+            target: passport_id,
+          });
+        }
       }
 
       return {
@@ -66,6 +73,7 @@ async function execute(params) {
         dataScope: getDataScope(),
         logEventCount: events.length,
         fabricCredCount: fabricCreds.length,
+        fabricQuery: queryErrorReport(queryErrors),
         events: events.slice(-limit),
         credentials: fabricCreds,
       };
@@ -75,6 +83,7 @@ async function execute(params) {
       const now = new Date();
       const expiryThreshold = new Date(now.getTime() + days_until_expiry * 86400000);
       const expiring = [];
+      const queryErrors = [];
 
       // Query credentials by each type and check expiry
       for (const type of (cred_type ? [cred_type] : CRED_TYPES)) {
@@ -102,7 +111,12 @@ async function execute(params) {
               });
             }
           }
-        } catch { /* ignore - type may not have any creds */ }
+        } catch (err) {
+          addQueryError(queryErrors, err, {
+            functionName: 'QueryCredentialsByType',
+            target: type,
+          });
+        }
       }
 
       // Sort by days until expiry
@@ -114,6 +128,7 @@ async function execute(params) {
         threshold: `${days_until_expiry} days`,
         count: expiring.length,
         expired: expiring.filter((e) => e.isExpired).length,
+        fabricQuery: queryErrorReport(queryErrors),
         expiringCredentials: expiring.slice(0, limit),
       };
     }
@@ -124,6 +139,7 @@ async function execute(params) {
         byStatus: { ACTIVE: 0, REVOKED: 0, EXPIRED: 0 },
         total: 0,
       };
+      const queryErrors = [];
 
       for (const type of CRED_TYPES) {
         try {
@@ -153,8 +169,12 @@ async function execute(params) {
 
           typeStats.total = typeStats.active + typeStats.revoked + typeStats.expired;
           stats.byType[type] = typeStats;
-        } catch {
-          stats.byType[type] = { total: 0, error: 'query failed' };
+        } catch (err) {
+          addQueryError(queryErrors, err, {
+            functionName: 'QueryCredentialsByType',
+            target: type,
+          });
+          stats.byType[type] = { total: 0, error: err.message };
         }
       }
 
@@ -162,6 +182,7 @@ async function execute(params) {
         action: 'stats',
         dataScope: getDataScope(),
         passportFilter: passport_id || 'all',
+        fabricQuery: queryErrorReport(queryErrors),
         ...stats,
       };
     }
