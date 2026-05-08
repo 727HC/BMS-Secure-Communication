@@ -4,6 +4,7 @@ const { WorkloadModuleBase } = require('@hyperledger/caliper-core');
 const crypto = require('crypto');
 
 const NUM_PASSPORTS = parseInt(process.env.NUM_PASSPORTS || '50', 10);
+const RUN_ID = process.env.CALIPER_RUN_ID || 'default';
 
 class RecordBMUDataWorkload extends WorkloadModuleBase {
     constructor() {
@@ -11,20 +12,18 @@ class RecordBMUDataWorkload extends WorkloadModuleBase {
         this.passportIds = [];
         this.dids = [];
         this.fcCounters = {};
+        this.lastSubmitByDid = {};
         this.txIndex = 0;
     }
 
     async initializeWorkloadModule(workerIndex, totalWorkers, roundIndex, roundArguments, sutAdapter, sutContext) {
         await super.initializeWorkloadModule(workerIndex, totalWorkers, roundIndex, roundArguments, sutAdapter, sutContext);
 
-        // Worker-exclusive passport assignment: each worker owns a non-overlapping range
-        const perWorker = Math.ceil(NUM_PASSPORTS / totalWorkers);
-        const startIdx = workerIndex * perWorker;
-        const endIdx = Math.min(startIdx + perWorker, NUM_PASSPORTS);
-
-        for (let i = startIdx; i < endIdx; i++) {
-            const id = `PASSPORT-CALIPER-${String(i).padStart(4, '0')}`;
-            const did = `did-caliper-${String(i).padStart(4, '0')}`;
+        // Worker-exclusive passport assignment: striding keeps every worker valid
+        // even when NUM_PASSPORTS is not divisible by totalWorkers.
+        for (let i = workerIndex; i < NUM_PASSPORTS; i += totalWorkers) {
+            const id = `PASSPORT-CALIPER-${RUN_ID}-${String(i).padStart(4, '0')}`;
+            const did = `did-caliper-${RUN_ID}-${String(i).padStart(4, '0')}`;
             this.passportIds.push(id);
             this.dids.push(did);
             this.fcCounters[did] = 0;
@@ -37,7 +36,7 @@ class RecordBMUDataWorkload extends WorkloadModuleBase {
                 contractFunction: 'CreateBatteryPassport',
                 contractArguments: [
                     this.passportIds[i], `BATTERY-${this.passportIds[i]}`, this.dids[i],
-                    'BenchModel', `SN-${startIdx + i}`,
+                    'BenchModel', `SN-${i}`,
                     'BenchMfg', 'KR',
                     'BenchCell', 'KR',
                     '2026-01-01', 'Prismatic', 'NMC',
@@ -57,7 +56,11 @@ class RecordBMUDataWorkload extends WorkloadModuleBase {
     }
 
     async submitTransaction() {
-        const idx = Math.floor(Math.random() * this.passportIds.length);
+        if (this.passportIds.length === 0) {
+            return;
+        }
+
+        const idx = this.txIndex % this.passportIds.length;
         const passportId = this.passportIds[idx];
         const did = this.dids[idx];
 
@@ -86,7 +89,10 @@ class RecordBMUDataWorkload extends WorkloadModuleBase {
             readOnly: false
         };
 
-        await this.sutAdapter.sendRequests(args);
+        const previous = this.lastSubmitByDid[did] || Promise.resolve();
+        const submitPromise = previous.then(() => this.sutAdapter.sendRequests(args));
+        this.lastSubmitByDid[did] = submitPromise.catch(() => {});
+        await submitPromise;
     }
 }
 

@@ -9,16 +9,19 @@ type PassportContract struct {
 
 // DocType constants
 const (
-	docTypePassport      = "batteryPassport"
-	docTypeBMURecord     = "bmuRecord"
-	docTypeBMUSnapshot   = "bmuSnapshot"
-	docTypeRawMaterial   = "rawMaterial"
-	docTypeVC            = "verifiableCredential"
-	docTypeVerification  = "vcVerification"
-	docTypeFCReset       = "fcReset"
-	docTypeCredRequest   = "credentialRequest"
-	defaultPageSize int32 = 100
-	maxPageSize     int32 = 500
+	docTypePassport                 = "batteryPassport"
+	docTypeBMURecord                = "bmuRecord"
+	docTypeBMUSnapshot              = "bmuSnapshot"
+	docTypeRawMaterial              = "rawMaterial"
+	docTypeVC                       = "verifiableCredential"
+	docTypeVerification             = "vcVerification"
+	docTypeRegulatoryEvent          = "regulatoryVerification"
+	docTypePhysicalEvent            = "physicalVerification"
+	docTypeSourceVerification       = "sourceVerification"
+	docTypeFCReset                  = "fcReset"
+	docTypeCredRequest              = "credentialRequest"
+	defaultPageSize           int32 = 100
+	maxPageSize               int32 = 500
 )
 
 // MSP identity constants
@@ -72,10 +75,33 @@ var fieldCorrectors = map[string][]string{
 
 // validSignalKeys defines the allowed signal keys for physical verification
 var validSignalKeys = map[string]bool{
-	"socMatched": true,
-	"didMatched": true,
-	"vinMatched": true,
-	"fcMatched":  true,
+	"socMatched":           true,
+	"didMatched":           true,
+	"vinMatched":           true,
+	"fcMatched":            true,
+	"bmsIdentifierMatched": true,
+}
+
+// validRecycledElementKeys defines the controlled vocabulary for recycled content.
+var validRecycledElementKeys = map[string]bool{
+	"lithium":   true,
+	"nickel":    true,
+	"cobalt":    true,
+	"manganese": true,
+	"graphite":  true,
+	"aluminum":  true,
+	"copper":    true,
+	"iron":      true,
+	"plastic":   true,
+	"other":     true,
+	"Li":        true,
+	"Ni":        true,
+	"Co":        true,
+	"Mn":        true,
+	"C":         true,
+	"Al":        true,
+	"Cu":        true,
+	"Fe":        true,
 }
 
 // RawMaterial represents a raw material used in battery manufacturing
@@ -118,26 +144,26 @@ type BatteryPassport struct {
 	DID        string `json:"did"`
 
 	// GBA 21 fields (2-21)
-	Model                  string `json:"model"`
-	SerialNumber           string `json:"serialNumber"`
-	EVManufacturer         string `json:"evManufacturer"`
-	EVAssemblyCountry      string `json:"evAssemblyCountry"`
-	EvBinderMSP            string `json:"evBinderMsp"`
-	ManufacturerName       string `json:"manufacturerName"`
-	ManufactureCountry     string `json:"manufactureCountry"`
-	CellManufacturer       string `json:"cellManufacturer"`
-	CellManufactureCountry string `json:"cellManufactureCountry"`
-	ManufactureDate        string `json:"manufactureDate"`
-	CellType               string `json:"cellType"`
-	Chemistry              string `json:"chemistry"`
-	CellCount              int    `json:"cellCount"`
+	Model                  string  `json:"model"`
+	SerialNumber           string  `json:"serialNumber"`
+	EVManufacturer         string  `json:"evManufacturer"`
+	EVAssemblyCountry      string  `json:"evAssemblyCountry"`
+	EvBinderMSP            string  `json:"evBinderMsp"`
+	ManufacturerName       string  `json:"manufacturerName"`
+	ManufactureCountry     string  `json:"manufactureCountry"`
+	CellManufacturer       string  `json:"cellManufacturer"`
+	CellManufactureCountry string  `json:"cellManufactureCountry"`
+	ManufactureDate        string  `json:"manufactureDate"`
+	CellType               string  `json:"cellType"`
+	Chemistry              string  `json:"chemistry"`
+	CellCount              int     `json:"cellCount"`
 	Weight                 float64 `json:"weight"`
 	TotalEnergy            float64 `json:"totalEnergy"`
 	EnergyDensity          float64 `json:"energyDensity"`
 	RatedCapacity          float64 `json:"ratedCapacity"`
-	ExpectedLifespan       int    `json:"expectedLifespan"`
-	VoltageRange           string `json:"voltageRange"`
-	TemperatureRange       string `json:"temperatureRange"`
+	ExpectedLifespan       int     `json:"expectedLifespan"`
+	VoltageRange           string  `json:"voltageRange"`
+	TemperatureRange       string  `json:"temperatureRange"`
 
 	// EV binding
 	VIN         string `json:"vin"`
@@ -152,6 +178,9 @@ type BatteryPassport struct {
 	DisposalMethod         string             `json:"disposalMethod"`
 	RecycledElementContent map[string]float64 `json:"recycledElementContent"`
 	ExtensionInfo          map[string]string  `json:"extensionInfo"`
+	BMSManagementID        string             `json:"bmsManagementId"`
+	BMSBindingID           string             `json:"bmsBindingId"`
+	BMSBindingCode32       uint32             `json:"bmsBindingCode32,omitempty" metadata:",optional"`
 
 	// Real-time state (updated by BMU data)
 	CurrentSOC           float64 `json:"currentSoc"`
@@ -189,27 +218,29 @@ type BatteryPassport struct {
 
 // BMURecord represents a BMU data record
 type BMURecord struct {
-	DocType         string  `json:"docType"`
-	RecordID        string  `json:"recordId"`
-	PassportID      string  `json:"passportId"`
-	DID             string  `json:"did"`
-	DataHash        string  `json:"dataHash"`
-	Signature       string  `json:"signature"`
-	FC              uint64  `json:"fc"`
-	SOC             uint16  `json:"soc"`
-	Voltage         float64 `json:"voltage"`
-	Current         float64 `json:"current"`
-	Temperature     uint16  `json:"temperature"`
-	CellCount       uint8   `json:"cellCount"`
-	StatusFlags     uint8   `json:"statusFlags"`
-	DischargeCycles uint16  `json:"dischargeCycles"`
-	Timestamp       string  `json:"timestamp"`
-	Status          string  `json:"status,omitempty" metadata:",optional"`
-	InvalidatedBy   string  `json:"invalidatedBy,omitempty" metadata:",optional"`
-	InvalidatedAt   string  `json:"invalidatedAt,omitempty" metadata:",optional"`
-	InvalidReason   string  `json:"invalidReason,omitempty" metadata:",optional"`
-	CreatedAt       string  `json:"createdAt"`
-	CreatorMSP      string  `json:"creatorMsp"`
+	DocType                string  `json:"docType"`
+	RecordID               string  `json:"recordId"`
+	PassportID             string  `json:"passportId"`
+	DID                    string  `json:"did"`
+	DataHash               string  `json:"dataHash"`
+	Signature              string  `json:"signature"`
+	FC                     uint64  `json:"fc"`
+	SOC                    uint16  `json:"soc"`
+	Voltage                float64 `json:"voltage"`
+	Current                float64 `json:"current"`
+	Temperature            uint16  `json:"temperature"`
+	CellCount              uint8   `json:"cellCount"`
+	StatusFlags            uint8   `json:"statusFlags"`
+	DischargeCycles        uint16  `json:"dischargeCycles"`
+	BMSBindingCode32       uint32  `json:"bmsBindingCode32,omitempty" metadata:",optional"`
+	RawPayloadHashVerified bool    `json:"rawPayloadHashVerified,omitempty" metadata:",optional"`
+	Timestamp              string  `json:"timestamp"`
+	Status                 string  `json:"status,omitempty" metadata:",optional"`
+	InvalidatedBy          string  `json:"invalidatedBy,omitempty" metadata:",optional"`
+	InvalidatedAt          string  `json:"invalidatedAt,omitempty" metadata:",optional"`
+	InvalidReason          string  `json:"invalidReason,omitempty" metadata:",optional"`
+	CreatedAt              string  `json:"createdAt"`
+	CreatorMSP             string  `json:"creatorMsp"`
 }
 
 // BMUSnapshot holds real-time BMU state separated from passport key to avoid MVCC conflicts
@@ -264,13 +295,50 @@ type CredentialVerification struct {
 	Timestamp      string `json:"timestamp"`
 }
 
+// SourceVerification records oracle/source verification results for passport source data.
+type SourceVerification struct {
+	DocType        string            `json:"docType"`
+	VerificationID string            `json:"verificationId"`
+	PassportID     string            `json:"passportId"`
+	SourceType     string            `json:"sourceType"`
+	SourceID       string            `json:"sourceId"`
+	DataHash       string            `json:"dataHash"`
+	Result         bool              `json:"result"`
+	Details        map[string]string `json:"details"`
+	VerifierMSP    string            `json:"verifierMsp"`
+	CreatedAt      string            `json:"createdAt"`
+}
+
+// RegulatoryVerificationEvent records regulatory verification history.
+type RegulatoryVerificationEvent struct {
+	DocType     string   `json:"docType"`
+	EventID     string   `json:"eventId"`
+	PassportID  string   `json:"passportId"`
+	Status      string   `json:"status"`
+	VerifierMSP string   `json:"verifierMsp"`
+	EvidenceIDs []string `json:"evidenceIds"`
+	VerifiedAt  string   `json:"verifiedAt"`
+}
+
 // PhysicalVerification represents physical-history binding verification
 type PhysicalVerification struct {
-	Status      string          `json:"status"`      // VERIFIED | MISMATCH | PENDING
+	Status      string          `json:"status"` // VERIFIED | MISMATCH | PENDING
 	VerifiedAt  string          `json:"verifiedAt"`
 	VerifierMSP string          `json:"verifierMsp"`
 	Reason      string          `json:"reason"`
 	Signals     map[string]bool `json:"signals"`
+}
+
+// PhysicalVerificationEvent records physical-history verification history.
+type PhysicalVerificationEvent struct {
+	DocType     string          `json:"docType"`
+	EventID     string          `json:"eventId"`
+	PassportID  string          `json:"passportId"`
+	Status      string          `json:"status"`
+	VerifierMSP string          `json:"verifierMsp"`
+	Reason      string          `json:"reason"`
+	Signals     map[string]bool `json:"signals"`
+	VerifiedAt  string          `json:"verifiedAt"`
 }
 
 // CredentialRequest represents a credential issuance request (2차년도 #10-12)
@@ -334,4 +402,22 @@ type PaginatedVerificationResult struct {
 	Records  []*CredentialVerification `json:"records"`
 	Bookmark string                    `json:"bookmark"`
 	Count    int                       `json:"count"`
+}
+
+type PaginatedSourceVerificationResult struct {
+	Records  []*SourceVerification `json:"records"`
+	Bookmark string                `json:"bookmark"`
+	Count    int                   `json:"count"`
+}
+
+type PaginatedRegulatoryVerificationResult struct {
+	Records  []*RegulatoryVerificationEvent `json:"records"`
+	Bookmark string                         `json:"bookmark"`
+	Count    int                            `json:"count"`
+}
+
+type PaginatedPhysicalVerificationResult struct {
+	Records  []*PhysicalVerificationEvent `json:"records"`
+	Bookmark string                       `json:"bookmark"`
+	Count    int                          `json:"count"`
 }

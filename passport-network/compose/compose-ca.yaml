@@ -13,7 +13,7 @@ networks:
 services:
 
   ca_manufacturer:
-    image: hyperledger/fabric-ca:latest
+    image: hyperledger/fabric-ca:${FABRIC_CA_VERSION:-1.5}
     labels:
       service: hyperledger-fabric
     environment:
@@ -37,7 +37,7 @@ services:
       - passport
 
   ca_evmanufacturer:
-    image: hyperledger/fabric-ca:latest
+    image: hyperledger/fabric-ca:${FABRIC_CA_VERSION:-1.5}
     labels:
       service: hyperledger-fabric
     environment:
@@ -61,7 +61,7 @@ services:
       - passport
 
   ca_service:
-    image: hyperledger/fabric-ca:latest
+    image: hyperledger/fabric-ca:${FABRIC_CA_VERSION:-1.5}
     labels:
       service: hyperledger-fabric
     environment:
@@ -85,7 +85,7 @@ services:
       - passport
 
   ca_regulator:
-    image: hyperledger/fabric-ca:latest
+    image: hyperledger/fabric-ca:${FABRIC_CA_VERSION:-1.5}
     labels:
       service: hyperledger-fabric
     environment:
@@ -109,7 +109,7 @@ services:
       - passport
 
   ca_orderer:
-    image: hyperledger/fabric-ca:latest
+    image: hyperledger/fabric-ca:${FABRIC_CA_VERSION:-1.5}
     labels:
       service: hyperledger-fabric
     environment:

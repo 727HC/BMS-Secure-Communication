@@ -33,9 +33,9 @@ func (c *PassportContract) RegisterRawMaterial(ctx contractapi.TransactionContex
 		return fmt.Errorf("raw material %s already exists", materialId)
 	}
 
-	quantityVal, err := strconv.ParseFloat(quantity, 64)
+	quantityVal, err := parseNonNegativeFloat("quantity", quantity)
 	if err != nil {
-		return fmt.Errorf("invalid quantity value: %v", err)
+		return err
 	}
 
 	msp, err := c.getClientMSP(ctx)
@@ -100,60 +100,39 @@ func (c *PassportContract) CreateBatteryPassport(ctx contractapi.TransactionCont
 		return fmt.Errorf("passport %s already exists", passportId)
 	}
 
-	cellCountVal, err := strconv.Atoi(cellCount)
+	cellCountVal, err := parseNonNegativeInt("cellCount", cellCount)
 	if err != nil {
-		return fmt.Errorf("invalid cellCount value: %v", err)
-	}
-	if cellCountVal < 0 {
-		return fmt.Errorf("cellCount must be non-negative, got %d", cellCountVal)
+		return err
 	}
 
-	weightVal, err := strconv.ParseFloat(weight, 64)
+	weightVal, err := parseNonNegativeFloat("weight", weight)
 	if err != nil {
-		return fmt.Errorf("invalid weight value: %v", err)
-	}
-	if weightVal < 0 {
-		return fmt.Errorf("weight must be non-negative, got %f", weightVal)
+		return err
 	}
 
-	totalEnergyVal, err := strconv.ParseFloat(totalEnergy, 64)
+	totalEnergyVal, err := parseNonNegativeFloat("totalEnergy", totalEnergy)
 	if err != nil {
-		return fmt.Errorf("invalid totalEnergy value: %v", err)
-	}
-	if totalEnergyVal < 0 {
-		return fmt.Errorf("totalEnergy must be non-negative, got %f", totalEnergyVal)
+		return err
 	}
 
-	energyDensityVal, err := strconv.ParseFloat(energyDensity, 64)
+	energyDensityVal, err := parseNonNegativeFloat("energyDensity", energyDensity)
 	if err != nil {
-		return fmt.Errorf("invalid energyDensity value: %v", err)
-	}
-	if energyDensityVal < 0 {
-		return fmt.Errorf("energyDensity must be non-negative, got %f", energyDensityVal)
+		return err
 	}
 
-	ratedCapacityVal, err := strconv.ParseFloat(ratedCapacity, 64)
+	ratedCapacityVal, err := parseNonNegativeFloat("ratedCapacity", ratedCapacity)
 	if err != nil {
-		return fmt.Errorf("invalid ratedCapacity value: %v", err)
-	}
-	if ratedCapacityVal < 0 {
-		return fmt.Errorf("ratedCapacity must be non-negative, got %f", ratedCapacityVal)
+		return err
 	}
 
-	expectedLifespanVal, err := strconv.Atoi(expectedLifespan)
+	expectedLifespanVal, err := parseNonNegativeInt("expectedLifespan", expectedLifespan)
 	if err != nil {
-		return fmt.Errorf("invalid expectedLifespan value: %v", err)
-	}
-	if expectedLifespanVal < 0 {
-		return fmt.Errorf("expectedLifespan must be non-negative, got %d", expectedLifespanVal)
+		return err
 	}
 
-	carbonFootprintVal, err := strconv.ParseFloat(carbonFootprint, 64)
+	carbonFootprintVal, err := parseOptionalNonNegativeFloat("carbonFootprint", carbonFootprint)
 	if err != nil {
-		carbonFootprintVal = 0 // optional — 미입력 시 0
-	}
-	if carbonFootprintVal < 0 {
-		return fmt.Errorf("carbonFootprint must be non-negative, got %f", carbonFootprintVal)
+		return err
 	}
 
 	msp, err := c.getClientMSP(ctx)
@@ -213,6 +192,141 @@ func (c *PassportContract) CreateBatteryPassport(ctx contractapi.TransactionCont
 }
 
 // ============================================================
+// 2-2. SetPassportExtendedAttributes — 3차년도 확장 속성 기록
+// ============================================================
+
+func (c *PassportContract) SetPassportExtendedAttributes(ctx contractapi.TransactionContextInterface,
+	passportId string, manufacturingProcess string, disposalMethod string,
+	recycledElementContentJSON string, extensionInfoJSON string, reason string) error {
+
+	if passportId == "" || reason == "" {
+		return fmt.Errorf("passportId and reason must not be empty")
+	}
+	if err := c.requireMSP(ctx, mspManufacturer, mspRegulator); err != nil {
+		return err
+	}
+
+	passport, err := c.loadPassport(ctx, passportId)
+	if err != nil {
+		return err
+	}
+	msp, err := c.getClientMSP(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to get client MSP: %v", err)
+	}
+	if msp == mspManufacturer && passport.CreatorMSP != msp {
+		return fmt.Errorf("access denied: passport %s was created by %s, caller %s cannot update extended attributes", passportId, passport.CreatorMSP, msp)
+	}
+
+	originalValue, err := marshalPassportExtendedAttributes(passport)
+	if err != nil {
+		return err
+	}
+	if err := applyPassportExtendedAttributes(passport, manufacturingProcess, disposalMethod, recycledElementContentJSON, extensionInfoJSON); err != nil {
+		return err
+	}
+	newValue, err := marshalPassportExtendedAttributes(passport)
+	if err != nil {
+		return err
+	}
+
+	now, tsErr := txTimestamp(ctx)
+	if tsErr != nil {
+		return fmt.Errorf("failed to get timestamp: %v", tsErr)
+	}
+	passport.CorrectionLogs = append(passport.CorrectionLogs, CorrectionLog{
+		Date:          now,
+		FieldName:     "extendedAttributes",
+		OriginalValue: originalValue,
+		NewValue:      newValue,
+		Reason:        reason,
+		CorrectedBy:   msp,
+	})
+	passport.UpdatedAt = now
+
+	updatedJSON, err := json.Marshal(passport)
+	if err != nil {
+		return fmt.Errorf("failed to marshal passport: %v", err)
+	}
+	return ctx.GetStub().PutState(passportId, updatedJSON)
+}
+
+// ============================================================
+// 2-3. BindBMSIdentifier — DID/Passport/BMS 관리 식별자 바인딩
+// ============================================================
+
+func (c *PassportContract) BindBMSIdentifier(ctx contractapi.TransactionContextInterface,
+	passportId string, bmsManagementId string, bmsBindingId string, evidenceHash string, reason string) error {
+
+	if passportId == "" || reason == "" {
+		return fmt.Errorf("passportId and reason must not be empty")
+	}
+	if err := c.requireMSP(ctx, mspManufacturer, mspRegulator); err != nil {
+		return err
+	}
+
+	passport, err := c.loadPassport(ctx, passportId)
+	if err != nil {
+		return err
+	}
+	msp, err := c.getClientMSP(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to get client MSP: %v", err)
+	}
+	if msp == mspManufacturer && passport.CreatorMSP != msp {
+		return fmt.Errorf("access denied: passport %s was created by %s, caller %s cannot bind BMS identifier", passportId, passport.CreatorMSP, msp)
+	}
+	if err := validateBMSBinding(passport, bmsManagementId, bmsBindingId); err != nil {
+		return err
+	}
+	if err := validateBMSBindingEvidenceHash(evidenceHash, bmsManagementId, bmsBindingId); err != nil {
+		return err
+	}
+	bmsBindingCode32 := deriveBMSBindingCode32(bmsManagementId)
+
+	originalValueBytes, err := json.Marshal(map[string]string{
+		"bmsManagementId":  passport.BMSManagementID,
+		"bmsBindingId":     passport.BMSBindingID,
+		"bmsBindingCode32": strconv.FormatUint(uint64(passport.BMSBindingCode32), 10),
+	})
+	if err != nil {
+		return fmt.Errorf("failed to marshal original BMS binding: %v", err)
+	}
+	passport.BMSManagementID = bmsManagementId
+	passport.BMSBindingID = bmsBindingId
+	passport.BMSBindingCode32 = bmsBindingCode32
+	newValueBytes, err := json.Marshal(map[string]string{
+		"bmsManagementId":  passport.BMSManagementID,
+		"bmsBindingId":     passport.BMSBindingID,
+		"bmsBindingCode32": strconv.FormatUint(uint64(passport.BMSBindingCode32), 10),
+		"evidenceHash":     evidenceHash,
+	})
+	if err != nil {
+		return fmt.Errorf("failed to marshal new BMS binding: %v", err)
+	}
+
+	now, tsErr := txTimestamp(ctx)
+	if tsErr != nil {
+		return fmt.Errorf("failed to get timestamp: %v", tsErr)
+	}
+	passport.CorrectionLogs = append(passport.CorrectionLogs, CorrectionLog{
+		Date:          now,
+		FieldName:     "bmsBinding",
+		OriginalValue: string(originalValueBytes),
+		NewValue:      string(newValueBytes),
+		Reason:        reason,
+		CorrectedBy:   msp,
+	})
+	passport.UpdatedAt = now
+
+	updatedJSON, err := json.Marshal(passport)
+	if err != nil {
+		return fmt.Errorf("failed to marshal passport: %v", err)
+	}
+	return ctx.GetStub().PutState(passportId, updatedJSON)
+}
+
+// ============================================================
 // 4. BindToVehicle (EVManufacturerMSP only)
 // ============================================================
 
@@ -232,21 +346,12 @@ func (c *PassportContract) BindToVehicle(ctx contractapi.TransactionContextInter
 		return fmt.Errorf("vin must not be empty")
 	}
 
-	passportJSON, err := ctx.GetStub().GetState(passportId)
+	passport, err := c.loadPassport(ctx, passportId)
 	if err != nil {
-		return fmt.Errorf("failed to read passport: %v", err)
-	}
-	if passportJSON == nil {
-		return fmt.Errorf("passport %s does not exist", passportId)
+		return err
 	}
 
-	var passport BatteryPassport
-	err = json.Unmarshal(passportJSON, &passport)
-	if err != nil {
-		return fmt.Errorf("failed to unmarshal passport: %v", err)
-	}
-
-	if passport.Status != "MANUFACTURED" && passport.Status != "ACTIVE" {
+	if !isStatusAllowed(passport.Status, "MANUFACTURED", "ACTIVE") {
 		return fmt.Errorf("passport status must be MANUFACTURED or ACTIVE, current: %s", passport.Status)
 	}
 	if passport.Status == "ACTIVE" && passport.VIN != "" {
@@ -289,21 +394,12 @@ func (c *PassportContract) RequestMaintenance(ctx contractapi.TransactionContext
 		return err
 	}
 
-	passportJSON, err := ctx.GetStub().GetState(passportId)
+	passport, err := c.loadPassport(ctx, passportId)
 	if err != nil {
-		return fmt.Errorf("failed to read passport: %v", err)
-	}
-	if passportJSON == nil {
-		return fmt.Errorf("passport %s does not exist", passportId)
+		return err
 	}
 
-	var passport BatteryPassport
-	err = json.Unmarshal(passportJSON, &passport)
-	if err != nil {
-		return fmt.Errorf("failed to unmarshal passport: %v", err)
-	}
-
-	if passport.Status != "ACTIVE" {
+	if !isStatusAllowed(passport.Status, "ACTIVE") {
 		return fmt.Errorf("passport status must be ACTIVE for maintenance request, current: %s", passport.Status)
 	}
 
@@ -348,18 +444,9 @@ func (c *PassportContract) AddMaintenanceLog(ctx contractapi.TransactionContextI
 		return err
 	}
 
-	passportJSON, err := ctx.GetStub().GetState(passportId)
+	passport, err := c.loadPassport(ctx, passportId)
 	if err != nil {
-		return fmt.Errorf("failed to read passport: %v", err)
-	}
-	if passportJSON == nil {
-		return fmt.Errorf("passport %s does not exist", passportId)
-	}
-
-	var passport BatteryPassport
-	err = json.Unmarshal(passportJSON, &passport)
-	if err != nil {
-		return fmt.Errorf("failed to unmarshal passport: %v", err)
+		return err
 	}
 
 	msp, err := c.getClientMSP(ctx)
@@ -379,7 +466,7 @@ func (c *PassportContract) AddMaintenanceLog(ctx contractapi.TransactionContextI
 		OrgMSP:      msp,
 	}
 
-	if passport.Status != "MAINTENANCE" && passport.Status != "ACTIVE" {
+	if !isStatusAllowed(passport.Status, "MAINTENANCE", "ACTIVE") {
 		return fmt.Errorf("cannot add maintenance log: passport status must be MAINTENANCE or ACTIVE, current: %s", passport.Status)
 	}
 
@@ -406,18 +493,9 @@ func (c *PassportContract) AddAccidentLog(ctx contractapi.TransactionContextInte
 		return err
 	}
 
-	passportJSON, err := ctx.GetStub().GetState(passportId)
+	passport, err := c.loadPassport(ctx, passportId)
 	if err != nil {
-		return fmt.Errorf("failed to read passport: %v", err)
-	}
-	if passportJSON == nil {
-		return fmt.Errorf("passport %s does not exist", passportId)
-	}
-
-	var passport BatteryPassport
-	err = json.Unmarshal(passportJSON, &passport)
-	if err != nil {
-		return fmt.Errorf("failed to unmarshal passport: %v", err)
+		return err
 	}
 
 	msp, err := c.getClientMSP(ctx)
@@ -432,7 +510,7 @@ func (c *PassportContract) AddAccidentLog(ctx contractapi.TransactionContextInte
 			return fmt.Errorf("access denied: passport %s is bound to %s, caller %s cannot log accidents", passportId, passport.EvBinderMSP, msp)
 		}
 	case mspService:
-		if err := c.checkPassportAccess(ctx, &passport); err != nil {
+		if err := c.checkPassportAccess(ctx, passport); err != nil {
 			return err
 		}
 	}
@@ -471,21 +549,12 @@ func (c *PassportContract) RequestAnalysis(ctx contractapi.TransactionContextInt
 		return err
 	}
 
-	passportJSON, err := ctx.GetStub().GetState(passportId)
+	passport, err := c.loadPassport(ctx, passportId)
 	if err != nil {
-		return fmt.Errorf("failed to read passport: %v", err)
-	}
-	if passportJSON == nil {
-		return fmt.Errorf("passport %s does not exist", passportId)
+		return err
 	}
 
-	var passport BatteryPassport
-	err = json.Unmarshal(passportJSON, &passport)
-	if err != nil {
-		return fmt.Errorf("failed to unmarshal passport: %v", err)
-	}
-
-	if passport.Status != "ACTIVE" && passport.Status != "MAINTENANCE" {
+	if !isStatusAllowed(passport.Status, "ACTIVE", "MAINTENANCE") {
 		return fmt.Errorf("passport status must be ACTIVE or MAINTENANCE for analysis request, current: %s", passport.Status)
 	}
 
@@ -525,49 +594,34 @@ func (c *PassportContract) SubmitAnalysisResult(ctx contractapi.TransactionConte
 		return err
 	}
 
-	passportJSON, err := ctx.GetStub().GetState(passportId)
+	passport, err := c.loadPassport(ctx, passportId)
 	if err != nil {
-		return fmt.Errorf("failed to read passport: %v", err)
-	}
-	if passportJSON == nil {
-		return fmt.Errorf("passport %s does not exist", passportId)
+		return err
 	}
 
-	var passport BatteryPassport
-	err = json.Unmarshal(passportJSON, &passport)
-	if err != nil {
-		return fmt.Errorf("failed to unmarshal passport: %v", err)
-	}
-
-	if passport.Status != "ANALYSIS" {
+	if !isStatusAllowed(passport.Status, "ANALYSIS") {
 		return fmt.Errorf("passport status must be ANALYSIS for result submission, current: %s", passport.Status)
 	}
 
-	sohVal, err := strconv.ParseFloat(soh, 64)
+	sohVal, err := parsePercent("soh", soh)
 	if err != nil {
-		return fmt.Errorf("invalid soh value: %v", err)
-	}
-	if sohVal < 0 || sohVal > 100 {
-		return fmt.Errorf("soh must be in [0, 100], got %f", sohVal)
+		return err
 	}
 
-	soceVal, err := strconv.ParseFloat(soce, 64)
+	soceVal, err := parsePercent("soce", soce)
 	if err != nil {
-		return fmt.Errorf("invalid soce value: %v", err)
-	}
-	if soceVal < 0 || soceVal > 100 {
-		return fmt.Errorf("soce must be in [0, 100], got %f", soceVal)
+		return err
 	}
 
-	remainingLifeCycleVal, err := strconv.Atoi(remainingLifeCycle)
+	remainingLifeCycleVal, err := parseNonNegativeInt("remainingLifeCycle", remainingLifeCycle)
 	if err != nil {
-		return fmt.Errorf("invalid remainingLifeCycle value: %v", err)
-	}
-	if remainingLifeCycleVal < 0 {
-		return fmt.Errorf("remainingLifeCycle must be non-negative, got %d", remainingLifeCycleVal)
+		return err
 	}
 
-	recycleAvailableVal := strings.ToLower(recycleAvailable) == "true"
+	recycleAvailableVal, err := parseStrictBool("recycleAvailable", recycleAvailable)
+	if err != nil {
+		return err
+	}
 
 	now, tsErr := txTimestamp(ctx)
 	if tsErr != nil {
@@ -599,18 +653,9 @@ func (c *PassportContract) SetRecycleAvailability(ctx contractapi.TransactionCon
 		return err
 	}
 
-	passportJSON, err := ctx.GetStub().GetState(passportId)
+	passport, err := c.loadPassport(ctx, passportId)
 	if err != nil {
-		return fmt.Errorf("failed to read passport: %v", err)
-	}
-	if passportJSON == nil {
-		return fmt.Errorf("passport %s does not exist", passportId)
-	}
-
-	var passport BatteryPassport
-	err = json.Unmarshal(passportJSON, &passport)
-	if err != nil {
-		return fmt.Errorf("failed to unmarshal passport: %v", err)
+		return err
 	}
 
 	// P2-5: DISPOSED 여권은 recycle availability 변경 불가 (기존 PRECONDITION 패턴)
@@ -622,7 +667,11 @@ func (c *PassportContract) SetRecycleAvailability(ctx contractapi.TransactionCon
 	if tsErr != nil {
 		return fmt.Errorf("failed to get timestamp: %v", tsErr)
 	}
-	passport.RecycleAvailable = strings.ToLower(available) == "true"
+	availableVal, err := parseStrictBool("available", available)
+	if err != nil {
+		return err
+	}
+	passport.RecycleAvailable = availableVal
 	passport.UpdatedAt = now
 
 	updatedJSON, err := json.Marshal(passport)
@@ -644,21 +693,12 @@ func (c *PassportContract) ExtractMaterials(ctx contractapi.TransactionContextIn
 		return err
 	}
 
-	passportJSON, err := ctx.GetStub().GetState(passportId)
+	passport, err := c.loadPassport(ctx, passportId)
 	if err != nil {
-		return fmt.Errorf("failed to read passport: %v", err)
-	}
-	if passportJSON == nil {
-		return fmt.Errorf("passport %s does not exist", passportId)
+		return err
 	}
 
-	var passport BatteryPassport
-	err = json.Unmarshal(passportJSON, &passport)
-	if err != nil {
-		return fmt.Errorf("failed to unmarshal passport: %v", err)
-	}
-
-	if passport.Status != "ACTIVE" && passport.Status != "ANALYSIS" {
+	if !isStatusAllowed(passport.Status, "ACTIVE", "ANALYSIS") {
 		return fmt.Errorf("extract requires ACTIVE or ANALYSIS status, current: %s", passport.Status)
 	}
 
@@ -702,18 +742,9 @@ func (c *PassportContract) DisposeBattery(ctx contractapi.TransactionContextInte
 		return err
 	}
 
-	passportJSON, err := ctx.GetStub().GetState(passportId)
+	passport, err := c.loadPassport(ctx, passportId)
 	if err != nil {
-		return fmt.Errorf("failed to read passport: %v", err)
-	}
-	if passportJSON == nil {
-		return fmt.Errorf("passport %s does not exist", passportId)
-	}
-
-	var passport BatteryPassport
-	err = json.Unmarshal(passportJSON, &passport)
-	if err != nil {
-		return fmt.Errorf("failed to unmarshal passport: %v", err)
+		return err
 	}
 
 	if passport.Status == "DISPOSED" {
@@ -758,17 +789,9 @@ func (c *PassportContract) CorrectPassportData(ctx contractapi.TransactionContex
 		return fmt.Errorf("MSP not authorized to correct field '%s': %v", fieldName, err)
 	}
 
-	passportJSON, err := ctx.GetStub().GetState(passportId)
+	passport, err := c.loadPassport(ctx, passportId)
 	if err != nil {
-		return fmt.Errorf("failed to read passport: %v", err)
-	}
-	if passportJSON == nil {
-		return fmt.Errorf("passport %s does not exist", passportId)
-	}
-
-	var passport BatteryPassport
-	if err := json.Unmarshal(passportJSON, &passport); err != nil {
-		return fmt.Errorf("failed to unmarshal passport: %v", err)
+		return err
 	}
 
 	msp, err := c.getClientMSP(ctx)
@@ -830,51 +853,51 @@ func (c *PassportContract) CorrectPassportData(ctx contractapi.TransactionContex
 		passport.TemperatureRange = newValue
 	case "cellCount":
 		originalValue = strconv.Itoa(passport.CellCount)
-		val, err := strconv.Atoi(newValue)
+		val, err := parseNonNegativeInt("cellCount", newValue)
 		if err != nil {
-			return fmt.Errorf("invalid cellCount value: %v", err)
+			return err
 		}
 		passport.CellCount = val
 	case "weight":
 		originalValue = fmt.Sprintf("%f", passport.Weight)
-		val, err := strconv.ParseFloat(newValue, 64)
+		val, err := parseNonNegativeFloat("weight", newValue)
 		if err != nil {
-			return fmt.Errorf("invalid weight value: %v", err)
+			return err
 		}
 		passport.Weight = val
 	case "totalEnergy":
 		originalValue = fmt.Sprintf("%f", passport.TotalEnergy)
-		val, err := strconv.ParseFloat(newValue, 64)
+		val, err := parseNonNegativeFloat("totalEnergy", newValue)
 		if err != nil {
-			return fmt.Errorf("invalid totalEnergy value: %v", err)
+			return err
 		}
 		passport.TotalEnergy = val
 	case "energyDensity":
 		originalValue = fmt.Sprintf("%f", passport.EnergyDensity)
-		val, err := strconv.ParseFloat(newValue, 64)
+		val, err := parseNonNegativeFloat("energyDensity", newValue)
 		if err != nil {
-			return fmt.Errorf("invalid energyDensity value: %v", err)
+			return err
 		}
 		passport.EnergyDensity = val
 	case "ratedCapacity":
 		originalValue = fmt.Sprintf("%f", passport.RatedCapacity)
-		val, err := strconv.ParseFloat(newValue, 64)
+		val, err := parseNonNegativeFloat("ratedCapacity", newValue)
 		if err != nil {
-			return fmt.Errorf("invalid ratedCapacity value: %v", err)
+			return err
 		}
 		passport.RatedCapacity = val
 	case "expectedLifespan":
 		originalValue = strconv.Itoa(passport.ExpectedLifespan)
-		val, err := strconv.Atoi(newValue)
+		val, err := parseNonNegativeInt("expectedLifespan", newValue)
 		if err != nil {
-			return fmt.Errorf("invalid expectedLifespan value: %v", err)
+			return err
 		}
 		passport.ExpectedLifespan = val
 	case "carbonFootprint":
 		originalValue = fmt.Sprintf("%f", passport.CarbonFootprint)
-		val, err := strconv.ParseFloat(newValue, 64)
+		val, err := parseNonNegativeFloat("carbonFootprint", newValue)
 		if err != nil {
-			return fmt.Errorf("invalid carbonFootprint value: %v", err)
+			return err
 		}
 		passport.CarbonFootprint = val
 	case "manufacturingProcess":
@@ -886,17 +909,17 @@ func (c *PassportContract) CorrectPassportData(ctx contractapi.TransactionContex
 	case "recycledElementContent":
 		origJSON, _ := json.Marshal(passport.RecycledElementContent)
 		originalValue = string(origJSON)
-		var parsed map[string]float64
-		if err := json.Unmarshal([]byte(newValue), &parsed); err != nil {
-			return fmt.Errorf("invalid recycledElementContent JSON: %v", err)
+		parsed, err := parseRecycledElementContentJSON(newValue)
+		if err != nil {
+			return err
 		}
 		passport.RecycledElementContent = parsed
 	case "extensionInfo":
 		origJSON, _ := json.Marshal(passport.ExtensionInfo)
 		originalValue = string(origJSON)
-		var parsed map[string]string
-		if err := json.Unmarshal([]byte(newValue), &parsed); err != nil {
-			return fmt.Errorf("invalid extensionInfo JSON: %v", err)
+		parsed, err := parseExtensionInfoJSON(newValue)
+		if err != nil {
+			return err
 		}
 		passport.ExtensionInfo = parsed
 	// EV Manufacturer fields
@@ -956,17 +979,9 @@ func (c *PassportContract) LinkRawMaterials(ctx contractapi.TransactionContextIn
 		return fmt.Errorf("passportId, materialIds must not be empty")
 	}
 
-	passportJSON, err := ctx.GetStub().GetState(passportId)
+	passport, err := c.loadPassport(ctx, passportId)
 	if err != nil {
-		return fmt.Errorf("failed to read passport: %v", err)
-	}
-	if passportJSON == nil {
-		return fmt.Errorf("passport %s does not exist", passportId)
-	}
-
-	var passport BatteryPassport
-	if err := json.Unmarshal(passportJSON, &passport); err != nil {
-		return fmt.Errorf("failed to unmarshal passport: %v", err)
+		return err
 	}
 
 	// 기존 원자재 중복 체크용 set
@@ -982,13 +997,9 @@ func (c *PassportContract) LinkRawMaterials(ctx contractapi.TransactionContextIn
 		if id == "" {
 			continue
 		}
-		// 원자재가 실제 존재하는지 확인
-		matJSON, err := ctx.GetStub().GetState(id)
-		if err != nil {
-			return fmt.Errorf("failed to check material %s: %v", id, err)
-		}
-		if matJSON == nil {
-			return fmt.Errorf("raw material %s does not exist", id)
+		// 원자재가 실제 존재하고 rawMaterial docType인지 확인
+		if _, err := c.loadRawMaterial(ctx, id); err != nil {
+			return err
 		}
 		if !existing[id] {
 			passport.RawMaterials = append(passport.RawMaterials, id)

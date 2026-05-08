@@ -1,0 +1,8 @@
+{
+  "index": {
+    "fields": ["docType", "passportId", "verifiedAt"]
+  },
+  "ddoc": "indexRegulatoryVerificationByPassportDoc",
+  "name": "indexRegulatoryVerificationByPassport",
+  "type": "json"
+}

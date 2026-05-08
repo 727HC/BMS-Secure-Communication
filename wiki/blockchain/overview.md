@@ -30,10 +30,19 @@ status: current
 - Go 1.22 chaincode
 
 ## 현재 구조 요약
-- 채널: `passport-channel`
+- 채널: `passportchannel`
 - 체인코드: `passport-contract`
 - 오더러: Raft 기반
 - CA: 각 Org별 Fabric CA 운영
+
+
+## Live E2E 기준 (2026-05-08)
+- 현재 live chaincode: `passport-contract` v`1.4`, sequence `6`
+- 다음 lifecycle 변경은 sequence `7`부터 진행한다.
+- MATLAB/BMU E2E 기준 DID: `4d5CE8NZbkAVJxcypzaVhw`
+- E2E passport: `PASSPORT-E2E-20260508040123`
+- BMS binding code: `748293644` (`0x2c9a0e0c`, raw bytes `0c 0e 9a 2c`)
+- 상세 상태: [[blockchain/e2e-live-status-2026-05-08|E2E Live Status — 2026-05-08]]
 
 ## 현재 참고 우선순위
 - 구조: [[blockchain/chaincode-file-structure|체인코드 파일 구조]]

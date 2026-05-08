@@ -129,7 +129,7 @@ registry:
   # Contains identity information which is used when LDAP is disabled
   identities:
      - name: admin
-       pass: LEGACY_DEFAULT_SECRET
+       pass: CHANGE_ME_CA_ADMIN_PASSWORD
        type: client
        affiliation: ""
        attrs:
@@ -387,9 +387,9 @@ bccsp:
 # the server config file except port, debug, and tls sections.
 #
 # Examples:
-# fabric-ca-server start -b admin:LEGACY_DEFAULT_SECRET --cacount 2
+# fabric-ca-server start -b <admin>:<password> --cacount 2
 #
-# fabric-ca-server start -b admin:LEGACY_DEFAULT_SECRET --cafiles ca/ca1/fabric-ca-server-config.yaml
+# fabric-ca-server start -b <admin>:<password> --cafiles ca/ca1/fabric-ca-server-config.yaml
 # --cafiles ca/ca2/fabric-ca-server-config.yaml
 #
 #############################################################################

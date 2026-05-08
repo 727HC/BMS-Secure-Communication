@@ -505,6 +505,8 @@ vm:
     # https://localhost:2376
     # If you utilize external chaincode builders and don't need the default Docker chaincode builder,
     # the endpoint should be unconfigured so that the peer's Docker health checker doesn't get registered.
+    # DEV-ONLY: direct Docker socket access gives the peer host-level control.
+    # Production profiles should use an external chaincode builder/runtime instead.
    endpoint: unix:///var/run/docker.sock
 
     # settings for docker vms

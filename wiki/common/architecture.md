@@ -93,6 +93,19 @@ serial_to_agent.py → HTTP POST → Agent `/api/bmu/data` → Fabric 원장
 | 재전송 방지 | Frame Counter window | 프로토콜 레벨 |
 | 디바이스 인증 | DID/VC | ACA-Py + 원장 연계 |
 
+
+## Chaincode RBAC matrix — 3차년도 확장 계약
+
+| Contract function | Authorized MSP | Purpose |
+|-------------------|----------------|---------|
+| `SetPassportExtendedAttributes` | `ManufacturerMSP`, `RegulatorMSP` | 제조공정/폐기/재활용 원소/확장 속성 기록 |
+| `BindBMSIdentifier` | `ManufacturerMSP`, `RegulatorMSP` | DID/Passport/BMS 관리 식별자와 `bmsBindingCode32` 바인딩. `evidenceHash`가 있으면 canonical JSON SHA-256 검증 |
+| `RecordBMUDataWithPayload` | `ManufacturerMSP`, `EVManufacturerMSP` | 48-byte rawPayload hash와 payload bytes 44..47 `bmsBindingCode32` 검증 후 BMU 데이터 기록 |
+| `RecordSourceVerification` | `ManufacturerMSP`, `EVManufacturerMSP`, `ServiceMSP`, `RegulatorMSP` | oracle/source verification 결과 기록 |
+| `QuerySourceVerificationsByPassport` | passport 접근 권한 기반 | source verification 이력 조회 |
+| `QueryPhysicalVerificationHistory` | passport 접근 권한 기반 | 실물 바인딩 검증 이력 조회 |
+| `QueryRegulatoryVerificationHistory` | `RegulatorMSP` | 규제 검증 이력 조회 |
+
 ## 함께 보는 문서
 - [[passport/overview|배터리 여권 세션 개요]]
 - [[passport/frontend|프론트엔드 구조]]

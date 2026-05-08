@@ -3,6 +3,7 @@
 const { WorkloadModuleBase } = require('@hyperledger/caliper-core');
 
 const NUM_PASSPORTS = parseInt(process.env.NUM_PASSPORTS || '50', 10);
+const RUN_ID = process.env.CALIPER_RUN_ID || 'default';
 
 class QueryPassportWorkload extends WorkloadModuleBase {
     constructor() {
@@ -15,7 +16,7 @@ class QueryPassportWorkload extends WorkloadModuleBase {
 
         // Build passport ID list (passports already created by write round)
         for (let i = 0; i < NUM_PASSPORTS; i++) {
-            this.passportIds.push(`PASSPORT-CALIPER-${String(i).padStart(4, '0')}`);
+            this.passportIds.push(`PASSPORT-CALIPER-${RUN_ID}-${String(i).padStart(4, '0')}`);
         }
     }
 

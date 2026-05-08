@@ -8,8 +8,21 @@
 # Raft ordering service.
 
 ROOTDIR=$(cd "$(dirname "$0")" && pwd)
-export PATH=${ROOTDIR}/../fabric-samples/bin:${PWD}/../fabric-samples/bin:$PATH
-export FABRIC_CFG_PATH=${PWD}/configtx
+
+# Load local environment for image pins and secrets.
+# Keep real values in passport-network/.env; commit only .env.template.
+if [ -f "${ROOTDIR}/.env" ]; then
+  set -a
+  # shellcheck disable=SC1090
+  . "${ROOTDIR}/.env"
+  set +a
+fi
+
+export FABRIC_VERSION="${FABRIC_VERSION:-2.5}"
+export FABRIC_CA_VERSION="${FABRIC_CA_VERSION:-1.5}"
+
+export PATH=${ROOTDIR}/../fabric-samples/bin:$PATH
+export FABRIC_CFG_PATH=${ROOTDIR}/configtx
 export VERBOSE=false
 
 # push to the required directory & set a trap to go back if needed
@@ -54,7 +67,7 @@ function checkPrereqs() {
   fi
 
   LOCAL_VERSION=$(peer version | sed -ne 's/^ Version: //p')
-  DOCKER_IMAGE_VERSION=$(${CONTAINER_CLI} run --rm hyperledger/fabric-peer:latest peer version | sed -ne 's/^ Version: //p')
+  DOCKER_IMAGE_VERSION=$(${CONTAINER_CLI} run --rm "hyperledger/fabric-peer:${FABRIC_VERSION}" peer version | sed -ne 's/^ Version: //p')
 
   infoln "LOCAL_VERSION=$LOCAL_VERSION"
   infoln "DOCKER_IMAGE_VERSION=$DOCKER_IMAGE_VERSION"
@@ -74,7 +87,7 @@ function checkPrereqs() {
       exit 1
     fi
     CA_LOCAL_VERSION=$(fabric-ca-client version | sed -ne 's/ Version: //p')
-    CA_DOCKER_IMAGE_VERSION=$(${CONTAINER_CLI} run --rm hyperledger/fabric-ca:latest fabric-ca-client version | sed -ne 's/ Version: //p' | head -1)
+    CA_DOCKER_IMAGE_VERSION=$(${CONTAINER_CLI} run --rm "hyperledger/fabric-ca:${FABRIC_CA_VERSION}" fabric-ca-client version | sed -ne 's/ Version: //p' | head -1)
     infoln "CA_LOCAL_VERSION=$CA_LOCAL_VERSION"
     infoln "CA_DOCKER_IMAGE_VERSION=$CA_DOCKER_IMAGE_VERSION"
 
@@ -113,12 +126,10 @@ function createOrgs() {
     rc=1
     while [[ $rc -ne 0 && $COUNTER -lt $MAX_RETRY ]]; do
       sleep 1
-      set -x
       : "${CA_ADMIN_USER:?CA_ADMIN_USER must be set}"
       : "${CA_ADMIN_PASSWORD:?CA_ADMIN_PASSWORD must be set}"
       fabric-ca-client getcainfo -u "https://${CA_ADMIN_USER}:${CA_ADMIN_PASSWORD}@localhost:7054" --caname ca-manufacturer --tls.certfiles "${PWD}/organizations/fabric-ca/manufacturer/ca-cert.pem"
       res=$?
-      { set +x; } 2>/dev/null
       rc=$res
       COUNTER=$((COUNTER + 1))
     done
@@ -248,9 +259,9 @@ CC_INIT_FCN=""
 CC_END_POLICY="NA"
 CC_COLL_CONFIG="NA"
 
-# default image tag
-IMAGETAG="latest"
-CA_IMAGETAG="latest"
+# default image tag aliases kept for compatibility with Fabric scripts
+IMAGETAG="${FABRIC_VERSION}"
+CA_IMAGETAG="${FABRIC_CA_VERSION}"
 
 # default cli delays and retries
 MAX_RETRY=5

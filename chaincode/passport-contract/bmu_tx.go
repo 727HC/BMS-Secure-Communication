@@ -19,13 +19,37 @@ func (c *PassportContract) RecordBMUData(ctx contractapi.TransactionContextInter
 	temperature string, cellCount string, statusFlags string,
 	dischargeCycles string, timestamp string) error {
 
+	return c.recordBMUData(ctx, recordId, passportId, did, dataHash, signature, fc, soc, voltage, current, temperature, cellCount, statusFlags, dischargeCycles, timestamp, "", false)
+}
+
+// ============================================================
+// 3-2. RecordBMUDataWithPayload — 48B rawPayload hash + BMS binding 검증
+// ============================================================
+
+func (c *PassportContract) RecordBMUDataWithPayload(ctx contractapi.TransactionContextInterface,
+	recordId string, passportId string, did string,
+	dataHash string, signature string,
+	fc string, soc string, voltage string, current string,
+	temperature string, cellCount string, statusFlags string,
+	dischargeCycles string, timestamp string, rawPayloadHex string) error {
+
+	return c.recordBMUData(ctx, recordId, passportId, did, dataHash, signature, fc, soc, voltage, current, temperature, cellCount, statusFlags, dischargeCycles, timestamp, rawPayloadHex, true)
+}
+
+func (c *PassportContract) recordBMUData(ctx contractapi.TransactionContextInterface,
+	recordId string, passportId string, did string,
+	dataHash string, signature string,
+	fc string, soc string, voltage string, current string,
+	temperature string, cellCount string, statusFlags string,
+	dischargeCycles string, timestamp string, rawPayloadHex string, requireRawPayload bool) error {
+
 	// BMU 데이터 수집: 배터리 제조사(제조/테스트) + EV 제조사(차량 운행 중) 허용
 	if err := c.requireMSP(ctx, mspManufacturer, mspEVManufacturer); err != nil {
 		return err
 	}
 
-	if recordId == "" || passportId == "" || did == "" || dataHash == "" || timestamp == "" {
-		return fmt.Errorf("recordId, passportId, did, dataHash, timestamp must not be empty")
+	if err := validateBMURecordInput(recordId, passportId, did, dataHash, signature, timestamp); err != nil {
+		return err
 	}
 
 	// Check duplicate recordId
@@ -38,19 +62,25 @@ func (c *PassportContract) RecordBMUData(ctx contractapi.TransactionContextInter
 	}
 
 	// Check passport exists and DID matches
-	passportJSON, err := ctx.GetStub().GetState(passportId)
+	passportCheck, err := c.loadPassport(ctx, passportId)
 	if err != nil {
-		return fmt.Errorf("failed to read passport: %v", err)
-	}
-	if passportJSON == nil {
-		return fmt.Errorf("passport %s does not exist", passportId)
-	}
-	var passportCheck BatteryPassport
-	if err := json.Unmarshal(passportJSON, &passportCheck); err != nil {
-		return fmt.Errorf("failed to unmarshal passport for DID check: %v", err)
+		return err
 	}
 	if passportCheck.DID != did {
 		return fmt.Errorf("DID mismatch: passport %s is registered to DID %s, not %s", passportId, passportCheck.DID, did)
+	}
+	var bmsBindingCode32 uint32
+	rawPayloadHashVerified := false
+	if requireRawPayload {
+		_, payloadCode32, err := validateBMURawPayload(dataHash, rawPayloadHex)
+		if err != nil {
+			return err
+		}
+		if err := validateBMSBindingCode(passportCheck, payloadCode32); err != nil {
+			return err
+		}
+		bmsBindingCode32 = payloadCode32
+		rawPayloadHashVerified = true
 	}
 
 	// Parse fc and check monotonic increase per DID
@@ -84,14 +114,14 @@ func (c *PassportContract) RecordBMUData(ctx contractapi.TransactionContextInter
 		return fmt.Errorf("invalid soc value: %v", err)
 	}
 
-	voltageVal, err := strconv.ParseFloat(voltage, 64)
+	voltageVal, err := parseFiniteFloat("voltage", voltage)
 	if err != nil {
-		return fmt.Errorf("invalid voltage value: %v", err)
+		return err
 	}
 
-	currentVal, err := strconv.ParseFloat(current, 64)
+	currentVal, err := parseFiniteFloat("current", current)
 	if err != nil {
-		return fmt.Errorf("invalid current value: %v", err)
+		return err
 	}
 
 	temperatureVal, err := strconv.ParseUint(temperature, 10, 16)
@@ -125,24 +155,26 @@ func (c *PassportContract) RecordBMUData(ctx contractapi.TransactionContextInter
 	}
 
 	record := BMURecord{
-		DocType:         docTypeBMURecord,
-		RecordID:        recordId,
-		PassportID:      passportId,
-		DID:             did,
-		DataHash:        dataHash,
-		Signature:       signature,
-		FC:              fcVal,
-		SOC:             uint16(socVal),
-		Voltage:         voltageVal,
-		Current:         currentVal,
-		Temperature:     uint16(temperatureVal),
-		CellCount:       uint8(cellCountVal),
-		StatusFlags:     uint8(statusFlagsVal),
-		DischargeCycles: uint16(dischargeCyclesVal),
-		Timestamp:       timestamp,
-		Status:          "VALID",
-		CreatedAt:       now,
-		CreatorMSP:      msp,
+		DocType:                docTypeBMURecord,
+		RecordID:               recordId,
+		PassportID:             passportId,
+		DID:                    did,
+		DataHash:               dataHash,
+		Signature:              signature,
+		FC:                     fcVal,
+		SOC:                    uint16(socVal),
+		Voltage:                voltageVal,
+		Current:                currentVal,
+		Temperature:            uint16(temperatureVal),
+		CellCount:              uint8(cellCountVal),
+		StatusFlags:            uint8(statusFlagsVal),
+		DischargeCycles:        uint16(dischargeCyclesVal),
+		BMSBindingCode32:       bmsBindingCode32,
+		RawPayloadHashVerified: rawPayloadHashVerified,
+		Timestamp:              timestamp,
+		Status:                 "VALID",
+		CreatedAt:              now,
+		CreatorMSP:             msp,
 	}
 
 	recordJSON, err := json.Marshal(record)
@@ -179,17 +211,9 @@ func (c *PassportContract) InvalidateBMURecord(ctx contractapi.TransactionContex
 		return fmt.Errorf("recordId and reason must not be empty")
 	}
 
-	recordJSON, err := ctx.GetStub().GetState(recordId)
+	record, err := c.loadBMURecord(ctx, recordId)
 	if err != nil {
-		return fmt.Errorf("failed to read BMU record: %v", err)
-	}
-	if recordJSON == nil {
-		return fmt.Errorf("BMU record %s does not exist", recordId)
-	}
-
-	var record BMURecord
-	if err := json.Unmarshal(recordJSON, &record); err != nil {
-		return fmt.Errorf("failed to unmarshal BMU record: %v", err)
+		return err
 	}
 
 	if record.Status == "INVALIDATED" {
@@ -220,13 +244,22 @@ func (c *PassportContract) InvalidateBMURecord(ctx contractapi.TransactionContex
 	}
 
 	// lastFc 동기화 — 무효화된 레코드의 FC가 lastFc와 같으면 재계산
-	lastFcKey, _ := ctx.GetStub().CreateCompositeKey("lastFc", []string{record.DID})
-	lastFcBytes, _ := ctx.GetStub().GetState(lastFcKey)
+	lastFcKey, err := ctx.GetStub().CreateCompositeKey("lastFc", []string{record.DID})
+	if err != nil {
+		return fmt.Errorf("failed to create lastFc composite key: %v", err)
+	}
+	lastFcBytes, err := ctx.GetStub().GetState(lastFcKey)
+	if err != nil {
+		return fmt.Errorf("failed to read lastFc for DID %s: %v", record.DID, err)
+	}
 	if lastFcBytes != nil {
-		currentLastFc, _ := strconv.ParseUint(string(lastFcBytes), 10, 64)
+		currentLastFc, err := strconv.ParseUint(string(lastFcBytes), 10, 64)
+		if err != nil {
+			return fmt.Errorf("failed to parse lastFc value: %v", err)
+		}
 		if currentLastFc == record.FC {
 			// 다음 최신 유효 FC를 rich query로 조회 (희귀 연산이므로 허용)
-			fcReQuery, _ := buildQuery(
+			fcReQuery, err := buildQuery(
 				map[string]interface{}{
 					"docType": docTypeBMURecord,
 					"did":     record.DID,
@@ -237,17 +270,29 @@ func (c *PassportContract) InvalidateBMURecord(ctx contractapi.TransactionContex
 					"limit": 1,
 				},
 			)
+			if err != nil {
+				return fmt.Errorf("failed to build lastFc recovery query: %v", err)
+			}
 			fcReIter, err := ctx.GetStub().GetQueryResult(fcReQuery)
-			if err == nil {
-				defer fcReIter.Close()
-				if fcReIter.HasNext() {
-					entry, _ := fcReIter.Next()
-					var latestValid BMURecord
-					if json.Unmarshal(entry.Value, &latestValid) == nil {
-						ctx.GetStub().PutState(lastFcKey, []byte(strconv.FormatUint(latestValid.FC, 10)))
-					}
-				} else {
-					ctx.GetStub().DelState(lastFcKey)
+			if err != nil {
+				return fmt.Errorf("failed to query latest valid BMU record for DID %s: %v", record.DID, err)
+			}
+			defer fcReIter.Close()
+			if fcReIter.HasNext() {
+				entry, err := fcReIter.Next()
+				if err != nil {
+					return err
+				}
+				var latestValid BMURecord
+				if err := unmarshalTypedState(entry.Key, entry.Value, docTypeBMURecord, &latestValid); err != nil {
+					return err
+				}
+				if err := ctx.GetStub().PutState(lastFcKey, []byte(strconv.FormatUint(latestValid.FC, 10))); err != nil {
+					return fmt.Errorf("failed to update lastFc: %v", err)
+				}
+			} else {
+				if err := ctx.GetStub().DelState(lastFcKey); err != nil {
+					return fmt.Errorf("failed to delete lastFc: %v", err)
 				}
 			}
 		}
@@ -255,12 +300,21 @@ func (c *PassportContract) InvalidateBMURecord(ctx contractapi.TransactionContex
 
 	// BMU snapshot 재계산 — 무효화된 레코드가 snapshot의 lastBmuDataId였으면 최근 유효 레코드로 갱신
 	if record.PassportID != "" {
-		snapshotKey, _ := ctx.GetStub().CreateCompositeKey("snapshot", []string{record.PassportID})
+		snapshotKey, err := ctx.GetStub().CreateCompositeKey("snapshot", []string{record.PassportID})
+		if err != nil {
+			return fmt.Errorf("failed to create snapshot composite key: %v", err)
+		}
 		snapshotJSON, err := ctx.GetStub().GetState(snapshotKey)
-		if err == nil && snapshotJSON != nil {
+		if err != nil {
+			return fmt.Errorf("failed to read BMU snapshot: %v", err)
+		}
+		if snapshotJSON != nil {
 			var snap BMUSnapshot
-			if json.Unmarshal(snapshotJSON, &snap) == nil && snap.LastBMUDataID == recordId {
-				reQuery, _ := buildQuery(
+			if err := unmarshalTypedState(snapshotKey, snapshotJSON, docTypeBMUSnapshot, &snap); err != nil {
+				return err
+			}
+			if snap.LastBMUDataID == recordId {
+				reQuery, err := buildQuery(
 					map[string]interface{}{
 						"docType":    docTypeBMURecord,
 						"passportId": record.PassportID,
@@ -271,30 +325,42 @@ func (c *PassportContract) InvalidateBMURecord(ctx contractapi.TransactionContex
 						"limit": 1,
 					},
 				)
+				if err != nil {
+					return fmt.Errorf("failed to build snapshot recovery query: %v", err)
+				}
 				reIter, err := ctx.GetStub().GetQueryResult(reQuery)
-				if err == nil {
-					defer reIter.Close()
-					if reIter.HasNext() {
-						entry, _ := reIter.Next()
-						var latestValid BMURecord
-						if json.Unmarshal(entry.Value, &latestValid) == nil {
-							snap.CurrentSOC = float64(latestValid.SOC)
-							snap.Temperature = latestValid.Temperature
-							snap.StatusFlags = latestValid.StatusFlags
-							snap.TotalDischargeCycles = int(latestValid.DischargeCycles)
-							snap.LastBMUDataID = latestValid.RecordID
-						}
-					} else {
-						snap.CurrentSOC = 0
-						snap.Temperature = 0
-						snap.StatusFlags = 0
-						snap.TotalDischargeCycles = 0
-						snap.LastBMUDataID = ""
+				if err != nil {
+					return fmt.Errorf("failed to query latest valid BMU record for passport %s: %v", record.PassportID, err)
+				}
+				defer reIter.Close()
+				if reIter.HasNext() {
+					entry, err := reIter.Next()
+					if err != nil {
+						return err
 					}
-					snap.UpdatedAt = now
-					if sJSON, err := json.Marshal(snap); err == nil {
-						ctx.GetStub().PutState(snapshotKey, sJSON)
+					var latestValid BMURecord
+					if err := unmarshalTypedState(entry.Key, entry.Value, docTypeBMURecord, &latestValid); err != nil {
+						return err
 					}
+					snap.CurrentSOC = float64(latestValid.SOC)
+					snap.Temperature = latestValid.Temperature
+					snap.StatusFlags = latestValid.StatusFlags
+					snap.TotalDischargeCycles = int(latestValid.DischargeCycles)
+					snap.LastBMUDataID = latestValid.RecordID
+				} else {
+					snap.CurrentSOC = 0
+					snap.Temperature = 0
+					snap.StatusFlags = 0
+					snap.TotalDischargeCycles = 0
+					snap.LastBMUDataID = ""
+				}
+				snap.UpdatedAt = now
+				sJSON, err := json.Marshal(snap)
+				if err != nil {
+					return fmt.Errorf("failed to marshal BMU snapshot: %v", err)
+				}
+				if err := ctx.GetStub().PutState(snapshotKey, sJSON); err != nil {
+					return fmt.Errorf("failed to update BMU snapshot: %v", err)
 				}
 			}
 		}

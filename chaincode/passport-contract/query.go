@@ -15,27 +15,19 @@ import (
 func (c *PassportContract) QueryPassport(ctx contractapi.TransactionContextInterface,
 	passportId string) (*BatteryPassport, error) {
 
-	passportJSON, err := ctx.GetStub().GetState(passportId)
+	passport, err := c.loadPassport(ctx, passportId)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read from world state: %v", err)
-	}
-	if passportJSON == nil {
-		return nil, fmt.Errorf("passport %s does not exist", passportId)
-	}
-
-	var passport BatteryPassport
-	err = json.Unmarshal(passportJSON, &passport)
-	if err != nil {
-		return nil, fmt.Errorf("failed to unmarshal passport: %v", err)
-	}
-
-	if err := c.checkPassportAccess(ctx, &passport); err != nil {
 		return nil, err
 	}
 
-	normalizePassport(&passport)
-	c.mergeSnapshot(ctx, &passport)
-	return &passport, nil
+	if err := c.checkPassportAccess(ctx, passport); err != nil {
+		return nil, err
+	}
+
+	if err := c.mergeSnapshot(ctx, passport); err != nil {
+		return nil, err
+	}
+	return passport, nil
 }
 
 // ============================================================
@@ -79,12 +71,13 @@ func (c *PassportContract) QueryPassportsWithPagination(ctx contractapi.Transact
 		}
 
 		var passport BatteryPassport
-		err = json.Unmarshal(queryResponse.Value, &passport)
-		if err != nil {
+		if err := unmarshalTypedState(queryResponse.Key, queryResponse.Value, docTypePassport, &passport); err != nil {
 			return nil, err
 		}
 		normalizePassport(&passport)
-		c.mergeSnapshot(ctx, &passport)
+		if err := c.mergeSnapshot(ctx, &passport); err != nil {
+			return nil, err
+		}
 		records = append(records, &passport)
 	}
 
@@ -103,18 +96,11 @@ func (c *PassportContract) GetPassportHistory(ctx contractapi.TransactionContext
 	passportId string) ([]string, error) {
 
 	// Access check: read current passport to verify permission
-	passportJSON, err := ctx.GetStub().GetState(passportId)
+	passport, err := c.loadPassport(ctx, passportId)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read passport: %v", err)
+		return nil, err
 	}
-	if passportJSON == nil {
-		return nil, fmt.Errorf("passport %s does not exist", passportId)
-	}
-	var passport BatteryPassport
-	if err := json.Unmarshal(passportJSON, &passport); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal passport: %v", err)
-	}
-	if err := c.checkPassportAccess(ctx, &passport); err != nil {
+	if err := c.checkPassportAccess(ctx, passport); err != nil {
 		return nil, err
 	}
 
@@ -155,18 +141,11 @@ func (c *PassportContract) QueryBMURecordsByPassport(ctx contractapi.Transaction
 	passportId string, pageSize int32, bookmark string) (*PaginatedBMUResult, error) {
 
 	// Access check: verify caller can access the parent passport
-	passportJSON, err := ctx.GetStub().GetState(passportId)
+	passport, err := c.loadPassport(ctx, passportId)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read passport: %v", err)
+		return nil, err
 	}
-	if passportJSON == nil {
-		return nil, fmt.Errorf("passport %s does not exist", passportId)
-	}
-	var passport BatteryPassport
-	if err := json.Unmarshal(passportJSON, &passport); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal passport: %v", err)
-	}
-	if err := c.checkPassportAccess(ctx, &passport); err != nil {
+	if err := c.checkPassportAccess(ctx, passport); err != nil {
 		return nil, err
 	}
 
@@ -204,8 +183,7 @@ func (c *PassportContract) QueryBMURecordsByPassport(ctx contractapi.Transaction
 		}
 
 		var record BMURecord
-		err = json.Unmarshal(queryResponse.Value, &record)
-		if err != nil {
+		if err := unmarshalTypedState(queryResponse.Key, queryResponse.Value, docTypeBMURecord, &record); err != nil {
 			return nil, err
 		}
 		records = append(records, &record)
@@ -250,12 +228,13 @@ func (c *PassportContract) QueryBatteryByDID(ctx contractapi.TransactionContextI
 		}
 
 		var passport BatteryPassport
-		err = json.Unmarshal(queryResponse.Value, &passport)
-		if err != nil {
-			return nil, fmt.Errorf("failed to unmarshal passport: %v", err)
+		if err := unmarshalTypedState(queryResponse.Key, queryResponse.Value, docTypePassport, &passport); err != nil {
+			return nil, err
 		}
 		normalizePassport(&passport)
-		c.mergeSnapshot(ctx, &passport)
+		if err := c.mergeSnapshot(ctx, &passport); err != nil {
+			return nil, err
+		}
 		return &passport, nil
 	}
 
@@ -289,8 +268,7 @@ func (c *PassportContract) QueryRawMaterials(ctx contractapi.TransactionContextI
 		}
 
 		var material RawMaterial
-		err = json.Unmarshal(queryResponse.Value, &material)
-		if err != nil {
+		if err := unmarshalTypedState(queryResponse.Key, queryResponse.Value, docTypeRawMaterial, &material); err != nil {
 			return nil, err
 		}
 		materials = append(materials, &material)
@@ -332,8 +310,8 @@ func (c *PassportContract) QueryRawMaterialsWithPagination(ctx contractapi.Trans
 			return nil, err
 		}
 		var material RawMaterial
-		if err := json.Unmarshal(queryResponse.Value, &material); err != nil {
-			continue
+		if err := unmarshalTypedState(queryResponse.Key, queryResponse.Value, docTypeRawMaterial, &material); err != nil {
+			return nil, err
 		}
 		materials = append(materials, &material)
 	}
@@ -356,18 +334,11 @@ func (c *PassportContract) QueryCredentialsByPassport(ctx contractapi.Transactio
 	passportId string, pageSizeStr string, bookmark string) (*PaginatedVCResult, error) {
 
 	// Access check on parent passport
-	passportJSON, err := ctx.GetStub().GetState(passportId)
+	passport, err := c.loadPassport(ctx, passportId)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read passport: %v", err)
+		return nil, err
 	}
-	if passportJSON == nil {
-		return nil, fmt.Errorf("passport %s does not exist", passportId)
-	}
-	var passport BatteryPassport
-	if err := json.Unmarshal(passportJSON, &passport); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal passport: %v", err)
-	}
-	if err := c.checkPassportAccess(ctx, &passport); err != nil {
+	if err := c.checkPassportAccess(ctx, passport); err != nil {
 		return nil, err
 	}
 
@@ -400,7 +371,7 @@ func (c *PassportContract) QueryCredentialsByPassport(ctx contractapi.Transactio
 			return nil, err
 		}
 		var vc VerifiableCredential
-		if err := json.Unmarshal(queryResponse.Value, &vc); err != nil {
+		if err := unmarshalTypedState(queryResponse.Key, queryResponse.Value, docTypeVC, &vc); err != nil {
 			return nil, err
 		}
 		records = append(records, &vc)
@@ -453,7 +424,7 @@ func (c *PassportContract) QueryCredentialsByHolder(ctx contractapi.TransactionC
 			return nil, err
 		}
 		var vc VerifiableCredential
-		if err := json.Unmarshal(queryResponse.Value, &vc); err != nil {
+		if err := unmarshalTypedState(queryResponse.Key, queryResponse.Value, docTypeVC, &vc); err != nil {
 			return nil, err
 		}
 		records = append(records, &vc)
@@ -525,7 +496,7 @@ func (c *PassportContract) QueryCredentialsByType(ctx contractapi.TransactionCon
 			return nil, err
 		}
 		var vc VerifiableCredential
-		if err := json.Unmarshal(queryResponse.Value, &vc); err != nil {
+		if err := unmarshalTypedState(queryResponse.Key, queryResponse.Value, docTypeVC, &vc); err != nil {
 			return nil, err
 		}
 		records = append(records, &vc)
@@ -572,7 +543,7 @@ func (c *PassportContract) QueryRevokedCredentials(ctx contractapi.TransactionCo
 			return nil, err
 		}
 		var vc VerifiableCredential
-		if err := json.Unmarshal(queryResponse.Value, &vc); err != nil {
+		if err := unmarshalTypedState(queryResponse.Key, queryResponse.Value, docTypeVC, &vc); err != nil {
 			return nil, err
 		}
 		records = append(records, &vc)
@@ -592,20 +563,12 @@ func (c *PassportContract) QueryRevokedCredentials(ctx contractapi.TransactionCo
 func (c *PassportContract) QueryCorrectionHistory(ctx contractapi.TransactionContextInterface,
 	passportId string) ([]CorrectionLog, error) {
 
-	passportJSON, err := ctx.GetStub().GetState(passportId)
+	passport, err := c.loadPassport(ctx, passportId)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read passport: %v", err)
-	}
-	if passportJSON == nil {
-		return nil, fmt.Errorf("passport %s does not exist", passportId)
+		return nil, err
 	}
 
-	var passport BatteryPassport
-	if err := json.Unmarshal(passportJSON, &passport); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal passport: %v", err)
-	}
-
-	if err := c.checkPassportAccess(ctx, &passport); err != nil {
+	if err := c.checkPassportAccess(ctx, passport); err != nil {
 		return nil, err
 	}
 
@@ -620,19 +583,12 @@ func (c *PassportContract) QueryVerificationsByCredential(ctx contractapi.Transa
 	credentialId string, pageSizeStr string, bookmark string) (*PaginatedVerificationResult, error) {
 
 	// RBAC: credential의 연관 passport 접근 권한 확인
-	vcJSON, err := ctx.GetStub().GetState(credentialId)
+	vc, err := c.loadCredential(ctx, credentialId)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read credential: %v", err)
-	}
-	if vcJSON == nil {
-		return nil, fmt.Errorf("credential %s does not exist", credentialId)
-	}
-	var vc VerifiableCredential
-	if err := json.Unmarshal(vcJSON, &vc); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal credential: %v", err)
+		return nil, err
 	}
 	if vc.PassportID != "" {
-		if err := c.checkCredentialAccess(ctx, &vc); err != nil {
+		if err := c.checkCredentialAccess(ctx, vc); err != nil {
 			return nil, err
 		}
 	}
@@ -670,8 +626,8 @@ func (c *PassportContract) QueryVerificationsByCredential(ctx contractapi.Transa
 			return nil, err
 		}
 		var v CredentialVerification
-		if err := json.Unmarshal(queryResponse.Value, &v); err != nil {
-			continue
+		if err := unmarshalTypedState(queryResponse.Key, queryResponse.Value, docTypeVerification, &v); err != nil {
+			return nil, err
 		}
 		records = append(records, &v)
 	}
@@ -730,8 +686,8 @@ func (c *PassportContract) QueryVerificationsByVerifier(ctx contractapi.Transact
 			return nil, err
 		}
 		var v CredentialVerification
-		if err := json.Unmarshal(queryResponse.Value, &v); err != nil {
-			continue
+		if err := unmarshalTypedState(queryResponse.Key, queryResponse.Value, docTypeVerification, &v); err != nil {
+			return nil, err
 		}
 		records = append(records, &v)
 	}
@@ -740,6 +696,198 @@ func (c *PassportContract) QueryVerificationsByVerifier(ctx contractapi.Transact
 	}
 
 	return &PaginatedVerificationResult{
+		Records:  records,
+		Bookmark: responseMetadata.GetBookmark(),
+		Count:    int(responseMetadata.GetFetchedRecordsCount()),
+	}, nil
+}
+
+// ============================================================
+// 36-2. QuerySourceVerificationsByPassport — source/oracle 검증 이력
+// ============================================================
+
+func (c *PassportContract) QuerySourceVerificationsByPassport(ctx contractapi.TransactionContextInterface,
+	passportId string, pageSizeStr string, bookmark string) (*PaginatedSourceVerificationResult, error) {
+
+	passport, err := c.loadPassport(ctx, passportId)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.checkPassportAccess(ctx, passport); err != nil {
+		return nil, err
+	}
+
+	pageSize, err := strconv.ParseInt(pageSizeStr, 10, 32)
+	if err != nil || pageSize <= 0 {
+		pageSize = int64(defaultPageSize)
+	}
+	if int32(pageSize) > maxPageSize {
+		pageSize = int64(maxPageSize)
+	}
+
+	queryString, err := buildQuery(
+		map[string]interface{}{
+			"docType":    docTypeSourceVerification,
+			"passportId": passportId,
+		},
+		map[string]interface{}{
+			"sort": []map[string]string{{"createdAt": "desc"}},
+		},
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to build query: %v", err)
+	}
+	resultsIterator, responseMetadata, err := ctx.GetStub().GetQueryResultWithPagination(queryString, int32(pageSize), bookmark)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query source verifications: %v", err)
+	}
+	defer resultsIterator.Close()
+
+	records := []*SourceVerification{}
+	for resultsIterator.HasNext() {
+		queryResponse, err := resultsIterator.Next()
+		if err != nil {
+			return nil, err
+		}
+		var v SourceVerification
+		if err := unmarshalTypedState(queryResponse.Key, queryResponse.Value, docTypeSourceVerification, &v); err != nil {
+			return nil, err
+		}
+		records = append(records, &v)
+	}
+	if records == nil {
+		records = []*SourceVerification{}
+	}
+
+	return &PaginatedSourceVerificationResult{
+		Records:  records,
+		Bookmark: responseMetadata.GetBookmark(),
+		Count:    int(responseMetadata.GetFetchedRecordsCount()),
+	}, nil
+}
+
+// ============================================================
+// 36-3. QueryRegulatoryVerificationHistory — 규제 검증 이벤트 이력
+// ============================================================
+
+func (c *PassportContract) QueryRegulatoryVerificationHistory(ctx contractapi.TransactionContextInterface,
+	passportId string, pageSizeStr string, bookmark string) (*PaginatedRegulatoryVerificationResult, error) {
+
+	passport, err := c.loadPassport(ctx, passportId)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.checkPassportAccess(ctx, passport); err != nil {
+		return nil, err
+	}
+
+	pageSize, err := strconv.ParseInt(pageSizeStr, 10, 32)
+	if err != nil || pageSize <= 0 {
+		pageSize = int64(defaultPageSize)
+	}
+	if int32(pageSize) > maxPageSize {
+		pageSize = int64(maxPageSize)
+	}
+
+	queryString, err := buildQuery(
+		map[string]interface{}{
+			"docType":    docTypeRegulatoryEvent,
+			"passportId": passportId,
+		},
+		map[string]interface{}{
+			"sort": []map[string]string{{"verifiedAt": "desc"}},
+		},
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to build query: %v", err)
+	}
+	resultsIterator, responseMetadata, err := ctx.GetStub().GetQueryResultWithPagination(queryString, int32(pageSize), bookmark)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query regulatory verification history: %v", err)
+	}
+	defer resultsIterator.Close()
+
+	records := []*RegulatoryVerificationEvent{}
+	for resultsIterator.HasNext() {
+		queryResponse, err := resultsIterator.Next()
+		if err != nil {
+			return nil, err
+		}
+		var v RegulatoryVerificationEvent
+		if err := unmarshalTypedState(queryResponse.Key, queryResponse.Value, docTypeRegulatoryEvent, &v); err != nil {
+			return nil, err
+		}
+		records = append(records, &v)
+	}
+	if records == nil {
+		records = []*RegulatoryVerificationEvent{}
+	}
+
+	return &PaginatedRegulatoryVerificationResult{
+		Records:  records,
+		Bookmark: responseMetadata.GetBookmark(),
+		Count:    int(responseMetadata.GetFetchedRecordsCount()),
+	}, nil
+}
+
+// ============================================================
+// 36-4. QueryPhysicalVerificationHistory — 실물 검증 이벤트 이력
+// ============================================================
+
+func (c *PassportContract) QueryPhysicalVerificationHistory(ctx contractapi.TransactionContextInterface,
+	passportId string, pageSizeStr string, bookmark string) (*PaginatedPhysicalVerificationResult, error) {
+
+	passport, err := c.loadPassport(ctx, passportId)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.checkPassportAccess(ctx, passport); err != nil {
+		return nil, err
+	}
+
+	pageSize, err := strconv.ParseInt(pageSizeStr, 10, 32)
+	if err != nil || pageSize <= 0 {
+		pageSize = int64(defaultPageSize)
+	}
+	if int32(pageSize) > maxPageSize {
+		pageSize = int64(maxPageSize)
+	}
+
+	queryString, err := buildQuery(
+		map[string]interface{}{
+			"docType":    docTypePhysicalEvent,
+			"passportId": passportId,
+		},
+		map[string]interface{}{
+			"sort": []map[string]string{{"verifiedAt": "desc"}},
+		},
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to build query: %v", err)
+	}
+	resultsIterator, responseMetadata, err := ctx.GetStub().GetQueryResultWithPagination(queryString, int32(pageSize), bookmark)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query physical verification history: %v", err)
+	}
+	defer resultsIterator.Close()
+
+	records := []*PhysicalVerificationEvent{}
+	for resultsIterator.HasNext() {
+		queryResponse, err := resultsIterator.Next()
+		if err != nil {
+			return nil, err
+		}
+		var v PhysicalVerificationEvent
+		if err := unmarshalTypedState(queryResponse.Key, queryResponse.Value, docTypePhysicalEvent, &v); err != nil {
+			return nil, err
+		}
+		records = append(records, &v)
+	}
+	if records == nil {
+		records = []*PhysicalVerificationEvent{}
+	}
+
+	return &PaginatedPhysicalVerificationResult{
 		Records:  records,
 		Bookmark: responseMetadata.GetBookmark(),
 		Count:    int(responseMetadata.GetFetchedRecordsCount()),

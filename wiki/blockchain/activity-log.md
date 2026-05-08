@@ -713,3 +713,757 @@ docker start acapy-bmu
 
 - Passport 세션의 helpers.ts 적용 결과 검증 (SOC/TEMP/CellVolt 변환)
 - 또는 다른 chaincode 작업 (P2-6 SetEvent / P2-7 history wrappers) 진행 시점
+
+---
+
+## 2026-05-08 — 블록체인 코드리뷰 (read-only)
+
+### 범위
+- `chaincode/passport-contract/`
+- `passport-network/`
+
+### 수행 내용
+- `$performance-goal` 호출은 성능 최적화 evaluator contract가 없어 코드 변경/최적화 루프로 전환하지 않음.
+- 실제 요청에 맞춰 블록체인 영역 코드리뷰를 read-only로 수행.
+- 확인 명령:
+  - `go test ./...` → pass (`[no test files]`)
+  - `go vet ./...` → pass
+  - `go test -cover ./...` → `coverage: 0.0% of statements`
+  - `bash -n passport-network/network.sh passport-network/scripts/*.sh passport-network/organizations/*.sh` → pass
+  - `docker compose ... config` → pass
+  - `gofmt -l chaincode/passport-contract/*.go` → `types.go`, `vc_tx.go` formatting drift 발견
+
+### 주요 리뷰 결과
+- 체인코드 다수 GetState 경로가 `docType` 검증 없이 struct unmarshal 후 같은 key에 PutState 하므로, 잘못된 ID 입력만으로 passport/BMU/VC key가 다른 타입 JSON으로 덮일 수 있음.
+- `RecordBMUData`는 BMU 서명과 dataHash 포맷을 chaincode에서 검증하지 않음. agent 검증에 전적으로 의존.
+- `CorrectPassportData`는 생성 시점의 non-negative 숫자 invariant를 정정 경로에서 다시 강제하지 않음.
+- Boolean string parsing이 `strings.ToLower(x) == "true"`라 오타가 조용히 false로 저장됨.
+- `passport-network`에는 CA/등록 secret 하드코딩, `latest` 이미지 태그, Docker socket mount 등 운영 하드닝 이슈가 남아 있음.
+
+### 변경 파일
+- `wiki/blockchain/activity-log.md` — 본 활동 로그만 추가.
+- 블록체인 코드 변경 없음.
+
+### 미완료 / 다음 액션
+- P0: typed state loader/helper를 추가해 모든 entity read/update 경로에서 `docType` 검증.
+- P1: 체인코드 단위 테스트를 추가해 cross-type ID overwrite, negative correction, malformed boolean/expiry 케이스 lock-in.
+- P1: CA bootstrap/identity secret을 `.env`/secret store로 이동하고 `latest` 이미지를 Fabric 2.5.x 계열로 pin.
+
+---
+
+## 2026-05-08 — 블록체인 코드리뷰 P0/P1 수정
+
+### 작업 내용
+- `chaincode/passport-contract/`에 typed state loader를 추가해 passport, rawMaterial, BMU record, VC, credential request 읽기/수정 경로에서 `docType`을 강제했다.
+- `RecordBMUData` 입력 검증을 강화했다.
+  - `signature` empty reject
+  - `dataHash` 64-char SHA-256 hex reject/accept 기준 추가
+  - 기존 DID↔passport 매칭, FC 단조 증가 검증 유지
+- `CreateBatteryPassport`와 `CorrectPassportData` 숫자 검증을 shared helper로 통일했다.
+  - `cellCount`, `weight`, `totalEnergy`, `energyDensity`, `ratedCapacity`, `expectedLifespan`, `carbonFootprint` 음수 reject
+  - `NaN`/`Inf` reject
+- boolean/expiry parsing을 엄격화했다.
+  - `strings.ToLower(x) == "true"` 패턴 제거
+  - `strconv.ParseBool` 기반 malformed boolean reject
+  - `IssueCredential`의 `expiresAt` RFC3339 검증
+  - `VerifyCredentialStatus`의 저장된 malformed expiry를 invalid 처리
+- `passport-network/` 운영 하드닝을 반영했다.
+  - `registerEnroll.sh`의 hardcoded registration secret 제거, `.env` 주입 구조 추가
+  - secret 노출 `set -x` 제거 및 enroll URL quote 처리
+  - Fabric/Fabric CA `latest` image tag 제거, `FABRIC_VERSION=2.5`, `FABRIC_CA_VERSION=1.5` 기본 pin
+  - Docker socket mount에 dev-only 위험 주석 추가
+  - tracked Fabric CA sample config의 `LEGACY_DEFAULT_SECRET` placeholder 제거
+- 회귀 테스트를 추가했다.
+  - cross-type `docType` mismatch reject
+  - BMU signature/dataHash reject
+  - CorrectPassportData numeric negative/NaN reject
+  - malformed boolean reject
+  - malformed expiresAt reject
+  - RBAC/status transition regression
+
+### 변경 파일
+- `chaincode/passport-contract/helpers.go`
+- `chaincode/passport-contract/helpers_test.go`
+- `chaincode/passport-contract/bmu_tx.go`
+- `chaincode/passport-contract/passport_tx.go`
+- `chaincode/passport-contract/vc_tx.go`
+- `chaincode/passport-contract/query.go`
+- `chaincode/passport-contract/types.go` (gofmt)
+- `passport-network/network.sh`
+- `passport-network/.env.template`
+- `passport-network/compose/compose-net.yaml`
+- `passport-network/compose/compose-ca.yaml`
+- `passport-network/organizations/registerEnroll.sh`
+- `passport-network/organizations/fabric-ca/{manufacturer,evmanufacturer,service,regulator,ordererOrg}/fabric-ca-server-config.yaml`
+- `wiki/blockchain/activity-log.md`
+
+### 검증 결과
+- `gofmt -w chaincode/passport-contract/*.go` → pass
+- `go -C chaincode/passport-contract test ./...` → pass
+- `go -C chaincode/passport-contract vet ./...` → pass
+- `go -C chaincode/passport-contract test -cover ./...` → pass (`coverage: 3.9% of statements`)
+- `bash -n passport-network/network.sh passport-network/scripts/*.sh passport-network/organizations/*.sh` → pass
+- `CA_ADMIN_USER=x CA_ADMIN_PASSWORD=y COUCHDB_USER=x COUCHDB_PASSWORD=y docker compose -f passport-network/compose/compose-net.yaml -f passport-network/compose/compose-couch.yaml -f passport-network/compose/compose-ca.yaml config` → pass
+
+### 미완료 / 리스크
+- BMU signature는 chaincode에서 presence만 강제한다. 실제 암호학적 signature verification은 기존처럼 agent/BMU DID 검증 계층 책임이다.
+- Docker socket mount는 dev-only로 명시했지만 아직 compose에서 제거하지 않았다. 운영 profile 분리는 별도 작업으로 남긴다.
+- 새 validation error prefix가 추가됐지만 이번 허용 범위상 `wiki/blockchain/chaincode-error-contract.md`는 갱신하지 않았다. Passport 세션의 error mapping 영향 검토가 필요하다.
+- 작업 중 발견된 `bmu-agent/`, `wiki/passport/` 변경은 다른 세션 변경으로 간주하고 건드리지 않았다.
+
+### 교훈
+- `json.Unmarshal` 성공은 타입 안전을 보장하지 않는다. Fabric world-state key를 재사용하는 update 경로는 `docType` envelope 검증이 필수다.
+- 문자열 boolean/expiry는 permissive fallback보다 malformed reject가 안전하다.
+- 네트워크 secret hardening은 `.env.template`만 커밋하고 실제 `.env`는 계속 비추적 상태로 유지해야 한다.
+
+---
+
+## 2026-05-08 — Autopilot 블록체인 코드리뷰 수정/검증
+
+### 작업 내용
+- `$autopilot` 흐름에 맞춰 `ralplan → ralph → code-review` 순서로 진행했다.
+- RALPLAN 산출물 생성:
+  - `.omx/plans/prd-blockchain-code-review-fix.md`
+  - `.omx/plans/test-spec-blockchain-code-review-fix.md`
+- 기존 P0/P1 수정본을 재검토하고 추가 보강했다.
+  - rich-query 결과도 `unmarshalTypedState`로 `docType`을 강제해 query result poisoning을 fail-closed 처리.
+  - `BMUSnapshot` read/merge/update 경로도 `docType == bmuSnapshot`을 강제.
+  - BMU timestamp를 RFC3339로 검증하고 voltage/current의 `NaN`/`Inf`를 reject.
+  - raw material `quantity`를 non-negative finite float로 검증.
+  - VC `holderDid`가 passport DID와 불일치하면 발급을 reject.
+  - regulatory evidence VC가 대상 passport와 불일치하면 reject.
+  - `passport-network/compose/docker/peercfg/core.yaml`에도 Docker socket dev-only 위험 주석을 추가.
+
+### 변경 파일
+- `chaincode/passport-contract/helpers.go`
+- `chaincode/passport-contract/helpers_test.go`
+- `chaincode/passport-contract/bmu_tx.go`
+- `chaincode/passport-contract/passport_tx.go`
+- `chaincode/passport-contract/query.go`
+- `chaincode/passport-contract/vc_tx.go`
+- `chaincode/passport-contract/types.go` (gofmt)
+- `passport-network/.env.template`
+- `passport-network/compose/compose-ca.yaml`
+- `passport-network/compose/compose-net.yaml`
+- `passport-network/compose/docker/peercfg/core.yaml`
+- `passport-network/network.sh`
+- `passport-network/organizations/registerEnroll.sh`
+- `passport-network/organizations/fabric-ca/{manufacturer,evmanufacturer,service,regulator,ordererOrg}/fabric-ca-server-config.yaml`
+- `wiki/blockchain/activity-log.md`
+
+### BMS 1~3차년도 gap matrix
+| 연차 | BMS PDF 기준 요구 | 이번 반영/확인 | 남은 gap |
+|---|---|---|---|
+| 1차 | Fabric 기반 Battery Passport 상위 설계, lifecycle 기록/검증/조회 스마트컨트랙트 | typed loader, typed query decode, BMU/VC/passport 검증 강화로 기록/조회 타입 안전성 보강 | 실제 배포 네트워크 재커밋/리그레션은 별도 운영 window 필요 |
+| 2차 | IAM/access-control, 상태 저장/추적, 무결성/진본성 검증, Battery Passport 연계 | MSP RBAC 회귀 유지, DID↔passport BMU 검증 유지, VC holder/evidence passport binding 추가, dataHash/signature presence 강화 | 암호학적 signature verification은 chaincode가 아니라 agent/DID 계층 책임으로 남음 |
+| 3차 | security-plane 검증, 취약점/침투테스트 준비, DID/IAM/키관리, HTTPS/gRPC messaging, Battery Passport 검증 protocol, TPS/확장성 개선 | malformed boolean/expiry/timestamp reject, CA secret env 주입, image latest 제거, Docker socket 위험 명시, TPS hot path 검증 preflight | 침투테스트/TPS 재측정/HTTPS-gRPC 운영 profile 검증은 미실행 |
+
+### 검증 결과
+- `gofmt -w chaincode/passport-contract/*.go` → pass
+- `go -C chaincode/passport-contract test ./...` → pass
+- `go -C chaincode/passport-contract vet ./...` → pass
+- `go -C chaincode/passport-contract test -cover ./...` → pass (`coverage: 4.7% of statements`)
+- `bash -n passport-network/network.sh passport-network/scripts/*.sh passport-network/organizations/*.sh` → pass
+- `CA_ADMIN_USER=x CA_ADMIN_PASSWORD=y COUCHDB_USER=x COUCHDB_PASSWORD=y docker compose -f passport-network/compose/compose-net.yaml -f passport-network/compose/compose-couch.yaml -f passport-network/compose/compose-ca.yaml config` → pass
+- rendered compose image pin 확인:
+  - `hyperledger/fabric-peer:2.5`
+  - `hyperledger/fabric-orderer:2.5`
+  - `hyperledger/fabric-ca:1.5`
+  - `couchdb:3.4.2`
+- rendered compose에서 `latest` image tag 없음.
+- tracked registration script에서 legacy `peer0pw/user1pw/LEGACY_DEFAULT_SECRET/ordererpw` secret pattern 없음.
+- `git diff --check -- chaincode/passport-contract passport-network wiki/blockchain/activity-log.md` → pass
+
+### TPS/KPI 검증 상태
+- live Fabric containers는 감지됨.
+- 다만 현재 chaincode 수정본은 running network에 redeploy/commit되지 않았고, `caliper-workspace/benchconfig.yaml`은 write 3000 + read 10000 tx를 발생시킨다.
+- 따라서 이번 autopilot에서는 full Caliper를 실행하지 않았다. 실행해도 현재 수정본 검증이 아니라 기존 배포 chaincode 부하 테스트가 되며, ledger write 부작용이 크다.
+
+### code-review verdict
+- allowed scope 기준 P0/P1은 코드 또는 명시적 운영 결정으로 해소.
+- 새로 발견된 CRITICAL/HIGH 코드 결함 없음.
+- 남은 항목은 운영/연동 P2로 분류.
+
+### 세션 간 전달사항 + 블록체인 담당 TODO — 복붙용
+```text
+[Passport/bmu-agent 전달]
+- IssueCredential now rejects holderDid unless it exactly equals the passport DID. UI/API should default holderDid to passport.did and avoid arbitrary owner DID values.
+- VC expiresAt must be RFC3339. Existing date-only UI inputs such as YYYY-MM-DD must be converted to e.g. YYYY-MM-DDT00:00:00Z before submit.
+- New validation errors may surface as VAL/AUTHZ mapping cases: holder DID mismatch, malformed expiresAt/timestamp, invalid dataHash, missing signature.
+
+[Embedded/BMU 전달]
+- RecordBMUData now requires non-empty signature, 64-char SHA-256 hex dataHash, and RFC3339 timestamp.
+- Current/voltage may be negative/positive as before, but NaN/Inf is rejected.
+- DID must continue to match the passport DID and FC must remain monotonically increasing.
+
+[MCP/monitor 전달]
+- Rich-query result decoding now fail-closes on docType mismatch instead of silently skipping/accepting malformed documents. Monitors should surface query errors explicitly.
+
+[블록체인 담당 TODO]
+- passport-network identity registration secrets는 블록체인 담당이 `.env` 기반으로 운영한다. Copy `.env.template` to `.env` and set all `*_SECRET`, `CA_ADMIN_USER`, `CA_ADMIN_PASSWORD`, `COUCHDB_USER`, `COUCHDB_PASSWORD` before network bootstrap.
+- Docker socket mount는 현재 dev-only로만 명시되어 있다. 블록체인 담당이 production profile/external chaincode builder separation을 후속 처리한다.
+- 현재 chaincode 수정본은 live Fabric network에 아직 redeploy/commit되지 않았다. 블록체인 담당이 sequence bump 후 redeploy한다.
+- Caliper TPS/KPI는 redeploy 이후 블록체인 담당이 별도 실행한다.
+- Fabric image는 2.5/1.5 계열 pin 상태다. 블록체인 담당이 exact patch/digest pin 여부를 후속 결정한다.
+```
+
+### 미완료 / 리스크
+- Chaincode coverage는 4.7%로 낮다. Fabric mock 기반 behavior tests는 추가 필요.
+- `fabric-peer:2.5`, `fabric-orderer:2.5`, `fabric-ca:1.5`는 `latest`보다 안전하지만 exact patch digest pin은 아직 아니다.
+- live network에는 현재 수정본이 redeploy되지 않았다. 실제 KPI/TPS는 chaincode sequence bump 후 별도 측정해야 한다.
+- `wiki/blockchain/benchmark-methodology.md`의 과거 `admin:LEGACY_DEFAULT_SECRET` 언급은 이번 허용 파일 범위 밖이라 수정하지 않았다. 다음 문서 정리 때 갱신 필요.
+
+### 교훈
+- Query selector의 `docType` 필터만으로는 충분하지 않다. CouchDB 결과 payload도 typed decode해야 안전하다.
+- Passport/VC/DID binding은 체인코드와 UI/API가 같은 의미론을 공유해야 한다. 특히 `holderDid`와 `expiresAt` 포맷은 세션 간 동기화가 필요하다.
+
+---
+
+## 2026-05-08 — Passport 세션 핸드오프 반영: 3차년도 확장 계약
+
+### 입력 받은 내용
+- Passport 세션 문서 `wiki/passport/cross-session-handoff-2026-05-08.md`를 읽고 블록체인 담당 범위만 반영했다.
+- Passport 문서는 읽기만 했고 수정하지 않았다.
+- 요청 핵심:
+  - 기존 `CreateBatteryPassport` 인자 순서 유지
+  - 초기 발급 이후 3차년도 확장 속성 기록 경로 제공
+  - BMS management/binding identifier 저장·검증
+  - source/oracle verification result 기록
+  - regulatory/physical verification event history 조회
+
+### 구현 내용
+- 기존 `CreateBatteryPassport` 계약은 변경하지 않았다.
+- 새 transaction을 추가했다.
+  - `SetPassportExtendedAttributes(passportId, manufacturingProcess, disposalMethod, recycledElementContentJSON, extensionInfoJSON, reason)`
+  - `BindBMSIdentifier(passportId, bmsManagementId, bmsBindingId, evidenceHash, reason)`
+  - `RecordSourceVerification(verificationId, passportId, sourceType, sourceId, dataHash, result, detailsJSON)`
+- 새 query를 추가했다.
+  - `QuerySourceVerificationsByPassport(passportId, pageSize, bookmark)`
+  - `QueryRegulatoryVerificationHistory(passportId, pageSize, bookmark)`
+  - `QueryPhysicalVerificationHistory(passportId, pageSize, bookmark)`
+- `UpdateRegulatoryVerification`은 현재 상태 업데이트와 함께 `regulatoryVerification` event doc을 남긴다.
+- `VerifyPhysicalHistory`는 현재 상태 업데이트와 함께 `physicalVerification` event doc을 남긴다.
+- `PhysicalVerification` signal에 `bmsIdentifierMatched`를 추가했다.
+- `BatteryPassport`에 추가 필드를 반영했다.
+  - `bmsManagementId`
+  - `bmsBindingId`
+
+### Validation contract
+- `recycledElementContentJSON`은 controlled vocabulary만 허용한다.
+  - allowed examples: `lithium`, `nickel`, `cobalt`, `manganese`, `graphite`, `aluminum`, `copper`, `iron`, `plastic`, `other`, `Li`, `Ni`, `Co`, `Mn`, `C`, `Al`, `Cu`, `Fe`
+  - 각 값은 finite number이고 `[0, 100]` 범위여야 한다.
+- `extensionInfoJSON`은 `map[string]string`이어야 하며 empty key를 거부한다.
+- `bmsManagementId`, `bmsBindingId`는 non-empty, 최대 128자, `[A-Za-z0-9:_-./#]` 문자만 허용한다.
+- 이미 BMS binding이 존재하는 passport에 다른 identifier를 넣으면 reject한다.
+- `RecordSourceVerification.dataHash`는 64-char SHA-256 hex여야 한다.
+- `RecordSourceVerification.result`는 `strconv.ParseBool` 기준 malformed boolean을 reject한다.
+
+### 배터리여권 세션 호출 계약
+```text
+1) 기존 생성은 그대로 유지
+CreateBatteryPassport(
+  passportId, batteryId, did,
+  model, serialNumber,
+  manufacturerName, manufactureCountry,
+  cellManufacturer, cellManufactureCountry,
+  manufactureDate, cellType, chemistry,
+  cellCount, weight, totalEnergy,
+  energyDensity, ratedCapacity, expectedLifespan,
+  voltageRange, temperatureRange,
+  carbonFootprint
+)
+
+2) 초기 발급 직후 3차년도 확장 속성 기록
+SetPassportExtendedAttributes(
+  passportId,
+  manufacturingProcess,
+  disposalMethod,
+  recycledElementContentJSON,  // 예: {"lithium":12.5,"Ni":3}
+  extensionInfoJSON,           // 예: {"standard":"BMS-3Y","oracle":"passed"}
+  reason                       // 예: initial extended attributes
+)
+
+3) BMS 관리 식별자 바인딩
+BindBMSIdentifier(
+  passportId,
+  bmsManagementId,             // 예: BMS-MGMT-001
+  bmsBindingId,                // 예: did:battery:1#BMS-MGMT-001
+  evidenceHash,                // optional, 있으면 64-char SHA-256 hex
+  reason
+)
+
+4) source/oracle 검증 결과 기록
+RecordSourceVerification(
+  verificationId,
+  passportId,
+  sourceType,                  // 예: BMU_ORACLE, MANUFACTURING_CERT, RECYCLING_CERT
+  sourceId,
+  dataHash,                    // 64-char SHA-256 hex
+  result,                      // true/false, malformed reject
+  detailsJSON                  // map[string]string JSON
+)
+```
+
+### 주요 에러 메시지
+- `unknown recycledElementContent key: <key>`
+- `invalid recycledElementContent rate for <key>: must be in [0, 100], got <value>`
+- `invalid extensionInfo JSON: <error>`
+- `bmsManagementId must not be empty`
+- `bmsBindingId contains invalid character '<char>'`
+- `BMS management identifier mismatch: passport <id> is bound to <old>, not <new>`
+- `dataHash must be 64-character hex SHA-256`
+- `invalid result boolean value: <error>`
+
+### 변경 파일
+- `chaincode/passport-contract/types.go`
+- `chaincode/passport-contract/helpers.go`
+- `chaincode/passport-contract/helpers_test.go`
+- `chaincode/passport-contract/passport_tx.go`
+- `chaincode/passport-contract/vc_tx.go`
+- `chaincode/passport-contract/query.go`
+- `wiki/blockchain/activity-log.md`
+
+### 검증 결과
+- `gofmt -w chaincode/passport-contract/*.go` → pass
+- `go -C chaincode/passport-contract test ./...` → pass
+- `go -C chaincode/passport-contract vet ./...` → pass
+- `go -C chaincode/passport-contract test -cover ./...` → pass (`coverage: 6.7% of statements`)
+- `bash -n passport-network/network.sh passport-network/scripts/*.sh passport-network/organizations/*.sh` → pass
+- `CA_ADMIN_USER=x CA_ADMIN_PASSWORD=y COUCHDB_USER=x COUCHDB_PASSWORD=y docker compose -f passport-network/compose/compose-net.yaml -f passport-network/compose/compose-couch.yaml -f passport-network/compose/compose-ca.yaml config` → pass
+- rendered compose에서 `latest` image tag 없음
+- tracked registration script에서 legacy hardcoded registration secret 없음
+- `git diff --check -- chaincode/passport-contract passport-network wiki/blockchain/activity-log.md` → pass
+
+### 남은 리스크
+- 새 chaincode 함수는 live Fabric network에 아직 redeploy/commit되지 않았다. 배터리여권 세션 호출 전 sequence bump/redeploy가 필요하다.
+- `recycledElementContent` controlled vocabulary는 의도적으로 보수적이다. UI/API가 다른 키를 쓰려면 블록체인과 먼저 어휘를 맞춰야 한다.
+- BMS identifier 원천값은 Embedded/BMU 세션에서 확정되어야 한다. 현재 chaincode는 저장/검증 계약만 제공한다.
+- Source/oracle verification은 결과 기록 계약이다. 실제 oracle의 암호학적 검증은 호출 전 계층 책임이다.
+
+## 2026-05-08 — passport handoff 반영 및 live redeploy 검증 보강
+
+### 입력/범위
+- 입력 문서: `wiki/passport/cross-session-handoff-2026-05-08.md`의 블록체인 세션 요청.
+- 수정 범위는 블록체인 소유 파일로 제한: `chaincode/passport-contract/`, `passport-network/`, `caliper-workspace/workloads/`.
+- 배터리여권/임베디드/MCP 세션 파일은 수정하지 않음. `wiki/passport/*` 변경은 다른 세션 산출물로 유지.
+
+### 반영 내용
+- 3차년도 확장 속성 계약 보강:
+  - `SetPassportExtendedAttributes(passportId, manufacturingProcess, disposalMethod, recycledElementContentJSON, extensionInfoJSON, reason)` 추가.
+  - `BindBMSIdentifier(passportId, bmsManagementId, bmsBindingId, evidenceHash, reason)` 추가.
+  - 기존 `CreateBatteryPassport` 인자 순서는 유지.
+- Smart contract 자동 검증/이력 표면 보강:
+  - `RecordSourceVerification(...)` 추가.
+  - `QuerySourceVerificationsByPassport`, `QueryPhysicalVerificationHistory`, `QueryRegulatoryVerificationHistory` 추가.
+  - physical/regulatory verification update 시 이력 docType을 별도 저장.
+- Chaincode 리뷰 P0/P1 수정 유지:
+  - typed state loader로 cross-type overwrite 차단.
+  - BMU `signature`, `dataHash`, timestamp/FC 검증 강화.
+  - `CorrectPassportData` numeric validation과 strict bool/RFC3339 parsing 적용.
+- CouchDB index 추가:
+  - `indexSourceVerificationByPassport.json`
+  - `indexPhysicalVerificationByPassport.json`
+  - `indexRegulatoryVerificationByPassport.json`
+- `passport-network` 운영 하드닝:
+  - `latest` 이미지 태그를 `${FABRIC_VERSION:-2.5}`, `${FABRIC_CA_VERSION:-1.5}`로 교체.
+  - registration secret은 `.env`/env 주입 구조로 변경.
+  - Docker socket mount는 dev-only 위험 주석으로 명시.
+- Caliper workload 보정:
+  - `CALIPER_RUN_ID`로 benchmark passport/DID 충돌 방지.
+  - worker별 strided passport assignment로 빈 worker/NaN malformed request 방지.
+  - per-DID submit promise chain으로 같은 DID의 FC submit 순서를 보존.
+
+### Live network evidence
+- `passport-contract` redeploy 완료:
+  - Version: `1.2`
+  - Sequence: `3`
+  - Approvals: `EVManufacturerMSP=true`, `ManufacturerMSP=true`, `RegulatorMSP=true`, `ServiceMSP=true`
+- Live invoke/query 검증 통과:
+  - Test passport: `PASSPORT-VERIFY-20260508113852`
+  - `CreateBatteryPassport` → status 200
+  - `SetPassportExtendedAttributes` → status 200
+  - `BindBMSIdentifier` → status 200
+  - `RecordSourceVerification` → status 200
+  - `VerifyPhysicalHistory` → status 200
+  - `UpdateRegulatoryVerification` → status 200
+  - `QueryPassport` 결과: `manufacturingProcess=dry-room-assembly`, `bmsManagementId=BMS-MGMT-20260508113852`, `bmsIdentifierMatched=true`, `regulatoryVerificationStatus=VERIFIED`
+  - history query count: source `1`, physical `1`, regulatory `1`
+- Negative live validation 통과:
+  - unknown recycling key → `unknown recycledElementContent key: unobtainium`
+  - invalid BMS id → `bmsManagementId contains invalid character ' '`
+  - malformed boolean → `invalid result boolean value: strconv.ParseBool: parsing "not-bool": invalid syntax`
+
+### 검증 결과
+- `gofmt -w chaincode/passport-contract/*.go` → pass
+- `go -C chaincode/passport-contract test ./...` → pass
+- `go -C chaincode/passport-contract vet ./...` → pass
+- `go -C chaincode/passport-contract test -cover ./...` → pass (`coverage: 6.7% of statements`)
+- `bash -n passport-network/network.sh passport-network/scripts/*.sh passport-network/organizations/*.sh` → pass
+- `CA_ADMIN_USER=x CA_ADMIN_PASSWORD=y COUCHDB_USER=x COUCHDB_PASSWORD=y docker compose -f passport-network/compose/compose-net.yaml -f passport-network/compose/compose-couch.yaml -f passport-network/compose/compose-ca.yaml config` → pass
+- `node -c caliper-workspace/workloads/recordBMUData.js` → pass
+- `node -c caliper-workspace/workloads/queryPassport.js` → pass
+- `git diff --check -- chaincode/passport-contract passport-network caliper-workspace wiki/blockchain/activity-log.md` → pass
+- Caliper smoke (`NUM_PASSPORTS=150`, short temp config) → successful rounds 2/2, fail 0:
+  - `write-bmu-data-smoke`: Succ 30 / Fail 0
+  - `read-passport-smoke`: Succ 47 / Fail 0
+
+### 성능/KPI 리스크
+- 전체 KPI run은 아직 pass 판정 아님.
+- 기존 full run 근거:
+  - `NUM_PASSPORTS=50 ./run-bench.sh manufacturer`에서 write는 FC hot-key/반복 DID 문제로 대량 실패, read는 gateway concurrency limit으로 일부 실패.
+  - 보정 전 재시도 중 빈 worker가 malformed request를 만들었고, 보정 후 smoke에서는 malformed request가 사라짐.
+- 남은 성능 리스크:
+  - 4-org endorsement에서 동일 DID의 `lastFc` hot key를 고TPS로 반복 갱신하면 peer별 commit visibility 차이로 `ProposalResponsePayloads do not match`가 재발할 수 있음.
+  - 공인 KPI 재측정은 더 많은 DID/passport 분산 또는 gateway/endorsement tuning을 별도 performance goal로 분리하는 것이 안전함.
+
+### 변경 파일
+- `chaincode/passport-contract/bmu_tx.go`
+- `chaincode/passport-contract/helpers.go`
+- `chaincode/passport-contract/helpers_test.go`
+- `chaincode/passport-contract/passport_tx.go`
+- `chaincode/passport-contract/query.go`
+- `chaincode/passport-contract/types.go`
+- `chaincode/passport-contract/vc_tx.go`
+- `chaincode/passport-contract/META-INF/statedb/couchdb/indexes/indexSourceVerificationByPassport.json`
+- `chaincode/passport-contract/META-INF/statedb/couchdb/indexes/indexPhysicalVerificationByPassport.json`
+- `chaincode/passport-contract/META-INF/statedb/couchdb/indexes/indexRegulatoryVerificationByPassport.json`
+- `passport-network/.env.template`
+- `passport-network/compose/compose-ca.yaml`
+- `passport-network/compose/compose-net.yaml`
+- `passport-network/compose/docker/peercfg/core.yaml`
+- `passport-network/network.sh`
+- `passport-network/organizations/fabric-ca/*/fabric-ca-server-config.yaml`
+- `passport-network/organizations/registerEnroll.sh`
+- `caliper-workspace/workloads/recordBMUData.js`
+- `caliper-workspace/workloads/queryPassport.js`
+- `wiki/blockchain/activity-log.md`
+
+### 교훈/다음 세션 전달 포인트
+- Passport 세션은 `CreateBatteryPassport` 인자를 바꾸지 말고, 초기 발급 직후 `SetPassportExtendedAttributes`와 `BindBMSIdentifier`를 호출하면 된다.
+- Embedded 세션은 실제 BMS management identifier 원천값을 payload/protocol에 확정해야 한다. Chaincode는 저장/검증 계약만 제공한다.
+- MCP 세션은 새 source/physical/regulatory history query와 `RecordBMUData` validation error trend를 read-only 관찰 항목으로 추가하면 된다.
+
+## 2026-05-08 — IssueCredential handoff 재확인 및 BMS bindingCode32 검증 추가
+
+### 입력/범위
+- 입력: 배터리여권 세션 전달 — IssueCredential 계약 반영 완료 및 블록체인 최종 확인 요청.
+- 기준 문서 확인:
+  - `wiki/Object/BMS__.pdf`: 3차년도 요구에 DID/실물 배터리/BMS 관리 식별자 바인딩, 스마트컨트랙트 자동 검증, BMS-블록체인 상호연동 검증 포함.
+  - `wiki/passport/bms-1-3-year-mapping-2026-05-08.md`: BMS management identifier와 smart contract 자동 검증이 chaincode handoff로 남아 있음을 확인.
+- 수정 범위: `chaincode/passport-contract/`, `passport-network/`, `wiki/common/architecture.md`, `wiki/blockchain/activity-log.md`.
+
+### 반영 내용
+- IssueCredential 계약 확인:
+  - 인자 순서 변경 없음.
+  - `IssueCredential(ctx, credentialId, passportId, credType, issuerDid, holderDid, schemaId, credDefId, dataHash, expiresAt)` 유지.
+  - holderDid는 `passport.DID`와 불일치 시 `holder DID mismatch`로 reject.
+  - `expiresAt`은 RFC3339만 허용, malformed 값은 `invalid expiresAt value`로 reject.
+- 에러 문자열 호환성 보강:
+  - BMU signature/timestamp empty 에러를 `signature/timestamp must not be empty`로 명확화.
+  - 기존 `invalid timestamp value`, `dataHash must be 64-character hex SHA-256` 유지.
+- BMS 3차년도 full binding 검증 추가:
+  - `BindBMSIdentifier`가 `bmsManagementId` canonical ID의 SHA-256 앞 4 bytes를 little-endian uint32로 계산해 `bmsBindingCode32`를 passport에 저장.
+  - 신규 `RecordBMUDataWithPayload(...)` 추가.
+    - 기존 `RecordBMUData` 인자 뒤에 `rawPayloadHex`를 추가한 backward-compatible 확장 함수.
+    - `rawPayloadHex`는 48 bytes만 허용.
+    - `dataHash`는 48B rawPayload 전체 SHA-256과 일치해야 함.
+    - rawPayload bytes `44..47`을 little-endian uint32로 읽은 `payload bmsBindingCode32`가 passport의 canonical BMS management identifier-derived code와 일치해야 함.
+  - BMU record에 `bmsBindingCode32`, `rawPayloadHashVerified` 저장.
+- `wiki/common/architecture.md`에 3차년도 chaincode RBAC matrix 추가.
+
+### Live network evidence
+- redeploy/commit 완료:
+  - chaincode: `passport-contract`
+  - Version: `1.3`
+  - Sequence: `4`
+  - Package ID: `passport-contract_1.3:3820747fc99c1c57cfb4a0fc08c3798ffc8c35e4f9ec651098307828861ffb83`
+  - 4개 org querycommitted 모두 Approvals true.
+- BMS binding live test:
+  - Test passport: `PASSPORT-BMSBIND-20260508115206`
+  - BMS ID: `BMS-MGMT-20260508115206`
+  - Derived `bmsBindingCode32`: `4065523955`
+  - `BindBMSIdentifier` 후 `QueryPassport`에서 `bmsManagementId`와 `bmsBindingCode32` 확인.
+  - `RecordBMUDataWithPayload` positive invoke 성공.
+  - `QueryBMURecordsByPassport` 결과: count `1`, `bmsBindingCode32=4065523955`, `rawPayloadHashVerified=true`.
+  - bad payload code negative reject:
+    - `BMS binding code mismatch: payload bmsBindingCode32 4065523956 does not match canonical BMS management identifier BMS-MGMT-20260508115206 code 4065523955`
+- 에러 문자열 live negative 확인:
+  - `holder DID mismatch: passport PASSPORT-BMSBIND-20260508115206 is registered to DID did:chaincode:bmsbind:20260508115206, not did:wrong:holder`
+  - `invalid expiresAt value: parsing time "2026-05-09" ...`
+  - `invalid timestamp value: parsing time "2026-05-08" ...`
+  - `dataHash must be 64-character hex SHA-256, got length 3`
+  - `signature/timestamp must not be empty`
+
+### 검증 결과
+- `gofmt -w chaincode/passport-contract/*.go` → pass
+- `go -C chaincode/passport-contract test ./...` → pass
+- `go -C chaincode/passport-contract vet ./...` → pass
+- `go -C chaincode/passport-contract test -cover ./...` → pass (`coverage: 7.8% of statements`)
+- `bash -n passport-network/network.sh passport-network/scripts/*.sh passport-network/organizations/*.sh` → pass
+- `CA_ADMIN_USER=x CA_ADMIN_PASSWORD=y COUCHDB_USER=x COUCHDB_PASSWORD=y docker compose -f passport-network/compose/compose-net.yaml -f passport-network/compose/compose-couch.yaml -f passport-network/compose/compose-ca.yaml config` → pass
+- `node -c caliper-workspace/workloads/recordBMUData.js` → pass
+- `node -c caliper-workspace/workloads/queryPassport.js` → pass
+- `git diff --check -- chaincode/passport-contract passport-network caliper-workspace wiki/blockchain/activity-log.md wiki/common/architecture.md` → pass
+
+### API/handoff notes
+- `IssueCredential` 인자 순서 변경 없음. 배터리여권 세션 추가 수정 불필요.
+- 기존 `RecordBMUData`는 유지된다. 48B rawPayload/BMS bindingCode32 검증을 쓰려면 새 함수 `RecordBMUDataWithPayload`를 호출해야 한다.
+- `RecordBMUDataWithPayload` 인자 순서:
+
+```text
+RecordBMUDataWithPayload(
+  recordId, passportId, did,
+  dataHash, signature,
+  fc, soc, voltage, current,
+  temperature, cellCount, statusFlags,
+  dischargeCycles, timestamp,
+  rawPayloadHex
+)
+```
+
+- Embedded/BMU payload 계약:
+  - `rawPayloadHex`는 48 bytes.
+  - `dataHash = SHA-256(rawPayload[0:48])`; 따라서 bytes `44..47`도 자동 포함된다.
+  - `rawPayload[44:48]`는 little-endian uint32 `bmsBindingCode32`.
+  - `bmsBindingCode32 = littleEndianUint32(SHA-256(canonical bmsManagementId)[0:4])`.
+
+### 남은 리스크
+- Agent/Embedded가 아직 `RecordBMUDataWithPayload`를 호출하지 않으면 48B payload-level binding 검증은 적용되지 않는다.
+- 32-bit code는 full identifier의 축약 검증값이다. 충돌 방지가 필요한 운영 환경에서는 full `bmsManagementId`/서명 검증과 함께 사용해야 한다.
+
+## 2026-05-08 — Embedded lab BMS binding 기준값 검증
+
+### 입력/범위
+- 입력: 임베디드 세션 전달 — lab 기준 BMS binding 값 확정.
+- 수정 범위: `chaincode/passport-contract/`, `passport-network/`, `wiki/common/architecture.md`, `wiki/blockchain/activity-log.md`.
+- 임베디드/배터리여권/MCP 파일은 읽기만 하고 수정하지 않음.
+
+### Lab 기준값
+- `bmsManagementId`: `BMS-MGMT-001`
+- `bmsBindingId`: `did:battery:001#BMS-MGMT-001`
+- `bmsBindingCode32`: `0x2c9a0e0c` (`748293644`)
+- `evidenceHash`: `b3c37ed2cdd2831cc0c212445905ced4a20ea51e129bff2e7418deddf7223178`
+
+### 반영 내용
+- `deriveBMSBindingCode32`는 canonical ID trim 후 `first32LE(SHA-256(id))`로 계산한다.
+- `evidenceHash` 검증을 추가했다.
+  - canonical JSON은 Go `json.Marshal(map[string]string)`의 정렬 key 출력과 동일:
+
+```json
+{"bmsBindingCode32":"0x2c9a0e0c","bmsBindingId":"did:battery:001#BMS-MGMT-001","bmsManagementId":"BMS-MGMT-001"}
+```
+
+  - 위 canonical JSON의 SHA-256이 lab `evidenceHash`와 일치해야 한다.
+  - `evidenceHash`가 비어 있으면 legacy/수동 바인딩 호환을 위해 생략 가능하지만, 값이 있으면 mismatch reject.
+- `VerifyPhysicalHistory` unknown signal 에러 메시지에 `bmsIdentifierMatched`를 명시했다.
+- `wiki/common/architecture.md` RBAC matrix에 evidenceHash canonical 검증 설명을 추가했다.
+
+### Live network evidence
+- redeploy/commit 완료:
+  - chaincode: `passport-contract`
+  - Version: `1.4`
+  - Sequence: `5`
+  - Package ID: `passport-contract_1.4:c0a44f830aa746da4bcacc9a3926241be88c68b318606a48a6882d33b75c7e6c`
+  - 4개 org querycommitted 모두 Approvals true.
+- Lab live test:
+  - Test passport: `PASSPORT-LAB-20260508120300`
+  - `BindBMSIdentifier(PASSPORT-LAB-20260508120300, BMS-MGMT-001, did:battery:001#BMS-MGMT-001, b3c37..., ...)` → status 200
+  - `QueryPassport` 결과:
+    - `bmsManagementId = BMS-MGMT-001`
+    - `bmsBindingId = did:battery:001#BMS-MGMT-001`
+    - `bmsBindingCode32 = 748293644`
+  - bad evidence hash negative reject:
+    - `evidenceHash mismatch: expected SHA-256 of canonical BMS binding JSON b3c37..., got aaaa...`
+  - `RecordBMUDataWithPayload` lab rawPayload positive invoke → status 200
+  - `QueryBMURecordsByPassport` 결과:
+    - count `1`
+    - `bmsBindingCode32 = 748293644`
+    - `rawPayloadHashVerified = true`
+    - `dataHash = 929e2658aa5f7d8b2dba1f2a036e17b0c2907112041054fda25b384cbdfc9b91`
+  - `VerifyPhysicalHistory` with `{"didMatched":true,"bmsIdentifierMatched":true}` → status 200
+  - `QueryPassport.physicalHistoryVerification.signals.bmsIdentifierMatched = true`, status `VERIFIED`
+  - bad payload code negative reject:
+    - `BMS binding code mismatch: payload bmsBindingCode32 748293645 does not match canonical BMS management identifier BMS-MGMT-001 code 748293644`
+
+### Flow confirmation
+- Agent가 rawPayload bytes `44..47`을 `readUInt32LE(44)`로 추출하고, chaincode에 저장된 `bmsManagementId`에서 계산한 expected code와 비교한다.
+- Agent가 passport binding을 확인한 경우 `RecordBMUDataWithPayload`를 호출하면 chaincode도 동일한 비교를 수행한다.
+- physical history 기록은 `VerifyPhysicalHistory`의 signals JSON에 `bmsIdentifierMatched`를 포함하는 방식으로 저장된다.
+- 단, BMU data ingest 자체가 passport `physicalHistoryVerification`을 자동 갱신하지는 않는다. 자동 갱신은 TPS/쓰기 증폭 이슈 때문에 분리되어 있으며, Agent/API가 physical verification 시점에 signals를 기록해야 한다.
+
+### 남은 리스크
+- 실제 CMU/BMU 보드 E2E에서 non-zero bytes `44..47`이 CAN-FD, BMU 서명, `serial_to_agent.py`, Agent parser까지 보존되는지는 아직 미검증이다.
+- 48B payload에는 full `bmsManagementId`/`bmsBindingId` 문자열이 없고 32-bit hint만 있다.
+- 따라서 physical binding 상태는 여전히 `partially-implemented`로 보는 것이 맞다. 완전 구현은 보드 E2E + 서명 검증 + physical verification 자동 기록/운영 절차까지 포함해야 한다.
+
+## 2026-05-08 — Passport sequence/contract 재확인
+
+### 입력/범위
+- 입력: 배터리여권 세션 전달 — Agent/UI가 기대하는 chaincode 함수명/인자/반환 필드 재확인 요청.
+- 수정 범위: `chaincode/passport-contract/helpers_test.go`, `wiki/blockchain/activity-log.md`.
+- 배터리여권/임베디드/MCP 파일은 수정하지 않음.
+
+### 확인 결과
+- 주의: 배터리여권 전달문에는 sequence 3이라고 되어 있으나 live Fabric commit 기준 최신은 다음과 같다.
+  - chaincode: `passport-contract`
+  - Version: `1.4`
+  - Sequence: `5`
+  - Approvals: `EVManufacturerMSP=true`, `ManufacturerMSP=true`, `RegulatorMSP=true`, `ServiceMSP=true`
+- Fabric client는 chaincode name `passport-contract`로 호출하므로 별도 sequence를 지정하지 않는다. 따라서 Agent/UI가 chaincode name을 호출하면 최신 committed definition(sequence 5)을 사용한다.
+- Passport 기대 계약과 현재 함수명/인자 순서 일치:
+  - `CreateBatteryPassport(...)` 기존 인자 순서 유지.
+  - `SetPassportExtendedAttributes(passportId, manufacturingProcess, disposalMethod, recycledElementContentJSON, extensionInfoJSON, reason)` 유지.
+  - `BindBMSIdentifier(passportId, bmsManagementId, bmsBindingId, evidenceHash, reason)` 유지.
+  - `RecordSourceVerification(verificationId, passportId, sourceType, sourceId, dataHash, result, detailsJSON)` 유지.
+  - `RecordBMUDataWithPayload(recordId, passportId, did, dataHash, signature, fc, soc, voltage, current, temperature, cellCount, statusFlags, dischargeCycles, timestamp, rawPayloadHex)` 유지.
+- 함수 signature regression test 추가:
+  - `TestPassportHandoffContractSignaturesRemainCompatible`
+
+### Live query evidence
+- Test passport: `PASSPORT-LAB-20260508120300`
+- `QueryPassport` 반환 확인:
+  - `bmsManagementId = BMS-MGMT-001`
+  - `bmsBindingId = did:battery:001#BMS-MGMT-001`
+  - `bmsBindingCode32 = 748293644` (`0x2c9a0e0c`)
+- `QueryBMURecordsByPassport(PASSPORT-LAB-20260508120300, 10, "")` 반환 확인:
+  - count `1`
+  - first `recordId = BMU-LAB-20260508120300-1`
+  - first `bmsBindingCode32 = 748293644`
+  - first `rawPayloadHashVerified = true`
+  - first `dataHash = 929e2658aa5f7d8b2dba1f2a036e17b0c2907112041054fda25b384cbdfc9b91`
+
+### rawPayload 검증 evidence
+- Local payload check:
+  - raw length `48`, bad length `48`
+  - raw bytes `44..47 = 0c0e9a2c` → LE `0x2c9a0e0c`
+  - bad bytes `44..47 = 0d0e9a2c`
+  - raw hash `929e2658aa5f7d8b2dba1f2a036e17b0c2907112041054fda25b384cbdfc9b91`
+  - bad hash `8c5d0c4134557e35bb8fd7c22502d6df7fddd34e29bb2d527fe88c9fe544df92`
+  - hashes differ → bytes `44..47`이 `dataHash`에 포함됨 확인.
+- Live negative invoke:
+  - bad payload code reject:
+  - `BMS binding code mismatch: payload bmsBindingCode32 748293645 does not match canonical BMS management identifier BMS-MGMT-001 code 748293644`
+
+### Passport 세션 전달 판단
+- 함수명/인자 순서는 Passport 기대와 다르지 않음.
+- 단, live network는 sequence 3이 아니라 sequence 5다. 문서/환경 표기만 sequence 5로 맞추면 된다.
+
+## 2026-05-08 — E2E BMU endorsement policy 정상화
+
+### 작업 내용
+- 새 E2E DID `4d5CE8NZbkAVJxcypzaVhw` / passport `PASSPORT-E2E-20260508040123` 경로에서 `ENDORSEMENT_POLICY_FAILURE`가 발생하는 원인을 확인했다.
+- `passport-contract` sequence 5의 `validation_parameter`가 `/Channel/Application/Endorsement`를 참조하고 있었고, 채널 Application Endorsement 정책이 `MAJORITY`라 `bmu-agent`의 Manufacturer 단일 peer submit과 불일치했다.
+- 코드 재패키징 없이 동일 package id `passport-contract_1.4:c0a44f830aa746da4bcacc9a3926241be88c68b318606a48a6882d33b75c7e6c`로 lifecycle definition만 sequence 6으로 올리고 endorsement policy를 `OR('ManufacturerMSP.peer','EVManufacturerMSP.peer','ServiceMSP.peer','RegulatorMSP.peer')`로 명시했다.
+
+### 변경/운영 반영
+- Live Fabric lifecycle: `passport-contract` version `1.4`, sequence `6` commit 완료.
+- 네 org approval 모두 true: `ManufacturerMSP`, `EVManufacturerMSP`, `ServiceMSP`, `RegulatorMSP`.
+- 로컬 E2E 런타임 config `config.env`의 `BMU_DID`는 fresh DID `4d5CE8NZbkAVJxcypzaVhw`로 맞춰졌다. (`config.env`는 git 추적 대상 아님)
+
+### 검증 결과
+- `peer lifecycle chaincode querycommitted --channelID passportchannel --name passport-contract --output json`:
+  - `sequence: 6`
+  - `version: 1.4`
+  - approvals all true
+- `/tmp/bmu.log`에서 policy update 직후 정상 commit 확인:
+  - `"message":"BMU recorded"`
+  - `passportId":"PASSPORT-E2E-20260508040123"`
+  - `did":"4d5CE8NZbkAVJxcypzaVhw"`
+  - 예: `fc=1347`, `1361`, `1374`, `1389`, `1402`, `1416`, 이후 계속 증가
+- CouchDB ledger 확인:
+  - latest valid BMU records for DID `4d5CE8NZbkAVJxcypzaVhw`
+  - latest observed `fc=1522`, `status=VALID`, `passportId=PASSPORT-E2E-20260508040123`
+
+### 미완료/리스크
+- sequence 6은 chaincode code 재배포가 아니라 validation policy 변경이다.
+- Bridge spool에 sequence 5 시점 실패 payload가 남아 있으면, 낮은 FC payload가 재시도되어 간헐적으로 `fc ... must be greater than last valid fc ...`가 섞일 수 있다. 이는 Fabric 정책 문제가 아니라 stale spool retry 문제다.
+
+## 2026-05-08 — 임베디드 stale spool 정리 전달 수신
+
+### 전달 내용
+- 임베디드 stale spool 정리 완료.
+- 새 DID `4d5CE8NZbkAVJxcypzaVhw` 기준 BMU commit 정상.
+- bridge spool pending `0`.
+- `passport-contract` lifecycle sequence `6` 정상 확인.
+- 다음 lifecycle 변경은 sequence `7`부터 진행.
+
+### 남은 크로스세션 리스크
+- 임베디드 보드 실측 raw 48B payload의 bytes `44..47`가 BMS binding code `0c 0e 9a 2c`로 보존되는지 최종 확인 필요.
+- 블록체인 쪽에서는 해당 값이 들어오면 `bmsBindingCode32 = 748293644` / `0x2c9a0e0c`로 검증한다.
+
+## 2026-05-08 — E2E passport BMS binding 활성화
+
+### 작업 내용
+- MATLAB E2E 새 DID `4d5CE8NZbkAVJxcypzaVhw` 경로가 `RecordBMUData`로만 기록되고 `RecordBMUDataWithPayload` 검증 경로를 타지 않는 원인을 분리했다.
+- 원인 1: E2E passport `PASSPORT-E2E-20260508040123`에 `bmsManagementId`가 비어 있어 Agent가 legacy `RecordBMUData`를 선택했다.
+- 원인 2: 현재 실행 중인 `bmu-agent` process가 2026-05-06 시작 상태라 최신 bms binding route/parser code를 reload하지 않은 상태다. (`bmu-agent/`는 Passport 세션 범위이므로 블록체인 세션에서는 재시작하지 않음)
+
+### 블록체인 반영
+- `BindBMSIdentifier` 실행 완료:
+  - passportId: `PASSPORT-E2E-20260508040123`
+  - bmsManagementId: `BMS-MGMT-001`
+  - bmsBindingId: `did:battery:001#BMS-MGMT-001`
+  - evidenceHash: `b3c37ed2cdd2831cc0c212445905ced4a20ea51e129bff2e7418deddf7223178`
+  - bmsBindingCode32: `748293644` (`0x2c9a0e0c`, raw bytes `0c 0e 9a 2c`)
+
+### 다음 필요 조치
+- Passport/API 세션에서 `bmu-agent`를 재시작해야 최신 `RecordBMUDataWithPayload` 선택 로직과 `bmsBindingCode32` 로그 필드가 적용된다.
+- 재시작 후 정상 기대 로그:
+  - `"action":"RecordBMUDataWithPayload"`
+  - `"bmsBindingCode32":748293644`
+  - `"bmsBindingCodeHex":"0x2c9a0e0c"`
+  - `"bmsIdentifierMatched":true`
+- 만약 재시작 후 `BMS binding code mismatch`가 발생하면 임베디드 raw payload bytes `44..47` 보존 문제다.
+
+## 2026-05-08 — BMS binding E2E 정상 전환 확인
+
+### Passport/API 세션 전달 수신
+- `bmu-agent` 재시작 완료: PID `64934`, 2026-05-08 13:28 KST 시작.
+- `/api/status` → Fabric connected.
+- MATLAB/BMU 데이터 수신 중.
+
+### 정상 로그 확인
+- `"action":"RecordBMUDataWithPayload"`
+- `"bmsBindingCode32":748293644`
+- `"bmsBindingCodeHex":"0x2c9a0e0c"`
+- `"bmsIdentifierMatched":true`
+
+### 원장 조회 확인
+- Passport:
+  - `bmsManagementId = BMS-MGMT-001`
+  - `bmsBindingId = did:battery:001#BMS-MGMT-001`
+  - `bmsBindingCode32 = 748293644`
+- BMU records:
+  - `bmsBindingCode32 = 748293644`
+  - `rawPayloadHashVerified = true`
+
+### 참고
+- 간헐적 `fc ... must be greater than last valid fc ...`는 재시작 전/중 지연 payload로 판단.
+- `BMS binding code mismatch`는 발생하지 않음.
+- Passport 세션 활동 로그: `wiki/passport/activity-log/2026-05-08-chaincode-sequence5-bms-binding.md`
+
+## 2026-05-08 — MATLAB E2E live status 위키 최신화
+
+### 확인 내용
+- 2026-05-08 13:33 KST 기준 MATLAB/BMU 데이터가 live Fabric에 정상 commit 중임을 재확인했다.
+- `/api/status`는 Fabric connected.
+- `/tmp/bmu.log`에서 `RecordBMUDataWithPayload` 지속 기록 확인.
+- 정상 필드:
+  - `bmsBindingCode32 = 748293644`
+  - `bmsBindingCodeHex = 0x2c9a0e0c`
+  - `bmsIdentifierMatched = true`
+- CouchDB 최신 BMU record:
+  - latest observed `fc = 8394`
+  - `status = VALID`
+  - `bmsBindingCode32 = 748293644`
+  - `rawPayloadHashVerified = true`
+
+### 문서 최신화
+- 추가: `wiki/blockchain/e2e-live-status-2026-05-08.md`
+- 갱신: `wiki/blockchain/README.md`
+- 갱신: `wiki/blockchain/overview.md`
+
+### 현재 운영 기준
+- `passport-contract` live 기준은 v`1.4`, sequence `6`.
+- 다음 lifecycle 변경은 sequence `7`부터 진행한다.
+- BMS identifier E2E는 블록체인 기준 정상 통과 상태다.
