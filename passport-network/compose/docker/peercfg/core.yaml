@@ -479,11 +479,11 @@ peer:
         concurrency:
             # endorserService limits concurrent requests to endorser service that handles chaincode deployment, query and invocation,
             # including both user chaincodes and system chaincodes.
-            endorserService: 5000
+            endorserService: 20000
             # deliverService limits concurrent event listeners registered to deliver service for blocks and transaction events.
-            deliverService: 5000
+            deliverService: 20000
             # gatewayService limits concurrent requests to gateway service.
-            gatewayService: 5000
+            gatewayService: 20000
 
     # Since all nodes should be consistent it is recommended to keep
     # the default value of 100MB for MaxRecvMsgSize & MaxSendMsgSize
@@ -690,6 +690,10 @@ ledger:
        internalQueryLimit: 1000
        # Limit on the number of records per CouchDB bulk update batch
        maxBatchUpdateSize: 1000
+       # Warm indexes after every N blocks. BMU write KPI uses key reads/writes,
+       # so warming rich-query indexes on every block only adds commit pressure.
+       # Queries still update indexes on demand; this preserves ledger semantics.
+       warmIndexesAfterNBlocks: 1000
        # Create the _global_changes system database
        # This is optional.  Creating the global changes database will require
        # additional system resources to track changes and maintain the database

@@ -4,13 +4,26 @@
  */
 
 const http = require('http');
+const { performance } = require('perf_hooks');
 
 const CLOUD_BASE = 'http://localhost:3002';
 const FABRIC_BASE = 'http://localhost:3001';
+const CLOUD_READ_TARGET_TPS = parseInt(process.env.BENCH_CLOUD_READ_TARGET_TPS || '2000', 10);
 const READ_CONCURRENCY = 200;
 const READ_TOTAL = 5000;
 const WRITE_CONCURRENCY = 20;
 const WRITE_TOTAL = 200;
+const INCLUDE_FABRIC_BASELINE = process.env.BENCH_INCLUDE_FABRIC_BASELINE === 'true';
+const cloudHttpAgent = new http.Agent({
+  keepAlive: true,
+  maxSockets: READ_CONCURRENCY,
+  maxFreeSockets: READ_CONCURRENCY,
+});
+const fabricHttpAgent = new http.Agent({
+  keepAlive: true,
+  maxSockets: Math.max(READ_CONCURRENCY, WRITE_CONCURRENCY),
+  maxFreeSockets: Math.max(50, WRITE_CONCURRENCY),
+});
 
 function request(url, options = {}) {
   return new Promise((resolve, reject) => {
@@ -21,6 +34,7 @@ function request(url, options = {}) {
       path: u.pathname + u.search,
       method: options.method || 'GET',
       headers: options.headers || {},
+      agent: options.agent,
     };
     const req = http.request(opts, (res) => {
       let data = '';
@@ -49,18 +63,23 @@ async function login() {
 }
 
 async function benchCloudRead() {
-  console.log(`\n=== CLOUD READ BENCHMARK (MongoDB, target: 1500+ TPS) ===`);
+  console.log(`\n=== CLOUD READ BENCHMARK (MongoDB, target: ${CLOUD_READ_TARGET_TPS}+ TPS) ===`);
   console.log(`Endpoint: GET ${CLOUD_BASE}/api/passports/PASSPORT-BMU-DEVICE`);
   console.log(`Total: ${READ_TOTAL}, Concurrency: ${READ_CONCURRENCY}\n`);
 
+  let issued = 0;
   let completed = 0;
   let errors = 0;
-  const start = Date.now();
+  const start = performance.now();
 
   async function worker() {
-    while (completed + errors < READ_TOTAL) {
+    while (true) {
+      const seq = issued++;
+      if (seq >= READ_TOTAL) break;
       try {
-        const res = await request(`${CLOUD_BASE}/api/passports/PASSPORT-BMU-DEVICE`);
+        const res = await request(`${CLOUD_BASE}/api/passports/PASSPORT-BMU-DEVICE`, {
+          agent: cloudHttpAgent,
+        });
         if (res.status === 200) completed++;
         else errors++;
       } catch { errors++; }
@@ -68,13 +87,13 @@ async function benchCloudRead() {
   }
 
   await Promise.all(Array.from({ length: READ_CONCURRENCY }, () => worker()));
-  const elapsed = (Date.now() - start) / 1000;
+  const elapsed = (performance.now() - start) / 1000;
   const tps = completed / elapsed;
 
   console.log(`✓ Completed: ${completed}, Errors: ${errors}`);
   console.log(`✓ Elapsed: ${elapsed.toFixed(2)}s`);
   console.log(`✓ CLOUD READ TPS: ${tps.toFixed(1)}`);
-  console.log(`✓ Target: 1500 TPS → ${tps >= 1500 ? 'PASS ✓' : 'FAIL ✗'}`);
+  console.log(`✓ Target: ${CLOUD_READ_TARGET_TPS} TPS → ${tps >= CLOUD_READ_TARGET_TPS ? 'PASS ✓' : 'FAIL ✗'}`);
   return tps;
 }
 
@@ -84,15 +103,19 @@ async function benchFabricRead() {
   console.log(`Endpoint: GET ${FABRIC_BASE}/api/passports/PASSPORT-BMU-DEVICE`);
   console.log(`Total: 2000, Concurrency: 50\n`);
 
+  let issued = 0;
   let completed = 0;
   let errors = 0;
-  const start = Date.now();
+  const start = performance.now();
 
   async function worker() {
-    while (completed + errors < 2000) {
+    while (true) {
+      const seq = issued++;
+      if (seq >= 2000) break;
       try {
         const res = await request(`${FABRIC_BASE}/api/passports/PASSPORT-BMU-DEVICE`, {
           headers: { Authorization: `Bearer ${token}` },
+          agent: fabricHttpAgent,
         });
         if (res.status === 200) completed++;
         else errors++;
@@ -101,7 +124,7 @@ async function benchFabricRead() {
   }
 
   await Promise.all(Array.from({ length: 50 }, () => worker()));
-  const elapsed = (Date.now() - start) / 1000;
+  const elapsed = (performance.now() - start) / 1000;
   const tps = completed / elapsed;
 
   console.log(`✓ Completed: ${completed}, Errors: ${errors}`);
@@ -116,18 +139,21 @@ async function benchFabricWrite() {
   console.log(`Endpoint: POST ${FABRIC_BASE}/api/passports`);
   console.log(`Total: ${WRITE_TOTAL}, Concurrency: ${WRITE_CONCURRENCY}\n`);
 
+  let issued = 0;
   let completed = 0;
   let errors = 0;
   let mvcc = 0;
-  const start = Date.now();
+  const start = performance.now();
 
   async function worker(id) {
-    while (completed + errors < WRITE_TOTAL) {
-      const seq = completed + errors;
+    while (true) {
+      const seq = issued++;
+      if (seq >= WRITE_TOTAL) break;
       try {
         const res = await request(`${FABRIC_BASE}/api/passports`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          agent: fabricHttpAgent,
           body: JSON.stringify({
             passportId: `TPS-${Date.now()}-${id}-${seq}`,
             batteryId: `BAT-TPS-${seq}`,
@@ -151,7 +177,7 @@ async function benchFabricWrite() {
   }
 
   await Promise.all(Array.from({ length: WRITE_CONCURRENCY }, (_, i) => worker(i)));
-  const elapsed = (Date.now() - start) / 1000;
+  const elapsed = (performance.now() - start) / 1000;
   const tps = completed / elapsed;
 
   console.log(`✓ Completed: ${completed}, Errors: ${errors} (MVCC: ${mvcc})`);
@@ -165,13 +191,20 @@ async function main() {
   console.log('=== TPS Benchmark (Cloud + Fabric) ===\n');
 
   const cloudRead = await benchCloudRead();
-  const fabricRead = await benchFabricRead();
-  const fabricWrite = await benchFabricWrite();
+  let fabricRead = null;
+  let fabricWrite = null;
+  if (INCLUDE_FABRIC_BASELINE) {
+    fabricRead = await benchFabricRead();
+    fabricWrite = await benchFabricWrite();
+  } else {
+    console.log('\n=== FABRIC BASELINE SKIPPED ===');
+    console.log('Set BENCH_INCLUDE_FABRIC_BASELINE=true to run Fabric API read/write baselines.');
+  }
 
   console.log('\n========== SUMMARY ==========');
-  console.log(`CLOUD READ (MongoDB):  ${cloudRead.toFixed(1)} TPS (target: 1500)`);
-  console.log(`FABRIC READ (CouchDB): ${fabricRead.toFixed(1)} TPS (baseline)`);
-  console.log(`FABRIC WRITE:          ${fabricWrite.toFixed(1)} TPS (target: 150)`);
+  console.log(`CLOUD READ (MongoDB):  ${cloudRead.toFixed(1)} TPS (target: ${CLOUD_READ_TARGET_TPS})`);
+  if (fabricRead !== null) console.log(`FABRIC READ (CouchDB): ${fabricRead.toFixed(1)} TPS (baseline)`);
+  if (fabricWrite !== null) console.log(`FABRIC WRITE:          ${fabricWrite.toFixed(1)} TPS (target: 150)`);
   console.log('=============================');
 }
 

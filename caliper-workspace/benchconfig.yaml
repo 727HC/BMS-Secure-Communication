@@ -1,25 +1,25 @@
 test:
   name: Battery Passport TPS Benchmark
-  description: KPI measurement - Write 150+ TPS, Read 1500+ TPS
+  description: KPI measurement - Write WRITE_TARGET_TPS_PLACEHOLDER+ TPS, Read READ_TARGET_TPS_PLACEHOLDER+ TPS
   workers:
-    number: 15
+    number: WORKER_COUNT_PLACEHOLDER
   rounds:
     - label: write-bmu-data
-      description: RecordBMUData write - Target 150+ TPS
-      txNumber: 3000
+      description: RecordBMUData write - Target WRITE_TARGET_TPS_PLACEHOLDER+ TPS
+      txNumber: WRITE_TX_NUMBER_PLACEHOLDER
       rateControl:
         type: fixed-rate
         opts:
-          tps: 200
+          tps: WRITE_TARGET_TPS_PLACEHOLDER
       workload:
         module: workloads/recordBMUData.js
 
     - label: read-passport
-      description: Single passport query (GetState) - Target 1500+ TPS
-      txNumber: 10000
+      description: Single passport query (GetState) - Target READ_TARGET_TPS_PLACEHOLDER+ TPS
+      txNumber: READ_TX_NUMBER_PLACEHOLDER
       rateControl:
         type: fixed-rate
         opts:
-          tps: 1800
+          tps: READ_TARGET_TPS_PLACEHOLDER
       workload:
         module: workloads/queryPassport.js

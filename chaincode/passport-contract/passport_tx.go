@@ -188,7 +188,10 @@ func (c *PassportContract) CreateBatteryPassport(ctx contractapi.TransactionCont
 		return fmt.Errorf("failed to marshal passport: %v", err)
 	}
 
-	return ctx.GetStub().PutState(passportId, passportJSON)
+	if err := ctx.GetStub().PutState(passportId, passportJSON); err != nil {
+		return err
+	}
+	return c.putInitialPassportFCBinding(ctx, passportId, did)
 }
 
 // ============================================================

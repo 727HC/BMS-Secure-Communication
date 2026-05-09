@@ -5,6 +5,7 @@ import (
 	"crypto/x509"
 	"encoding/binary"
 	"encoding/hex"
+	"encoding/json"
 	"reflect"
 	"strings"
 	"testing"
@@ -14,15 +15,39 @@ import (
 )
 
 type fakeTxContext struct {
-	msp string
+	msp  string
+	stub shim.ChaincodeStubInterface
 }
 
 func (f fakeTxContext) GetStub() shim.ChaincodeStubInterface {
-	return nil
+	return f.stub
 }
 
 func (f fakeTxContext) GetClientIdentity() cid.ClientIdentity {
 	return fakeClientIdentity{msp: f.msp}
+}
+
+type stateStub struct {
+	shim.ChaincodeStubInterface
+	state map[string][]byte
+}
+
+func newStateStub() *stateStub {
+	return &stateStub{state: map[string][]byte{}}
+}
+
+func (s *stateStub) GetState(key string) ([]byte, error) {
+	return s.state[key], nil
+}
+
+func (s *stateStub) PutState(key string, value []byte) error {
+	copyValue := append([]byte(nil), value...)
+	s.state[key] = copyValue
+	return nil
+}
+
+func (s *stateStub) CreateCompositeKey(objectType string, attributes []string) (string, error) {
+	return shim.CreateCompositeKey(objectType, attributes)
 }
 
 type fakeClientIdentity struct {
@@ -463,5 +488,131 @@ func TestStatusTransitionRegressionGuards(t *testing.T) {
 				t.Fatalf("isStatusAllowed(%q, %v) = %v, want %v", tt.status, tt.allowed, got, tt.want)
 			}
 		})
+	}
+}
+
+func TestPassportDIDBindingIndexAcceptsHotPath(t *testing.T) {
+	stub := newStateStub()
+
+	ctx := fakeTxContext{msp: mspManufacturer, stub: stub}
+	contract := &PassportContract{}
+	if err := contract.putPassportDIDBinding(ctx, "P1", "did:test:1"); err != nil {
+		t.Fatalf("putPassportDIDBinding failed: %v", err)
+	}
+
+	key, err := passportDIDBindingKey(ctx, "P1", "did:test:1")
+	if err != nil {
+		t.Fatalf("passportDIDBindingKey failed: %v", err)
+	}
+	value, err := stub.GetState(key)
+	if err != nil {
+		t.Fatalf("GetState binding failed: %v", err)
+	}
+	if string(value) != "1" {
+		t.Fatalf("unexpected binding value %q", string(value))
+	}
+
+	if err := contract.validatePassportDIDBinding(ctx, "P1", "did:test:1"); err != nil {
+		t.Fatalf("expected indexed binding to validate without full passport fallback: %v", err)
+	}
+}
+
+func TestPassportDIDBindingFallbackAcceptsPreIndexPassport(t *testing.T) {
+	stub := newStateStub()
+
+	passportJSON, err := json.Marshal(BatteryPassport{
+		DocType:    docTypePassport,
+		PassportID: "P1",
+		DID:        "did:test:1",
+	})
+	if err != nil {
+		t.Fatalf("marshal passport: %v", err)
+	}
+	if err := stub.PutState("P1", passportJSON); err != nil {
+		t.Fatalf("PutState passport: %v", err)
+	}
+
+	ctx := fakeTxContext{msp: mspManufacturer, stub: stub}
+	if err := (&PassportContract{}).validatePassportDIDBinding(ctx, "P1", "did:test:1"); err != nil {
+		t.Fatalf("expected pre-index passport fallback to validate: %v", err)
+	}
+}
+
+func TestPassportDIDBindingFallbackRejectsDIDMismatch(t *testing.T) {
+	stub := newStateStub()
+
+	passportJSON, err := json.Marshal(BatteryPassport{
+		DocType:    docTypePassport,
+		PassportID: "P1",
+		DID:        "did:test:real",
+	})
+	if err != nil {
+		t.Fatalf("marshal passport: %v", err)
+	}
+	if err := stub.PutState("P1", passportJSON); err != nil {
+		t.Fatalf("PutState passport: %v", err)
+	}
+
+	ctx := fakeTxContext{msp: mspManufacturer, stub: stub}
+	err = (&PassportContract{}).validatePassportDIDBinding(ctx, "P1", "did:test:other")
+	if err == nil {
+		t.Fatal("expected DID mismatch to be rejected")
+	}
+	if !strings.Contains(err.Error(), "DID mismatch") {
+		t.Fatalf("expected DID mismatch error, got %v", err)
+	}
+}
+
+func TestLastFCBindingRoundTripAndLegacyDecode(t *testing.T) {
+	encoded := encodeLastFCBinding("P1", 42, true)
+	passportID, fc, hasFC, legacy, err := decodeLastFCBinding(encoded)
+	if err != nil {
+		t.Fatalf("decodeLastFCBinding failed: %v", err)
+	}
+	if passportID != "P1" || fc != 42 || !hasFC || legacy {
+		t.Fatalf("unexpected decoded binding passport=%q fc=%d hasFC=%v legacy=%v", passportID, fc, hasFC, legacy)
+	}
+
+	encoded = encodeLastFCBinding("P1", 0, false)
+	passportID, fc, hasFC, legacy, err = decodeLastFCBinding(encoded)
+	if err != nil {
+		t.Fatalf("decode initial binding failed: %v", err)
+	}
+	if passportID != "P1" || fc != 0 || hasFC || legacy {
+		t.Fatalf("unexpected decoded initial binding passport=%q fc=%d hasFC=%v legacy=%v", passportID, fc, hasFC, legacy)
+	}
+
+	passportID, fc, hasFC, legacy, err = decodeLastFCBinding([]byte("7"))
+	if err != nil {
+		t.Fatalf("decode legacy numeric failed: %v", err)
+	}
+	if passportID != "" || fc != 7 || !hasFC || !legacy {
+		t.Fatalf("unexpected decoded legacy binding passport=%q fc=%d hasFC=%v legacy=%v", passportID, fc, hasFC, legacy)
+	}
+}
+
+func TestInitialPassportFCBindingDoesNotOverwriteExistingHighWater(t *testing.T) {
+	stub := newStateStub()
+	ctx := fakeTxContext{msp: mspManufacturer, stub: stub}
+	contract := &PassportContract{}
+
+	key, err := lastFCKey(ctx, "did:test:1")
+	if err != nil {
+		t.Fatalf("lastFCKey failed: %v", err)
+	}
+	if err := stub.PutState(key, encodeLastFCBinding("P0", 99, true)); err != nil {
+		t.Fatalf("PutState existing lastFc: %v", err)
+	}
+
+	if err := contract.putInitialPassportFCBinding(ctx, "P1", "did:test:1"); err != nil {
+		t.Fatalf("putInitialPassportFCBinding failed: %v", err)
+	}
+
+	passportID, fc, hasFC, _, err := decodeLastFCBinding(stub.state[key])
+	if err != nil {
+		t.Fatalf("decode lastFc: %v", err)
+	}
+	if passportID != "P0" || fc != 99 || !hasFC {
+		t.Fatalf("initial binding overwrote existing high-water: passport=%q fc=%d hasFC=%v", passportID, fc, hasFC)
 	}
 }

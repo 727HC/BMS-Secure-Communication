@@ -366,6 +366,96 @@ func validateBMURawPayload(dataHash string, rawPayloadHex string) ([]byte, uint3
 	return payload, binary.LittleEndian.Uint32(payload[44:48]), nil
 }
 
+func passportDIDBindingKey(ctx contractapi.TransactionContextInterface, passportId string, did string) (string, error) {
+	return ctx.GetStub().CreateCompositeKey("passportDIDBinding", []string{passportId, did})
+}
+
+func (c *PassportContract) putPassportDIDBinding(ctx contractapi.TransactionContextInterface, passportId string, did string) error {
+	key, err := passportDIDBindingKey(ctx, passportId, did)
+	if err != nil {
+		return fmt.Errorf("failed to create passport DID binding key: %v", err)
+	}
+	if err := ctx.GetStub().PutState(key, []byte("1")); err != nil {
+		return fmt.Errorf("failed to store passport DID binding: %v", err)
+	}
+	return nil
+}
+
+func (c *PassportContract) validatePassportDIDBinding(ctx contractapi.TransactionContextInterface, passportId string, did string) error {
+	key, err := passportDIDBindingKey(ctx, passportId, did)
+	if err != nil {
+		return fmt.Errorf("failed to create passport DID binding key: %v", err)
+	}
+	binding, err := ctx.GetStub().GetState(key)
+	if err != nil {
+		return fmt.Errorf("failed to read passport DID binding: %v", err)
+	}
+	if binding != nil {
+		return nil
+	}
+
+	// Backward compatibility for passports created before this index existed.
+	passport, err := c.loadPassport(ctx, passportId)
+	if err != nil {
+		return err
+	}
+	if passport.DID != did {
+		return fmt.Errorf("DID mismatch: passport %s is registered to DID %s, not %s", passportId, passport.DID, did)
+	}
+	return nil
+}
+
+const lastFCBindingSeparator = "\x00"
+
+func lastFCKey(ctx contractapi.TransactionContextInterface, did string) (string, error) {
+	return ctx.GetStub().CreateCompositeKey("lastFc", []string{did})
+}
+
+func encodeLastFCBinding(passportId string, fc uint64, hasFC bool) []byte {
+	if !hasFC {
+		return []byte(passportId + lastFCBindingSeparator)
+	}
+	return []byte(passportId + lastFCBindingSeparator + strconv.FormatUint(fc, 10))
+}
+
+func decodeLastFCBinding(raw []byte) (passportId string, fc uint64, hasFC bool, legacyNumeric bool, err error) {
+	text := string(raw)
+	if boundPassportID, fcText, ok := strings.Cut(text, lastFCBindingSeparator); ok {
+		if fcText == "" {
+			return boundPassportID, 0, false, false, nil
+		}
+		parsed, parseErr := strconv.ParseUint(fcText, 10, 64)
+		if parseErr != nil {
+			return "", 0, false, false, parseErr
+		}
+		return boundPassportID, parsed, true, false, nil
+	}
+
+	parsed, parseErr := strconv.ParseUint(text, 10, 64)
+	if parseErr != nil {
+		return "", 0, false, true, parseErr
+	}
+	return "", parsed, true, true, nil
+}
+
+func (c *PassportContract) putInitialPassportFCBinding(ctx contractapi.TransactionContextInterface, passportId string, did string) error {
+	key, err := lastFCKey(ctx, did)
+	if err != nil {
+		return fmt.Errorf("failed to create lastFc composite key: %v", err)
+	}
+	existing, err := ctx.GetStub().GetState(key)
+	if err != nil {
+		return fmt.Errorf("failed to read lastFc for DID %s: %v", did, err)
+	}
+	if existing != nil {
+		return nil
+	}
+	if err := ctx.GetStub().PutState(key, encodeLastFCBinding(passportId, 0, false)); err != nil {
+		return fmt.Errorf("failed to initialize passport FC binding: %v", err)
+	}
+	return nil
+}
+
 func validateBMSBindingCode(passport *BatteryPassport, payloadCode32 uint32) error {
 	if passport.BMSManagementID == "" {
 		return fmt.Errorf("BMS management identifier must be bound before validating BMU rawPayload")

@@ -4,7 +4,14 @@ const { WorkloadModuleBase } = require('@hyperledger/caliper-core');
 const crypto = require('crypto');
 
 const NUM_PASSPORTS = parseInt(process.env.NUM_PASSPORTS || '50', 10);
+const BMU_RECORD_KEYS = parseInt(process.env.BMU_RECORD_KEYS || String(NUM_PASSPORTS), 10);
+const BMU_FC_START = parseInt(process.env.BMU_FC_START || '0', 10);
 const RUN_ID = process.env.CALIPER_RUN_ID || 'default';
+const WRITER_MSPS = (process.env.CALIPER_WRITER_MSPS || process.env.CALIPER_ORG_MSP || '')
+    .split(',')
+    .map((msp) => msp.trim())
+    .filter(Boolean);
+const INVOKER_IDENTITY = process.env.CALIPER_INVOKER_IDENTITY || 'admin';
 
 class RecordBMUDataWorkload extends WorkloadModuleBase {
     constructor() {
@@ -12,46 +19,22 @@ class RecordBMUDataWorkload extends WorkloadModuleBase {
         this.passportIds = [];
         this.dids = [];
         this.fcCounters = {};
-        this.lastSubmitByDid = {};
         this.txIndex = 0;
+        this.invokerMspId = '';
     }
 
     async initializeWorkloadModule(workerIndex, totalWorkers, roundIndex, roundArguments, sutAdapter, sutContext) {
         await super.initializeWorkloadModule(workerIndex, totalWorkers, roundIndex, roundArguments, sutAdapter, sutContext);
 
-        // Worker-exclusive passport assignment: striding keeps every worker valid
-        // even when NUM_PASSPORTS is not divisible by totalWorkers.
-        for (let i = workerIndex; i < NUM_PASSPORTS; i += totalWorkers) {
+        // Worker-exclusive BMU key assignment: the write KPI measures independent
+        // valid BMU records, not repeated writes against the same passport high-water key.
+        this.invokerMspId = WRITER_MSPS.length > 0 ? WRITER_MSPS[workerIndex % WRITER_MSPS.length] : '';
+        for (let i = workerIndex; i < BMU_RECORD_KEYS; i += totalWorkers) {
             const id = `PASSPORT-CALIPER-${RUN_ID}-${String(i).padStart(4, '0')}`;
             const did = `did-caliper-${RUN_ID}-${String(i).padStart(4, '0')}`;
             this.passportIds.push(id);
             this.dids.push(did);
-            this.fcCounters[did] = 0;
-        }
-
-        // Each worker creates only its own passports
-        for (let i = 0; i < this.passportIds.length; i++) {
-            const args = {
-                contractId: 'passport-contract',
-                contractFunction: 'CreateBatteryPassport',
-                contractArguments: [
-                    this.passportIds[i], `BATTERY-${this.passportIds[i]}`, this.dids[i],
-                    'BenchModel', `SN-${i}`,
-                    'BenchMfg', 'KR',
-                    'BenchCell', 'KR',
-                    '2026-01-01', 'Prismatic', 'NMC',
-                    '96', '450', '77',
-                    '172', '200', '3000',
-                    '280', '20',
-                    '1'
-                ],
-                readOnly: false
-            };
-            try {
-                await this.sutAdapter.sendRequests(args);
-            } catch (e) {
-                // Already exists, OK
-            }
+            this.fcCounters[did] = BMU_FC_START;
         }
     }
 
@@ -88,11 +71,12 @@ class RecordBMUDataWorkload extends WorkloadModuleBase {
             ],
             readOnly: false
         };
+        if (this.invokerMspId) {
+            args.invokerMspId = this.invokerMspId;
+            args.invokerIdentity = INVOKER_IDENTITY;
+        }
 
-        const previous = this.lastSubmitByDid[did] || Promise.resolve();
-        const submitPromise = previous.then(() => this.sutAdapter.sendRequests(args));
-        this.lastSubmitByDid[did] = submitPromise.catch(() => {});
-        await submitPromise;
+        await this.sutAdapter.sendRequests(args);
     }
 }
 

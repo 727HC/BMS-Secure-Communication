@@ -61,17 +61,18 @@ func (c *PassportContract) recordBMUData(ctx contractapi.TransactionContextInter
 		return fmt.Errorf("BMU record %s already exists", recordId)
 	}
 
-	// Check passport exists and DID matches
-	passportCheck, err := c.loadPassport(ctx, passportId)
-	if err != nil {
-		return err
-	}
-	if passportCheck.DID != did {
-		return fmt.Errorf("DID mismatch: passport %s is registered to DID %s, not %s", passportId, passportCheck.DID, did)
-	}
 	var bmsBindingCode32 uint32
 	rawPayloadHashVerified := false
+	passportBindingValidated := false
 	if requireRawPayload {
+		// Raw payload validation needs the BMS binding fields from the passport.
+		passportCheck, err := c.loadPassport(ctx, passportId)
+		if err != nil {
+			return err
+		}
+		if passportCheck.DID != did {
+			return fmt.Errorf("DID mismatch: passport %s is registered to DID %s, not %s", passportId, passportCheck.DID, did)
+		}
 		_, payloadCode32, err := validateBMURawPayload(dataHash, rawPayloadHex)
 		if err != nil {
 			return err
@@ -81,6 +82,7 @@ func (c *PassportContract) recordBMUData(ctx contractapi.TransactionContextInter
 		}
 		bmsBindingCode32 = payloadCode32
 		rawPayloadHashVerified = true
+		passportBindingValidated = true
 	}
 
 	// Parse fc and check monotonic increase per DID
@@ -90,8 +92,10 @@ func (c *PassportContract) recordBMUData(ctx contractapi.TransactionContextInter
 	}
 
 	// FC monotonic increase check — reject replay/stale BMU data
-	// Uses dedicated state key instead of CouchDB rich query for performance
-	lastFcKey, err := ctx.GetStub().CreateCompositeKey("lastFc", []string{did})
+	// Uses a dedicated state key instead of CouchDB rich query for performance.
+	// New passports initialize this key with the passport binding, so legacy
+	// RecordBMUData avoids an additional passport/binding GetState on the hot path.
+	lastFcKey, err := lastFCKey(ctx, did)
 	if err != nil {
 		return fmt.Errorf("failed to create lastFc composite key: %v", err)
 	}
@@ -100,13 +104,33 @@ func (c *PassportContract) recordBMUData(ctx contractapi.TransactionContextInter
 		return fmt.Errorf("failed to read lastFc for DID %s: %v", did, err)
 	}
 	if lastFcBytes != nil {
-		lastFcVal, err := strconv.ParseUint(string(lastFcBytes), 10, 64)
+		boundPassportID, lastFcVal, hasLastFC, legacyNumeric, err := decodeLastFCBinding(lastFcBytes)
 		if err != nil {
 			return fmt.Errorf("failed to parse lastFc value: %v", err)
 		}
-		if fcVal <= lastFcVal {
+		if legacyNumeric {
+			if !passportBindingValidated {
+				if err := c.validatePassportDIDBinding(ctx, passportId, did); err != nil {
+					return err
+				}
+				passportBindingValidated = true
+			}
+		} else {
+			if boundPassportID != passportId {
+				return fmt.Errorf("DID mismatch: DID %s is bound to passport %s, not %s", did, boundPassportID, passportId)
+			}
+			passportBindingValidated = true
+		}
+		if hasLastFC && fcVal <= lastFcVal {
 			return fmt.Errorf("fc %d must be greater than last valid fc %d for DID %s", fcVal, lastFcVal, did)
 		}
+	} else if !passportBindingValidated {
+		// Backward compatibility for passports created before this binding was
+		// initialized, or after a manual FC reset that deleted lastFc.
+		if err := c.validatePassportDIDBinding(ctx, passportId, did); err != nil {
+			return err
+		}
+		passportBindingValidated = true
 	}
 
 	socVal, err := strconv.ParseUint(soc, 10, 16)
@@ -188,7 +212,7 @@ func (c *PassportContract) recordBMUData(ctx contractapi.TransactionContextInter
 	}
 
 	// Update lastFc state key for this DID
-	if err := ctx.GetStub().PutState(lastFcKey, []byte(strconv.FormatUint(fcVal, 10))); err != nil {
+	if err := ctx.GetStub().PutState(lastFcKey, encodeLastFCBinding(passportId, fcVal, true)); err != nil {
 		return fmt.Errorf("failed to update lastFc: %v", err)
 	}
 
@@ -244,7 +268,7 @@ func (c *PassportContract) InvalidateBMURecord(ctx contractapi.TransactionContex
 	}
 
 	// lastFc 동기화 — 무효화된 레코드의 FC가 lastFc와 같으면 재계산
-	lastFcKey, err := ctx.GetStub().CreateCompositeKey("lastFc", []string{record.DID})
+	lastFcKey, err := lastFCKey(ctx, record.DID)
 	if err != nil {
 		return fmt.Errorf("failed to create lastFc composite key: %v", err)
 	}
@@ -253,11 +277,11 @@ func (c *PassportContract) InvalidateBMURecord(ctx contractapi.TransactionContex
 		return fmt.Errorf("failed to read lastFc for DID %s: %v", record.DID, err)
 	}
 	if lastFcBytes != nil {
-		currentLastFc, err := strconv.ParseUint(string(lastFcBytes), 10, 64)
+		_, currentLastFc, hasLastFC, _, err := decodeLastFCBinding(lastFcBytes)
 		if err != nil {
 			return fmt.Errorf("failed to parse lastFc value: %v", err)
 		}
-		if currentLastFc == record.FC {
+		if hasLastFC && currentLastFc == record.FC {
 			// 다음 최신 유효 FC를 rich query로 조회 (희귀 연산이므로 허용)
 			fcReQuery, err := buildQuery(
 				map[string]interface{}{
@@ -287,7 +311,7 @@ func (c *PassportContract) InvalidateBMURecord(ctx contractapi.TransactionContex
 				if err := unmarshalTypedState(entry.Key, entry.Value, docTypeBMURecord, &latestValid); err != nil {
 					return err
 				}
-				if err := ctx.GetStub().PutState(lastFcKey, []byte(strconv.FormatUint(latestValid.FC, 10))); err != nil {
+				if err := ctx.GetStub().PutState(lastFcKey, encodeLastFCBinding(latestValid.PassportID, latestValid.FC, true)); err != nil {
 					return fmt.Errorf("failed to update lastFc: %v", err)
 				}
 			} else {
@@ -386,7 +410,7 @@ func (c *PassportContract) ResetFCForDID(ctx contractapi.TransactionContextInter
 	}
 
 	// 현재 lastFc 값 조회 (감사 로그용)
-	lastFcKey, err := ctx.GetStub().CreateCompositeKey("lastFc", []string{did})
+	lastFcKey, err := lastFCKey(ctx, did)
 	if err != nil {
 		return fmt.Errorf("failed to create lastFc composite key: %v", err)
 	}
@@ -397,10 +421,12 @@ func (c *PassportContract) ResetFCForDID(ctx contractapi.TransactionContextInter
 		return fmt.Errorf("failed to read lastFc for DID %s: %v", did, err)
 	}
 	if lastFcBytes != nil {
-		var parseErr error
-		previousFC, parseErr = strconv.ParseUint(string(lastFcBytes), 10, 64)
+		_, parsedFC, hasLastFC, _, parseErr := decodeLastFCBinding(lastFcBytes)
 		if parseErr != nil {
 			return fmt.Errorf("failed to parse lastFc for DID %s: %v", did, parseErr)
+		}
+		if hasLastFC {
+			previousFC = parsedFC
 		}
 	}
 

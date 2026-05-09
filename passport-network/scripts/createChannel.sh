@@ -11,6 +11,7 @@ VERBOSE="$4"
 : ${DELAY:="3"}
 : ${MAX_RETRY:="5"}
 : ${VERBOSE:="false"}
+CHANNEL_PROFILE="${CHANNEL_PROFILE:-PassportChannel}"
 
 : ${CONTAINER_CLI:="docker"}
 if command -v ${CONTAINER_CLI}-compose > /dev/null 2>&1; then
@@ -31,7 +32,7 @@ createChannelGenesisBlock() {
 		fatalln "configtxgen tool not found."
 	fi
 	set -x
-	configtxgen -profile PassportChannel -outputBlock ./channel-artifacts/${CHANNEL_NAME}.block -channelID $CHANNEL_NAME
+	configtxgen -profile ${CHANNEL_PROFILE} -outputBlock ./channel-artifacts/${CHANNEL_NAME}.block -channelID $CHANNEL_NAME
 	res=$?
 	{ set +x; } 2>/dev/null
   verifyResult $res "Failed to generate channel configuration transaction..."
@@ -86,6 +87,7 @@ setAnchorPeer() {
 FABRIC_CFG_PATH=${PWD}/configtx
 BLOCKFILE="./channel-artifacts/${CHANNEL_NAME}.block"
 
+infoln "Using channel profile ${CHANNEL_PROFILE}"
 infoln "Generating channel genesis block '${CHANNEL_NAME}.block'"
 createChannelGenesisBlock
 

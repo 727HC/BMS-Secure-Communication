@@ -21,6 +21,8 @@ const { MongoClient } = require('mongodb');
 const { connectGateway, startBlockListener } = require('./services/fabric-listener');
 
 const app = express();
+app.disable('x-powered-by');
+app.set('etag', false);
 app.use(express.json({ limit: '64kb' })); // M-5: body size 명시
 app.use(helmet());                         // H-1: 보안 헤더
 
@@ -51,6 +53,11 @@ const PORT = parseInt(process.env.PORT || '3002', 10);
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017';
 const MONGODB_DB = process.env.MONGODB_DB || 'battery_passport';
 const API_KEY = process.env.CLOUD_AGENT_API_KEY || '';
+const MONGO_MAX_POOL_SIZE = parseInt(process.env.MONGO_MAX_POOL_SIZE || '500', 10);
+const MONGO_MIN_POOL_SIZE = parseInt(process.env.MONGO_MIN_POOL_SIZE || '20', 10);
+const LISTENER_ENABLED = process.env.CLOUD_AGENT_LISTENER_ENABLED !== 'false';
+const PASSPORT_DETAIL_CACHE_TTL_MS = parseInt(process.env.PASSPORT_DETAIL_CACHE_TTL_MS || '1000', 10);
+const passportDetailCache = new Map();
 
 // H-8: production에서 MongoDB 인증 없는 URI 거부
 if (process.env.NODE_ENV === 'production' && !MONGODB_URI.includes('@')) {
@@ -155,12 +162,29 @@ app.get('/api/passports', async (req, res) => {
 // GET /api/passports/:id — 여권 상세
 app.get('/api/passports/:id', async (req, res) => {
   try {
+    const cacheKey = req.params.id;
+    const now = Date.now();
+    const cached = passportDetailCache.get(cacheKey);
+    if (cached && cached.expiresAt > now) {
+      res.status(cached.status).type('application/json').send(cached.body);
+      return;
+    }
+
     const passport = await db.collection('passports')
-      .findOne({ passportId: req.params.id });
+      .findOne({ passportId: cacheKey });
     if (!passport) {
       return res.status(404).json({ error: 'passport not found' });
     }
-    res.json(passport);
+
+    const body = JSON.stringify(passport);
+    if (PASSPORT_DETAIL_CACHE_TTL_MS > 0) {
+      passportDetailCache.set(cacheKey, {
+        status: 200,
+        body,
+        expiresAt: now + PASSPORT_DETAIL_CACHE_TTL_MS,
+      });
+    }
+    res.status(200).type('application/json').send(body);
   } catch (err) {
     res.status(500).json({ error: 'internal server error' });
   }
@@ -259,7 +283,10 @@ async function createIndexes() {
 
 async function main() {
   // 1. MongoDB 연결
-  mongoClient = new MongoClient(MONGODB_URI);
+  mongoClient = new MongoClient(MONGODB_URI, {
+    maxPoolSize: MONGO_MAX_POOL_SIZE,
+    minPoolSize: MONGO_MIN_POOL_SIZE,
+  });
   await mongoClient.connect();
   db = mongoClient.db(MONGODB_DB);
   console.log(`[cloud-agent] MongoDB connected: ${MONGODB_DB}`);
@@ -268,13 +295,17 @@ async function main() {
   await createIndexes();
 
   // 3. Fabric Block Event Listener 시작
-  try {
-    const gateway = await connectGateway();
-    await startBlockListener(gateway, db);
-    console.log('[cloud-agent] Fabric block listener started');
-  } catch (err) {
-    console.error('[cloud-agent] Fabric listener failed (will retry):', err.message);
-    // 리스너 실패해도 API는 동작 — 기존 데이터 조회 가능
+  if (LISTENER_ENABLED) {
+    try {
+      const gateway = await connectGateway();
+      await startBlockListener(gateway, db);
+      console.log('[cloud-agent] Fabric block listener started');
+    } catch (err) {
+      console.error('[cloud-agent] Fabric listener failed (will retry):', err.message);
+      // 리스너 실패해도 API는 동작 — 기존 데이터 조회 가능
+    }
+  } else {
+    console.log('[cloud-agent] Fabric block listener disabled by CLOUD_AGENT_LISTENER_ENABLED=false');
   }
 
   // 4. Express 서버 시작 — LOW: 기본 127.0.0.1 바인딩 (공개 시 BIND_HOST=0.0.0.0)
