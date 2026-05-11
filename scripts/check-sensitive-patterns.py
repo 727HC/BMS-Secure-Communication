@@ -3,8 +3,9 @@
 
 This is intentionally dependency-free and conservative. It blocks common
 regressions that previously reached GitHub: local machine paths, personal
-webmail addresses, hard-coded credentials, private keys, provider tokens, and
-Korean personal identifiers. It does not replace full secret scanning.
+webmail addresses, hard-coded credentials, private keys, provider tokens, real
+environment/credential file names, and Korean personal identifiers. It does not
+replace full secret scanning.
 """
 from __future__ import annotations
 
@@ -55,6 +56,28 @@ LEGACY_MARKER_SHA256 = {
 
 TOKEN = re.compile(r"[A-Za-z0-9._@#:-]{4,}")
 
+SENSITIVE_PATH_SUFFIXES = {
+    ".pem",
+    ".key",
+    ".p12",
+    ".pfx",
+    ".jks",
+    ".keystore",
+    ".kdbx",
+}
+
+SENSITIVE_PATH_NAMES = {
+    ".netrc",
+    ".pypirc",
+    ".npmrc",
+    "id_rsa",
+    "id_dsa",
+    "id_ecdsa",
+    "id_ed25519",
+}
+
+ENV_EXAMPLE_SUFFIXES = (".example", ".template", ".sample")
+
 
 PATTERNS: list[tuple[str, re.Pattern[str]]] = [
     ("local_unix_home_path", re.compile(r"/home/[A-Za-z0-9._-]+")),
@@ -69,6 +92,21 @@ PATTERNS: list[tuple[str, re.Pattern[str]]] = [
     ("fabric_literal_id_secret", re.compile(r"--id\.secret\s+(?!\$\{)[A-Za-z0-9_.@#:-]{6,}")),
     ("url_basic_auth_literal", re.compile(r"https?://[^\s:/@]+:(?!\$\{)[^\s${}@]{6,}@")),
 ]
+
+
+def sensitive_path_reason(path: Path) -> str | None:
+    name = path.name.lower()
+    suffix = path.suffix.lower()
+
+    if name == ".env":
+        return "sensitive_env_filename"
+    if name.startswith(".env.") and not name.endswith(ENV_EXAMPLE_SUFFIXES):
+        return "sensitive_env_filename"
+    if suffix in SENSITIVE_PATH_SUFFIXES:
+        return "sensitive_credential_file_extension"
+    if name in SENSITIVE_PATH_NAMES:
+        return "sensitive_credential_filename"
+    return None
 
 
 def git_files(include_untracked: bool) -> list[Path]:
@@ -130,7 +168,13 @@ def main() -> int:
 
     total = 0
     for path in git_files(args.include_untracked):
-        if should_skip(path) or not path.exists() or path.is_dir():
+        if not path.exists() or path.is_dir():
+            continue
+        if reason := sensitive_path_reason(path):
+            total += 1
+            print(f"{reason}\t{path}:0\treal credential-like file path is not allowed")
+            continue
+        if should_skip(path):
             continue
         for name, line_no, sample in scan_file(path):
             total += 1

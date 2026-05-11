@@ -924,3 +924,25 @@ GitHub 민감정보 정리 완료 감사를 하나의 재현 가능한 명령으
 ### 미완료 / 리스크
 - Local hooks는 사용자 clone마다 설치가 필요하다. CI guard와 함께 사용해야 한다.
 - GitHub hidden PR refs #1/#2 tainted history는 Support purge 전까지 남는다.
+
+---
+
+## Session 35 (2026-05-11)
+
+### 요약
+`.gitignore` 우회 또는 강제 추가에 대비해 sensitive scanner에 민감 파일명/확장자 차단을 추가했다. 이제 실제 `.env`류와 key store 파일은 내용이 비어 있어도 scanner가 실패한다.
+
+### 작업 내용
+- `scripts/check-sensitive-patterns.py` 갱신.
+  - `.env`, `.env.local` 같은 real env 파일명 차단.
+  - `.pem`, `.key`, `.p12`, `.pfx`, `.jks`, `.keystore`, `.kdbx` 확장자 차단.
+  - `.netrc`, `.pypirc`, `.npmrc`, SSH private key 파일명 차단.
+  - `.env.example`, `.env.template`, `.env.sample`은 허용.
+
+### 검증
+- Inline path policy check — `.env`, `.env.local`, `id_ed25519`, `fabric-ca.pem` blocked; `.env.example`, `.env.template`, `fabric-ca.pem.example` allowed.
+- `python3 scripts/check-sensitive-patterns.py --include-untracked` — 0 findings.
+- `git diff --check -- scripts/check-sensitive-patterns.py` — PASS.
+
+### 미완료 / 리스크
+- Scanner guard는 future prevention이며, hidden PR refs #1/#2 purge를 대체하지 않는다.
