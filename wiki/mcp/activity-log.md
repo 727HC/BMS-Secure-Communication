@@ -573,3 +573,24 @@ GitHub account 공개 표면을 보조 점검했다. Public gists는 0건이고,
 ### 미완료 / 리스크
 - 계정 public repos 전체의 패키지/외부 노출은 이번 repo 목표 밖이다.
 - Hidden PR refs 2개는 여전히 Support purge 대상이다.
+
+---
+
+## Session 19 (2026-05-11)
+
+### 요약
+GitHub Packages public surface를 비인증 페이지 기준으로 보조 점검했다. `727HC / Packages` 화면에서 container packages 0건으로 확인했다.
+
+### 작업 내용
+- `https://github.com/users/727HC/packages` 비인증 접근 확인.
+- `repo_name=BMS-Secure-Communication` 필터 접근 확인.
+- 표시 텍스트에서 `Container 0 packages` 확인.
+
+### 검증
+- Public packages page — HTTP 200
+- Visible package count — `Container 0 packages`
+- `scripts/check-sensitive-patterns.py --include-untracked` — 0 findings
+
+### 미완료 / 리스크
+- REST package API는 current token에 `read:packages` scope가 없어 전체 private package 조회는 불가하다.
+- Hidden PR refs 2개는 여전히 Support purge 대상이다.
