@@ -3,6 +3,12 @@ name: Sensitive marker scan
 on:
   push:
   pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: read
+  pull-requests: read
 
 jobs:
   sensitive-scan:
@@ -14,3 +20,9 @@ jobs:
           python-version: '3.x'
       - name: Run high-signal sensitive marker scan
         run: python3 scripts/check-sensitive-patterns.py
+
+      - name: Run GitHub PR metadata sensitive marker scan
+        if: github.event_name != 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 scripts/scan-github-pr-metadata-sensitive.py --repo "$GITHUB_REPOSITORY"
