@@ -594,3 +594,24 @@ GitHub Packages public surface를 비인증 페이지 기준으로 보조 점검
 ### 미완료 / 리스크
 - REST package API는 current token에 `read:packages` scope가 없어 전체 private package 조회는 불가하다.
 - Hidden PR refs 2개는 여전히 Support purge 대상이다.
+
+---
+
+## Session 20 (2026-05-11)
+
+### 요약
+로컬 Git object store 정리를 수행했다. Rewrite 이후 남을 수 있는 unreachable object를 prune했고, 로컬 unreachable object가 0건임을 확인했다.
+
+### 작업 내용
+- `git reflog expire --expire=now --expire-unreachable=now --all` 실행.
+- `git gc --prune=now` 실행.
+- `git fsck --no-reflogs --unreachable`로 로컬 unreachable object 0건 확인.
+- pre-commit/pre-push local hooks가 sensitive marker scanner를 실행하도록 설치된 상태를 확인했다.
+
+### 검증
+- local unreachable objects — 0
+- `scripts/check-sensitive-patterns.py --include-untracked` — 0 findings
+- pre-commit/pre-push hook manual run — 0 findings
+
+### 미완료 / 리스크
+- GitHub server-side hidden PR refs 2개는 로컬 GC와 무관하게 Support purge 대상이다.
