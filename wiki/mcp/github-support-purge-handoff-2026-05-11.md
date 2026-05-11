@@ -7,7 +7,7 @@
 ## 현재 clean 기준
 
 - Clean branch: `refs/heads/master`
-- Clean master HEAD: `297b85e5f20ede4a1c8c52879c029b1cc47b3a7e`
+- Clean master HEAD: use `git rev-parse origin/master` or `/tmp/github-sensitive-data-purge-request.txt` at submission time
 - Repository visibility: private
 - Latest sensitive marker workflow: success
 
@@ -32,7 +32,7 @@
 
 ```text
 Repository: 727HC/BMS-Secure-Communication
-Clean master HEAD: 297b85e5f20ede4a1c8c52879c029b1cc47b3a7e
+Clean master HEAD: <paste current `git rev-parse origin/master`>
 Affected refs:
 - refs/pull/1/head
 - refs/pull/2/head
