@@ -634,3 +634,24 @@ GitHub Packages public surface를 비인증 페이지 기준으로 보조 점검
 
 ### 미완료 / 리스크
 - PR template는 예방 보조장치이며, GitHub hidden PR refs 2개는 여전히 Support purge 대상이다.
+
+---
+
+## Session 22 (2026-05-11)
+
+### 요약
+Branch protection/rulesets 설정 가능 여부를 재확인했다. 현재 user-owned private repository plan에서는 둘 다 GitHub Pro 또는 public repository가 필요하다는 403 응답으로 제한된다.
+
+### 작업 내용
+- `GET /branches/master/protection` 재확인: plan 제한 403.
+- `GET /repos/{owner}/{repo}/rulesets` 확인: plan 제한 403.
+- 적용 가능한 대체 방어는 CI sensitive scan, local hooks, PR template, private/exposure switch 축소로 유지한다.
+
+### 검증
+- Branch protection API — 403 plan restriction.
+- Rulesets API — 403 plan restriction.
+- `scripts/check-sensitive-patterns.py --include-untracked` — 0 findings.
+
+### 미완료 / 리스크
+- Server-side branch protection/rulesets는 현재 plan에서 설정 불가하다.
+- Hidden PR refs 2개는 여전히 Support purge 대상이다.
