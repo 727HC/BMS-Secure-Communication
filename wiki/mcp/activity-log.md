@@ -615,3 +615,22 @@ GitHub Packages public surface를 비인증 페이지 기준으로 보조 점검
 
 ### 미완료 / 리스크
 - GitHub server-side hidden PR refs 2개는 로컬 GC와 무관하게 Support purge 대상이다.
+
+---
+
+## Session 21 (2026-05-11)
+
+### 요약
+향후 PR에서 민감정보가 재유입되는 경로를 줄이기 위해 GitHub PR template에 sensitive-data checklist를 추가했다.
+
+### 작업 내용
+- `.github/pull_request_template.md` 추가.
+- PR 작성자가 local sensitive marker scan, `.env`/wallet/Fabric key material/raw payload/token/password/local path 미포함, placeholder 사용 여부를 확인하도록 했다.
+- PR notes에 secret/raw payload/private key/local path/personal contact data를 붙여넣지 말라는 주석을 추가했다.
+
+### 검증
+- `scripts/check-sensitive-patterns.py --include-untracked` — 0 findings
+- `git diff --check -- .github/pull_request_template.md wiki/mcp/activity-log.md` — PASS
+
+### 미완료 / 리스크
+- PR template는 예방 보조장치이며, GitHub hidden PR refs 2개는 여전히 Support purge 대상이다.
