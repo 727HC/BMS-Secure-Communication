@@ -2337,3 +2337,41 @@ RecordBMUDataWithPayload(
 
 ### 미완료 / 리스크
 - 문서 갱신만 수행했다. runtime/code 변경은 없다.
+
+## 2026-05-11 KST — JMeter read-only benchmark evidence package
+
+### 작업 내용
+- 평가/보고서 제출용 JMeter read-only 보조 벤치마크 패키지를 추가했다.
+- Fabric write 공식 기준은 Hyperledger Caliper successful commit TPS로 유지하고, JMeter는 HTTP/API read-only 증거로만 해석하도록 문서와 evidence 문구에 명시했다.
+- 첫 버전 범위는 cloud-agent read-only API로 제한했다.
+  - `GET /api/passports/:id`
+  - `GET /api/bmu/:idOrDid`
+- JMeter 결과 parser를 추가해 success rate, error rate, 평균 latency, p95/p99 latency, 참고 throughput, sampler별 breakdown을 산출한다.
+- runner는 기본 출력 위치를 `/tmp/bms-jmeter-readonly-<run-id>`로 잡아 JTL/HTML/evidence 생성물을 커밋하지 않게 했다.
+- 로컬 `jmeter`가 없으면 명확한 설치/래퍼 안내와 함께 실패하도록 했다.
+
+### 변경 파일
+- `benchmarks/jmeter/README.md`
+- `benchmarks/jmeter/cloud-read.jmx`
+- `benchmarks/jmeter/report-template.md`
+- `benchmarks/jmeter/fixtures/pass.jtl`
+- `benchmarks/jmeter/fixtures/fail.jtl`
+- `scripts/run-jmeter-readonly-benchmark.sh`
+- `scripts/parse-jmeter-summary.js`
+- `wiki/blockchain/jmeter-benchmark-plan.md`
+- `wiki/blockchain/activity-log.md`
+
+### 검증
+- `node -c scripts/parse-jmeter-summary.js` PASS
+- `bash -n scripts/run-jmeter-readonly-benchmark.sh` PASS
+- `xmllint --noout benchmarks/jmeter/cloud-read.jmx` PASS
+- parser pass fixture: `benchmarks/jmeter/fixtures/pass.jtl` → PASS
+- parser fail fixture: `benchmarks/jmeter/fixtures/fail.jtl` → exit code `2` PASS
+- runner dry-run: `scripts/run-jmeter-readonly-benchmark.sh --dry-run` PASS
+- local `jmeter` unavailable guard: clear install/wrapper error PASS
+- `git diff --check` PASS
+
+### 미완료 / 리스크
+- 로컬 환경에 `jmeter` binary가 없어 실제 JMeter run은 수행하지 않았다.
+- Docker 실행은 site-approved `JMETER_CMD` wrapper 방식으로 남겼다. 평가 환경에서 JMeter 버전을 고정해야 한다.
+- JMeter 결과는 HTTP read-only 보조 증거이며, Fabric write KPI 또는 BMU ingest E2E 성능으로 해석하면 안 된다.
