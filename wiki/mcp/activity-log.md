@@ -655,3 +655,22 @@ Branch protection/rulesets 설정 가능 여부를 재확인했다. 현재 user-
 ### 미완료 / 리스크
 - Server-side branch protection/rulesets는 현재 plan에서 설정 불가하다.
 - Hidden PR refs 2개는 여전히 Support purge 대상이다.
+
+---
+
+## Session 23 (2026-05-11)
+
+### 요약
+GitHub Support purge handoff를 repo wiki에 영구 문서로 남겼다. `/tmp` 요청문이 사라져도 제출 URL, affected hidden refs, clean master 기준, 완료 확인 절차를 추적할 수 있게 했다.
+
+### 작업 내용
+- `wiki/mcp/github-support-purge-handoff-2026-05-11.md` 추가.
+- Support 제출 URL, affected refs, sanitized request summary, post-purge verification command를 기록했다.
+- Support purge 전까지 hidden PR refs가 completion blocker임을 명시했다.
+
+### 검증
+- `scripts/check-sensitive-patterns.py --include-untracked` — 0 findings
+- `git diff --check -- wiki/mcp/github-support-purge-handoff-2026-05-11.md wiki/mcp/activity-log.md` — PASS
+
+### 미완료 / 리스크
+- GitHub Support purge 자체는 아직 제출/완료되지 않았다.
