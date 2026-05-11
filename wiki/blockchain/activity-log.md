@@ -2375,3 +2375,101 @@ RecordBMUDataWithPayload(
 - 로컬 환경에 `jmeter` binary가 없어 실제 JMeter run은 수행하지 않았다.
 - Docker 실행은 site-approved `JMETER_CMD` wrapper 방식으로 남겼다. 평가 환경에서 JMeter 버전을 고정해야 한다.
 - JMeter 결과는 HTTP read-only 보조 증거이며, Fabric write KPI 또는 BMU ingest E2E 성능으로 해석하면 안 된다.
+
+## 2026-05-11 KST — 전체 블록체인/Passport 벤치마크 재실행
+
+### 작업 내용
+- Caliper / Node cloud read / JMeter 계층을 분리해 재측정했다.
+- Fabric write 공식 수치는 Hyperledger Caliper `successful commit / Succ-only TPS`로만 기록했다.
+- Cloud/API read 공식 수치는 기존 Node script 결과로 기록했다.
+- JMeter는 HTTP/API read-only 보조 증거로만 취급하고, Fabric write TPS 또는 blockchain write KPI로 해석하지 않도록 분리했다.
+
+### 사전 확인
+- `CLAUDE.md` 확인 완료.
+- `wiki/blockchain/benchmark-methodology.md` 확인 완료.
+- `wiki/blockchain/jmeter-benchmark-plan.md` 확인 완료.
+- `git status --short` clean 상태에서 시작.
+- chaincode committed 상태: `passport-contract`, `sequence=8`, `version=1.6` 확인.
+- cloud-agent health: `listenerEnabled=false`, `db=connected`, `fabricChannel=passportchannel`.
+- Mongo read model: `_sync_meta.lastBlock=254526`, `syncedAt=2026-05-08T09:43:27.714Z`.
+
+### Fabric write — Caliper 공식 결과
+- 공식 기준: `successful commit / Succ-only TPS`.
+- 공식 실행 명령:
+  ```bash
+  cd caliper-workspace
+  CHANNEL_NAME=passportshort4s20260511023245 \
+  CALIPER_RUN_ID=succshort4s-20260511T023245Z \
+  CALIPER_SKIP_PREPARE=true \
+  BMU_FC_START=4 \
+  CALIPER_WRITE_TX_NUMBER=3000 \
+  CALIPER_WRITE_TARGET_TPS=250 \
+  CALIPER_READ_TX_NUMBER=500 \
+  CALIPER_READ_TARGET_TPS=1000 \
+  NUM_PASSPORTS=500 \
+  BMU_RECORD_KEYS=5000 \
+    ./run-bench.sh manufacturer
+  ```
+- 로그: `/tmp/caliper-full-benchmark-20260511T043802Z-passportshort4s20260511023245-tx3000.log`
+- setup 검증: `[verify-passports] ... passports=5000 verified=5000`
+- write result: `Succ 3000 / Fail 0 / Reject 0`
+- successful commit TPS: `82.6 TPS`
+- Caliper send rate: `207.2 TPS` 참고값
+- avg latency: `15.03s`
+- 판단:
+  - 실행/기록 기준은 PASS (`Succ == expected`, `Fail=0`, `Reject=0`).
+  - 3차년도 write KPI `>=150 TPS` 및 내년 선제 write `>=200 TPS` 기준으로는 FAIL.
+
+### 제외/비공식 Caliper 결과
+- prepare 재생성 시도:
+  - 로그: `/tmp/caliper-prepare-fullbench-20260511T042927Z-passportshort4s20260511023245.log`
+  - 5000 passport 준비가 과도하게 길어져 중단. KPI evidence로 사용하지 않음.
+- 5000 write 시도:
+  - 로그: `/tmp/caliper-full-benchmark-20260511T043601Z-passportshort4s20260511023245.log`
+  - 결과: `Succ 4992 / Fail 0 / Throughput 91.7 TPS`
+  - `Succ != expected tx count`라 공식 successful commit evidence에서 제외.
+
+### Cloud/API read — Node script 공식 결과
+- 실행 전 cloud-agent를 foreground/persistent session으로 유지했다.
+- 실행 명령:
+  ```bash
+  BENCH_USER=bench BENCH_PASSWORD="${BENCH_PASSWORD:?set BENCH_PASSWORD}" BENCH_ORG=1 node scripts/tps-benchmark-cloud.js
+  ```
+- 로그: `/tmp/cloud-read-full-benchmark-20260511T044300Z.log`
+- result: `CLOUD READ TPS 3920.6`
+- completed/errors: `Completed 5000 / Errors 0`
+- 판단: PASS (`>=2000 TPS`).
+- 제외 결과: `/tmp/cloud-read-full-benchmark-20260511T044059Z.log`, `/tmp/cloud-read-full-benchmark-20260511T044126Z.log`는 cloud-agent가 benchmark 중 유지되지 않아 `Completed 0 / Errors 5000`이므로 공식 결과에서 제외.
+
+### JMeter read-only 보조 증거
+- 실행 명령:
+  ```bash
+  PASSPORT_ID=PASSPORT-BMU-DEVICE BMU_ID_OR_DID=PASSPORT-BMU-DEVICE scripts/run-jmeter-readonly-benchmark.sh
+  ```
+- 로그: `/tmp/jmeter-readonly-full-benchmark-20260511T044319Z.log`
+- evidence: `/tmp/jmeter-readonly-full-benchmark-20260511T044319Z-missing-evidence.md`
+- 결과: local `jmeter` binary 미설치로 실행 불가.
+- 기록 기준: 미설치 상태와 재실행 절차를 evidence로 남김.
+- 재실행 절차:
+  1. Apache JMeter를 repo 밖에 설치하거나 site-approved `JMETER_CMD` wrapper 지정.
+  2. `PASSPORT_ID=PASSPORT-BMU-DEVICE BMU_ID_OR_DID=PASSPORT-BMU-DEVICE scripts/run-jmeter-readonly-benchmark.sh` 재실행.
+  3. success rate, error rate, p95 latency, 참고 throughput만 HTTP/API read-only 보조 증거로 기록.
+
+### 상태/evidence path
+- `passportchannel` peer height: `/tmp/peer-info-passportchannel-full-benchmark-20260511T044337Z.json` → `height=261171`
+- benchmark channel peer height: `/tmp/peer-info-passportshort4s20260511023245-full-benchmark-20260511T044337Z.json` → `height=197`
+- Mongo sync: `/tmp/mongo-sync-full-benchmark-20260511T044337Z.txt`
+- cloud-agent health: `/tmp/cloud-health-after-benchmark-20260511T044328Z.json`
+
+### 검증
+- `git diff --check` PASS
+- `node -c scripts/tps-benchmark-cloud.js` PASS
+- `node -c scripts/parse-jmeter-summary.js` PASS
+- `bash -n scripts/run-jmeter-readonly-benchmark.sh` PASS
+- `xmllint --noout benchmarks/jmeter/cloud-read.jmx` PASS
+- `.omx/goals/performance/full-blockchain-passport-benchmark/evaluate.sh` PASS
+
+### 남은 리스크 / 다음 조치
+- 이번 재실행 write는 all-success evidence이지만 `82.6 TPS`로 KPI 미달이다. 이전 `205.1 TPS` successful commit 증거와 달리 현재 재실행 시점의 환경/부하/ledger 상태에서 성능 회귀가 관측됐다.
+- write KPI 복구가 필요하면 fresh benchmark channel, peer/orderer/CouchDB quiet 상태, `BMU_FC_START` high-water, block cutting 조건을 다시 고정하고 Caliper successful commit 기준으로 재측정해야 한다.
+- JMeter는 로컬 설치가 없어 미실행이다. JMeter binary/wrapper가 준비된 평가 환경에서만 보조 read-only evidence를 추가한다.
