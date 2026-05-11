@@ -465,3 +465,24 @@ GitHub repository 부가 표면을 추가 점검했다. Actions secrets/variable
 
 ### 미완료 / 리스크
 - GitHub hidden PR refs 2개는 여전히 Support purge 대상이다.
+
+---
+
+## Session 14 (2026-05-11)
+
+### 요약
+GitHub repository의 reversible exposure switches를 더 좁혔다. Projects/Downloads를 비활성화하고, 향후 merge 후 branch 자동 삭제를 켰다.
+
+### 작업 내용
+- `has_projects=false` 적용.
+- `has_downloads=false` 적용.
+- `delete_branch_on_merge=true` 적용.
+- `private=true` 상태를 재확인했다.
+
+### 검증
+- GitHub repo settings after patch: `has_projects=false`, `has_downloads=false`, `delete_branch_on_merge=true`, `private=true`.
+- `scripts/check-sensitive-patterns.py --include-untracked` — 0 findings.
+
+### 미완료 / 리스크
+- `allow_forking=true`는 user-owned repository에서 API 변경 제한이 있어 남아 있다. 현재 forks는 0이다.
+- Hidden PR refs 2개는 여전히 Support purge 대상이다.
