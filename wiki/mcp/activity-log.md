@@ -267,3 +267,27 @@ Passport/bmu-agent validation error 표면 확장 전달을 MCP `monitor_passpor
   - `bindingCode` (`BMS_BINDING_CODE_ZERO`, `BMS_BINDING_CODE_MISMATCH`)
 - 각 event에 `count`, `byCategory`, `byHour`, `recent`, `evidencePath`를 포함한다.
 - 3차년도 증적 경로는 `BMU -> Agent -> Fabric -> Passport/MCP`로 명시했다.
+
+---
+
+## Session 6 (2026-05-11)
+
+### 요약
+GitHub 루트 README에 MCP read-only 모니터링 섹션을 추가했다. Passport/BMS binding 확장, Sequence 3 tx, validation event, 3차년도 증적 경로를 공개 문서에서 바로 확인할 수 있게 했다.
+
+### 작업 내용
+- 구성 표의 MCP 설명을 Fabric 단독 관찰에서 Fabric/Passport/API/로그 read-only 관찰로 확장했다.
+- `monitor_transactions`, `monitor_bmu`, `monitor_vc`, `system_status`, `monitor_passport` 역할을 요약했다.
+- BMU validation events를 분리 표기했다: missing signature, invalid rawPayload, stale FC, DID mismatch, binding code zero/mismatch.
+- Sequence 3 tx와 필드, 확정 BMS binding 기준값을 README에 추가했다.
+- 3차년도 증적 경로를 `BMU -> Agent -> Fabric -> Passport/MCP`로 명시했다.
+
+### 변경 파일
+- `README.md`
+- `wiki/mcp/activity-log.md`
+
+### 검증
+- `git diff --check -- README.md wiki/mcp/activity-log.md` — PASS
+
+### 미완료 / 리스크
+- 문서 갱신만 수행했다. MCP runtime 동작 변경은 없다.
