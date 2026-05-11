@@ -899,3 +899,28 @@ GitHub 민감정보 정리 완료 감사를 하나의 재현 가능한 명령으
 
 ### 미완료 / 리스크
 - `.gitignore` guard는 future prevention이며, hidden PR refs #1/#2 purge를 대체하지 않는다.
+
+---
+
+## Session 34 (2026-05-11)
+
+### 요약
+로컬 pre-commit/pre-push sensitive marker hooks를 재현 가능하게 설치하는 스크립트를 추가했다. `.git/hooks`는 GitHub에 커밋되지 않으므로 새 clone에서도 동일 guard를 설치할 수 있게 했다.
+
+### 작업 내용
+- `scripts/install-sensitive-git-hooks.sh` 추가.
+  - `pre-commit`, `pre-push` hook을 설치한다.
+  - hook은 repo root로 이동한 뒤 `python3 scripts/check-sensitive-patterns.py --include-untracked`를 실행한다.
+  - 기존 hook이 다르면 기본적으로 overwrite를 거부하고, `--force` 사용 시 backup 후 교체한다.
+- 현재 로컬 hook은 `--force`로 backup 후 갱신했다.
+
+### 검증
+- `bash -n scripts/install-sensitive-git-hooks.sh` — PASS.
+- `scripts/install-sensitive-git-hooks.sh --force` — hooks installed.
+- `.git/hooks/pre-commit`, `.git/hooks/pre-push` — repo root `cd` 포함 확인.
+- `python3 scripts/check-sensitive-patterns.py --include-untracked` — 0 findings.
+- `git diff --check -- scripts/install-sensitive-git-hooks.sh` — PASS.
+
+### 미완료 / 리스크
+- Local hooks는 사용자 clone마다 설치가 필요하다. CI guard와 함께 사용해야 한다.
+- GitHub hidden PR refs #1/#2 tainted history는 Support purge 전까지 남는다.
