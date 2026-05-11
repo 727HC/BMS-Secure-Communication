@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash /path/to/bms-blockchain/mcp-monitor/.claude/session-start.sh"
+            "command": "bash \"${CLAUDE_PROJECT_DIR:-$(pwd)}/mcp-monitor/.claude/session-start.sh\""
           }
         ]
       }
@@ -17,7 +17,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash /path/to/bms-blockchain/mcp-monitor/.claude/session-guard.sh"
+            "command": "bash \"${CLAUDE_PROJECT_DIR:-$(pwd)}/mcp-monitor/.claude/session-guard.sh\""
           }
         ]
       }
@@ -28,7 +28,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash /path/to/bms-blockchain/mcp-monitor/.claude/auto-syntax-check.sh"
+            "command": "bash \"${CLAUDE_PROJECT_DIR:-$(pwd)}/mcp-monitor/.claude/auto-syntax-check.sh\""
           }
         ]
       }
@@ -39,7 +39,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash /path/to/bms-blockchain/mcp-monitor/.claude/post-compact.sh"
+            "command": "bash \"${CLAUDE_PROJECT_DIR:-$(pwd)}/mcp-monitor/.claude/post-compact.sh\""
           }
         ]
       }

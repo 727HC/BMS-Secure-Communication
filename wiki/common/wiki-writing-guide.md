@@ -95,5 +95,5 @@ status: current
 - `wiki/AGENTS.md`는 짧은 강제 규칙만 두고, 예시/설명은 정본 가이드에 둔다.
 
 ## 운영 메모
-source는 `/path/to/bms-blockchain/wiki`다.  
+source는 `/path/to/bms-blockchain/wiki`다.
 Windows Obsidian vault는 mirror 결과로 본다.

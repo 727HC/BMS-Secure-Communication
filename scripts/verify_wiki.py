@@ -355,12 +355,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--wiki-root", default="wiki", help="Wiki root inside the repo")
     parser.add_argument(
         "--canonical-source",
-        default="/path/to/bms-blockchain/wiki",
+        default=str(Path(__file__).resolve().parents[1] / "wiki"),
         help="Canonical Linux wiki source to compare against",
     )
     parser.add_argument(
         "--windows-mirror",
-        default="/path/to/BMS-Knowledge",
+        default=str(Path.home() / "Documents" / "BMS-Knowledge"),
         help="Windows Obsidian mirror to compare against",
     )
     parser.add_argument(

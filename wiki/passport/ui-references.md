@@ -13,7 +13,7 @@ status: current
 ## 현재 활성 레퍼런스
 
 ### EV Data Interface (Envato)
-- **파일**: `C:\Users\<USER>\Desktop\electric-vehicle-data-interface-hero-section-2023-12-27-18-17-19-utc`
+- **파일**: `C:\path\to\electric-vehicle-data-interface-hero-section-2023-12-27-18-17-19-utc`
 - **스타일**: 라이트 그레이 배경, 원형 게이지, 2×2 카드 그리드
 - **폰트**: SF Pro Display + IBM Plex Sans
 - **핵심 특징**: 계기판 느낌, 데이터 밀도 높음, 깔끔한 라인 차트

@@ -32,9 +32,10 @@ status: current
    - 1-of-4 endorsement 가 활성화돼야 한다. 3-of-4 MAJORITY는 write latency가 커져 KPI 재현용 profile이 아니다.
 3. **BENCH 계정 등록** (bmu-agent 경유)
    ```bash
+   BENCH_PASSWORD="${BENCH_PASSWORD:?set BENCH_PASSWORD first}"
    curl -s -X POST http://localhost:3001/api/auth/register \
      -H "Content-Type: application/json" \
-     -d '{"userId":"bench","password":"BENCH_PASSWORD_PLACEHOLDER","role":"manufacturer","orgNum":1}'
+     -d "{\"userId\":\"bench\",\"password\":\"${BENCH_PASSWORD}\",\"role\":\"manufacturer\",\"orgNum\":1}"
    ```
 4. **cloud-agent 기동** + rate limit 해제 + dev mode
    ```bash
@@ -47,9 +48,10 @@ status: current
    ```
 6. **벤치 대상 passport 준비** — `scripts/tps-benchmark-cloud.js` 는 `PASSPORT-BMU-DEVICE` 를 하드코딩. 반드시 사전 생성
    ```bash
+   BENCH_PASSWORD="${BENCH_PASSWORD:?set BENCH_PASSWORD first}"
    TOKEN=$(curl -s -X POST http://localhost:3001/api/auth/login \
      -H "Content-Type: application/json" \
-     -d '{"userId":"bench","password":"BENCH_PASSWORD_PLACEHOLDER","orgNum":1}' | jq -r '.token')
+     -d "{\"userId\":\"bench\",\"password\":\"${BENCH_PASSWORD}\",\"orgNum\":1}" | jq -r '.token')
    curl -s -X POST http://localhost:3001/api/passports \
      -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
      -d '{"passportId":"PASSPORT-BMU-DEVICE","batteryId":"BAT-BENCH-001","did":"did:bench:001", ...}'
@@ -161,7 +163,7 @@ Caliper Throughput = (Succ+Fail)/elapsed. 2026-04-22에는 이 ledger 처리량 
 - cloud read2000 측정:
   ```bash
   cd /path/to/bms-blockchain
-  BENCH_USER=bench BENCH_PASSWORD=BENCH_PASSWORD_PLACEHOLDER BENCH_ORG=1 \
+  BENCH_USER=bench BENCH_PASSWORD="${BENCH_PASSWORD:?set BENCH_PASSWORD}" BENCH_ORG=1 \
     node scripts/tps-benchmark-cloud.js
   ```
   - 권장 cloud-agent profile: `CLOUD_AGENT_LISTENER_ENABLED=false`, `RATE_LIMIT_MAX=1000000`, `MONGO_MAX_POOL_SIZE=1000`, `PASSPORT_DETAIL_CACHE_TTL_MS=5000`
@@ -217,7 +219,7 @@ Caliper Throughput = (Succ+Fail)/elapsed. 2026-04-22에는 이 ledger 처리량 
 
 ```bash
 cd /path/to/bms-blockchain
-BENCH_USER=bench BENCH_PASSWORD=BENCH_PASSWORD_PLACEHOLDER BENCH_ORG=1 \
+BENCH_USER=bench BENCH_PASSWORD="${BENCH_PASSWORD:?set BENCH_PASSWORD}" BENCH_ORG=1 \
   node scripts/tps-benchmark-cloud.js
 ```
 

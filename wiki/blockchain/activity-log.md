@@ -1475,7 +1475,7 @@ RecordBMUDataWithPayload(
 - 기준 문서: `wiki/blockchain/benchmark-methodology.md`.
 - Live chaincode: `passport-contract` v`1.4`, sequence `6`, endorsement policy `OR('ManufacturerMSP.peer','EVManufacturerMSP.peer','ServiceMSP.peer','RegulatorMSP.peer')`.
 - `bmu-agent` `/api/status` Fabric connected 확인.
-- benchmark 계정 `bench / BENCH_PASSWORD_PLACEHOLDER` 및 `PASSPORT-BMU-DEVICE` 조회 기준 passport 확인.
+- benchmark 계정 `bench / <set-via-env>` 및 `PASSPORT-BMU-DEVICE` 조회 기준 passport 확인.
 
 ### 실행/검증
 - 공식 Caliper write 명령 시도:
@@ -1500,7 +1500,7 @@ RecordBMUDataWithPayload(
   - 결과: `Passports: 3759`, `Credentials: 0`, `Materials: 1`, `Elapsed: 13.8s`.
   - `cloud-agent` `/health` → `{"status":"ok","db":"connected"}` 확인.
 - 공식 cloud read script 실행:
-  - `BENCH_USER=bench BENCH_PASSWORD=BENCH_PASSWORD_PLACEHOLDER BENCH_ORG=1 node scripts/tps-benchmark-cloud.js`
+  - `BENCH_USER=bench BENCH_PASSWORD=<set-via-env> BENCH_ORG=1 node scripts/tps-benchmark-cloud.js`
   - 로그: `/tmp/cloud-read-benchmark-20260508084002.log`
   - cloud read: `1246.2 TPS` / target `1500 TPS` → FAIL.
   - Fabric read baseline: `162.5 TPS`.
@@ -1573,7 +1573,7 @@ RecordBMUDataWithPayload(
   - 로그: `/tmp/caliper-official-gateway-prepare-20260508090558.log`
   - 결과: `write-bmu-data Succ 639 / Fail 2361 / Send Rate 191.2 TPS / Avg Latency 17.27s / Throughput 94.2 TPS`
 - cloud read 공식 script:
-  - 명령: `BENCH_USER=bench BENCH_PASSWORD=BENCH_PASSWORD_PLACEHOLDER BENCH_ORG=1 node scripts/tps-benchmark-cloud.js`
+  - 명령: `BENCH_USER=bench BENCH_PASSWORD=<set-via-env> BENCH_ORG=1 node scripts/tps-benchmark-cloud.js`
   - 로그: `/tmp/cloud-read-benchmark-kpi-20260508091310.log`
   - 결과: `CLOUD READ 1372.1 TPS`, `FABRIC READ 202.0 TPS`, `FABRIC WRITE 24.8 TPS`
 - cloud-only 재확인(`bmu-agent` 중단, `cloud-agent` fresh start, peer height `253937`, Mongo `_sync_meta.lastBlock` `253936`):
@@ -1640,7 +1640,7 @@ RecordBMUDataWithPayload(
   - 판단: 150 TPS 미달이며 durability 의미를 약화하므로 완료 증거로 쓰지 않는다.
 - cloud read 공식 script:
   - 실행 조건: `CLOUD_AGENT_LISTENER_ENABLED=false`, `RATE_LIMIT_MAX=100000`, `PASSPORT_DETAIL_CACHE_TTL_MS=1000`, Mongo pool `500/20`
-  - 명령: `BENCH_USER=bench BENCH_PASSWORD=BENCH_PASSWORD_PLACEHOLDER BENCH_ORG=1 node scripts/tps-benchmark-cloud.js`
+  - 명령: `BENCH_USER=bench BENCH_PASSWORD=<set-via-env> BENCH_ORG=1 node scripts/tps-benchmark-cloud.js`
   - 로그: `/tmp/cloud-read-benchmark-kpi-cache-20260508194311.log`
   - 결과: `CLOUD READ 2669.5 TPS` / target `1500 TPS` → PASS
 
@@ -2062,7 +2062,7 @@ RecordBMUDataWithPayload(
   - 기본 `passportchannel` all-success 3000-key: `/tmp/caliper-official-kpi-fabric-quiet-20260508235244.log` → `98.3 TPS`
   - 판단: live channel 누적 CouchDB state/ledger 부하가 남아 있어 기본 channel 명칭 고정 시험은 fresh reset 필요.
 - Cloud read KPI PASS:
-  - 명령: `BENCH_USER=bench BENCH_PASSWORD=BENCH_PASSWORD_PLACEHOLDER BENCH_ORG=1 node scripts/tps-benchmark-cloud.js`
+  - 명령: `BENCH_USER=bench BENCH_PASSWORD=<set-via-env> BENCH_ORG=1 node scripts/tps-benchmark-cloud.js`
   - 로그: `/tmp/cloud-read-benchmark-kpi-current-20260509000914.log`
   - 결과: `CLOUD READ TPS 3371.5`, `Completed 5000 / Errors 0`
 
@@ -2119,7 +2119,7 @@ RecordBMUDataWithPayload(
   - 해석: KPI 판정은 Caliper `Throughput` 기준이며, status 11 `MVCC_READ_CONFLICT`는 Fabric 정상 reject다. chaincode 검증/보안 의미를 완화하지 않았다.
 - Cloud read KPI PASS:
   - cloud-agent profile: listener-off/read-only, `RATE_LIMIT_MAX=1000000`, `MONGO_MAX_POOL_SIZE=1000`, `PASSPORT_DETAIL_CACHE_TTL_MS=5000`
-  - 명령: `BENCH_USER=bench BENCH_PASSWORD=BENCH_PASSWORD_PLACEHOLDER BENCH_ORG=1 node scripts/tps-benchmark-cloud.js`
+  - 명령: `BENCH_USER=bench BENCH_PASSWORD=<set-via-env> BENCH_ORG=1 node scripts/tps-benchmark-cloud.js`
   - 로그: `/tmp/cloud-read-write200-20260509154350.log`
   - 결과: `CLOUD READ TPS 3111.2`, `Completed 5000 / Errors 0`
 

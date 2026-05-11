@@ -6,7 +6,7 @@ const BASE = (process.env.PW_BASE_URL || 'http://127.0.0.1:3001').replace(/\/+$/
 const REPO_ROOT = path.resolve(__dirname, '../..');
 const EVIDENCE_DIR = path.join(REPO_ROOT, '.sisyphus/evidence/dashboard-reference-kpi-match');
 const REFERENCE_SCREENSHOT = process.env.DASHBOARD_REFERENCE_SCREENSHOT
-  || '/path/to/reference-screenshots/스크린샷 2026-04-26 192022.png';
+  || path.join(REPO_ROOT, 'docs/reference/dashboard-reference.png');
 
 const CURRENT_SCREENSHOT = path.join(EVIDENCE_DIR, 'task-4-dashboard-current.png');
 const KPI_ROW_SCREENSHOT = path.join(EVIDENCE_DIR, 'task-4-dashboard-kpi-row.png');

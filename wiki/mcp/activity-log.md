@@ -291,3 +291,28 @@ GitHub 루트 README에 MCP read-only 모니터링 섹션을 추가했다. Passp
 
 ### 미완료 / 리스크
 - 문서 갱신만 수행했다. MCP runtime 동작 변경은 없다.
+
+---
+
+## Session 7 (2026-05-11)
+
+### 요약
+GitHub 공개면에 남아 있던 개인정보/시크릿성 문자열을 정리했다. 현재 HEAD 기준 로컬 사용자 경로, 개인 이메일 도메인, known legacy secret literals, tracked runtime credential 파일 노출을 0건으로 맞췄다.
+
+### 작업 내용
+- 로컬 절대경로와 사용자명을 placeholder/상대 기본값으로 치환했다.
+- `e2e-tests/test-results.json` tracked generated artifact를 제거했다.
+- benchmark 계정 password literal을 문서/스크립트에서 제거하고 `BENCH_PASSWORD` env 필수값으로 전환했다.
+- `mcp-monitor/.claude/settings.json` hook command를 repo-relative 형태로 바꿨다.
+- future commit author email을 GitHub noreply로 설정했다.
+
+### 검증
+- `git diff --check` — PASS
+- `node -c e2e-tests/tests/dashboard_reference_kpi_match.spec.js` — PASS
+- `python3 -m py_compile scripts/verify_wiki.py` — PASS
+- `bash -n scripts/wiki-mirror.sh scripts/blockchain-benchmark-safe.sh scripts/blockchain-evaluation-dday.sh` — PASS
+- `python3 -m json.tool mcp-monitor/.claude/settings.json` — PASS
+- high-signal scan 0건: local path/user, private email domains, known credential literals, tracked env/key/cert/runtime files, private key/cert headers, AWS/JWT token patterns, phone/RRN patterns.
+
+### 미완료 / 리스크
+- 기존 Git commit author의 개인 이메일은 일반 커밋으로 삭제할 수 없다. 제거하려면 history rewrite + force push가 필요하므로 별도 승인/조율이 필요하다.

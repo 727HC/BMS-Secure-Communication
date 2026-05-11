@@ -100,7 +100,7 @@ Commands:
   cd ../caliper-workspace
   CHANNEL_NAME=${CHANNEL_NAME} NUM_PASSPORTS=${NUM_PASSPORTS:-500} BMU_RECORD_KEYS=${BMU_RECORD_KEYS:-${CALIPER_WRITE_TX_NUMBER:-10000}} CALIPER_WRITE_TARGET_TPS=${CALIPER_WRITE_TARGET_TPS:-300} CALIPER_WRITE_TX_NUMBER=${CALIPER_WRITE_TX_NUMBER:-10000} ./run-bench.sh ${ORG}
   cd ..
-  BENCH_USER=bench BENCH_PASSWORD=BENCH_PASSWORD_PLACEHOLDER BENCH_ORG=1 node scripts/tps-benchmark-cloud.js
+  BENCH_USER=bench BENCH_PASSWORD=\${BENCH_PASSWORD:?set BENCH_PASSWORD} BENCH_ORG=1 node scripts/tps-benchmark-cloud.js
   node scripts/collect-blockchain-evidence.js --mode benchmark-safe --channel ${CHANNEL_NAME} --profile PassportBenchmarkChannel --run-id ${RUN_ID} --write-log ${WRITE_LOG} --read-log ${READ_LOG}
 PLAN
 
@@ -130,7 +130,7 @@ CALIPER_RESULTS_ENV="${RESULTS_ENV}" \
 
 cd "${ROOT_DIR}"
 BENCH_USER="${BENCH_USER:-bench}" \
-BENCH_PASSWORD="${BENCH_PASSWORD:-BENCH_PASSWORD_PLACEHOLDER}" \
+BENCH_PASSWORD="${BENCH_PASSWORD:?BENCH_PASSWORD must be set}" \
 BENCH_ORG="${BENCH_ORG:-1}" \
   node scripts/tps-benchmark-cloud.js > "${READ_LOG}" 2>&1
 

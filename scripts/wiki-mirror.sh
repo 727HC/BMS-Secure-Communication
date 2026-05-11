@@ -2,8 +2,9 @@
 # wiki-mirror.sh — WSL wiki → Windows Obsidian vault 자동 동기화
 # 사용법: nohup bash scripts/wiki-mirror.sh &
 
-WIKI="/path/to/bms-blockchain/wiki"
-VAULT="/path/to/BMS-Knowledge"
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+WIKI="${WIKI:-$REPO_ROOT/wiki}"
+VAULT="${VAULT:-$HOME/Documents/BMS-Knowledge}"
 INTERVAL=10  # 초
 
 echo "[wiki-mirror] started: $WIKI → $VAULT (every ${INTERVAL}s)"
