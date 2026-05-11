@@ -1,0 +1,16 @@
+name: Sensitive marker scan
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  sensitive-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+      - name: Run high-signal sensitive marker scan
+        run: python3 scripts/check-sensitive-patterns.py

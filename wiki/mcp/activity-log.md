@@ -366,3 +366,29 @@ Session 7 이후 GitHub history까지 재검증하고, `master` 이력에 남은
 
 ### 미완료 / 리스크
 - GitHub hidden PR refs `refs/pull/1/head`, `refs/pull/2/head`는 여전히 read-only 상태로 과거 PR head를 보존한다. GitHub Support dereference/delete + server GC가 필요하다.
+
+---
+
+## Session 10 (2026-05-11)
+
+### 요약
+GitHub private repo에서 secret scanning을 사용할 수 없는 상태를 확인하고, 대체용 high-signal sensitive marker scan을 repo-native CI로 추가했다.
+
+### 작업 내용
+- `scripts/check-sensitive-patterns.py` 추가.
+  - local home path, personal webmail, private key header, GitHub/AWS/JWT token, Korean RRN/mobile, Fabric literal id secret, URL basic-auth literal을 탐지한다.
+  - 과거 노출 marker는 plaintext 재기록 없이 SHA-256 digest로만 탐지한다.
+- `.github/workflows/sensitive-scan.yml` 추가.
+  - `push`, `pull_request`마다 dependency-free Python scanner를 실행한다.
+- GitHub API에서 private repo secret scanning이 unavailable/disabled인 것을 확인했다.
+
+### 검증
+- `python3 scripts/check-sensitive-patterns.py --include-untracked` — PASS, 0 findings
+- synthetic legacy marker hash probe — PASS
+- benign env-required placeholder probe — PASS
+- `python3 -m py_compile scripts/check-sensitive-patterns.py` — PASS
+- `git diff --check -- .github/workflows/sensitive-scan.yml scripts/check-sensitive-patterns.py` — PASS
+
+### 미완료 / 리스크
+- 이 scanner는 high-signal guard이며 GitHub Advanced Security secret scanning 대체물이 아니다.
+- GitHub hidden PR refs `refs/pull/1/head`, `refs/pull/2/head`는 여전히 Support purge가 필요하다.
