@@ -20,13 +20,21 @@ VELKERN의 오퍼레이터 웹앱. 제조사 · EV 제조사 · 정비/분석 ·
 | `/login` | 조직 인증 (4개 조직 선택) |
 | `/dashboard` | 상태 분포 도넛 · KPI 3카드 · 우선 처리 대기열 · 7일 추세 · 포트폴리오 분포 |
 | `/passports` | 여권 목록 + 분포 대시보드 패널 (제조사/화학계열) |
-| `/passports/:id` | 여권 상세 — 반원 ArcGauge 히어로 + 5탭 (개요/규제·소재/운영 이력/진단 데이터/증빙) |
+| `/passports/:id` | 여권 상세 — 반원 ArcGauge 히어로 + 5탭 (`개요` / `규제·소재` / `운영 이력` / `진단 데이터` / `증빙`) |
 | `/materials` | 원자재 공급망 추적 |
 | `/bmu-data` | BMU 센서 스냅샷 + 이상 이벤트 분포 |
 | `/maintenance` | 정비·사고 이력 + 정비 활동 도넛 |
 | `/recycling` | 회수·재활용 lifecycle + 원소별 평균 rate |
 | `/qr-scan` | QR · NFC 배터리 식별 조회 |
 | `/audit-log` | 체인 이벤트 감사 로그 + 활동 분류 분포 |
+
+## 실시간 Passport 표시 기준
+
+- Dashboard와 Passport detail은 `/api/realtime/*`를 우선 조회한다.
+- `cloud-agent:3002` read model이 꺼져 있어도 `bmu-agent`가 Fabric ledger + runtime BMU snapshot fallback으로 최신 BMU 값을 overlay한다.
+- Passport detail은 3초 주기 silent refresh로 열린 화면에서도 SOC/SOH/temperature를 갱신한다.
+- BMU가 제공하지 않는 `SOCE=0`은 `0%`가 아니라 `미수집`으로 표시한다.
+- 현재 BMS binding E2E 기준은 `RecordBMUDataWithPayload`이며, rawPayload bytes `44..47`의 little-endian `bmsBindingCode32=0x2c9a0e0c`를 사용한다.
 
 ## 실행
 
@@ -110,7 +118,23 @@ src/
 
 ## 테스트
 
-Playwright 기반 E2E 스모크:
+### 단위 테스트 (Vitest)
+
+168개 테스트 파일 / 1,270개 케이스가 페이지·컴포넌트·모달·hooks·lib·도메인 invariant를 잠근다.
+
+```bash
+npm run test          # vitest run (CI 모드, 단발)
+npm run test:watch    # vitest watch (개발 중)
+```
+
+주요 커버리지:
+- `src/pages/*.test.tsx` — 라우트별 페이지 렌더 + 사용자 인터랙션
+- `src/components/**/*.test.tsx` — 모달·차트·게이지 단위
+- `src/lib/cross-module-consistency*.test.ts` — `STATUS_LIST↔STATUS_OPTIONS↔STATUS_COLORS`, `MSP↔MSP_LABELS↔AUDIT_ALLOWED_ORGS`, `GBA_FIELDS↔GBA_21_FIELDS` 간 일관성 lock-in
+- `src/__meta__/*.test.ts` — `package.json` · `vite.config` · `tsconfig*` · `index.html` 빌드 인프라 invariant
+- `src/components/dashboard/lib.test.ts` — DBC 계수(SOC=100/65535, Temperature=50/65535) · 상태 라이프사이클 lock-in
+
+### E2E 스모크 (Playwright)
 
 ```bash
 cd ../../e2e-tests
@@ -124,4 +148,5 @@ npx playwright test ui_polish_smoke.spec.js
 
 - 디자인 토큰·안티패턴: `wiki/passport/design-tokens.md`
 - 활동 로그: `wiki/passport/activity-log/`
+- live BMU runtime 기준: `wiki/passport/live-bmu-runtime-2026-05-08.md`
 - 백엔드 API: `bmu-agent/README.md`

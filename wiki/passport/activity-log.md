@@ -16,6 +16,7 @@ status: historical
 - [[passport/activity-log/README|날짜별 활동 로그 허브]]
 
 ## 날짜별 기록
+- [[passport/activity-log/2026-05-11-github-readme-passport-refresh|2026-05-11 GitHub README 배터리여권 최신화]]
 - [[passport/activity-log/2026-05-08-chaincode-sequence5-bms-binding|2026-05-08 chaincode sequence 5 BMS binding 반영]]
 - [[passport/activity-log/2026-05-08-embedded-bms-binding-ingest|2026-05-08 임베디드 BMS binding handoff 반영]]
 - [[passport/activity-log/2026-05-08-vc-holder-expiry-contract|2026-05-08 VC holder DID/expiry 계약 동기화]]

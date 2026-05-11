@@ -27,6 +27,9 @@ BMS_BINDING_ID=did:battery:001#BMS-MGMT-001 # 초기 BMS binding 기본 DID frag
 BMS_BINDING_CODE32=0x2c9a0e0c               # SHA-256(BMS_MANAGEMENT_ID) first32LE
 BMS_EVIDENCE_HASH=b3c37ed2cdd2831cc0c212445905ced4a20ea51e129bff2e7418deddf7223178 # canonical binding evidence SHA-256
 DID_CACHE_MAX=500                           # DID→passportId 캐시 크기
+PASSPORT_LIVE_OVERLAY_LIMIT=100             # 목록 조회 시 최신 BMU overlay 대상 수
+PASSPORT_LIVE_OVERLAY_CONCURRENCY=8         # BMU overlay Fabric query 동시성
+RUNTIME_BMU_SNAPSHOT_MAX=50                 # 프로세스 메모리 최신 BMU snapshot 보관 수
 JWT_SECRET=...                              # 토큰 서명 비밀
 ```
 
@@ -49,7 +52,7 @@ React 빌드(`webapp/frontend-react/dist/`)가 있으면 `/`에서 자동 서빙
 | **ServiceMSP** | 정비 완료 · 분석 결과 제출 · VC 발급 |
 | **RegulatorMSP** | 규제 검증 · 소재 추출 · 폐기 승인 · VC 발급 · 감사 로그 조회 |
 
-## 라우트 그룹 (9개, 41개 엔드포인트)
+## 라우트 그룹
 
 ```
 /api/auth              POST  /login, /register
@@ -61,6 +64,7 @@ React 빌드(`webapp/frontend-react/dist/`)가 있으면 `/`에서 자동 서빙
 /api/materials         GET, POST /
 /api/bmu               POST /data (rate-limited), GET /records/:passportId,
                        POST /invalidate/:recordId
+/api/realtime          GET  /passports, /passports/:id, /bmu/:passportId, /stats
 /api/maintenance       POST /:id/request, /:id/log, /:id/accident
 /api/analysis          POST /:id/request, /:id/result
 /api/recycling         PUT  /:id/availability, POST /:id/extract, /:id/dispose
@@ -73,6 +77,8 @@ React 빌드(`webapp/frontend-react/dist/`)가 있으면 `/`에서 자동 서빙
                        /verifier/:verifierDid/history
 /api/audit             GET  /?action=&limit=&page= (ManufacturerMSP · RegulatorMSP)
 ```
+
+`/api/realtime/*`는 cloud-agent read model을 우선 사용하고, unavailable이면 Fabric ledger로 fallback한다.
 
 ## BMU 데이터 흐름
 
@@ -87,7 +93,7 @@ POST /api/bmu/data
   ↓ parseRawPayload — SOC/전압/전류/온도/셀 voltage·SOC[11]/플래그/bmsBindingCode32 디코드
   ↓ passport에 bmsManagementId가 있으면 bmsBindingCode32 비교
   ↓ Fabric submitTransaction('RecordBMUDataWithPayload', [..., rawPayload]) 또는 legacy 'RecordBMUData'
-  ↓ 체인코드가 원장에 기록
+  ↓ 체인코드가 원장에 기록 + 성공 record를 runtime BMU snapshot에 보관
 ```
 
 `parseRawPayload`는 raw soc_u16 그대로 반환 (보정 없음). bytes 44..47은 v1.1 `bmsBindingCode32`(little-endian uint32, `0=legacy`)로 노출한다. `dataHash`는 전체 48B `rawPayload` 기준이므로 `bmsBindingCode32`도 자동 포함된다.
@@ -109,6 +115,27 @@ bmsBindingCode32: 0x2c9a0e0c
 evidenceHash: b3c37ed2cdd2831cc0c212445905ced4a20ea51e129bff2e7418deddf7223178
 ```
 
+## 실시간 Passport snapshot / fallback
+
+조회 경로는 cloud-agent read model을 우선 사용한다. 단, `localhost:3002`가 내려가 있어도 Passport UI가 0 snapshot에 머물지 않도록 다음 fallback을 적용한다.
+
+| 경로 | fallback |
+|---|---|
+| `GET /api/realtime/passports/:id` | `QueryPassport` + 최신 `QueryBMURecordsByPassport` 1건 overlay |
+| `GET /api/realtime/bmu/:passportId` | Fabric `QueryBMURecordsByPassport` |
+| `GET /api/passports/:id` | 최신 BMU record/runtime snapshot overlay |
+| `GET /api/passports`, `GET /api/realtime/passports` | 목록 record별 최신 BMU overlay + runtime snapshot passport 선두 보강 |
+
+Overlay 필드:
+
+```text
+currentSoc, temperature, statusFlags, totalDischargeCycles,
+lastBmuDataId, lastBMUDataID, bmsBindingCode32,
+latestRawPayloadHashVerified, latestDataHash, updatedAt
+```
+
+주의: runtime snapshot은 프로세스 메모리다. `bmu-agent` 재시작 직후 첫 BMU packet 전까지는 목록 선두 보강이 비어 있을 수 있다.
+
 ## 구조화 로깅
 
 `services/logger.service.js`:
@@ -125,7 +152,16 @@ evidenceHash: b3c37ed2cdd2831cc0c212445905ced4a20ea51e129bff2e7418deddf7223178
 - 토큰은 stateless JWT; 토큰 폐기는 client-side (localStorage clear)
 - 차량 이미지는 static tree 밖(`data/vehicle-images/`)에 저장 + 접근 시 passport 권한 재검증
 - Rate limit 버킷은 5분 주기 cleanup, DID 캐시는 TTL + LRU eviction
-- password-like 필드(password, token, secret, signature)는 audit 로그에서 자동 제거
+- password-like 필드(password, token, secret, signature, rawPayload, privateKey, authorization)는 audit 로그에서 자동 제거
+
+## 검증
+
+```bash
+npm test
+# 40 tests pass
+```
+
+Passport/Web 통합 기준은 `webapp/frontend-react/README.md`를 참고한다. 최신 기준 커밋은 `8b5db6e`다.
 
 ## 관련 문서
 
