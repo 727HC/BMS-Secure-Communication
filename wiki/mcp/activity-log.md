@@ -328,7 +328,7 @@ Session 7 이후 GitHub history까지 재검증하고, `master` 이력에 남은
 - `master` 전체 이력의 local path/user, 개인 이메일 metadata, known legacy secret literal을 재스캔했다.
 - legacy orderer admin default secret literal이 과거 `master` 이력에 남아 있어 `ORDERER_ADMIN_SECRET` placeholder로 history rewrite했다.
 - `origin/master`를 rewritten HEAD로 force push하고 upstream tracking을 복구했다.
-- untracked Caliper resolved config 2개가 Fabric key path를 포함해 삭제했다.
+- untracked Caliper resolved config 2개가 Fabric key path를 포함해 삭제했고 `.gitignore`에 재생성 방지 규칙을 추가했다.
 - GitHub hidden PR refs `refs/pull/1/head`, `refs/pull/2/head`는 read-only ref라 직접 삭제/수정이 불가함을 확인했다.
 
 ### 검증

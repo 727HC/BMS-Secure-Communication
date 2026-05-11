@@ -109,6 +109,7 @@ workspaceS32DS.3.6.0.zip
 
 # Local network / benchmark outputs
 /caliper-workspace/report.html
+/caliper-workspace/*.resolved.yaml
 /passport-network/*.tar.gz
 /passport-network/log.txt
 # END runtime-artifact-policy
