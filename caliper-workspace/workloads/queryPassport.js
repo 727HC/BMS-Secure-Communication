@@ -1,6 +1,7 @@
 'use strict';
 
 const { WorkloadModuleBase } = require('@hyperledger/caliper-core');
+const { passportIdForIndex } = require('../caliperIds');
 
 const NUM_PASSPORTS = parseInt(process.env.NUM_PASSPORTS || '50', 10);
 const BMU_RECORD_KEYS = parseInt(process.env.BMU_RECORD_KEYS || String(NUM_PASSPORTS), 10);
@@ -20,7 +21,7 @@ class QueryPassportWorkload extends WorkloadModuleBase {
         // Build passport ID list prepared before the benchmark round.
         const queryKeys = Math.max(NUM_PASSPORTS, BMU_RECORD_KEYS);
         for (let i = 0; i < queryKeys; i++) {
-            this.passportIds.push(`PASSPORT-CALIPER-${RUN_ID}-${String(i).padStart(4, '0')}`);
+            this.passportIds.push(passportIdForIndex(i, RUN_ID));
         }
     }
 

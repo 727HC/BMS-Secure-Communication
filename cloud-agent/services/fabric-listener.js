@@ -15,6 +15,7 @@ const CONTRACT = process.env.FABRIC_CONTRACT || 'passport-contract';
 const WALLET_PATH = process.env.FABRIC_WALLET_PATH || path.join(__dirname, '..', 'wallet');
 const MSP = process.env.FABRIC_MSP || 'ManufacturerMSP';
 const IDENTITY = process.env.FABRIC_IDENTITY || 'admin';
+const RUN_ID = process.env.CALIPER_RUN_ID || process.env.RUN_ID || '';
 const ADMIN_SECRET = process.env.FABRIC_ADMIN_SECRET;
 if (!ADMIN_SECRET) {
   console.error('[listener] FATAL: FABRIC_ADMIN_SECRET must be set');
@@ -202,7 +203,9 @@ async function startBlockListener(gateway, db) {
 
   // 마지막 동기화 블록 번호 조회
   const meta = db.collection('_sync_meta');
-  const lastSync = await meta.findOne({ _id: 'lastBlock' });
+  const channelMetaId = `lastBlock:${CHANNEL}`;
+  const lastSync = await meta.findOne({ _id: channelMetaId })
+    || (CHANNEL === 'passportchannel' ? await meta.findOne({ _id: 'lastBlock' }) : null);
   const startBlock = lastSync ? lastSync.blockNumber + 1 : 0;
 
   console.log(`[listener] Starting from block ${startBlock}`);
@@ -216,10 +219,31 @@ async function startBlockListener(gateway, db) {
 
       // 동기화 위치 저장
       await meta.updateOne(
-        { _id: 'lastBlock' },
-        { $set: { blockNumber, syncedAt: new Date().toISOString() } },
+        { _id: channelMetaId },
+        {
+          $set: {
+            blockNumber,
+            channel: CHANNEL,
+            runId: RUN_ID,
+            syncedAt: new Date().toISOString(),
+          },
+        },
         { upsert: true }
       );
+      if (CHANNEL === 'passportchannel') {
+        await meta.updateOne(
+          { _id: 'lastBlock' },
+          {
+            $set: {
+              blockNumber,
+              channel: CHANNEL,
+              runId: RUN_ID,
+              syncedAt: new Date().toISOString(),
+            },
+          },
+          { upsert: true }
+        );
+      }
     } catch (err) {
       console.error(`[listener] Block ${blockNumber} processing error:`, err.message);
     }

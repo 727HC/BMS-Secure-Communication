@@ -18,6 +18,7 @@ const MONGODB_DB = process.env.MONGODB_DB || 'battery_passport';
 const CHANNEL = process.env.FABRIC_CHANNEL || 'passportchannel';
 const MSP = process.env.FABRIC_MSP || 'ManufacturerMSP';
 const IDENTITY = process.env.FABRIC_IDENTITY || 'admin';
+const RUN_ID = process.env.CALIPER_RUN_ID || process.env.RUN_ID || '';
 
 async function getContract() {
   const ccpPath = process.env.FABRIC_CCP_PATH ||
@@ -179,6 +180,19 @@ async function main() {
   const passports = await syncPassports(contract, db);
   const credentials = await syncCredentials(contract, db);
   const materials = await syncMaterials(contract, db);
+  await db.collection('_sync_meta').updateOne(
+    { _id: `initialSync:${CHANNEL}` },
+    {
+      $set: {
+        channel: CHANNEL,
+        runId: RUN_ID,
+        syncType: 'initial',
+        counts: { passports, credentials, materials },
+        syncedAt: new Date().toISOString(),
+      },
+    },
+    { upsert: true }
+  );
   const elapsed = ((Date.now() - t0) / 1000).toFixed(1);
 
   console.log(`\n[sync] === Initial sync complete ===`);

@@ -56,6 +56,8 @@ const API_KEY = process.env.CLOUD_AGENT_API_KEY || '';
 const MONGO_MAX_POOL_SIZE = parseInt(process.env.MONGO_MAX_POOL_SIZE || '500', 10);
 const MONGO_MIN_POOL_SIZE = parseInt(process.env.MONGO_MIN_POOL_SIZE || '20', 10);
 const LISTENER_ENABLED = process.env.CLOUD_AGENT_LISTENER_ENABLED !== 'false';
+const FABRIC_CHANNEL = process.env.FABRIC_CHANNEL || 'passportchannel';
+const READ_MODEL_PROVENANCE = process.env.CLOUD_READ_MODEL_PROVENANCE || 'channel-bound';
 const PASSPORT_DETAIL_CACHE_TTL_MS = parseInt(process.env.PASSPORT_DETAIL_CACHE_TTL_MS || '1000', 10);
 const passportDetailCache = new Map();
 
@@ -249,7 +251,13 @@ app.get('/api/stats', async (req, res) => {
 
 // GET /health
 app.get('/health', (req, res) => {
-  res.json({ status: 'ok', db: db ? 'connected' : 'disconnected' });
+  res.json({
+    status: 'ok',
+    db: db ? 'connected' : 'disconnected',
+    fabricChannel: FABRIC_CHANNEL,
+    listenerEnabled: LISTENER_ENABLED,
+    readModelProvenance: READ_MODEL_PROVENANCE,
+  });
 });
 
 // ============================================================

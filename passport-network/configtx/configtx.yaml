@@ -222,9 +222,9 @@ Profiles:
     <<: *ChannelDefaults
     Orderer:
       <<: *OrdererDefaults
-      BatchTimeout: 1s
+      BatchTimeout: 4s
       BatchSize:
-        MaxMessageCount: 500
+        MaxMessageCount: 2000
         AbsoluteMaxBytes: 10 MB
         PreferredMaxBytes: 4 MB
       OrdererType: etcdraft

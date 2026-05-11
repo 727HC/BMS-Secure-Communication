@@ -9,6 +9,7 @@ const { performance } = require('perf_hooks');
 const CLOUD_BASE = 'http://localhost:3002';
 const FABRIC_BASE = 'http://localhost:3001';
 const CLOUD_READ_TARGET_TPS = parseInt(process.env.BENCH_CLOUD_READ_TARGET_TPS || '2000', 10);
+const READ_PASSPORT_ID = process.env.BENCH_PASSPORT_ID || 'PASSPORT-BMU-DEVICE';
 const READ_CONCURRENCY = 200;
 const READ_TOTAL = 5000;
 const WRITE_CONCURRENCY = 20;
@@ -64,7 +65,7 @@ async function login() {
 
 async function benchCloudRead() {
   console.log(`\n=== CLOUD READ BENCHMARK (MongoDB, target: ${CLOUD_READ_TARGET_TPS}+ TPS) ===`);
-  console.log(`Endpoint: GET ${CLOUD_BASE}/api/passports/PASSPORT-BMU-DEVICE`);
+  console.log(`Endpoint: GET ${CLOUD_BASE}/api/passports/${READ_PASSPORT_ID}`);
   console.log(`Total: ${READ_TOTAL}, Concurrency: ${READ_CONCURRENCY}\n`);
 
   let issued = 0;
@@ -77,7 +78,7 @@ async function benchCloudRead() {
       const seq = issued++;
       if (seq >= READ_TOTAL) break;
       try {
-        const res = await request(`${CLOUD_BASE}/api/passports/PASSPORT-BMU-DEVICE`, {
+        const res = await request(`${CLOUD_BASE}/api/passports/${READ_PASSPORT_ID}`, {
           agent: cloudHttpAgent,
         });
         if (res.status === 200) completed++;
@@ -100,7 +101,7 @@ async function benchCloudRead() {
 async function benchFabricRead() {
   const token = await login();
   console.log(`\n=== FABRIC READ BENCHMARK (CouchDB, baseline) ===`);
-  console.log(`Endpoint: GET ${FABRIC_BASE}/api/passports/PASSPORT-BMU-DEVICE`);
+  console.log(`Endpoint: GET ${FABRIC_BASE}/api/passports/${READ_PASSPORT_ID}`);
   console.log(`Total: 2000, Concurrency: 50\n`);
 
   let issued = 0;
@@ -113,7 +114,7 @@ async function benchFabricRead() {
       const seq = issued++;
       if (seq >= 2000) break;
       try {
-        const res = await request(`${FABRIC_BASE}/api/passports/PASSPORT-BMU-DEVICE`, {
+        const res = await request(`${FABRIC_BASE}/api/passports/${READ_PASSPORT_ID}`, {
           headers: { Authorization: `Bearer ${token}` },
           agent: fabricHttpAgent,
         });

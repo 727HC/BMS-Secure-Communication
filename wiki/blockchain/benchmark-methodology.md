@@ -7,13 +7,15 @@ status: current
 ---
 # 벤치마크 측정 방법론
 
-국가과제 3차년도 KPI (쓰기 150 TPS, 읽기 1,500 TPS) 재현 절차. 2026-04-22 세션에서 실측 검증.
+국가과제 3차년도 KPI (쓰기 150 TPS, 읽기 1,500 TPS)와 내년 선제 목표(쓰기 200 TPS, 읽기 2,000 TPS) 재현 절차.
+
+> 2026-05-11 기준 정정: write KPI는 더 이상 Caliper `Throughput` 단독으로 판정하지 않는다. 공식 write 수치는 **successful commit TPS / Succ-only TPS**이며, `Fail=0`, `MVCC/reject=0`, `Succ == txNumber`를 같이 만족해야 한다. Caliper `Throughput`은 참고 지표로만 병기한다.
 
 ## 경로 구분
 
 | 지표 | 측정 도구 | 경로 | 용도 |
 |------|----------|------|------|
-| **쓰기 TPS** | Caliper | Caliper → peer-gateway → Fabric | KPI 공식 수치 (Fabric ledger throughput) |
+| **쓰기 TPS** | Caliper | Caliper → peer-gateway → Fabric | KPI 공식 수치 (successful commit / Succ-only) |
 | **읽기 TPS** | `scripts/tps-benchmark-cloud.js` | HTTP → cloud-agent:3002 → MongoDB | KPI 공식 수치 (off-chain read model, 논문 VI장 설계) |
 | Fabric READ (참고) | `scripts/tps-benchmark-cloud.js` | HTTP → bmu-agent:3001 → CouchDB | baseline 수치, KPI 목표 아님 |
 | Fabric WRITE (참고) | `scripts/tps-benchmark-cloud.js` | HTTP → bmu-agent:3001 → peer | 단일 에이전트 호출 한계 측정용, KPI 목표 아님 |
@@ -27,7 +29,7 @@ status: current
    ```
 2. **체인코드 committed sequence** 확인 — `peer lifecycle chaincode querycommitted -C passportchannel -n passport-contract`
    - `start_passport_network.sh` 는 `-ccep "OR('ManufacturerMSP.peer','EVManufacturerMSP.peer','ServiceMSP.peer','RegulatorMSP.peer')"` 를 포함해 deploy
-   - 1-of-4 endorsement 가 활성화돼야 KPI 쓰기 180~200 TPS 수준 나옴 (3-of-4 MAJORITY 에서는 60~80 TPS 수준)
+   - 1-of-4 endorsement 가 활성화돼야 한다. 3-of-4 MAJORITY는 write latency가 커져 KPI 재현용 profile이 아니다.
 3. **BENCH 계정 등록** (bmu-agent 경유)
    ```bash
    curl -s -X POST http://localhost:3001/api/auth/register \
@@ -68,8 +70,8 @@ cd caliper-workspace && NUM_PASSPORTS=500 ./run-bench.sh manufacturer
   - `NUM_PASSPORTS=500`
   - `CALIPER_RUN_ID` — 미지정 시 UTC timestamp 자동 생성
   - `BMU_RECORD_KEYS` — BMU write용 passport/DID key 수, 기본 `NUM_PASSPORTS`.
-    - KPI 재현 기본값은 2026-04-22와 같은 500-key contention workload다. Caliper `Throughput` 컬럼은 성공+MVCC reject 트랜잭션을 포함한다.
-    - all-success 저장 처리량 진단은 `BMU_RECORD_KEYS=3000`으로 별도 실행한다.
+    - successful commit KPI에서는 기본값을 write tx 수와 같게 둔다(`CALIPER_SUCCESSFUL_WRITE_MODE=true`). 같은 DID/`lastFc` hot key 반복으로 생기는 MVCC reject는 공식 성공 TPS에 포함하지 않는다.
+    - 500-key contention workload는 과거 회귀 비교용으로만 유지한다.
   - `BMU_FC_START` — 기존 benchmark passport/DID 재사용 시 FC 시작 오프셋, 기본 `0`
   - `CALIPER_PREPARE_CONCURRENCY` — passport 사전 생성 동시성, 기본 `25`
   - `CALIPER_FABRIC_TIMEOUT_INVOKEORQUERY` — Gateway invoke/query timeout, 기본 `180`. backlog 상태에서 false `CommitStatusError: DEADLINE_EXCEEDED`를 줄이기 위한 측정 안정화 값이며, KPI throughput 계산이나 chaincode 의미를 바꾸지 않는다.
@@ -80,7 +82,7 @@ cd caliper-workspace && NUM_PASSPORTS=500 ./run-bench.sh manufacturer
   - write round 기본값: txNumber 10000, fixed-rate 300 TPS
   - read round 기본값: txNumber 1000, fixed-rate 2200 TPS
 - `NUM_PASSPORTS=500` — read/query 및 기본 write key 수.
-- `BMU_RECORD_KEYS=3000` — MVCC 충돌 없이 valid BMU record만 측정하는 all-success 진단용 override.
+- `BMU_RECORD_KEYS=${CALIPER_WRITE_TX_NUMBER}` — MVCC 충돌 없이 valid BMU record만 측정하는 successful commit KPI 기본값.
 - chaincode endorsement: 1-of-4 OR
 
 ### 기대 수치
@@ -90,7 +92,7 @@ cd caliper-workspace && NUM_PASSPORTS=500 ./run-bench.sh manufacturer
 | Send Rate | — | 200.8 TPS |
 | Avg Latency | — | 0.54s |
 
-Caliper Throughput = (Succ+Fail)/elapsed. 2026-04-22에는 이 ledger 처리량 기준으로 KPI를 판정했다.
+Caliper Throughput = (Succ+Fail)/elapsed. 2026-04-22에는 이 ledger 처리량 기준으로 KPI를 판정했다. 2026-05-11부터는 `Succ-only TPS`와 `Fail=0`을 공식 판정으로 사용한다.
 
 ### 실패율 해석
 - 과거 측정의 Fail 대부분은 status 11 (`MVCC_READ_CONFLICT`) — 같은 passport `lastFc` 키에 여러 tx 충돌.
@@ -131,7 +133,7 @@ Caliper Throughput = (Succ+Fail)/elapsed. 2026-04-22에는 이 ledger 처리량 
 ### 2026-05-09 내년 write 200 / read 2000 선제 profile
 
 - 목표: Fabric write `>=200 TPS`, cloud read `>=2000 TPS`.
-- write KPI는 계속 Caliper `Throughput` 컬럼 기준이다. 운영 의미 오해를 막기 위해 `Succ-only TPS`를 보조 지표로 병기한다.
+- 2026-05-11 기준으로 이 절의 `243.2 TPS`는 공식 성공 TPS가 아니라 Caliper `Throughput` 참고 수치로 재분류한다. 당시 `Succ-only TPS=52.1`이므로 successful commit KPI 통과 증거가 아니다.
 - live `passportchannel` destructive reset은 금지한다. 내년 KPI 선제 측정은 별도 fresh benchmark channel을 생성한다.
 - 일반 운영 profile:
   - `PassportChannel`: `BatchTimeout=0.5s`, `MaxMessageCount=250`, `PreferredMaxBytes=4 MB`
@@ -150,6 +152,7 @@ Caliper Throughput = (Succ+Fail)/elapsed. 2026-04-22에는 이 ledger 처리량 
   - channel/profile: `passportbench200bs500153942`, `PassportBenchmarkChannel`
   - 로그: `/tmp/caliper-write200-bs500-tps300-passportbench200bs500153942-20260509154040.log`
   - 결과: `write-bmu-data Succ 2141 / Fail 7859 / Throughput 243.2 TPS / Succ-only 52.1 TPS`
+  - 재분류: `Fail 7859`가 포함된 throughput-only 결과이므로 2026-05-11 이후 공식 write200 성공 증거로 쓰지 않는다.
 - A/B 기록:
   - `BatchTimeout=0.1s`: `78.4 TPS`, 악화
   - `BatchTimeout=0.5s`, `MaxMessageCount=250`: `128~141 TPS`
@@ -163,6 +166,52 @@ Caliper Throughput = (Succ+Fail)/elapsed. 2026-04-22에는 이 ledger 처리량 
   ```
   - 권장 cloud-agent profile: `CLOUD_AGENT_LISTENER_ENABLED=false`, `RATE_LIMIT_MAX=1000000`, `MONGO_MAX_POOL_SIZE=1000`, `PASSPORT_DETAIL_CACHE_TTL_MS=5000`
   - 통과 증거: `/tmp/cloud-read-write200-20260509154350.log` → `CLOUD READ TPS 3111.2`
+
+### 2026-05-11 successful commit write200 기준
+
+- 공식 write 기준:
+  - `KPI_BASIS=successful_commit`
+  - `SUCCESSFUL_WRITE_TPS >= 200`
+  - `WRITE_SUCC_COUNT == EXPECTED_WRITE_TX_COUNT`
+  - `WRITE_FAIL_COUNT=0`
+  - `WRITE_REJECT_COUNT=0`
+- `PassportBenchmarkChannel` profile:
+  - `BatchTimeout=4s`
+  - `MaxMessageCount=2000`
+  - `PreferredMaxBytes=4 MB`
+  - peer CouchDB `maxBatchUpdateSize=5000`, `warmIndexesAfterNBlocks=1000`
+- Caliper successful mode:
+  - `BMU_RECORD_KEYS` 기본값을 write tx 수와 같게 둬 DID/`lastFc` hot-key MVCC를 제거한다.
+  - `RecordBMUData`가 허용하는 `ManufacturerMSP`, `EVManufacturerMSP` 두 writer org로 gateway/endorsement load를 분산한다.
+  - workload는 compact benchmark ID와 precomputed `dataHash`, fixed telemetry 값을 사용한다. 이는 client-side benchmark overhead를 줄이는 조치이며 chaincode 검증, endorsement, FC monotonic check, CouchDB commit 의미는 그대로 유지한다.
+- 재현 명령:
+  ```bash
+  cd caliper-workspace
+  CHANNEL_NAME=<prepared-benchmark-channel> \
+  CALIPER_RUN_ID=<prepared-run-id> \
+  CALIPER_SKIP_PREPARE=true \
+  BMU_FC_START=0 \
+  CALIPER_WRITE_TARGET_TPS=300 \
+  CALIPER_WRITE_TX_NUMBER=5000 \
+  NUM_PASSPORTS=500 \
+  BMU_RECORD_KEYS=5000 \
+    ./run-bench.sh manufacturer
+  ```
+- pre-provisioned guard:
+  - `CALIPER_SKIP_PREPARE=true`는 반드시 명시적 `CALIPER_RUN_ID`와 `BMU_FC_START`를 요구한다.
+  - `CALIPER_VERIFY_PREPARED=true`가 기본으로 켜져 `verify-passports.js`가 write round 전 passport/DID 존재와 DID 매칭을 검증한다.
+  - 즉시 실패 조건: 준비되지 않은 run id, 빠진 passport/DID, 잘못된 DID, 암묵적 FC 시작값.
+- 통과 증거:
+  - channel/profile: `passportshort4s20260511023245`, `PassportBenchmarkChannel`
+  - write log: `/tmp/caliper-succshort4s-20260511T023245Z-passportshort4s20260511023245-optimized-target300.log`
+  - write result: `Succ 5000 / Fail 0 / Throughput 205.1 TPS / Succ-only 205.1 TPS`
+  - read log: `/tmp/cloud-read-succshort4s-optimized-20260511T024159Z.log`
+  - read result: `CLOUD READ TPS 2737.9`, `Completed 5000 / Errors 0`
+  - evidence bundle: `.omx/evidence/blockchain/succshort4s-optimized-20260511T024159Z`
+- 주의:
+  - fresh channel 생성 직후 passport setup 부하가 남은 cold run은 `163.0 TPS`까지 내려갔다. KPI write round는 setup tx를 제외한 pre-provisioned BMU write surface에서 측정한다.
+  - throughput-only 수치와 successful commit 수치를 최종 보고에서 분리한다.
+  - setup 포함 cold-start 성능은 공식 write KPI가 아니라 별도 진단 지표로 보고한다. 평가자가 one-shot cold run을 요구하면 `benchmark-safe` track으로 setup/quiet/write 단계를 분리하고, successful commit 판정에는 write round만 사용한다.
 
 ## 읽기 KPI — Cloud HTTP
 
@@ -229,3 +278,80 @@ BENCH_USER=bench BENCH_PASSWORD=BENCH_PASSWORD_PLACEHOLDER BENCH_ORG=1 \
 - [[blockchain/kpi-targets|KPI 목표 및 평가 기준]]
 - [[blockchain/cloud-agent-architecture|Cloud Agent 아키텍처]]
 - [[blockchain/activity-log|블록체인 세션 활동 로그]] — Session 2026-04-22 상세 이력
+
+## KPI 재현성 hardening 절차 — benchmark-safe / evaluation-dday
+
+### benchmark-safe: 평소 회귀용 비파괴 절차
+
+live `passportchannel`을 건드리지 않고 generated benchmark channel에서 write/read/evidence를 반복 검증한다.
+
+```bash
+scripts/blockchain-benchmark-safe.sh --dry-run
+scripts/blockchain-benchmark-safe.sh --execute
+```
+
+원칙:
+- generated channel은 `passportchannel`이면 안 된다.
+- `PassportBenchmarkChannel` profile을 사용한다.
+- exact chaincode deploy args를 사용한다.
+- evidence collector가 `benchmark-safe`에서 `passportchannel`을 발견하면 실패한다.
+
+### evaluation-dday: 평가 D-day용 fresh passportchannel 절차
+
+평가기관이 channel 이름 `passportchannel`을 요구할 때만 사용한다. 기본값은 dry-run이다.
+
+```bash
+scripts/blockchain-evaluation-dday.sh --dry-run
+
+CONFIRM_DESTRUCTIVE_RESET=true \
+DESTRUCTIVE_RESET_PHRASE="RESET passportchannel for evaluation-dday" \
+  scripts/blockchain-evaluation-dday.sh --execute
+```
+
+D-day write200 재현 조건:
+- channel name: `passportchannel`
+- channel profile: `PassportBenchmarkChannel`
+- normal `PassportChannel`은 write200 D-day profile이 아니다.
+- destructive reset guard는 `networkDown()` / `docker compose down --volumes` 진입 전에 검증된다.
+
+### Evidence bundle
+
+```bash
+node scripts/collect-blockchain-evidence.js \
+  --mode benchmark-safe \
+  --channel <actual-channel> \
+  --profile PassportBenchmarkChannel \
+  --write-log <caliper-log> \
+  --read-log <cloud-read-log>
+```
+
+수집 항목:
+- `evidence.json`, `evidence.md`
+- copied write/read logs + sha256
+- actual channel config fetch/decode 결과
+  - decode는 repo-local `fabric-samples/bin/configtxlator` 경로를 사용한다.
+  - non-dry-run evidence에서 `decodeStatus`, `batchTimeout`, `maxMessageCount`, `preferredMaxBytes`가 없으면 실패한다.
+- `peer lifecycle chaincode querycommitted`
+- peer height
+- Mongo `_sync_meta`
+- cloud-agent `/health`
+- commit hash
+- Fabric/Caliper/Docker versions
+
+Cloud read provenance:
+- channel-bound evidence는 `FABRIC_CHANNEL=<actual-channel>`이어야 한다.
+- generated benchmark channel인데 cloud-agent가 default `passportchannel`을 보고 있으면 실패해야 한다.
+- wrapper는 channel-bound 설정과 `FABRIC_CHANNEL`이 맞지 않으면 benchmark 실행 전에 실패한다.
+- 독립 cloud service read benchmark는 `independent-service-benchmark`로 명시하고 channel freshness claim을 하지 않는다.
+
+### Dry-run/guard regression
+
+```bash
+scripts/test-blockchain-repro-hardening.sh
+```
+
+검증 내용:
+- D-day reset dry-run
+- missing guard / wrong phrase failure before destructive calls
+- benchmark-safe `passportchannel` refusal
+- evidence mode/channel/provenance invariants

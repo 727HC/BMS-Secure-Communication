@@ -17,8 +17,7 @@ const KEYSTORE = process.env.ORG_KEYSTORE;
 const SIGNCERT = process.env.ORG_SIGNCERT;
 const CHANNEL_NAME = process.env.CHANNEL_NAME || 'passportchannel';
 const CHAINCODE_NAME = process.env.CHAINCODE_NAME || 'passport-contract';
-const CONCURRENCY = parsePositiveInt(process.env.CALIPER_PREPARE_CONCURRENCY || '25', 'CALIPER_PREPARE_CONCURRENCY');
-const CHECK_EXISTING = String(process.env.CALIPER_PREPARE_CHECK_EXISTING || 'true').toLowerCase() !== 'false';
+const CONCURRENCY = parsePositiveInt(process.env.CALIPER_VERIFY_CONCURRENCY || '50', 'CALIPER_VERIFY_CONCURRENCY');
 
 function parsePositiveInt(value, name) {
     const parsed = parseInt(value, 10);
@@ -68,46 +67,18 @@ async function newGateway() {
         client,
         identity: { mspId: MSP_ID, credentials },
         signer,
-        endorseOptions: () => ({ deadline: Date.now() + 60_000 }),
-        submitOptions: () => ({ deadline: Date.now() + 60_000 }),
-        commitStatusOptions: () => ({ deadline: Date.now() + 120_000 }),
-        evaluateOptions: () => ({ deadline: Date.now() + 30_000 }),
+        evaluateOptions: () => ({ deadline: Date.now() + 60_000 }),
     });
     return { gateway, client };
 }
 
-function passportArgs(index) {
-    const passportId = passportIdForIndex(index, RUN_ID);
-    const did = didForIndex(index, RUN_ID);
-    return [
-        passportId, `BATTERY-${passportId}`, did,
-        'BenchModel', `SN-${index}`,
-        'BenchMfg', 'KR',
-        'BenchCell', 'KR',
-        '2026-01-01', 'Prismatic', 'NMC',
-        '96', '450', '77',
-        '172', '200', '3000',
-        '280', '20',
-        '1',
-    ];
+function parsePassport(bytes) {
+    const text = Buffer.from(bytes || '').toString('utf8');
+    return JSON.parse(text);
 }
 
-function errorText(err) {
-    return [
-        err?.message,
-        err?.details,
-        err?.cause?.message,
-        JSON.stringify(err?.details || ''),
-    ].filter(Boolean).join('\n');
-}
-
-function isAlreadyExistsError(err) {
-    return errorText(err).includes('already exists');
-}
-
-function isMissingPassportError(err) {
-    const text = errorText(err);
-    return text.includes('does not exist') || text.includes('not found');
+function passportDid(passport) {
+    return passport.did || passport.DID || passport.Did;
 }
 
 async function main() {
@@ -116,40 +87,41 @@ async function main() {
         const network = gateway.getNetwork(CHANNEL_NAME);
         const contract = network.getContract(CHAINCODE_NAME);
         let next = 0;
-        let created = 0;
-        let existed = 0;
+        let verified = 0;
+        const failures = [];
 
         async function worker() {
             while (next < PASSPORT_COUNT) {
                 const index = next;
                 next++;
                 const passportId = passportIdForIndex(index, RUN_ID);
+                const expectedDid = didForIndex(index, RUN_ID);
                 try {
-                    if (CHECK_EXISTING) {
-                        try {
-                            await contract.evaluateTransaction('QueryPassport', passportId);
-                            existed++;
-                            continue;
-                        } catch (err) {
-                            if (!isMissingPassportError(err)) {
-                                throw err;
-                            }
-                        }
+                    const result = await contract.evaluateTransaction('QueryPassport', passportId);
+                    const passport = parsePassport(result);
+                    const actualId = passport.passportId || passport.id || passport.ID || passport.PassportID;
+                    const actualDid = passportDid(passport);
+                    if (actualId && actualId !== passportId) {
+                        throw new Error(`passportId mismatch expected=${passportId} actual=${actualId}`);
                     }
-                    await contract.submitTransaction('CreateBatteryPassport', ...passportArgs(index));
-                    created++;
+                    if (actualDid !== expectedDid) {
+                        throw new Error(`did mismatch expected=${expectedDid} actual=${actualDid || '<empty>'}`);
+                    }
+                    verified++;
                 } catch (err) {
-                    if (isAlreadyExistsError(err)) {
-                        existed++;
-                        continue;
+                    failures.push({ index, passportId, error: err.message || String(err) });
+                    if (failures.length >= 10) {
+                        throw new Error(`too many missing/invalid benchmark passports; first failures=${JSON.stringify(failures)}`);
                     }
-                    throw err;
                 }
             }
         }
 
         await Promise.all(Array.from({ length: Math.min(CONCURRENCY, PASSPORT_COUNT) }, () => worker()));
-        console.log(`[prepare-passports] runId=${RUN_ID} passports=${PASSPORT_COUNT} queryKeys=${NUM_PASSPORTS} bmuKeys=${BMU_RECORD_KEYS} created=${created} existed=${existed}`);
+        if (failures.length > 0) {
+            throw new Error(`benchmark passport verification failed: ${JSON.stringify(failures)}`);
+        }
+        console.log(`[verify-passports] runId=${RUN_ID} channel=${CHANNEL_NAME} passports=${PASSPORT_COUNT} verified=${verified}`);
     } finally {
         gateway.close();
         client.close();
@@ -159,6 +131,6 @@ async function main() {
 main()
     .then(() => process.exit(0))
     .catch((err) => {
-        console.error(`[prepare-passports] failed: ${err.stack || err.message || err}`);
+        console.error(`[verify-passports] failed: ${err.stack || err.message || err}`);
         process.exit(1);
     });

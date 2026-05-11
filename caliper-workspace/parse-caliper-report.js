@@ -44,5 +44,21 @@ if (rows.length === 0) {
 console.log('=== Caliper Summary ===');
 for (const row of rows) {
     const succOnlyTps = row.succ + row.fail > 0 ? (row.throughput * row.succ / (row.succ + row.fail)) : 0;
-    console.log(`${row.name}: Succ ${row.succ} / Fail ${row.fail} / Send Rate ${row.sendRate} TPS / Avg Latency ${row.avgLatency}s / Throughput ${row.throughput} TPS / Succ-only ${succOnlyTps.toFixed(1)} TPS`);
+    const successfulLabel = row.name === 'write-bmu-data' ? ` / Successful ${succOnlyTps.toFixed(1)} TPS` : '';
+    console.log(`${row.name}: Succ ${row.succ} / Fail ${row.fail} / Send Rate ${row.sendRate} TPS / Avg Latency ${row.avgLatency}s / Throughput ${row.throughput} TPS / Succ-only ${succOnlyTps.toFixed(1)} TPS${successfulLabel}`);
+}
+
+const writeRow = rows.find((row) => row.name === 'write-bmu-data');
+if (process.env.CALIPER_RESULTS_ENV && writeRow) {
+    const succOnlyTps = writeRow.succ + writeRow.fail > 0 ? (writeRow.throughput * writeRow.succ / (writeRow.succ + writeRow.fail)) : 0;
+    fs.writeFileSync(process.env.CALIPER_RESULTS_ENV, [
+        'OFFICIAL_WRITE_TERMINATED=true',
+        'KPI_BASIS=successful_commit',
+        `SUCCESSFUL_WRITE_TPS=${succOnlyTps.toFixed(1)}`,
+        `WRITE_THROUGHPUT_TPS=${writeRow.throughput}`,
+        `WRITE_SUCC_COUNT=${writeRow.succ}`,
+        `WRITE_FAIL_COUNT=${writeRow.fail}`,
+        `WRITE_REJECT_COUNT=${writeRow.fail}`,
+        '',
+    ].join('\n'));
 }

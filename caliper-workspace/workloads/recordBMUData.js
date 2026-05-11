@@ -2,6 +2,7 @@
 
 const { WorkloadModuleBase } = require('@hyperledger/caliper-core');
 const crypto = require('crypto');
+const { keyPrefix, passportIdForIndex, didForIndex } = require('../caliperIds');
 
 const NUM_PASSPORTS = parseInt(process.env.NUM_PASSPORTS || '50', 10);
 const BMU_RECORD_KEYS = parseInt(process.env.BMU_RECORD_KEYS || String(NUM_PASSPORTS), 10);
@@ -18,9 +19,12 @@ class RecordBMUDataWorkload extends WorkloadModuleBase {
         super();
         this.passportIds = [];
         this.dids = [];
+        this.recordIds = [];
+        this.dataHashes = [];
         this.fcCounters = {};
         this.txIndex = 0;
         this.invokerMspId = '';
+        this.timestamp = '';
     }
 
     async initializeWorkloadModule(workerIndex, totalWorkers, roundIndex, roundArguments, sutAdapter, sutContext) {
@@ -29,13 +33,19 @@ class RecordBMUDataWorkload extends WorkloadModuleBase {
         // Worker-exclusive BMU key assignment: the write KPI measures independent
         // valid BMU records, not repeated writes against the same passport high-water key.
         this.invokerMspId = WRITER_MSPS.length > 0 ? WRITER_MSPS[workerIndex % WRITER_MSPS.length] : '';
+        const prefix = keyPrefix(RUN_ID);
+        const recordEpoch = process.env.CALIPER_RECORD_EPOCH || Date.now().toString(36);
         for (let i = workerIndex; i < BMU_RECORD_KEYS; i += totalWorkers) {
-            const id = `PASSPORT-CALIPER-${RUN_ID}-${String(i).padStart(4, '0')}`;
-            const did = `did-caliper-${RUN_ID}-${String(i).padStart(4, '0')}`;
+            const id = passportIdForIndex(i, RUN_ID);
+            const did = didForIndex(i, RUN_ID);
             this.passportIds.push(id);
             this.dids.push(did);
             this.fcCounters[did] = BMU_FC_START;
+            const recordId = `B-CAL-${prefix}-${workerIndex}-${recordEpoch}-${this.recordIds.length}`;
+            this.recordIds.push(recordId);
+            this.dataHashes.push(crypto.createHash('sha256').update(recordId).digest('hex'));
         }
+        this.timestamp = new Date().toISOString();
     }
 
     async submitTransaction() {
@@ -46,18 +56,12 @@ class RecordBMUDataWorkload extends WorkloadModuleBase {
         const idx = this.txIndex % this.passportIds.length;
         const passportId = this.passportIds[idx];
         const did = this.dids[idx];
+        const recordId = this.recordIds[idx];
+        const dataHash = this.dataHashes[idx];
 
         this.fcCounters[did]++;
         const fc = this.fcCounters[did];
         this.txIndex++;
-
-        const recordId = `BMU-W${this.workerIndex}-${this.txIndex}-${Date.now()}`;
-        const timestamp = new Date().toISOString();
-        const soc = Math.floor(Math.random() * 65535);
-        const voltage = (35 + Math.random() * 10).toFixed(3);
-        const current = (-5 + Math.random() * 10).toFixed(3);
-        const temperature = Math.floor(20000 + Math.random() * 20000);
-        const dataHash = crypto.createHash('sha256').update(recordId).digest('hex');
 
         const args = {
             contractId: 'passport-contract',
@@ -65,9 +69,9 @@ class RecordBMUDataWorkload extends WorkloadModuleBase {
             contractArguments: [
                 recordId, passportId, did,
                 dataHash, 'benchSig',
-                String(fc), String(soc), voltage, current,
-                String(temperature), '96', '0', '0',
-                timestamp
+                String(fc), '32768', '40.000', '0.000',
+                '30000', '96', '0', '0',
+                this.timestamp
             ],
             readOnly: false
         };

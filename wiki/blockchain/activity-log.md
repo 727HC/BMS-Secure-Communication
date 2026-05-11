@@ -2153,3 +2153,164 @@ RecordBMUDataWithPayload(
 - `cd chaincode/passport-contract && go test -cover ./...` PASS (`coverage: 11.5%`)
 - `CA_ADMIN_USER=x CA_ADMIN_PASSWORD=y COUCHDB_USER=x COUCHDB_PASSWORD=y docker compose -f passport-network/compose/compose-net.yaml -f passport-network/compose/compose-couch.yaml -f passport-network/compose/compose-ca.yaml config` PASS (`/tmp/passport-compose-config-write200-final-20260509154541.log`)
 - `bash .omx/goals/performance/blockchain-write200-read-regression/evaluate.sh` PASS — `write=243.2`, `succOnly=52.1`, `read=3111.2`
+
+## 2026-05-09 KST — Ralph: blockchain KPI 재현성 hardening 구현
+
+### 작업 내용
+- `ralplan-blockchain-repro-hardening.md` 승인 계획을 구현했다.
+- 평소 회귀용 `benchmark-safe` track을 추가했다.
+  - generated non-`passportchannel` channel만 허용한다.
+  - `PassportBenchmarkChannel` profile과 exact `passport-contract` deploy args를 사용한다.
+  - `passportchannel` 입력은 `evaluation-dday` 전용으로 보고 즉시 실패한다.
+- 평가 D-day용 guarded reset track을 추가했다.
+  - `passport-network/scripts/evaluation-dday-reset.sh`는 기본 dry-run이다.
+  - 실제 destructive reset은 `CONFIRM_DESTRUCTIVE_RESET=true`와 `DESTRUCTIVE_RESET_PHRASE="RESET passportchannel for evaluation-dday"`가 모두 맞을 때만 `./network.sh down`으로 진입한다.
+  - guard 실패는 `networkDown()` / `docker compose down --volumes` 전에 종료된다.
+- evidence bundle collector를 추가했다.
+  - `evidence.json` + `evidence.md` 생성
+  - copied write/read logs + sha256
+  - peer height, `querycommitted`, Mongo sync, cloud health, commit hash, Fabric/Caliper/Docker versions 수집
+  - actual channel config decode는 `fabric-samples/bin/configtxlator` 경로를 보강하고, non-dry-run에서 `decodeStatus` / `batchTimeout` / `maxMessageCount` / `preferredMaxBytes`가 없으면 실패한다.
+  - mode-aware invariant: `benchmark-safe`는 `channel.name != passportchannel`, `evaluation-dday`는 `passportchannel + PassportBenchmarkChannel`
+  - cloud read provenance: channel-bound는 `FABRIC_CHANNEL=<actual-channel>` 일치 필요, 독립 read benchmark는 `independent-service-benchmark`로 명시
+  - deslop pass에서 Fabric binary PATH를 `FABRIC_BIN`/`FABRIC_ENV`로 공통화하고, channel-bound read evidence mismatch를 benchmark 실행 전 preflight로 조기 차단했다.
+- cloud-agent read-model provenance를 보강했다.
+  - `/health`에 `fabricChannel`, `listenerEnabled`, `readModelProvenance` 추가
+  - listener sync meta를 `lastBlock:<channel>`로 저장하고 `passportchannel`은 legacy `lastBlock`도 유지
+  - initial sync meta에 `initialSync:<channel>` 기록 추가
+- `scripts/tps-benchmark-cloud.js`의 read 대상 passport를 `BENCH_PASSPORT_ID`로 override 가능하게 했다.
+
+### 변경 파일
+- `passport-network/scripts/evaluation-dday-reset.sh`
+- `passport-network/scripts/benchmark-safe.sh`
+- `scripts/blockchain-benchmark-safe.sh`
+- `scripts/blockchain-evaluation-dday.sh`
+- `scripts/collect-blockchain-evidence.js`
+- `scripts/test-blockchain-repro-hardening.sh`
+- `cloud-agent/server.js`
+- `cloud-agent/initial-sync.js`
+- `cloud-agent/services/fabric-listener.js`
+- `scripts/tps-benchmark-cloud.js`
+- `wiki/blockchain/activity-log.md`
+- `wiki/blockchain/benchmark-methodology.md`
+
+### 검증
+- `node -c scripts/collect-blockchain-evidence.js` PASS
+- `node -c scripts/tps-benchmark-cloud.js` PASS
+- `node -c cloud-agent/server.js` PASS
+- `node -c cloud-agent/initial-sync.js` PASS
+- `node -c cloud-agent/services/fabric-listener.js` PASS
+- `bash -n passport-network/scripts/evaluation-dday-reset.sh passport-network/scripts/benchmark-safe.sh scripts/blockchain-benchmark-safe.sh scripts/blockchain-evaluation-dday.sh scripts/test-blockchain-repro-hardening.sh` PASS
+- `scripts/test-blockchain-repro-hardening.sh` PASS
+  - D-day reset dry-run PASS
+  - missing guard / wrong phrase destructive-call-before-failure PASS
+  - benchmark-safe `passportchannel` refusal PASS
+  - evidence JSON benchmark-safe/evaluation-dday invariant PASS
+  - stale/default `passportchannel` read provenance negative test PASS
+  - non-dry-run decoded channel config missing-field negative test PASS
+  - channel-bound read evidence preflight mismatch negative test PASS
+- `git diff --check` PASS
+
+### 남은 리스크
+- 실제 `evaluation-dday --execute`는 destructive reset이므로 실행하지 않았다.
+- full benchmark-safe E2E는 시간이 많이 걸리므로 이번 검증은 dry-run/guard/evidence schema 중심이다.
+- global `network.sh down` guard는 routine `start_passport_network.sh down/restart` 호환성을 위해 이번 범위에서 제외했다. 필요 시 별도 ADR로 다룬다.
+
+## 2026-05-11 KST — performance-goal: successful commit 기준 write200 재정의/복구
+
+### 작업 내용
+- write KPI 기준을 Caliper `Throughput` 단독에서 `successful commit / Succ-only TPS`로 정정했다.
+  - 이전 `243.2 TPS` 결과는 `Succ 2141 / Fail 7859 / Succ-only 52.1 TPS`였으므로 공식 성공 TPS 증거에서 제외했다.
+- `caliper-workspace/run-bench.sh`에 successful write mode를 기본화했다.
+  - `BMU_RECORD_KEYS` 기본값을 write tx 수와 같게 설정해 DID/`lastFc` hot-key MVCC를 제거했다.
+  - `RecordBMUData` 권한상 허용된 `ManufacturerMSP,EVManufacturerMSP` 두 writer org로 gateway/endorsement load를 분산했다.
+  - 반복 측정용 `CALIPER_SKIP_PREPARE=true`를 추가해 setup tx와 KPI write round를 분리했다.
+- Caliper workload client overhead를 줄였다.
+  - compact benchmark passport/DID helper 추가
+  - per-tx random/hash/date 생성을 제거하고 worker initialize 단계에서 recordId/dataHash를 준비
+  - chaincode 검증, endorsement policy, FC monotonic check, CouchDB commit 의미는 완화하지 않았다.
+- `PassportBenchmarkChannel`은 successful commit write200 기준으로 `BatchTimeout=4s`, `MaxMessageCount=2000`, `PreferredMaxBytes=4 MB`를 사용한다.
+- evidence collector의 expected profile을 4s/2000/4MB로 정정하고 write txNumber를 log에서 파싱하게 고쳤다.
+
+### 변경 파일
+- `caliper-workspace/run-bench.sh`
+- `caliper-workspace/caliperIds.js`
+- `caliper-workspace/prepare-passports.js`
+- `caliper-workspace/workloads/recordBMUData.js`
+- `caliper-workspace/workloads/queryPassport.js`
+- `caliper-workspace/parse-caliper-report.js`
+- `passport-network/configtx/configtx.yaml`
+- `passport-network/compose/docker/peercfg/core.yaml`
+- `scripts/blockchain-benchmark-safe.sh`
+- `scripts/blockchain-evaluation-dday.sh`
+- `scripts/collect-blockchain-evidence.js`
+- `.omx/goals/performance/blockchain-successful-commit-200/evaluate.sh`
+- `wiki/blockchain/benchmark-methodology.md`
+- `wiki/blockchain/activity-log.md`
+
+### 측정 결과
+- 공식 성공 write 증거:
+  - channel/profile: `passportshort4s20260511023245`, `PassportBenchmarkChannel`
+  - command: `CHANNEL_NAME=passportshort4s20260511023245 CALIPER_RUN_ID=succshort4s-20260511T023245Z CALIPER_SKIP_PREPARE=true BMU_FC_START=2 CALIPER_WRITE_TX_NUMBER=5000 CALIPER_WRITE_TARGET_TPS=300 NUM_PASSPORTS=500 BMU_RECORD_KEYS=5000 ./run-bench.sh manufacturer`
+  - log: `/tmp/caliper-succshort4s-20260511T023245Z-passportshort4s20260511023245-optimized-target300.log`
+  - result: `Succ 5000 / Fail 0 / Send Rate 297.6 TPS / Avg Latency 9.84s / Throughput 205.1 TPS / Succ-only 205.1 TPS`
+- cloud read 증거:
+  - log: `/tmp/cloud-read-succshort4s-optimized-20260511T024159Z.log`
+  - result: `CLOUD READ TPS 2737.9`, `Completed 5000 / Errors 0`
+- evidence bundle: `.omx/evidence/blockchain/succshort4s-optimized-20260511T024159Z`
+
+### 기각/비교 결과
+- 6s/3000 + Couch batch 8000: `133.7 TPS`, 악화.
+- 4s/2000 dual writer cold full run: `182.3 TPS`, `Succ 4993 / Fail 0`로 성공 수 부족.
+- 8MB preferred block: `132.5 TPS`, 악화.
+- compact ID만 적용한 fresh run: `180.8 TPS`.
+- fresh channel 생성 직후 setup 부하가 남은 공식 wrapper run: `163.0 TPS`; setup tx는 KPI write round에서 제외해야 함을 재확인.
+
+### 남은 리스크/다음 조치
+- 현재 200 TPS 통과 증거는 pre-provisioned benchmark channel에서의 steady successful BMU write round다.
+- 시험기관이 fresh channel 생성 직후 즉시 write round까지 한 번에 요구하면 setup 후 quiet period 또는 destructive fresh-network reset 절차를 별도 합의해야 한다.
+- `CALIPER_SKIP_PREPARE=true`는 setup 생략 옵션이므로, 사용 전 해당 `CALIPER_RUN_ID`의 passport/DID가 이미 준비됐고 `BMU_FC_START`가 ledger high-water보다 높아야 한다.
+
+### 검증 업데이트 — successful commit write200
+- `node -c caliper-workspace/caliperIds.js` PASS
+- `node -c caliper-workspace/prepare-passports.js` PASS
+- `node -c caliper-workspace/parse-caliper-report.js` PASS
+- `node -c caliper-workspace/workloads/recordBMUData.js` PASS
+- `node -c caliper-workspace/workloads/queryPassport.js` PASS
+- `node -c scripts/collect-blockchain-evidence.js` PASS
+- `node -c scripts/tps-benchmark-cloud.js` PASS
+- `bash -n caliper-workspace/run-bench.sh scripts/blockchain-benchmark-safe.sh scripts/blockchain-evaluation-dday.sh scripts/test-blockchain-repro-hardening.sh passport-network/network.sh passport-network/scripts/*.sh passport-network/organizations/*.sh .omx/goals/performance/blockchain-successful-commit-200/evaluate.sh` PASS
+- `git diff --check` PASS
+- `scripts/test-blockchain-repro-hardening.sh` PASS
+- `CA_ADMIN_USER=x CA_ADMIN_PASSWORD=y COUCHDB_USER=x COUCHDB_PASSWORD=y docker compose -f passport-network/compose/compose-net.yaml -f passport-network/compose/compose-couch.yaml -f passport-network/compose/compose-ca.yaml config` PASS (`/tmp/passport-compose-config-successful-write200-20260511.log`)
+- `bash .omx/goals/performance/blockchain-successful-commit-200/evaluate.sh` PASS — `successfulWrite=205.1`, `succ=5000/5000`, `fail=0`, `reject=0`, `cloudRead=2737.9`
+
+## 2026-05-11 KST — successful commit write200 남은 리스크 정리
+
+### 작업 내용
+- pre-provisioned/steady write round 리스크를 실행 guard로 닫았다.
+  - `CALIPER_SKIP_PREPARE=true` 사용 시 명시적 `CALIPER_RUN_ID`를 요구한다.
+  - `CALIPER_SKIP_PREPARE=true` 사용 시 명시적 `BMU_FC_START`를 요구한다.
+  - skip-prepare 경로에서는 기본으로 `verify-passports.js`를 실행해 passport/DID 존재와 DID 매칭을 write round 전에 검증한다.
+- setup 포함 cold-start run은 공식 successful commit write KPI가 아니라 별도 진단 지표로 문서화했다.
+- working tree 혼재 리스크는 범위별로 분리했다.
+  - 이번 추가 수정은 `caliper-workspace/`, `scripts/test-blockchain-repro-hardening.sh`, `wiki/blockchain/*`에 한정했다.
+  - `cloud-agent/*`, `scripts/tps-benchmark-cloud.js` 변경은 이전 benchmark reproducibility hardening 산출물로 유지된다.
+
+### 변경 파일
+- `caliper-workspace/run-bench.sh`
+- `caliper-workspace/verify-passports.js`
+- `scripts/test-blockchain-repro-hardening.sh`
+- `wiki/blockchain/benchmark-methodology.md`
+- `wiki/blockchain/activity-log.md`
+
+### 검증
+- `node -c caliper-workspace/verify-passports.js` PASS
+- `bash -n caliper-workspace/run-bench.sh` PASS
+- skip-prepare guard: `CALIPER_SKIP_PREPARE=true ./run-bench.sh manufacturer`가 `CALIPER_RUN_ID` 누락으로 즉시 실패 PASS
+- skip-prepare FC guard: `CALIPER_SKIP_PREPARE=true CALIPER_RUN_ID=guard-test ./run-bench.sh manufacturer`가 `BMU_FC_START` 누락으로 즉시 실패 PASS
+- ledger verify smoke: `verify-passports.js`가 `passportshort4s20260511023245` / `succshort4s-20260511T023245Z`의 첫 passport/DID 검증 PASS
+
+### 남은 리스크
+- `verify-passports.js`는 passport/DID 준비 상태를 검증하지만 private `lastFc` high-water를 직접 조회하지는 않는다. 이 리스크는 `BMU_FC_START` 명시 요구와 `Fail=0/Rejection=0` evaluator gate로 통제한다.
+- setup 포함 cold-start TPS는 공식 write KPI와 분리된 진단값으로 계속 별도 추적한다.
