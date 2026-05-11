@@ -552,3 +552,24 @@ Codespaces/Dependabot secrets와 branch surface를 추가 점검했다. repo-lev
 ### 미완료 / 리스크
 - GitHub Packages는 현재 `gh` token scope 부족으로 조회하지 못했다. 이 repo에는 package publish workflow/artifact가 없고 Actions artifacts도 0건이다.
 - Hidden PR refs 2개는 여전히 Support purge 대상이다.
+
+---
+
+## Session 18 (2026-05-11)
+
+### 요약
+GitHub account 공개 표면을 보조 점검했다. Public gists는 0건이고, profile email/name/company/location/bio/twitter는 비어 있다.
+
+### 작업 내용
+- `users/727HC/gists` 조회: public gist 0건.
+- `users/727HC` public profile 조회: email/name/company/location/bio/twitter empty/null.
+- Support 요청문은 최신 clean head 유지.
+
+### 검증
+- public gists — 0
+- profile public email/name/company/location/bio/twitter — empty/null
+- `scripts/check-sensitive-patterns.py --include-untracked` — 0 findings
+
+### 미완료 / 리스크
+- 계정 public repos 전체의 패키지/외부 노출은 이번 repo 목표 밖이다.
+- Hidden PR refs 2개는 여전히 Support purge 대상이다.
