@@ -50,6 +50,8 @@ Please dereference/delete the affected pull request refs, run server-side garbag
 ## 제출 후 완료 확인
 
 ```bash
+scripts/verify-github-sensitive-clean.sh
+# 또는 수동 확인:
 git ls-remote origin 'refs/heads/master' 'refs/pull/*'
 ```
 

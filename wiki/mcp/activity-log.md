@@ -674,3 +674,26 @@ GitHub Support purge handoff를 repo wiki에 영구 문서로 남겼다. `/tmp` 
 
 ### 미완료 / 리스크
 - GitHub Support purge 자체는 아직 제출/완료되지 않았다.
+
+---
+
+## Session 24 (2026-05-11)
+
+### 요약
+Support purge 완료 여부를 재현 가능하게 확인하는 verifier를 추가했다. 현재 실행 결과는 `master` clean, hidden PR refs 2건 잔존으로 expected blocked 상태다.
+
+### 작업 내용
+- `scripts/verify-github-sensitive-clean.sh` 추가.
+  - fresh mirror clone으로 remote `refs/heads/master`를 검사한다.
+  - `master`의 known/local/email marker count가 0인지 확인한다.
+  - `refs/pull/*`가 남아 있으면 exit 2로 blocker를 명확히 반환한다.
+- Support handoff 문서의 완료 확인 절차에 verifier 실행을 추가했다.
+
+### 검증
+- `bash -n scripts/verify-github-sensitive-clean.sh` — PASS
+- `scripts/check-sensitive-patterns.py --include-untracked` — 0 findings
+- `scripts/verify-github-sensitive-clean.sh` — expected blocked, `hidden_pull_ref_count=2`, `master_*_count=0`
+- `git diff --check -- scripts/verify-github-sensitive-clean.sh wiki/mcp/github-support-purge-handoff-2026-05-11.md wiki/mcp/activity-log.md` — PASS
+
+### 미완료 / 리스크
+- Verifier는 현재 Support purge 전이라 exit 2가 정상이다. Support 처리 후 exit 0이 completion evidence가 된다.
