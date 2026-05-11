@@ -440,3 +440,28 @@ GitHub PR UI/API 표면을 추가 점검해 Support purge가 필요한 범위를
 
 ### 미완료 / 리스크
 - PR #2 commit metadata는 owner API로 rewrite/edit/delete할 수 없다. GitHub Support dereference/delete + cached view purge가 필요하다.
+
+---
+
+## Session 13 (2026-05-11)
+
+### 요약
+GitHub repository 부가 표면을 추가 점검했다. Actions secrets/variables/environment names, artifacts, remote tags/heads를 확인했고, 공개/다운로드 가능한 추가 노출 표면은 발견하지 못했다.
+
+### 작업 내용
+- repository Actions secrets/variables 목록을 조회했다: 노출되는 이름 없음.
+- repository environments 목록을 조회했다: 노출되는 environment 없음.
+- Actions artifacts를 조회했다: 0건.
+- remote heads/tags를 조회했다: `master` 단일 branch, tag 없음.
+- Support 요청문 `/tmp/github-sensitive-data-purge-request.txt`에 부가 표면 audit 결과를 반영했다.
+
+### 검증
+- Actions secrets list — empty
+- Actions variables list — empty
+- Environments list — empty
+- Actions artifacts — 0
+- Remote tags — 0
+- Remote heads — `master` only
+
+### 미완료 / 리스크
+- GitHub hidden PR refs 2개는 여전히 Support purge 대상이다.
