@@ -742,3 +742,26 @@ GitHub repository 보안 보조 설정을 추가로 강화했다. 민감정보 h
 ### 미완료 / 리스크
 - 이 설정은 의존성 취약점 대응 보조장치이며, 기존 hidden PR refs purge를 대체하지 않는다.
 - `refs/pull/1/head`, `refs/pull/2/head`는 여전히 GitHub Support purge 대상이다.
+
+---
+
+## Session 27 (2026-05-11)
+
+### 요약
+GitHub secret scanning / push protection을 활성화할 수 있는지 확인했다. 현재 private repository/plan에서는 GitHub API가 `Secret scanning is not available for this repository.`로 거절했다.
+
+### 작업 내용
+- `PATCH /repos/727HC/BMS-Secure-Communication`로 아래 설정 활성화를 시도했다.
+  - `security_and_analysis.secret_scanning.status=enabled`
+  - `security_and_analysis.secret_scanning_push_protection.status=enabled`
+  - `security_and_analysis.secret_scanning_validity_checks.status=enabled`
+- API 응답과 post 상태를 확인했다.
+
+### 검증
+- Secret scanning enable attempt — HTTP `422 Unprocessable Entity`, `Secret scanning is not available for this repository.`
+- Post-check `security_and_analysis` — `null`
+- `python3 scripts/check-sensitive-patterns.py --include-untracked` — 0 findings.
+
+### 미완료 / 리스크
+- GitHub native secret scanning/push protection은 현재 repo에서 사용할 수 없어 `.github/workflows/sensitive-scan.yml`와 local hooks가 대체 guard다.
+- `refs/pull/1/head`, `refs/pull/2/head`는 여전히 GitHub Support purge 대상이다.
