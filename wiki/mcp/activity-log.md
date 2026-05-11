@@ -343,3 +343,26 @@ Session 7 이후 GitHub history까지 재검증하고, `master` 이력에 남은
 
 ### 미완료 / 리스크
 - GitHub hidden PR refs는 여전히 과거 PR head를 가리킨다. `git push :refs/pull/*` 및 GitHub API delete가 read-only/hidden ref 제한으로 실패하므로 GitHub Support의 cached view/reference purge가 필요하다.
+
+---
+
+## Session 9 (2026-05-11)
+
+### 요약
+다른 세션의 benchmark evidence commit이 GitHub `master`에 새 legacy benchmark password literal을 재도입한 것을 확인해 즉시 latest commit amend + force push로 제거했다.
+
+### 작업 내용
+- dirty/committed activity log를 high-signal scan해 legacy benchmark password literal 1건을 확인했다.
+- `wiki/blockchain/activity-log.md`의 benchmark command를 `BENCH_PASSWORD` env-required 형태로 바꿨다.
+- 최신 `master` commit을 amend하고 `--force-with-lease`로 GitHub `master`를 갱신했다.
+- GitHub Support purge 요청문 `/tmp/github-sensitive-data-purge-request.txt`를 최신 clean head 기준으로 갱신했다.
+
+### 검증
+- current tree targeted scan — 0건
+- `master` known legacy secret literal history scan — 0건
+- `master` local path/user history scan — 0건
+- `master` personal email metadata scan — 0건
+- fresh mirror scan: `refs/heads/master` known/local/email 0건
+
+### 미완료 / 리스크
+- GitHub hidden PR refs `refs/pull/1/head`, `refs/pull/2/head`는 여전히 read-only 상태로 과거 PR head를 보존한다. GitHub Support dereference/delete + server GC가 필요하다.
