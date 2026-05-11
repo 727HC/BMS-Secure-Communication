@@ -13,6 +13,7 @@ status: current
 ## 작업 내용
 - GitHub 진입 문서에서 배터리여권 API/Web 최신 기준을 보강했다.
 - 루트 `README.md` 상단 설명, 구성 표, 섹션 제목에 `배터리여권(Passport)` 표현을 명시해 GitHub 첫 화면에서 바로 보이게 했다.
+- GitHub 첫 화면 문구가 보고서/AI 톤으로 보이지 않도록 `검증`, `최신 커밋`, `fallback/overlay` 중심 표현을 줄이고 제품 설명 중심으로 정리했다.
 - 루트 `README.md`의 Quick Start에서 React build 후 `bmu-agent` 기동 순서가 더 정확하도록 정리했다.
 - 루트 `README.md`에 Passport/API/Web 최신 기준 섹션을 추가했다.
   - 최신 기준 커밋 `8b5db6e`
