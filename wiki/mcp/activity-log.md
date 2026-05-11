@@ -486,3 +486,23 @@ GitHub repository의 reversible exposure switches를 더 좁혔다. Projects/Dow
 ### 미완료 / 리스크
 - `allow_forking=true`는 user-owned repository에서 API 변경 제한이 있어 남아 있다. 현재 forks는 0이다.
 - Hidden PR refs 2개는 여전히 Support purge 대상이다.
+
+---
+
+## Session 15 (2026-05-11)
+
+### 요약
+GitHub repository의 issue/discussion 표면까지 닫았다. 기존 노출 표면은 없었지만, 향후 민감정보가 issue/discussion에 추가되는 경로를 줄였다.
+
+### 작업 내용
+- `has_issues=false` 적용.
+- `has_discussions=false` 상태 확인.
+- 기존 `has_wiki=false`, `has_projects=false`, `has_downloads=false`, `private=true` 상태를 재확인했다.
+- Support 요청문 `/tmp/github-sensitive-data-purge-request.txt`에 issue/discussion 표면 축소를 반영했다.
+
+### 검증
+- GitHub repo settings after patch: `has_issues=false`, `has_discussions=false`, `has_wiki=false`, `has_projects=false`, `has_downloads=false`, `private=true`.
+- `scripts/check-sensitive-patterns.py --include-untracked` — 0 findings.
+
+### 미완료 / 리스크
+- Hidden PR refs 2개는 여전히 Support purge 대상이다.
