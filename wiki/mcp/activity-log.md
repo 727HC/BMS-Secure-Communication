@@ -418,3 +418,25 @@ GitHub 저장소 외부 노출 표면을 추가 점검했다. `master`와 CI gua
 - Branch protection은 user-owned private repo plan 제한으로 API 조회/설정이 불가했다.
 - `allow_forking`은 user-owned repository에서 API 변경 제한이 있어 변경하지 못했다. 현재 forks는 0이다.
 - Hidden PR refs는 Support purge 전까지 남는다.
+
+---
+
+## Session 12 (2026-05-11)
+
+### 요약
+GitHub PR UI/API 표면을 추가 점검해 Support purge가 필요한 범위를 더 좁혔다. PR title/body/comments/reviews/file path에는 targeted marker가 없고, 잔존 노출은 merged PR hidden ref의 commit metadata/history에 한정된다.
+
+### 작업 내용
+- `gh pr view` JSON으로 PR #1/#2의 title/body/comments/reviews/files/commits를 분리 스캔했다.
+- PR #1은 모든 PR metadata bucket에서 targeted marker 0건이었다.
+- PR #2는 title/body/comments/reviews/file path 0건, commit message bucket에 known legacy literal marker 2건이 남아 hidden PR ref purge 대상임을 확인했다.
+- Support 요청문 `/tmp/github-sensitive-data-purge-request.txt`에 PR metadata scan 결과를 반영했다.
+
+### 검증
+- PR #1 title/body/comments/reviews/file paths/commit messages targeted scan — 0건
+- PR #2 title/body/comments/reviews/file paths targeted scan — 0건
+- PR #2 commit message targeted scan — known legacy literal marker 2건, hidden PR ref와 동일 blocker
+- current tree `scripts/check-sensitive-patterns.py --include-untracked` — 0 findings
+
+### 미완료 / 리스크
+- PR #2 commit metadata는 owner API로 rewrite/edit/delete할 수 없다. GitHub Support dereference/delete + cached view purge가 필요하다.
