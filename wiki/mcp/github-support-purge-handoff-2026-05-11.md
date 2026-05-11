@@ -50,13 +50,16 @@ Please dereference/delete the affected pull request refs, run server-side garbag
 ## 제출 후 완료 확인
 
 ```bash
+scripts/audit-github-sensitive-cleanup.sh
+# 또는 ref verifier만 수동 확인:
 scripts/verify-github-sensitive-clean.sh
-# 또는 수동 확인:
+# 또는 ref 존재 확인:
 git ls-remote origin 'refs/heads/master' 'refs/pull/1/head' 'refs/pull/2/head'
 ```
 
 완료 기준:
 
+- `scripts/audit-github-sensitive-cleanup.sh`가 exit `0`으로 통과한다.
 - `scripts/verify-github-sensitive-clean.sh`가 exit `0`으로 통과한다.
 - `refs/pull/1/head`, `refs/pull/2/head`의 tainted marker evidence가 사라진다.
 - fresh mirror scan에서 `refs/heads/master` known/local/email count 0이 유지된다.
