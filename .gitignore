@@ -4,8 +4,27 @@
 config.env
 !config.env.example
 **/.env
+**/.env.*
 !**/.env.example
 !**/.env.template
+!**/.env.sample
+!**/.env.local.example
+
+# Private key / credential stores
+**/*.pem
+**/*.key
+**/*.p12
+**/*.pfx
+**/*.jks
+**/*.keystore
+**/*.kdbx
+**/.netrc
+**/.pypirc
+**/.npmrc
+**/id_rsa
+**/id_dsa
+**/id_ecdsa
+**/id_ed25519
 
 # Agent runtime data
 bmu-agent/data/
@@ -86,7 +105,6 @@ outputs/
 # Misc
 workspaceS32DS.3.6.0.zip
 .omx/
-**/.env
 
 # BEGIN runtime-artifact-policy
 # Keep this block in sync with scripts/runtime_artifact_policy.py

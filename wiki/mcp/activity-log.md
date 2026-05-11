@@ -878,3 +878,24 @@ GitHub 민감정보 정리 완료 감사를 하나의 재현 가능한 명령으
 
 ### 미완료 / 리스크
 - `refs/pull/1/head`, `refs/pull/2/head`는 여전히 GitHub Support purge 대상이다.
+
+---
+
+## Session 33 (2026-05-11)
+
+### 요약
+민감 파일 재유입 방지를 위해 root `.gitignore`의 secrets/credential guard를 보강했다. `.env.local`류와 private key/credential store 파일이 실수로 GitHub에 올라가지 않도록 했다.
+
+### 작업 내용
+- `.gitignore` 갱신.
+  - `**/.env.*` 추가, example/sample 예외 유지.
+  - `*.pem`, `*.key`, `*.p12`, `*.pfx`, `*.jks`, `*.keystore`, `*.kdbx` 추가.
+  - `.netrc`, `.pypirc`, `.npmrc`, SSH private key 이름 패턴 추가.
+  - 중복 `**/.env` 항목 제거.
+
+### 검증
+- `python3 scripts/check-sensitive-patterns.py --include-untracked` — 0 findings.
+- `git diff --check -- .gitignore` — PASS.
+
+### 미완료 / 리스크
+- `.gitignore` guard는 future prevention이며, hidden PR refs #1/#2 purge를 대체하지 않는다.
