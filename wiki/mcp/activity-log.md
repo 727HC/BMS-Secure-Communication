@@ -789,3 +789,24 @@ Dependabot automated security fixes가 clean PR refs를 새로 만들면서, Git
 
 ### 미완료 / 리스크
 - GitHub Support purge 전까지 `refs/pull/1/head`, `refs/pull/2/head`의 tainted evidence는 남는다.
+
+---
+
+## Session 29 (2026-05-11)
+
+### 요약
+Dependabot PR 생성 이후 PR metadata 표면을 추가 점검했다. PR 제목/본문/브랜치명/issue comments/reviews/review comments에서 targeted sensitive marker findings는 0건이었다.
+
+### 작업 내용
+- `gh pr list`와 PR별 GitHub API로 PR #1..#5 metadata를 수집했다.
+- `scripts/check-sensitive-patterns.py`의 동일 패턴/legacy digest 로직을 임시 Python 검사에 재사용했다.
+- 새 Dependabot PR #3..#5가 clean PR refs임을 verifier 결과와 함께 확인했다.
+
+### 검증
+- `pull_requests_scanned=5`
+- `pr_metadata_items_scanned=20`
+- `pr_metadata_sensitive_findings=0`
+- `scripts/verify-github-sensitive-clean.sh` — expected blocked, `tainted_ref_count=2`, tainted refs only `refs/pull/1/head`, `refs/pull/2/head`.
+
+### 미완료 / 리스크
+- PR metadata는 clean이지만, GitHub hidden PR refs #1/#2의 tainted git history는 Support purge 전까지 남는다.
