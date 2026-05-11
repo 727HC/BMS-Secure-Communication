@@ -2314,3 +2314,26 @@ RecordBMUDataWithPayload(
 ### 남은 리스크
 - `verify-passports.js`는 passport/DID 준비 상태를 검증하지만 private `lastFc` high-water를 직접 조회하지는 않는다. 이 리스크는 `BMU_FC_START` 명시 요구와 `Fail=0/Rejection=0` evaluator gate로 통제한다.
 - setup 포함 cold-start TPS는 공식 write KPI와 분리된 진단값으로 계속 별도 추적한다.
+
+## 2026-05-11 KST — GitHub README 블록체인/KPI 최신화
+
+### 작업 내용
+- 루트 `README.md`를 4개 세션 최신 상태에 맞춰 정리했다.
+- 블록체인 기준을 live `passport-contract version 1.6 / sequence 8`로 갱신했다.
+- write KPI를 Caliper `Throughput`이 아닌 successful commit / Succ-only 기준으로 명시했다.
+- 최신 KPI 증거를 README에 반영했다.
+  - Fabric write: `205.1 TPS`, `Succ 5000/5000`, `Fail 0`, `Reject 0`
+  - Cloud read: `2737.9 TPS`, `Completed 5000`, `Errors 0`
+- `CALIPER_SKIP_PREPARE=true` 사용 조건과 setup 포함 cold-start TPS 분리 원칙을 GitHub 진입 문서에 추가했다.
+- embedded/MCP/Passport 섹션도 각 세션 최신 handoff 기준과 충돌하지 않게 표현을 정리했다.
+
+### 변경 파일
+- `README.md`
+- `wiki/blockchain/activity-log.md`
+
+### 검증
+- `peer lifecycle chaincode querycommitted -C passportchannel -n passport-contract --output json` 확인: `sequence=8`, `version=1.6`
+- `git diff --check -- README.md wiki/blockchain/activity-log.md` PASS
+
+### 미완료 / 리스크
+- 문서 갱신만 수행했다. runtime/code 변경은 없다.
