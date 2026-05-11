@@ -765,3 +765,27 @@ GitHub secret scanning / push protection을 활성화할 수 있는지 확인했
 ### 미완료 / 리스크
 - GitHub native secret scanning/push protection은 현재 repo에서 사용할 수 없어 `.github/workflows/sensitive-scan.yml`와 local hooks가 대체 guard다.
 - `refs/pull/1/head`, `refs/pull/2/head`는 여전히 GitHub Support purge 대상이다.
+
+---
+
+## Session 28 (2026-05-11)
+
+### 요약
+Dependabot automated security fixes가 clean PR refs를 새로 만들면서, GitHub verifier를 실제 목표에 맞게 조정했다. 이제 단순 `refs/pull/*` 존재가 아니라, targeted sensitive marker evidence가 남은 ref만 completion blocker로 본다.
+
+### 작업 내용
+- `scripts/verify-github-sensitive-clean.sh` 갱신.
+  - fresh mirror의 `refs/heads`, `refs/tags`, `refs/pull` 전체를 검사한다.
+  - ref별 known/local/email marker count를 집계한다.
+  - 민감 마커가 남은 ref가 GitHub hidden PR head뿐이면 exit `2`로 Support purge blocker를 반환한다.
+  - clean Dependabot PR refs는 blocker로 보지 않는다.
+- `wiki/mcp/github-support-purge-handoff-2026-05-11.md` 완료 기준을 새 verifier 기준으로 갱신했다.
+
+### 검증
+- `bash -n scripts/verify-github-sensitive-clean.sh` — PASS.
+- `scripts/verify-github-sensitive-clean.sh` — expected blocked, `tainted_ref_count=2`.
+- Tainted refs: `refs/pull/1/head`, `refs/pull/2/head` only.
+- `python3 scripts/check-sensitive-patterns.py --include-untracked` — 0 findings.
+
+### 미완료 / 리스크
+- GitHub Support purge 전까지 `refs/pull/1/head`, `refs/pull/2/head`의 tainted evidence는 남는다.

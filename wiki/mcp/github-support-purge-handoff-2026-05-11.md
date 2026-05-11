@@ -52,14 +52,15 @@ Please dereference/delete the affected pull request refs, run server-side garbag
 ```bash
 scripts/verify-github-sensitive-clean.sh
 # 또는 수동 확인:
-git ls-remote origin 'refs/heads/master' 'refs/pull/*'
+git ls-remote origin 'refs/heads/master' 'refs/pull/1/head' 'refs/pull/2/head'
 ```
 
 완료 기준:
 
-- `refs/heads/master`만 남는다.
-- `refs/pull/1/head`, `refs/pull/2/head`가 사라진다.
+- `scripts/verify-github-sensitive-clean.sh`가 exit `0`으로 통과한다.
+- `refs/pull/1/head`, `refs/pull/2/head`의 tainted marker evidence가 사라진다.
 - fresh mirror scan에서 `refs/heads/master` known/local/email count 0이 유지된다.
+- Dependabot 등 새 clean PR refs가 존재할 수 있으므로, 단순히 `refs/pull/*` 전체 존재 여부를 completion blocker로 보지 않는다.
 
 ## 현재 대체 방어
 
@@ -70,6 +71,8 @@ git ls-remote origin 'refs/heads/master' 'refs/pull/*'
 - sensitive marker GitHub Actions workflow success
 - local pre-commit/pre-push sensitive marker hooks installed
 - PR template sensitive-data checklist added
+- Dependabot vulnerability alerts and automated security fixes enabled
+- GitHub native secret scanning/push protection attempted, but unavailable for this private repository/plan
 
 ## 남은 리스크
 
