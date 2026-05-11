@@ -810,3 +810,24 @@ Dependabot PR 생성 이후 PR metadata 표면을 추가 점검했다. PR 제목
 
 ### 미완료 / 리스크
 - PR metadata는 clean이지만, GitHub hidden PR refs #1/#2의 tainted git history는 Support purge 전까지 남는다.
+
+---
+
+## Session 30 (2026-05-11)
+
+### 요약
+PR metadata 민감정보 점검을 재현 가능한 로컬 스크립트로 승격했다. 이제 PR 텍스트/댓글뿐 아니라 PR file path까지 같은 sensitive marker policy로 반복 검증할 수 있다.
+
+### 작업 내용
+- `scripts/scan-github-pr-metadata-sensitive.py` 추가.
+  - `gh pr list`와 GitHub API를 사용한다.
+  - PR title/body/head/base branch, PR file paths, issue comments, reviews, review comments를 검사한다.
+  - `scripts/check-sensitive-patterns.py`의 패턴과 legacy marker digest 로직을 재사용한다.
+
+### 검증
+- `python3 scripts/scan-github-pr-metadata-sensitive.py --repo 727HC/BMS-Secure-Communication` — `pull_requests_scanned=5`, `pr_metadata_items_scanned=667`, `pr_metadata_sensitive_findings=0`.
+- `python3 scripts/check-sensitive-patterns.py --include-untracked` — 0 findings.
+- `git diff --check -- scripts/scan-github-pr-metadata-sensitive.py` — PASS.
+
+### 미완료 / 리스크
+- PR metadata는 clean이지만, GitHub hidden PR refs #1/#2의 tainted git history는 Support purge 전까지 남는다.
