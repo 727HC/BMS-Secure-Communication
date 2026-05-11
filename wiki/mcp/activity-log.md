@@ -721,3 +721,24 @@ GitHub 민감정보 정리 완료 조건을 재감사했다. `master`와 latest 
 ### 미완료 / 리스크
 - `refs/pull/1/head`, `refs/pull/2/head`는 GitHub read-only hidden refs라 agent/owner API로 삭제할 수 없다.
 - 완료하려면 GitHub Support purge 제출 또는 repo 삭제 후 clean 재생성이 필요하다. Repo 삭제/재생성은 파괴적이므로 명시 승인 전에는 진행하지 않는다.
+
+---
+
+## Session 26 (2026-05-11)
+
+### 요약
+GitHub repository 보안 보조 설정을 추가로 강화했다. 민감정보 history purge의 직접 blocker는 아니지만, dependency security 회귀 탐지를 위해 Dependabot alerts와 automated security fixes를 활성화했다.
+
+### 작업 내용
+- `PUT /repos/727HC/BMS-Secure-Communication/vulnerability-alerts` 실행.
+- `PUT /repos/727HC/BMS-Secure-Communication/automated-security-fixes` 실행.
+- 두 설정의 활성 상태를 API로 재검증했다.
+
+### 검증
+- Vulnerability alerts verify — HTTP `204 No Content`.
+- Automated security fixes verify — HTTP `200 OK`, `enabled: true`, `paused: false`.
+- `python3 scripts/check-sensitive-patterns.py --include-untracked` — 0 findings.
+
+### 미완료 / 리스크
+- 이 설정은 의존성 취약점 대응 보조장치이며, 기존 hidden PR refs purge를 대체하지 않는다.
+- `refs/pull/1/head`, `refs/pull/2/head`는 여전히 GitHub Support purge 대상이다.
