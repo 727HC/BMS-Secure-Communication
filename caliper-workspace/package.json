@@ -10,8 +10,8 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@grpc/grpc-js": "^1.10.3",
-    "@hyperledger/caliper-cli": "^0.6.0",
-    "@hyperledger/fabric-gateway": "^1.5.0"
+    "@grpc/grpc-js": "^1.14.3",
+    "@hyperledger/caliper-cli": "^0.7.1",
+    "@hyperledger/fabric-gateway": "^1.11.0"
   }
 }
