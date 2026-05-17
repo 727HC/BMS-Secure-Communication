@@ -2473,3 +2473,20 @@ RecordBMUDataWithPayload(
 - 이번 재실행 write는 all-success evidence이지만 `82.6 TPS`로 KPI 미달이다. 이전 `205.1 TPS` successful commit 증거와 달리 현재 재실행 시점의 환경/부하/ledger 상태에서 성능 회귀가 관측됐다.
 - write KPI 복구가 필요하면 fresh benchmark channel, peer/orderer/CouchDB quiet 상태, `BMU_FC_START` high-water, block cutting 조건을 다시 고정하고 Caliper successful commit 기준으로 재측정해야 한다.
 - JMeter는 로컬 설치가 없어 미실행이다. JMeter binary/wrapper가 준비된 평가 환경에서만 보조 read-only evidence를 추가한다.
+
+## 2026-05-17 15:12 KST — bmu-agent Fabric discovery access denied 복구
+
+- 증상: bmu-agent(:3001)는 떠 있으나 Fabric discovery 호출이 access denied. peer 로그에 `policies: invalid identity x509: certificate signed by unknown authority` + `discovery processQuery ... not eligible (Writers 0/1)` 반복.
+- 원인: bmu-agent 지갑 안의 admin identity가 5/15 재생성된 fabric-ca 이전(4/29~5/8) 발급분이라 stale. 현재 peer MSP cacert(=5/15 CA)는 옛 admin cert를 신뢰하지 않음.
+- 부수 발견: 5개 fabric-ca 컨테이너가 멈춰 있어서 재발급 자체 불가 상태였음.
+- 조치:
+  1. `docker compose -f passport-network/compose/compose-ca.yaml up -d` — ca_manufacturer, ca_evmanufacturer, ca_service, ca_regulator, ca_orderer 기동.
+  2. CA fingerprint 확인: ca-cert 5종 vs peer MSP cacert(5/15 발급) 일치.
+  3. bmu-agent 지갑을 timestamp 백업 디렉토리로 옮긴 후 `.id` 파일 11개 제거.
+  4. bmu-agent 재기동 → `fabric.service.js:connectFabric()`이 지갑 비어 있는 것 감지 → `ca.enroll()` 자동 수행 → 새 CA가 admin cert 발급.
+- 검증:
+  - bmu-agent log: `Admin enrolled via CA mspId=ManufacturerMSP` → `Connected to Fabric channel=passportchannel`.
+  - peer0.manufacturer 재기동 후 30초 동안 invalid identity / Writers 0/1 / processQuery 거부 0건.
+  - `GET /api/passports` → 401 `Access token required` (= JWT 미들웨어 정상 동작, Fabric 단 에러 아님).
+- 임베디드 세션 통보: 코드/CAN 변경 불필요. E2E 재개 가능.
+- 후속 주의: webapp/Passport 세션도 동일 패턴의 지갑 캐시를 쓰면 같은 증상 발생 가능. fabric-ca 재생성 후에는 모든 SDK consumer의 지갑 인증서 갱신 절차(재기동만으로는 부족, 지갑 비우기 필수)를 같이 돌려야 함.
