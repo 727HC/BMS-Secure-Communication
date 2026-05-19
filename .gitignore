@@ -139,6 +139,11 @@ USER.md
 HEARTBEAT.md
 TOOLS.md
 
+# Internal agent/session guides — public GitHub 노출 안 함 (로컬 유지)
+/CLAUDE.md
+/AGENTS.md
+/DESIGN.md
+
 # harness 세션 실행 산출물 — cycle_* 루프 로그는 저장소에 보관 안 함
 .harness/cycle_*/
 
@@ -150,3 +155,11 @@ e2e-tests/test-results/
 e2e-tests/playwright-report/
 e2e-tests/test-results.json
 webapp/frontend-react/test-results/
+.codex/*
+!.codex/agents/
+!.codex/agents/**
+!.codex/skills/
+!.codex/skills/**
+.codex/skills/.system/**
+!.codex/prompts/
+!.codex/prompts/**
