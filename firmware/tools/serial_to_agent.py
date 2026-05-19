@@ -21,8 +21,12 @@ import argparse
 import time
 
 
+_HEX64_RE = re.compile(r'^[0-9a-fA-F]{64}$')
+_HEX96_RE = re.compile(r'^[0-9a-fA-F]{96}$')
+
+
 def parse_bmu_line(line):
-    """Parse BMU serial output line."""
+    """Parse BMU serial output line. Returns None on malformed input."""
     result = {}
 
     # [BMU] OK FC=42 SOC=61176 T=38760 Cyc=0 Cells=11
@@ -41,12 +45,22 @@ def parse_bmu_line(line):
     sign_match = re.match(
         r'\[SIGN\] FC=(\d+) R=(.+?) S=(.+?)(?:\s+DATA=(.+))?$', line)
     if sign_match:
+        sign_r = sign_match.group(2).replace(' ', '')
+        sign_s = sign_match.group(3).replace(' ', '')
+        if not _HEX64_RE.match(sign_r) or not _HEX64_RE.match(sign_s):
+            print(f"  [DROP] malformed SIGN line (R/S not 64 hex): {line[:80]}", flush=True)
+            return None
         result['type'] = 'sign'
         result['fc'] = int(sign_match.group(1))
-        result['signR'] = sign_match.group(2).replace(' ', '')
-        result['signS'] = sign_match.group(3).replace(' ', '')
+        result['signR'] = sign_r
+        result['signS'] = sign_s
         if sign_match.group(4):
-            result['rawPayload'] = sign_match.group(4).replace(' ', '')
+            raw = sign_match.group(4).replace(' ', '')
+            if _HEX96_RE.match(raw):
+                result['rawPayload'] = raw
+            else:
+                print(f"  [DROP] malformed DATA (not 96 hex, len={len(raw)}): {raw[:60]}", flush=True)
+                # keep going without rawPayload — signature alone still valid for legacy path
         return result
 
     return None
