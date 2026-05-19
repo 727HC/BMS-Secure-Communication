@@ -11,7 +11,7 @@
     "express-rate-limit": "^7.5.0",
     "helmet": "^8.0.0",
     "long": "^5.2.3",
-    "mongodb": "^6.12.0",
+    "mongodb": "^7.2.0",
     "fabric-network": "^2.2.20",
     "fabric-ca-client": "^2.2.20",
     "dotenv": "^16.4.0"
