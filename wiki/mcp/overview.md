@@ -10,14 +10,13 @@ status: current
 > 현재 기준 문서
 >
 > 이 문서는 MCP 세션의 현재 책임 범위와 도구 표면을 설명한다.
-> 작업 이력은 [[mcp/activity-log|활동 로그]]에서 별도로 본다.
 
 ## 담당 범위
 - `mcp-monitor/` — MCP 모니터링 서버 (읽기 전용, 블록체인 쓰기 없음)
 
 ## 현재 구조
 ```text
-MCP Client (Claude Code) ← stdio → index.js ←→ tools/*.js ←→ Fabric / Passport API / Logs / Docker
+MCP client ← stdio → index.js ←→ tools/*.js ←→ Fabric / Passport API / Logs / Docker
 ```
 
 ## 현재 기준 원칙
@@ -53,9 +52,7 @@ MCP Client (Claude Code) ← stdio → index.js ←→ tools/*.js ←→ Fabric 
 
 ## 함께 보는 문서
 - [[decisions/003-mcp-monitor-read-only|ADR-003]]
-- [[decisions/005-mcp-session-hook-isolation|ADR-005]]
 - [[common/architecture|시스템 아키텍처]]
 - [[common/terminology|용어 사전]]
 
 ## 기록성 문서
-- historical 작업 로그: [[mcp/activity-log|MCP 세션 활동 로그]]

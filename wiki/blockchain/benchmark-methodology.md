@@ -98,7 +98,7 @@ Caliper Throughput = (Succ+Fail)/elapsed. 2026-04-22에는 이 ledger 처리량 
 
 ### 실패율 해석
 - 과거 측정의 Fail 대부분은 status 11 (`MVCC_READ_CONFLICT`) — 같은 passport `lastFc` 키에 여러 tx 충돌.
-- 2026-05-08 performance-goal에서는 `운영 의미 보존`과 `benchmark-only semantic bypass 금지`가 추가 조건이므로, valid BMU write 판정은 `Fail 0`을 요구한다.
+- 2026-05-08 공식 평가에서는 `운영 의미 보존`과 `benchmark-only semantic bypass 금지`를 추가 조건으로 두었고, valid BMU write 판정은 `Fail 0`을 요구한다.
 - Caliper 버전 v0.6 기준. 높은 버전은 Throughput 정의가 다를 수 있음
 
 
@@ -209,7 +209,7 @@ Caliper Throughput = (Succ+Fail)/elapsed. 2026-04-22에는 이 ledger 처리량 
   - write result: `Succ 5000 / Fail 0 / Throughput 205.1 TPS / Succ-only 205.1 TPS`
   - read log: `/tmp/cloud-read-succshort4s-optimized-20260511T024159Z.log`
   - read result: `CLOUD READ TPS 2737.9`, `Completed 5000 / Errors 0`
-  - evidence bundle: `.omx/evidence/blockchain/succshort4s-optimized-20260511T024159Z`
+  - evidence bundle: `outputs/evidence/blockchain/succshort4s-optimized-20260511T024159Z`
 - 주의:
   - fresh channel 생성 직후 passport setup 부하가 남은 cold run은 `163.0 TPS`까지 내려갔다. KPI write round는 setup tx를 제외한 pre-provisioned BMU write surface에서 측정한다.
   - throughput-only 수치와 successful commit 수치를 최종 보고에서 분리한다.
@@ -279,7 +279,6 @@ BENCH_USER=bench BENCH_PASSWORD="${BENCH_PASSWORD:?set BENCH_PASSWORD}" BENCH_OR
 
 - [[blockchain/kpi-targets|KPI 목표 및 평가 기준]]
 - [[blockchain/cloud-agent-architecture|Cloud Agent 아키텍처]]
-- [[blockchain/activity-log|블록체인 세션 활동 로그]] — Session 2026-04-22 상세 이력
 
 ## KPI 재현성 hardening 절차 — benchmark-safe / evaluation-dday
 

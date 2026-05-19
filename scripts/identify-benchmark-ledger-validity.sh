@@ -93,7 +93,7 @@ if ! [[ "${EXPECTED}" =~ ^[0-9]+$ ]] || (( EXPECTED <= 0 )); then
   exit 2
 fi
 if [[ -z "${EVIDENCE_DIR}" ]]; then
-  EVIDENCE_DIR="${ROOT_DIR}/.omx/evidence/blockchain/${RUN_ID}"
+  EVIDENCE_DIR="${ROOT_DIR}/outputs/evidence/blockchain/${RUN_ID}"
 fi
 if [[ "${EVIDENCE_DIR}" != /* ]]; then
   EVIDENCE_DIR="${ROOT_DIR}/${EVIDENCE_DIR}"

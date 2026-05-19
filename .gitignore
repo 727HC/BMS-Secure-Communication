@@ -160,11 +160,51 @@ e2e-tests/test-results/
 e2e-tests/playwright-report/
 e2e-tests/test-results.json
 webapp/frontend-react/test-results/
-.codex/*
-!.codex/agents/
-!.codex/agents/**
-!.codex/skills/
-!.codex/skills/**
-.codex/skills/.system/**
-!.codex/prompts/
-!.codex/prompts/**
+
+# Public repository hygiene: keep local AI/session/operator artifacts private
+.claude/
+**/.claude/
+.codex/
+.harness/
+.devbot.yml
+
+# AI agent/session guidance belongs in the private local workspace, not public GitHub
+**/CLAUDE.md
+**/AGENTS.md
+**/DESIGN.md
+SOUL.md
+IDENTITY.md
+USER.md
+HEARTBEAT.md
+TOOLS.md
+
+# Local wiki vault state and session-operation records
+wiki/.obsidian/
+wiki/**/activity-log*.md
+wiki/**/activity-log/
+wiki/**/_archive/
+wiki/handoffs/
+wiki/common/agent-*.md
+wiki/common/claude-design-prompt-reference*
+wiki/common/task-packet-template.md
+
+# Test runner state files
+/test-results/
+**/test-results/.last-run.json
+wiki/**/*handoff*.md
+wiki/**/*completion-audit*.md
+wiki/passport/review-*-code-review.md
+wiki/decisions/*session-hook*.md
+wiki/reviews/wiki-consolidation-review*.md
+
+# Internal benchmark transfer/performance-goal operator tooling (local only)
+scripts/*offhost*.sh
+scripts/audit-performance-goal-completion.sh
+scripts/ingest-offhost-write200-evidence.sh
+scripts/run-official-write200-audit.sh
+scripts/run-stronger-host-direct-official.sh
+scripts/test-official-write200-verifier-gates.sh
+scripts/test-portable-fallback-import-route.sh
+wiki/blockchain/*offhost*.md
+wiki/blockchain/full-benchmark-rerun-audit*.md
+wiki/embedded/*binding*.md

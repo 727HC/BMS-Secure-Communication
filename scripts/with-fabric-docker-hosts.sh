@@ -55,9 +55,9 @@ cp /etc/hosts "${hosts_file}"
   done
 } >> "${hosts_file}"
 
-export OMX_FABRIC_DOCKER_HOSTS_FILE="${hosts_file}"
+export FABRIC_DOCKER_HOSTS_FILE="${hosts_file}"
 unshare -Ur -m bash -c '
   set -euo pipefail
-  mount --bind "${OMX_FABRIC_DOCKER_HOSTS_FILE}" /etc/hosts
+  mount --bind "${FABRIC_DOCKER_HOSTS_FILE}" /etc/hosts
   exec "$@"
 ' bash "$@"

@@ -1,3 +1,10 @@
+---
+title: "BMU Write Hot Path Map"
+date: 2026-05-19
+tags: [blockchain, benchmark, chaincode]
+doc_type: reference
+status: current
+---
 # BMU Write Hot Path Map
 
 ## Context
@@ -27,7 +34,7 @@ Current operation budget on the official AutoID write path:
 Regression lock:
 
 - `chaincode/passport-contract/helpers_test.go::TestRecordBMUDataAutoIDUsesGenericMarshalWithoutDuplicateRecordRead` now asserts exactly one `GetState` on `lastFcKey` and exactly two `PutState` calls `[recordId,lastFcKey]` without benchmark-only marshal shortcuts.
-- Evidence: `.omx/evidence/blockchain/chaincode-hotpath-write200/autoid-hotpath-operation-budget-20260519T081906KST/go-test.log` — `go test -count=1 ./...` PASS.
+- Evidence: `outputs/evidence/blockchain/chaincode-hotpath-write200/autoid-hotpath-operation-budget-20260519T081906KST/go-test.log` — `go test -count=1 ./...` PASS.
 
 ## Legacy/manual `RecordBMUData` path
 
@@ -83,7 +90,7 @@ This keeps official write200 failures explicit when the operator passes malforme
 Regression lock:
 
 - `scripts/test-caliper-bmu-workload-sequence.js` asserts invalid env rejection for zero `BMU_RECORD_KEYS`, non-numeric `BMU_FC_START`, and fractional `CALIPER_WRITE_TX_NUMBER`.
-- Evidence: `.omx/evidence/blockchain/chaincode-hotpath-write200/caliper-workload-env-validation-20260519T082450KST/` — `node -c`, workload selftest, and `git diff --check` PASS.
+- Evidence: `outputs/evidence/blockchain/chaincode-hotpath-write200/caliper-workload-env-validation-20260519T082450KST/` — `node -c`, workload selftest, and `git diff --check` PASS.
 
 ## Caliper request-template in-flight safety
 
@@ -97,4 +104,4 @@ This preserves the low-allocation official path while avoiding FC corruption if 
 Regression lock:
 
 - `scripts/test-caliper-bmu-workload-sequence.js` starts two concurrent AutoID submits against one slot with delayed adapter capture and asserts FCs remain `1,2` instead of both observing the later mutation.
-- Evidence: `.omx/evidence/blockchain/chaincode-hotpath-write200/caliper-workload-inflight-safety-20260519T083111KST/` — `node -c`, workload selftest, and `git diff --check` PASS.
+- Evidence: `outputs/evidence/blockchain/chaincode-hotpath-write200/caliper-workload-inflight-safety-20260519T083111KST/` — `node -c`, workload selftest, and `git diff --check` PASS.

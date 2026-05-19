@@ -7,7 +7,7 @@ Usage:
   scripts/verify-official-write200-evidence.sh --evidence-dir <dir> [--output <json>] [--env-output <env>]
 
 Verifies the official 4-org write200 evidence bundle produced by
-scripts/run-official-write200-audit.sh or scripts/blockchain-tps-reproducibility.sh.
+scripts/blockchain-tps-reproducibility.sh.
 
 Exit codes:
   0  official write gate passes

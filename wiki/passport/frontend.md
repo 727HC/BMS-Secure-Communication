@@ -90,7 +90,6 @@ webapp/frontend-react/
 ## 레거시 경로 메모
 - 예전 프런트는 호환 목적의 레거시 경로로 남아 있다.
 - 현재 onboarding, 설계 설명, UI 기준은 이 문서를 우선 본다.
-- historical 맥락이 필요하면 [[passport/frontend-legacy-vue|레거시 프론트엔드 개요 (Vue)]]와 activity-log / archive 트랙을 참고한다.
 
 ## 함께 보는 문서
 - [[passport/overview|배터리 여권 세션 개요]]

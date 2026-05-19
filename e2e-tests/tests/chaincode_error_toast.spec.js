@@ -5,8 +5,7 @@
 // and asserts the rendered alert banner text matches lib/chaincodeErrorMessages.
 //
 // This is UI-only evidence and intentionally does NOT exercise real Fabric.
-// Real-backend rejection evidence is collected during the caliper measurement
-// session (see wiki/passport/activity-log/2026-04-27.md "Stage 3 trigger").
+// Real-backend rejection evidence is collected during the Caliper measurement session.
 
 const { test, expect } = require('@playwright/test');
 

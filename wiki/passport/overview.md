@@ -24,7 +24,6 @@ status: current
 - 2026-05-08 기준 MATLAB/BMU live demo는 `PASSPORT-E2E-20260508040123`을 대상으로 동작한다.
 - cloud-agent read model `localhost:3002`가 꺼져 있어도 `bmu-agent`가 Fabric fallback + runtime BMU snapshot overlay로 dashboard/detail 개요에 최신 BMU 값을 표시한다.
 - live Fabric 기준 chaincode는 `passport-contract` Version `1.4`, Sequence `5`다. Agent/UI는 sequence를 직접 지정하지 않고 chaincode name `passport-contract`로 호출한다.
-- 과거 UI 개편 과정은 activity-log와 archive에서 추적한다.
 
 ## 핵심 기술 스택
 - Hyperledger Fabric 2.5, Go 1.22
@@ -64,14 +63,10 @@ status: current
 ## 현재 기준 문서
 - [[passport/live-bmu-runtime-2026-05-08|2026-05-08 MATLAB/BMU live runtime 기준]]
 - [[passport/bms-1-3-year-mapping-2026-05-08|BMS PDF 1~3차년도 Passport 반영 매핑]]
-- [[passport/cross-session-handoff-2026-05-08|2026-05-08 4세션 전달 내용 및 리스크]]
 - [[passport/frontend|프론트엔드 구조]]
 - [[passport/design-tokens|디자인 토큰]]
 - [[passport/ui-references|UI 레퍼런스]]
 - [[common/architecture|시스템 아키텍처]]
 
 ## 기록/보관 경로
-- historical 작업 로그: [[passport/activity-log|활동 로그 인덱스]]
-- 상세 archive: [[passport/_archive/README|archive 허브]]
-- handoff 기록: [[handoffs/passport/README|Passport handoff 허브]]
 - review 기록: [[reviews/passport/README|Passport review 허브]]

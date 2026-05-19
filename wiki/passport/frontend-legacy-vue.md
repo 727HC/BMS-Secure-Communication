@@ -43,12 +43,9 @@ webapp/frontend/
 - `/legacy` 보조 경로로 호환 유지
 
 ## 왜 historical로 남기나
-- activity-log에 흩어진 Vue 시절 UI 맥락을 한 문서에서 요약해 볼 수 있다.
 - 현재 React 기준 문서에서 레거시 설명을 길게 유지하지 않아도 된다.
 - 레거시 흐름을 유지보수하거나 과거 변경을 추적할 때 배경 문서로 쓸 수 있다.
 
 ## 함께 보는 문서
 - [[passport/frontend|현재 프론트엔드 구조]]
 - [[passport/overview|배터리 여권 세션 개요]]
-- [[passport/activity-log|Passport 활동 로그 인덱스]]
-- [[passport/_archive/README|Passport archive 허브]]

@@ -53,7 +53,7 @@ function parseArgs(argv) {
   if (!args.fabricChannel) {
     args.fabricChannel = args.readProvenance === 'channel-bound' ? args.channel : 'independent-read-model';
   }
-  if (!args.out) args.out = path.join(ROOT, '.omx', 'evidence', 'blockchain', args.runId);
+  if (!args.out) args.out = path.join(ROOT, 'outputs', 'evidence', 'blockchain', args.runId);
   if (!args.cloudHealthUrl) args.cloudHealthUrl = 'http://localhost:3002/health';
   return args;
 }

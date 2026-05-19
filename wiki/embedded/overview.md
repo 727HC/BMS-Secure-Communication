@@ -10,7 +10,6 @@ status: current
 > 현재 기준 문서
 >
 > 이 문서는 Embedded 세션의 현재 책임 범위와 핵심 구현 축을 설명한다.
-> 시계열 작업 이력은 [[embedded/activity-log|활동 로그]]에서 별도로 본다.
 
 ## 담당 범위
 - `embedded/` — BMU/CMU 구현
@@ -53,4 +52,3 @@ CMU → CAN-FD(AES-128 CMAC) → BMU → CMAC 검증 → Ed25519 서명 → UART
 - [[decisions/006-embedded-security-hardening|ADR-006]]
 
 ## 기록성 문서
-- historical 작업 로그: [[embedded/activity-log|임베디드 세션 활동 로그]]

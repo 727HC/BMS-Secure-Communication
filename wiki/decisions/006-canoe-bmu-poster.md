@@ -3,6 +3,8 @@ title: ADR-006 — CANoe HTTP Binding rogue POSTer 격리 + 운영 규칙
 status: Accepted
 date: 2026-05-19
 related: ADR-005 embedded hardening, ADR-004 (TBD) FC reset mechanism
+tags: [adr, canoe, bmu, operations]
+doc_type: adr
 ---
 
 # 006. CANoe Configuration이 BMU 데이터 POST endpoint를 점유한 사건 정리
@@ -25,7 +27,7 @@ related: ADR-005 embedded hardening, ADR-004 (TBD) FC reset mechanism
 
 ## Root cause
 
-CANoe Connectivity HTTP Binding은 `.cfg` 바이너리 내부에 endpoint URL + fixture payload + 주기를 저장하며, 별도 외부 텍스트 파일 없음. 사용자(본인)가 이전 데모/테스트 셋업 시 Claude Code의 도움으로 만든 configuration이고, 그 뒤 잊고 사용 중이었음.
+CANoe Connectivity HTTP Binding은 `.cfg` 바이너리 내부에 endpoint URL + fixture payload + 주기를 저장하며, 별도 외부 텍스트 파일 없음. 이전 데모/테스트 셋업에서 만든 configuration이고, 그 뒤 비활성화되지 않은 채 남아 있었음.
 
 ## Decision (단기)
 

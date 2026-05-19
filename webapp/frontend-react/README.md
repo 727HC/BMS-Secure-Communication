@@ -148,6 +148,5 @@ npx playwright test ui_polish_smoke.spec.js
 ## 관련 문서
 
 - 디자인 토큰·안티패턴: `wiki/passport/design-tokens.md`
-- 활동 로그: `wiki/passport/activity-log/`
 - live BMU runtime 기준: `wiki/passport/live-bmu-runtime-2026-05-08.md`
 - 백엔드 API: `bmu-agent/README.md`

@@ -3,6 +3,7 @@ title: "JMeter Read-only Benchmark Plan"
 tags: [blockchain, benchmark, jmeter, read-only, evidence]
 doc_type: reference
 status: current
+date: 2026-05-19
 ---
 # JMeter Read-only Benchmark Plan
 

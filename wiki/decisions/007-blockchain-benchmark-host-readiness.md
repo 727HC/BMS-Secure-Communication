@@ -11,7 +11,7 @@ status: accepted
 Accepted
 
 ## 맥락
-`full-benchmark-rerun-audit-all-tracks` 목표의 official hard gate는 다음을 요구한다.
+write200 공식 재측정 hard gate는 다음을 요구한다.
 
 - 4-org Caliper `write200` 10-repeat
 - successful commit 기준
@@ -36,26 +36,18 @@ Accepted
 - 기본 floor:
   - Docker CPUs `>= 12`
   - Docker memory `>= 24GiB`
-- 공식 재측정 wrapper:
-  - `scripts/run-official-write200-audit.sh`
-- wrapper는 channel 생성 전에 readiness를 검사한다.
+- 공식 재측정 전에 `scripts/check-benchmark-host-readiness.sh`로 readiness를 검사한다.
 - readiness 미달이면 `blocked_underpowered_host`로 종료하고 Fabric channel을 만들지 않는다.
 - 진단 목적 강제 실행은 `ALLOW_UNDERPOWERED=true`로 가능하지만, 기본 official PASS 경로로 선호하지 않는다.
 - official PASS는 여전히 Caliper report 기준이다. ledger/CouchDB count는 원인 분리 evidence이며 `Succ==expected` 대체값이 아니다.
 
 ## 결과
 - 로컬 8-CPU 환경에서 같은 official 10-repeat 실패를 반복하지 않는다.
-- 다음 유효 PASS 시도는 같은 disposable-channel/reconciliation harness를 12~16+ vCPU host에서 재실행한다.
+- 다음 유효 PASS 시도는 같은 disposable-channel/reconciliation 측정 방식을 12~16+ vCPU host에서 재실행한다.
 - live `passportchannel`은 계속 read-only 원칙을 유지한다.
 - benchmark cleanup은 wrapper exit trap으로 수행하고, orderer channel list가 `passportchannel` only인지 evidence로 남긴다.
 
 ## 후속 액션
-- stronger host에서:
-
-```bash
-EVIDENCE_BASE=.omx/evidence/blockchain/full-rerun-audit-$(date +%Y%m%dT%H%M%S%Z) \
-  scripts/run-official-write200-audit.sh
-```
-
-- run 완료 후 `summary.env`, `repeat-results.csv`, `ledger-reconciliation.json`, `final-status.env`, cleanup evidence를 performance-goal evaluator에 연결한다.
-- PASS checkpoint 전에는 completion audit로 모든 hard gate를 다시 대조한다.
+- stronger host에서 host readiness를 확인한 뒤 동일한 write200 조건으로 재측정한다.
+- run 완료 후 `summary.env`, `repeat-results.csv`, `ledger-reconciliation.json`, `final-status.env`, cleanup evidence를 보관한다.
+- PASS 선언 전에는 모든 hard gate를 다시 대조한다.

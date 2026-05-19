@@ -10,7 +10,6 @@ status: current
 > 현재 기준 문서
 >
 > 이 문서는 Blockchain 세션의 현재 책임 범위와 핵심 구조를 설명한다.
-> 시계열 변경 이력은 [[blockchain/activity-log|활동 로그]]에서 별도로 본다.
 
 ## 담당 범위
 - `passport-network/` — 4-Org Fabric 네트워크 설정, 채널, 피어, CA
@@ -57,6 +56,4 @@ status: current
 - API 영향이 있는 변경은 Passport 세션과 협의한다.
 
 ## 기록성 문서
-- historical 활동 로그: [[blockchain/activity-log|블록체인 세션 활동 로그]]
-- handoff 기록: [[handoffs/blockchain/README|Blockchain handoff 허브]]
 - review 기록: [[reviews/blockchain/README|Blockchain review 허브]]

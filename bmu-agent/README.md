@@ -206,7 +206,7 @@ GitHub Dependabot 23건(bmu-agent path)에 대한 정리 결과:
 - **`jsrsasign`**: fabric-ca-client의 crypto identity 의존성. 11.1.1로 override (현재 fabric SDK 2.2.x 호환 확인됨, Fabric attach + Ed25519 검증 통과)
 - **미해결 fabric SDK crypto core** (`sjcl`, `elliptic`, `protobufjs`): 패치 버전이 없거나 override 시 서명 검증 깨질 위험. 진정한 해결은 `@hyperledger/fabric-gateway` 3.x로 SDK 마이그레이션 (별도 트랙)
 
-증거: `.omx/evidence/github-alerts/dependabot-open.json`.
+증거는 로컬 Dependabot alert export로 확인했다.
 
 ## 검증
 
@@ -220,6 +220,4 @@ Passport/Web 통합 기준은 `webapp/frontend-react/README.md`를 참고한다.
 ## 관련 문서
 
 - 프론트 가이드: `webapp/frontend-react/README.md`
-- 활동 로그: `wiki/passport/activity-log/`
-- API handoff: `wiki/handoffs/passport/`
 - 체인코드: `chaincode/passport-contract/` (블록체인 세션 범위)

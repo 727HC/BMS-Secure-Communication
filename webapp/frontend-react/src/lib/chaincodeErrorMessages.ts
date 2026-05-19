@@ -3,7 +3,7 @@
 // Sync history:
 // - @311a48e: 초기 contract (138 unique templates)
 // - @cbd2304: ExtractMaterials JSON prefix 통일 (§3.6 예외 제거)
-// - 2026-05-08 activity-log sync: VC holder DID binding, RFC3339 timestamp/expiry,
+// - 2026-05-08 contract sync: VC holder DID binding, RFC3339 timestamp/expiry,
 //   SHA-256 dataHash, BMU signature presence validation 추가 반영.
 // - 2026-05-08 sequence 5 live sync: BMS binding/source verification validation 추가 반영.
 //

@@ -21,7 +21,6 @@ status: current
 
 ### MCP
 - [[decisions/003-mcp-monitor-read-only|ADR-003]]
-- [[decisions/005-mcp-session-hook-isolation|ADR-005]]
 
 ### Embedded / Blockchain 연계
 - [[decisions/004-fc-reset-mechanism|ADR-004]]
@@ -30,17 +29,16 @@ status: current
 ## 이 폴더에 두는 것
 - 세션 간 유지해야 하는 기술 / 운영 결정
 - 보안 원칙, 구조 경계, 제약 합의
-- 이후 handoff / review에서 반복 참조할 기준
+- 이후 review / runbook에서 반복 참조할 기준
 
 ## 읽는 법
 - 현재 구조를 이해할 때는 overview / architecture를 읽은 뒤 필요한 ADR로 내려간다.
-- activity-log나 review에서 언급된 결정 번호를 보면 이 허브로 돌아와 원문을 확인한다.
+- review나 runbook에서 언급된 결정 번호를 보면 이 허브로 돌아와 원문을 확인한다.
 - Accepted ADR은 현재 기준으로 간주하고, historical 로그와는 역할을 구분한다.
 
 ## 함께 보는 문서
 - [[common/architecture|시스템 아키텍처]]
 - [[common/terminology|용어 사전]]
-- [[handoffs/README|handoff 기록 허브]]
 - [[reviews/README|review 기록 허브]]
 
 ## 작성 메모

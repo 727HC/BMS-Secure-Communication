@@ -10,13 +10,11 @@ status: current
 BMU/CMU 펌웨어, 보안 프로토콜, 하드웨어 제약의 현재 기준 문서와 기록성 문서를 구분해서 안내하는 허브다.
 
 ## 현재 기준 문서
-- [[embedded/bms-management-identifier-binding-2026-05-08|BMS management identifier binding handoff]]
 - [[embedded/overview|세션 개요]]
 - [[embedded/secrets-management|펌웨어 키/시크릿 관리]]
 - [[decisions/006-embedded-security-hardening|ADR-006 — 임베디드 보안 강화]]
 
 ## 기록성 문서
-- [[embedded/activity-log|활동 로그]]
 
 ## 이 폴더에 두는 것
 - BMU/CMU 펌웨어 보안 제약

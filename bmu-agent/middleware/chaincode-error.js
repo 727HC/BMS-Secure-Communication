@@ -9,7 +9,7 @@
 // - @311a48e: 초기 contract (138 unique templates)
 // - @cbd2304: ExtractMaterials JSON prefix `failed to unmarshal recycling rates:` →
 //   `invalid recycling rates JSON:` 로 통일. §3.6 예외 paragraph 삭제, 미들웨어 특이 분기 제거.
-// - 2026-05-08 activity-log sync: VC holder DID binding, RFC3339 timestamp/expiry,
+// - 2026-05-08 contract sync: VC holder DID binding, RFC3339 timestamp/expiry,
 //   SHA-256 dataHash, BMU signature presence validation 추가 반영.
 // - 2026-05-08 sequence 5 live sync: SetPassportExtendedAttributes, BindBMSIdentifier,
 //   RecordBMUDataWithPayload, RecordSourceVerification validation 추가 반영.

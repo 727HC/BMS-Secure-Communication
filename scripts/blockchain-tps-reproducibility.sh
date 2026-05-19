@@ -59,7 +59,7 @@ FRESH_KEYS_PER_REPEAT="${FRESH_KEYS_PER_REPEAT:-false}"
 FRESH_CHANNEL_PER_REPEAT="${FRESH_CHANNEL_PER_REPEAT:-false}"
 SKIP_INITIAL_PREPARE="${SKIP_INITIAL_PREPARE:-false}"
 VERIFY_PREPARED_EACH_REPEAT="${CALIPER_VERIFY_PREPARED_EACH_REPEAT:-false}"
-EVIDENCE_ROOT="${EVIDENCE_ROOT:-${ROOT_DIR}/.omx/evidence/blockchain/${RUN_ID}}"
+EVIDENCE_ROOT="${EVIDENCE_ROOT:-${ROOT_DIR}/outputs/evidence/blockchain/${RUN_ID}}"
 if [[ "${EVIDENCE_ROOT}" != /* ]]; then
   EVIDENCE_ROOT="${ROOT_DIR}/${EVIDENCE_ROOT}"
 fi
@@ -165,7 +165,7 @@ Environment:
   CALIPER_DOCKER_IMAGE         default hyperledger/fabric-tools:latest; host Node runtime is mounted read-only
   CALIPER_DOCKER_NETWORK       default passport_net
   CALIPER_DOCKER_WORKDIR       default /work; repository mount point inside the runner container
-  EVIDENCE_ROOT                default .omx/evidence/blockchain/<RUN_ID>
+  EVIDENCE_ROOT                default outputs/evidence/blockchain/<RUN_ID>
   RECONCILE_AFTER_RUNS         default false; true writes ledger-reconciliation.json before any external cleanup
   RECONCILE_REQUIRED           default false; true fails the harness if reconciliation collection fails
   IDENTIFY_LEDGER_VALIDITY_AFTER_RUNS default false; true runs read-only ledgerutil identifytxs evidence after repeats

@@ -25,7 +25,7 @@ Passport UI 문서에서 참조하는 스크린샷과 시각 레퍼런스 이미
 ## 이 폴더에 두는 것
 - UI 문서에서 직접 참조하는 스크린샷
 - 디자인 비교용 정적 이미지
-- activity-log / review 문서에서 재사용하는 페이지 캡처
+- review / public docs에서 재사용하는 페이지 캡처
 
 ## 함께 보는 문서
 - [[passport/ui-references|UI 레퍼런스]]

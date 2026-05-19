@@ -31,7 +31,6 @@ REQUIRED_DIRS = [
     "blockchain",
     "embedded",
     "mcp",
-    "handoffs",
     "reviews",
     "Object",
 ]
@@ -42,14 +41,11 @@ REQUIRED_DOCS = [
     "common/architecture.md",
     "common/terminology.md",
     "common/wiki-writing-guide.md",
-    "common/agent-wiki-writing-guide.md",
-    "common/agent-entrypoints.md",
     "decisions/README.md",
     "passport/README.md",
     "blockchain/README.md",
     "embedded/README.md",
     "mcp/README.md",
-    "handoffs/README.md",
     "reviews/README.md",
     "Object/README.md",
     "passport/overview.md",
@@ -57,9 +53,7 @@ REQUIRED_DOCS = [
     "embedded/overview.md",
     "mcp/overview.md",
 ]
-REQUIRED_NON_MARKDOWN_FILES = [
-    "AGENTS.md",
-]
+REQUIRED_NON_MARKDOWN_FILES = []
 EXPECTED_HUB_LINKS = {
     "README.md": [
         "common/knowledge-map",
@@ -69,7 +63,6 @@ EXPECTED_HUB_LINKS = {
         "blockchain/README",
         "embedded/README",
         "mcp/README",
-        "handoffs/README",
         "reviews/README",
     ],
     "common/knowledge-map.md": [
@@ -81,46 +74,54 @@ EXPECTED_HUB_LINKS = {
         "blockchain/README",
         "embedded/README",
         "mcp/README",
-        "common/agent-entrypoints",
         "common/wiki-writing-guide",
-        "common/agent-wiki-writing-guide",
-        "handoffs/README",
         "reviews/README",
         "Object/README",
     ],
     "common/README.md": [
         "common/wiki-writing-guide",
-        "common/agent-wiki-writing-guide",
-        "common/agent-entrypoints",
-        "common/task-packet-template",
-    ],
-    "common/wiki-writing-guide.md": [
-        "common/agent-wiki-writing-guide",
+        "common/document-role-guide",
     ],
 }
-AGENTS_REQUIRED_SNIPPETS = [
-    "wiki/common/agent-wiki-writing-guide.md",
-    "wiki/common/wiki-writing-guide.md",
-    "wiki/common/",
-    "wiki/decisions/",
-    "wiki/handoffs/",
-    "wiki/reviews/",
-    "activity-log",
-    "python3 scripts/verify_wiki.py",
-]
 IGNORE_PARITY_PATHS = {
-    ".obsidian/app.json",
-    ".obsidian/appearance.json",
-    ".obsidian/core-plugins.json",
-    ".obsidian/graph.json",
-    ".obsidian/workspace.json",
     ".gitignore",
 }
-IGNORE_PARITY_PREFIXES = (
+PUBLIC_EXCLUDE_PATHS = {
+    "AGENTS.md",
+}
+PUBLIC_EXCLUDE_PREFIXES = (
+    ".obsidian/",
     ".trash/",
+    "handoffs/",
+    "passport/_archive/",
+    "passport/activity-log/",
 )
+PUBLIC_EXCLUDE_PATTERNS = (
+    "*/activity-log.md",
+    "*/activity-log/*.md",
+    "common/agent-*.md",
+    "common/claude-design-prompt-reference*",
+    "common/task-packet-template.md",
+    "decisions/*session-hook*.md",
+    "**/*handoff*.md",
+    "**/*completion-audit*.md",
+    "passport/review-*-code-review.md",
+    "reviews/wiki-consolidation-review*.md",
+    "blockchain/*offhost*.md",
+    "blockchain/full-benchmark-rerun-audit*.md",
+)
+IGNORE_PARITY_PREFIXES = PUBLIC_EXCLUDE_PREFIXES
 WIKILINK_RE = re.compile(r"\[\[([^\]]+)\]\]")
 MARKDOWN_LINK_RE = re.compile(r"\[[^\]]+\]\(([^)]+)\)")
+
+
+def is_public_wiki_path(rel: str) -> bool:
+    if rel in PUBLIC_EXCLUDE_PATHS:
+        return False
+    if any(rel.startswith(prefix) for prefix in PUBLIC_EXCLUDE_PREFIXES):
+        return False
+    from fnmatch import fnmatch
+    return not any(fnmatch(rel, pattern) for pattern in PUBLIC_EXCLUDE_PATTERNS)
 
 
 @dataclass
@@ -165,7 +166,11 @@ def root_relative_without_suffix(path: Path, root: Path) -> str:
 
 
 def collect_markdown_index(root: Path) -> tuple[set[str], dict[str, set[str]]]:
-    docs = {root_relative_without_suffix(path, root) for path in root.rglob("*.md")}
+    docs = {
+        root_relative_without_suffix(path, root)
+        for path in root.rglob("*.md")
+        if is_public_wiki_path(path.relative_to(root).as_posix())
+    }
     by_name: dict[str, set[str]] = defaultdict(set)
     for doc in docs:
         by_name[Path(doc).name].add(doc)
@@ -237,7 +242,7 @@ def verify_frontmatter(root: Path, result: VerificationResult) -> None:
     issues: list[str] = []
     for path in sorted(root.rglob("*.md")):
         rel = path.relative_to(root).as_posix()
-        if rel == "AGENTS.md":
+        if not is_public_wiki_path(rel):
             continue
         frontmatter = parse_frontmatter(path.read_text(encoding="utf-8"))
         if frontmatter is None:
@@ -271,6 +276,8 @@ def verify_links(root: Path, result: VerificationResult) -> None:
     issues: list[str] = []
     for file_path in sorted(root.rglob("*.md")):
         rel = file_path.relative_to(root)
+        if not is_public_wiki_path(rel.as_posix()):
+            continue
         text = file_path.read_text(encoding="utf-8")
         for match in WIKILINK_RE.finditer(text):
             raw_target = match.group(1)
@@ -288,7 +295,7 @@ def verify_links(root: Path, result: VerificationResult) -> None:
 
 
 def should_ignore_parity_path(rel: str) -> bool:
-    return rel in IGNORE_PARITY_PATHS or any(rel.startswith(prefix) for prefix in IGNORE_PARITY_PREFIXES)
+    return rel in IGNORE_PARITY_PATHS or not is_public_wiki_path(rel)
 
 
 def compare_trees(source: Path, target: Path) -> tuple[list[str], list[str], list[str]]:
@@ -310,21 +317,6 @@ def compare_trees(source: Path, target: Path) -> tuple[list[str], list[str], lis
             differing.append(rel)
     return only_in_source, only_in_target, differing
 
-
-def verify_agent_guidance(root: Path, result: VerificationResult) -> None:
-    agents_path = root / "AGENTS.md"
-    if not agents_path.exists():
-        result.add("failed", "Agent guidance issues:\n  - AGENTS.md is missing")
-        return
-    text = agents_path.read_text(encoding="utf-8")
-    missing = [snippet for snippet in AGENTS_REQUIRED_SNIPPETS if snippet not in text]
-    if missing:
-        result.add(
-            "failed",
-            "Agent guidance issues:\n  - AGENTS.md missing required snippets: " + ", ".join(missing),
-        )
-    else:
-        result.add("passed", "Scoped wiki AGENTS guidance exists and points to the canonical agent guide")
 
 def verify_parity(label: str, source: Path, target: Path, result: VerificationResult) -> None:
     if not source.exists():
@@ -390,8 +382,6 @@ def main() -> int:
     verify_frontmatter(wiki_root, result)
     verify_hub_links(wiki_root, result)
     verify_links(wiki_root, result)
-    verify_agent_guidance(wiki_root, result)
-
     if not args.skip_source_parity:
         verify_parity("Canonical source parity", wiki_root, Path(args.canonical_source).resolve(), result)
     if not args.skip_windows_parity:

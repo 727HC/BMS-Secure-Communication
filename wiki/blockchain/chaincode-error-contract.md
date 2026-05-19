@@ -322,4 +322,3 @@ grep -hoE 'fmt\.Errorf\("[^"]*"' chaincode/passport-contract/*.go \
 ## 7. 관련 문서
 
 - [[blockchain/chaincode-contract-audit-2026-04-27|chaincode 계약 감사 보고서 (2026-04-27)]]
-- [[blockchain/activity-log|활동 로그]]

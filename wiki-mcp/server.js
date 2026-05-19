@@ -64,31 +64,30 @@ server.tool('wiki_search', '위키 전체 검색', { query: z.string().describe(
   return { content: [{ type: 'text', text: `검색: "${query}" — ${results.length}건\n\n${text}` }] };
 });
 
-server.tool('wiki_activity', '전체 세션 활동 로그 조회', {}, async () => {
-  const sessions = ['passport', 'blockchain', 'embedded', 'mcp'];
-  const logs = [];
+server.tool('wiki_activity', '도메인별 공개 개요 조회', {}, async () => {
+  const domains = ['passport', 'blockchain', 'embedded', 'mcp'];
+  const summaries = [];
 
-  for (const s of sessions) {
+  for (const domain of domains) {
     try {
-      const content = await readFile(join(WIKI_DIR, s, 'activity-log.md'), 'utf-8');
-      const parts = content.split(/^## /m).filter(x => x.trim());
-      const recent = parts.length > 1 ? parts[1].trim().substring(0, 500) : '(기록 없음)';
-      logs.push(`### ${s}\n${recent}`);
+      const content = await readFile(join(WIKI_DIR, domain, 'overview.md'), 'utf-8');
+      const summary = content.split('\n').filter(line => line.trim()).slice(0, 18).join('\n');
+      summaries.push(`### ${domain}\n${summary}`);
     } catch {
-      logs.push(`### ${s}\n(activity-log.md 없음)`);
+      summaries.push(`### ${domain}\n(overview.md 없음)`);
     }
   }
 
-  return { content: [{ type: 'text', text: logs.join('\n\n') }] };
+  return { content: [{ type: 'text', text: summaries.join('\n\n') }] };
 });
 
 server.tool('wiki_design', '디자인 가이드라인 조회', {}, async () => {
   try {
-    const tokens = await readFile(join(WIKI_DIR, 'design', 'design-tokens.md'), 'utf-8');
-    const refs = await readFile(join(WIKI_DIR, 'design', 'ui-references.md'), 'utf-8');
+    const tokens = await readFile(join(WIKI_DIR, 'passport', 'design-tokens.md'), 'utf-8');
+    const refs = await readFile(join(WIKI_DIR, 'passport', 'ui-references.md'), 'utf-8');
     return { content: [{ type: 'text', text: `${tokens}\n\n---\n\n${refs}` }] };
   } catch {
-    return { content: [{ type: 'text', text: 'design 폴더를 읽을 수 없습니다.' }], isError: true };
+    return { content: [{ type: 'text', text: 'passport 디자인 문서를 읽을 수 없습니다.' }], isError: true };
   }
 });
 

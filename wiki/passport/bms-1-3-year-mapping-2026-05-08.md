@@ -25,7 +25,7 @@ Status values:
 | EVB 전주기 시나리오 | partially-implemented | create/list/detail/bind/correct/history, `maintenance.routes.js`, `analysis.routes.js`, `recycling.routes.js` | 앱 표면은 있음. 체인코드 이벤트·시험 시나리오는 별도 검증 필요 |
 | 내부 API/응용서비스 API 설계 | implemented | `bmu-agent/routes/*.js`, `webapp/frontend-react/src/lib/api.ts` | 입력 검증 보강 |
 | DID 기반 배터리 ID, VIN, 제조/모델/시리얼/일자/국가 | implemented | `passport.routes.js`, `did.routes.js`, `CorrectionModal.tsx`, `IdentityTab.tsx` | DID/ID strict validation 추가 |
-| 원자재·제조공정·규격·사용·재활용·폐기·인증·확장 속성 | partially-implemented | `material.routes.js`, `recycling.routes.js`, `vc.routes.js`, `IdentityTab.tsx`, `CorrectionModal.tsx` | 정정 UI에 제조공정/폐기/재활용 원료/확장정보 추가. 초기 발급 인자 확장은 chaincode handoff |
+| 원자재·제조공정·규격·사용·재활용·폐기·인증·확장 속성 | partially-implemented | `material.routes.js`, `recycling.routes.js`, `vc.routes.js`, `IdentityTab.tsx`, `CorrectionModal.tsx` | 정정 UI에 제조공정/폐기/재활용 원료/확장정보 추가. 초기 발급 인자 확장은 chaincode 연계 과제 |
 | BMS 보안 플랫폼: RBAC/IAM/TLS/AES/BMS-CMU | partially-implemented | JWT/RBAC: `middleware/auth.js`, `middleware/rbac.js`; BMU signature: `bmu.routes.js`, `did.service.js` | BMS-CMU TLS/AES/HSE는 Embedded 범위 |
 | Fabric 기반 블록체인 구조/프로토타입 | implemented | `fabric.service.js`, `chaincode/passport-contract/*` | Passport 세션 직접 수정 없음 |
 
@@ -56,7 +56,7 @@ Status values:
 | 대규모 데이터·부하 안정성 검증 | blocked-by-other-session | `scripts/tps-benchmark*`, frontend/bmu tests는 존재 | 대규모 부하 시험은 별도 목표 필요 |
 | 보안취약점/침투/암호화·데이터 보호 | partially-implemented | JWT/RBAC, CORS/security headers, audit redaction, signed BMU verify | 침투 테스트와 BMS-CMU 암호 검증은 다른 세션 필요 |
 | 로그/오류 모니터링/추적/감사 | implemented | `middleware/audit.js`, `/api/audit`, frontend AuditLogPage | 감사 마스킹 강화 |
-| BMS/블록체인/BMS보안/Passport 메시징 | partially-implemented | `bmu.routes.js`, `did.service.js`, `fabric.service.js`, `realtime.routes.js` | 메시징 프로토콜 명세/성능 검증은 blockchain/embedded handoff |
+| BMS/블록체인/BMS보안/Passport 메시징 | partially-implemented | `bmu.routes.js`, `did.service.js`, `fabric.service.js`, `realtime.routes.js` | 메시징 프로토콜 명세/성능 검증은 blockchain/embedded 연계 과제 |
 
 ## 결론
 - Passport 앱/API 표면에서는 1~3차년도 핵심 흐름이 `partially-implemented` 이상으로 존재한다.

@@ -2,6 +2,8 @@
 title: ADR-005 — S32DS 빌드 인자의 절대경로 의존
 status: Accepted (단기) · Open (장기 마이그레이션)
 date: 2026-05-19
+tags: [adr, embedded, build]
+doc_type: adr
 ---
 
 # 005. S32DS 빌드 인자의 절대경로 의존 — 정션으로 우회

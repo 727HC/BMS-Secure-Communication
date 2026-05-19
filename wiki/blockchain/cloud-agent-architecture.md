@@ -80,4 +80,3 @@ node initial-sync.js
 
 ## 참고
 - [[blockchain/kpi-targets|KPI 목표 및 달성 현황]]
-- [[handoffs/blockchain/passport-handoff-2026-04-13|Passport 세션 handoff]] — Passport 세션 전달 사항

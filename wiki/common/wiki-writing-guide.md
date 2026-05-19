@@ -20,7 +20,6 @@ status: current
 | 공통 구조, 용어, 규칙 | `common/` |
 | 기술 결정 | `decisions/` |
 | 세션/도메인 상세 | 각 도메인 폴더 (`passport/`, `blockchain/` 등) |
-| handoff / task packet | `handoffs/` |
 | review 기준 / 리뷰 메모 | `reviews/` |
 | 외부 PDF / 참고 원문 | `Object/` |
 
@@ -46,15 +45,13 @@ status: current
 - 기본 키: `title`, `date`, `tags`, `doc_type`
 - 선택 키: `updated`, `status`, `aliases`
 - `doc_type` 권장값
-  - `index` — README, 지식 맵, 로그 인덱스
-  - `guide` — 작성 규칙, agent 진입 가이드
+  - `index` — README, 지식 맵, 허브 문서
+  - `guide` — 작성 규칙, 운영 가이드
   - `template` — 재사용 템플릿
   - `overview` — 도메인/세션 개요
   - `reference` — 구조/규칙/참고 노트
   - `adr` — 결정 기록
-  - `handoff` — 작업 인수인계 문서
   - `review` — QA / 리뷰 / 리스크 기록
-  - `log` — 활동 로그 / 날짜별 기록
 
 ## 파일 규칙
 - 파일명: `kebab-case.md`
@@ -70,9 +67,6 @@ status: current
 - 공통 허브: `wiki/common/knowledge-map.md`
 - 도메인 허브: `passport/README.md`, `blockchain/README.md`, `embedded/README.md`, `mcp/README.md`
 - 도메인 개요: `passport/overview.md`, `blockchain/overview.md`, `embedded/overview.md`, `mcp/overview.md`
-- 운영 허브: `handoffs/README.md`, `reviews/README.md`
-- 운영 하위 허브: `handoffs/passport/README.md`, `handoffs/blockchain/README.md`, `reviews/passport/README.md`, `reviews/blockchain/README.md`
-- archive 허브: `passport/_archive/README.md`
 - 참고 자료 허브: `Object/README.md`
 
 새 문서가 특정 허브에서만 발견 가능하다면 링크를 추가하거나, 허브가 이미 같은 역할의 문서를 충분히 가리키는지 확인한다.
@@ -82,17 +76,12 @@ status: current
 - mirror vault: `/path/to/BMS-Knowledge`
 - parity 확인 명령:
   - `rsync -aunv --delete --exclude='.obsidian' --exclude='.trash' wiki/ /path/to/BMS-Knowledge/`
-- `.obsidian/`, `.trash/`는 사용자별 상태 폴더라 parity 비교에서 제외한다.
+- `.obsidian/`, `.trash/`는 사용자별 상태 폴더라 public Git 추적 대상에서 제외한다.
 - dry-run 출력이 비어 있으면 관리 대상 문서는 source와 mirror가 같은 상태다.
 
 ## status 역할 가이드
 - current / historical / archive 구분은 [[common/document-role-guide|문서 역할 / status 가이드]]를 따른다.
 - ADR은 accepted / superseded / proposed 같은 결정 상태를 우선 사용한다.
-
-## agent 적용 규칙
-- agent용 자동 적용 surface: `wiki/AGENTS.md`
-- agent용 정본 가이드: [[common/agent-wiki-writing-guide|Agent wiki writing guide]]
-- `wiki/AGENTS.md`는 짧은 강제 규칙만 두고, 예시/설명은 정본 가이드에 둔다.
 
 ## 운영 메모
 source는 `/path/to/bms-blockchain/wiki`다.

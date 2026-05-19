@@ -23,7 +23,6 @@ status: historical
 - [[reviews/passport/manual-qa-report-2026-04-07|BATP 실사용 QA 결과]]
 - [[reviews/blockchain/review-findings-summary|코드 리뷰 사실/거짓 판별 결과]]
 - [[reviews/blockchain/risk-acceptance|리스크 수용 기록]]
-- [[reviews/wiki-consolidation-review-2026-04-18|위키 통합 점검 기록]]
 
 ## 언제 쓰나
 - reviewer가 같은 종류의 문제를 반복 지적할 때

@@ -1,3 +1,10 @@
+---
+title: "ResetFCForDID 운영 runbook"
+date: 2026-05-19
+tags: [blockchain, operations, bmu]
+doc_type: runbook
+status: current
+---
 # ResetFCForDID 운영 runbook
 
 ## 목적
