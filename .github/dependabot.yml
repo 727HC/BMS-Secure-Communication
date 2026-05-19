@@ -16,7 +16,6 @@ updates:
   - package-ecosystem: "npm"
     directories:
       - "/bmu-agent"
-      - "/caliper-workspace"
       - "/cloud-agent"
       - "/e2e-tests"
       - "/mcp-monitor"

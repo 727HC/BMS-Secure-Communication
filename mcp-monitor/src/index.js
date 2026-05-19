@@ -22,10 +22,10 @@ const server = new McpServer({
 
 server.tool(
   'monitor_transactions',
-  'Fabric 블록체인 트랜잭션 모니터링. 최근 트랜잭션 목록, 성공/실패 통계, TPS 측정, 특정 함수 호출 필터링',
+  'Fabric 블록체인 트랜잭션 모니터링. 최근 트랜잭션 목록, 성공/실패 통계, 처리율 측정, 특정 함수 호출 필터링',
   {
     action: z.enum(['recent', 'stats', 'search']).describe(
-      'recent: 최근 트랜잭션 목록, stats: 성공/실패 통계 및 TPS, search: 특정 함수명으로 검색'
+      'recent: 최근 트랜잭션 목록, stats: 성공/실패 통계 및 처리율, search: 특정 함수명으로 검색'
     ),
     limit: z.number().int().min(1).max(500).optional().default(20).describe('조회할 트랜잭션 수 (recent/search)'),
     function_name: z.string().optional().describe('검색할 체인코드 함수명 (search 시 필수)'),

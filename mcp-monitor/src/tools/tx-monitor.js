@@ -159,7 +159,7 @@ async function execute(params) {
         else byStatus.error++;
       }
 
-      // TPS calculation
+      // Transaction-rate calculation
       const total = logTxs.length;
       const tps = hours > 0 ? (total / (hours * 3600)).toFixed(4) : 0;
 

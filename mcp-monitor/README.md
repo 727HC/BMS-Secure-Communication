@@ -93,7 +93,7 @@ node src/index.js
 | action | 설명 | 주요 파라미터 |
 |--------|------|---------------|
 | `recent` | 최근 트랜잭션 (로그 기반) | `limit`, `passport_id` |
-| `stats` | 성공/실패 통계 + TPS | `hours` (0.1~720) |
+| `stats` | 성공/실패 통계 + 처리율 | `hours` (0.1~720) |
 | `search` | 함수명 검색 | `function_name` (필수), `limit` |
 
 - **정확도**: 비트랜잭션 lifecycle 로그(연결·게이트웨이 등) 제외, `function \|\| action` 있는 로그만 카운트

@@ -61,8 +61,8 @@ func (c *PassportContract) recordBMUDataAutoID(ctx contractapi.TransactionContex
 	temperature string, cellCount string, statusFlags string,
 	dischargeCycles string, timestamp string) error {
 
-	// Official write200 uses the txID-derived record ID path. Keep it separate
-	// from legacy/payload writes so the BMU hot path avoids duplicate-record and
+	// The AutoID path uses the txID-derived record ID path. Keep it separate
+	// from legacy/payload writes so normal BMU ingest avoids duplicate-record and
 	// raw-payload branches without changing public chaincode APIs.
 	msp, err := c.requireBMUWriterMSPAndGetMSP(ctx)
 	if err != nil {
@@ -348,7 +348,7 @@ func (c *PassportContract) commitBMURecord(stub shim.ChaincodeStubInterface,
 		return fmt.Errorf("failed to update lastFc: %v", err)
 	}
 
-	// Snapshot은 cloud-agent block event에서 오프체인 생성 (TPS 최적화: 3 PutState → 2)
+	// Snapshot은 cloud-agent block event에서 오프체인 생성 (write-path 최적화: 3 PutState → 2)
 	return nil
 }
 

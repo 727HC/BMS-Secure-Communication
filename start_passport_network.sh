@@ -41,7 +41,7 @@ case "$ACTION" in
     ./network.sh createChannel -c passportchannel
     echo ""
     echo "=== Deploying passport-contract chaincode ==="
-    # KPI 튜닝(bf2290d): 1-of-4 OR endorsement → 쓰기 TPS 93.8 → 173.1
+    # Production endorsement policy: Manufacturer + any one partner org.
     ./network.sh deployCC \
       -ccn passport-contract \
       -ccp "${SCRIPT_DIR}/chaincode/passport-contract" \
