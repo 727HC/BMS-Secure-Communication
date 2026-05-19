@@ -180,20 +180,20 @@ function clearDidPassportCache(options = {}) {
 router.post('/data', authenticateToken, requireMSP(MSP.MANUFACTURER), bmuRateLimit, async (req, res) => {
   const { rawPayload, signature, did: reqDid } = req.body;
   const did = reqDid;
-  if (process.env.BMU_INGEST_DEBUG === 'true') {
-    console.log('[BMU-INGEST]', JSON.stringify({
-      t: new Date().toISOString(),
-      ip: req.ip,
-      rp: req.socket?.remotePort,
-      ua: req.get('user-agent') || '-',
-      fc: req.body?.fc,
-      bind: typeof rawPayload === 'string' && rawPayload.length >= 96 ? rawPayload.slice(88, 96) : null,
-      rawLen: typeof rawPayload === 'string' ? rawPayload.length : null,
-      sigLen: typeof signature === 'string' ? signature.length : null,
-      rawHead: typeof rawPayload === 'string' ? rawPayload.slice(0, 24) : null,
-      isHex: typeof rawPayload === 'string' ? /^[0-9a-fA-F]+$/.test(rawPayload) : null,
-    }));
-  }
+  // Source attribution for incident response (rogue replay, duplicate DID, FC reset 사후 추적).
+  // 전체 payload는 절대 로깅 안 함: bind=offset44~47(8 hex), rawHead=앞 24 hex만 노출, signature 길이만.
+  log.info('BMU ingest', {
+    action: 'BMUIngest',
+    ip: req.ip,
+    rp: req.socket?.remotePort,
+    ua: req.get('user-agent') || null,
+    fc: req.body?.fc,
+    bind: typeof rawPayload === 'string' && rawPayload.length >= 96 ? rawPayload.slice(88, 96) : null,
+    rawLen: typeof rawPayload === 'string' ? rawPayload.length : null,
+    sigLen: typeof signature === 'string' ? signature.length : null,
+    rawHead: typeof rawPayload === 'string' ? rawPayload.slice(0, 24) : null,
+    isHex: typeof rawPayload === 'string' ? /^[0-9a-fA-F]+$/.test(rawPayload) : null,
+  });
 
   const bodyError = firstError(
     validateText(rawPayload, 'rawPayload', { min: 1, max: 512 }),
