@@ -15,7 +15,7 @@ const MSP_ID = process.env.CALIPER_ORG_MSP;
 const CONNECTION_PROFILE = process.env.ORG_CONNPROFILE;
 const KEYSTORE = process.env.ORG_KEYSTORE;
 const SIGNCERT = process.env.ORG_SIGNCERT;
-const CHANNEL_NAME = process.env.CHANNEL_NAME || 'passportchannel';
+const CHANNEL_NAME = process.env.CHANNEL_NAME || '';
 const CHAINCODE_NAME = process.env.CHAINCODE_NAME || 'passport-contract';
 const CONCURRENCY = parsePositiveInt(process.env.CALIPER_VERIFY_CONCURRENCY || '50', 'CALIPER_VERIFY_CONCURRENCY');
 
@@ -30,6 +30,15 @@ function parsePositiveInt(value, name) {
 function requireEnv(name, value) {
     if (!value) {
         throw new Error(`${name} is required`);
+    }
+}
+
+function assertSafeBenchmarkChannel() {
+    if (!CHANNEL_NAME) {
+        throw new Error('CHANNEL_NAME must be explicit for benchmark passport verification; refusing default live passportchannel');
+    }
+    if (CHANNEL_NAME === 'passportchannel' && process.env.CALIPER_ALLOW_LIVE_PASSPORTCHANNEL !== 'true') {
+        throw new Error('verify-passports refuses live passportchannel by default; use a disposable benchmark channel');
     }
 }
 
@@ -81,13 +90,25 @@ function passportDid(passport) {
     return passport.did || passport.DID || passport.Did;
 }
 
+function parseHotBinding(bytes) {
+    const text = Buffer.from(bytes || '').toString('utf8');
+    return JSON.parse(text);
+}
+
 async function main() {
+    assertSafeBenchmarkChannel();
     const { gateway, client } = await newGateway();
     try {
         const network = gateway.getNetwork(CHANNEL_NAME);
         const contract = network.getContract(CHAINCODE_NAME);
         let next = 0;
         let verified = 0;
+        const hotBinding = {
+            missing: 0,
+            legacy: 0,
+            mismatch: 0,
+            malformed: 0,
+        };
         const failures = [];
 
         async function worker() {
@@ -107,6 +128,15 @@ async function main() {
                     if (actualDid !== expectedDid) {
                         throw new Error(`did mismatch expected=${expectedDid} actual=${actualDid || '<empty>'}`);
                     }
+                    const bindingResult = await contract.evaluateTransaction('CheckBMUHotBinding', passportId, expectedDid);
+                    const binding = parseHotBinding(bindingResult);
+                    if (binding.status !== 'canonical') {
+                        if (binding.missing) hotBinding.missing++;
+                        if (binding.legacy) hotBinding.legacy++;
+                        if (binding.mismatch) hotBinding.mismatch++;
+                        if (binding.status === 'malformed') hotBinding.malformed++;
+                        throw new Error(`hot binding not canonical status=${binding.status} expectedPassport=${passportId} boundPassport=${binding.boundPassportId || '<empty>'}`);
+                    }
                     verified++;
                 } catch (err) {
                     failures.push({ index, passportId, error: err.message || String(err) });
@@ -121,7 +151,7 @@ async function main() {
         if (failures.length > 0) {
             throw new Error(`benchmark passport verification failed: ${JSON.stringify(failures)}`);
         }
-        console.log(`[verify-passports] runId=${RUN_ID} channel=${CHANNEL_NAME} passports=${PASSPORT_COUNT} verified=${verified}`);
+        console.log(`[verify-passports] runId=${RUN_ID} channel=${CHANNEL_NAME} passports=${PASSPORT_COUNT} verified=${verified} hotBindingMissing=${hotBinding.missing} hotBindingLegacy=${hotBinding.legacy} hotBindingMismatch=${hotBinding.mismatch} hotBindingMalformed=${hotBinding.malformed}`);
     } finally {
         gateway.close();
         client.close();

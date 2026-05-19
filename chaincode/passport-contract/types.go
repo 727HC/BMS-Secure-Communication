@@ -19,6 +19,7 @@ const (
 	docTypePhysicalEvent            = "physicalVerification"
 	docTypeSourceVerification       = "sourceVerification"
 	docTypeFCReset                  = "fcReset"
+	docTypeFCRepair                 = "fcRepair"
 	docTypeCredRequest              = "credentialRequest"
 	defaultPageSize           int32 = 100
 	maxPageSize               int32 = 500
@@ -255,6 +256,20 @@ type BMUSnapshot struct {
 	UpdatedAt            string  `json:"updatedAt"`
 }
 
+// BMUHotBindingStatus is a read-only diagnostic for the DID→passport lastFc hot binding.
+type BMUHotBindingStatus struct {
+	PassportID      string `json:"passportId"`
+	DID             string `json:"did"`
+	Status          string `json:"status"`
+	BoundPassportID string `json:"boundPassportId,omitempty" metadata:",optional"`
+	FC              uint64 `json:"fc,omitempty" metadata:",optional"`
+	HasFC           bool   `json:"hasFc"`
+	Missing         bool   `json:"missing"`
+	Legacy          bool   `json:"legacy"`
+	Mismatch        bool   `json:"mismatch"`
+	DecodeError     string `json:"decodeError,omitempty" metadata:",optional"`
+}
+
 // CorrectionLog represents a data correction event
 type CorrectionLog struct {
 	Date          string `json:"date"`
@@ -362,11 +377,28 @@ type CredentialRequest struct {
 type FCResetLog struct {
 	DocType    string `json:"docType"`
 	LogID      string `json:"logId"`
+	PassportID string `json:"passportId"`
 	DID        string `json:"did"`
 	Reason     string `json:"reason"`
 	PreviousFC uint64 `json:"previousFc"`
+	HasFC      bool   `json:"hasFc"`
 	ResetBy    string `json:"resetBy"`
 	ResetAt    string `json:"resetAt"`
+}
+
+// FCRepairLog records migration/repair of the canonical DID lastFc binding.
+type FCRepairLog struct {
+	DocType    string `json:"docType"`
+	LogID      string `json:"logId"`
+	PassportID string `json:"passportId"`
+	DID        string `json:"did"`
+	Reason     string `json:"reason"`
+	Source     string `json:"source"`
+	PreviousFC uint64 `json:"previousFc"`
+	RepairedFC uint64 `json:"repairedFc"`
+	HasFC      bool   `json:"hasFc"`
+	RepairedBy string `json:"repairedBy"`
+	RepairedAt string `json:"repairedAt"`
 }
 
 // PaginatedPassportResult for passport queries

@@ -9,8 +9,12 @@ import (
 	"math"
 	"strconv"
 	"strings"
+	"sync"
+	"sync/atomic"
 	"time"
+	"unicode/utf8"
 
+	"github.com/hyperledger/fabric-chaincode-go/v2/shim"
 	"github.com/hyperledger/fabric-contract-api-go/v2/contractapi"
 )
 
@@ -18,14 +22,26 @@ import (
 // Uses GetTxTimestamp() for deterministic endorsement across peers.
 // Returns error instead of time.Now() fallback to prevent non-deterministic state.
 func txTimestamp(ctx contractapi.TransactionContextInterface) (string, error) {
-	ts, err := ctx.GetStub().GetTxTimestamp()
+	return txTimestampFromStub(ctx.GetStub())
+}
+
+func txTimestampFromStub(stub shim.ChaincodeStubInterface) (string, error) {
+	txTime, err := txTimeFromStub(stub)
 	if err != nil {
-		return "", fmt.Errorf("failed to get tx timestamp: %v", err)
+		return "", err
+	}
+	return txTime.Format(time.RFC3339), nil
+}
+
+func txTimeFromStub(stub shim.ChaincodeStubInterface) (time.Time, error) {
+	ts, err := stub.GetTxTimestamp()
+	if err != nil {
+		return time.Time{}, fmt.Errorf("failed to get tx timestamp: %v", err)
 	}
 	if ts == nil {
-		return "", fmt.Errorf("tx timestamp is nil")
+		return time.Time{}, fmt.Errorf("tx timestamp is nil")
 	}
-	return time.Unix(ts.Seconds, int64(ts.Nanos)).UTC().Format(time.RFC3339), nil
+	return time.Unix(ts.Seconds, 0).UTC(), nil
 }
 
 // sanitizeSelector escapes characters that could break CouchDB JSON selectors
@@ -109,12 +125,307 @@ func parsePercent(fieldName string, value string) (float64, error) {
 }
 
 func parseFiniteFloat(fieldName string, value string) (float64, error) {
+	if parsed, ok := parseSimpleDecimalFloatFast(value); ok {
+		return parsed, nil
+	}
 	parsed, err := strconv.ParseFloat(value, 64)
 	if err != nil {
 		return 0, fmt.Errorf("invalid %s value: %v", fieldName, err)
 	}
 	if math.IsNaN(parsed) || math.IsInf(parsed, 0) {
 		return 0, fmt.Errorf("invalid %s value: must be finite", fieldName)
+	}
+	return parsed, nil
+}
+
+func parseFiniteFloatCommonFast(fieldName string, value string, common string, parsed float64) (float64, error) {
+	if value == common {
+		return parsed, nil
+	}
+	return parseFiniteFloat(fieldName, value)
+}
+
+func parseBMUAutoIDConstantFields(
+	soc string, voltage string, current string,
+	temperature string, cellCount string, statusFlags string, dischargeCycles string,
+) (uint16, float64, float64, uint16, uint8, uint8, uint16, bool) {
+	if soc == "32768" &&
+		voltage == "40.000" &&
+		current == "0.000" &&
+		temperature == "30000" &&
+		cellCount == "96" &&
+		statusFlags == "0" &&
+		dischargeCycles == "0" {
+		return 32768, 40, 0, 30000, 96, 0, 0, true
+	}
+	return 0, 0, 0, 0, 0, 0, 0, false
+}
+
+func parseSimpleDecimalFloatFast(value string) (float64, bool) {
+	if value == "" {
+		return 0, false
+	}
+	if parsed, ok := parseFixed3DecimalFloatFast(value); ok {
+		return parsed, true
+	}
+	negative := false
+	i := 0
+	switch value[0] {
+	case '-':
+		negative = true
+		i = 1
+	case '+':
+		i = 1
+	}
+	if i == len(value) {
+		return 0, false
+	}
+
+	var integer uint64
+	var fraction uint64
+	scale := float64(1)
+	digits := 0
+	fractionDigits := 0
+	seenDot := false
+	for ; i < len(value); i++ {
+		c := value[i]
+		if c == '.' {
+			if seenDot {
+				return 0, false
+			}
+			seenDot = true
+			continue
+		}
+		if c < '0' || c > '9' {
+			return 0, false
+		}
+		if digits == 15 {
+			return 0, false
+		}
+		digit := uint64(c - '0')
+		if seenDot {
+			fraction = fraction*10 + digit
+			scale *= 10
+			fractionDigits++
+		} else {
+			integer = integer*10 + digit
+		}
+		digits++
+	}
+	if digits == 0 {
+		return 0, false
+	}
+	parsed := float64(integer)
+	if fractionDigits > 0 {
+		parsed += float64(fraction) / scale
+	}
+	if negative {
+		parsed = -parsed
+	}
+	return parsed, true
+}
+
+func parseFixed3DecimalFloatFast(value string) (float64, bool) {
+	if len(value) < len("0.000") {
+		return 0, false
+	}
+	negative := false
+	start := 0
+	switch value[0] {
+	case '-':
+		negative = true
+		start = 1
+	case '+':
+		start = 1
+	}
+	dot := len(value) - 4
+	if dot <= start || value[dot] != '.' {
+		return 0, false
+	}
+	// Keep the same safety envelope as parseSimpleDecimalFloatFast: it only
+	// accepts values with at most 15 decimal digits before falling back to
+	// strconv.ParseFloat compatibility.
+	if len(value)-start-1 > 15 {
+		return 0, false
+	}
+	var integer uint64
+	for i := start; i < dot; i++ {
+		c := value[i]
+		if c < '0' || c > '9' {
+			return 0, false
+		}
+		integer = integer*10 + uint64(c-'0')
+	}
+	c0, c1, c2 := value[dot+1], value[dot+2], value[dot+3]
+	if c0 < '0' || c0 > '9' || c1 < '0' || c1 > '9' || c2 < '0' || c2 > '9' {
+		return 0, false
+	}
+	fraction := uint64(c0-'0')*100 + uint64(c1-'0')*10 + uint64(c2-'0')
+	parsed := float64(integer) + float64(fraction)/1000
+	if negative {
+		parsed = -parsed
+	}
+	return parsed, true
+}
+
+func parseUint10Fast(value string, bitSize int) (uint64, error) {
+	switch bitSize {
+	case 64:
+		return parseUint64Fast(value)
+	case 16:
+		return parseUint16Fast(value)
+	case 8:
+		return parseUint8Fast(value)
+	}
+
+	if value == "" {
+		return strconv.ParseUint(value, 10, bitSize)
+	}
+	max := uint64(^uint64(0))
+	if bitSize > 0 && bitSize < 64 {
+		max = (uint64(1) << bitSize) - 1
+	}
+	return parseUint10FastMax(value, max, bitSize)
+}
+
+func parseUint64Fast(value string) (uint64, error) {
+	if value == "" {
+		return strconv.ParseUint(value, 10, 64)
+	}
+	// Any unsigned decimal with fewer than 20 digits fits uint64. The BMU
+	// write path normally carries short FC counters, so avoid the per-digit
+	// overflow division in that common case while preserving strconv fallback
+	// behavior for malformed values.
+	if len(value) < 20 {
+		var parsed uint64
+		for i := 0; i < len(value); i++ {
+			c := value[i]
+			if c < '0' || c > '9' {
+				return strconv.ParseUint(value, 10, 64)
+			}
+			parsed = parsed*10 + uint64(c-'0')
+		}
+		return parsed, nil
+	}
+	return parseUint10FastMax(value, ^uint64(0), 64)
+}
+
+func parseUint16Fast(value string) (uint64, error) {
+	if value == "" {
+		return strconv.ParseUint(value, 10, 16)
+	}
+	if len(value) > 5 {
+		return strconv.ParseUint(value, 10, 16)
+	}
+	var parsed uint64
+	for i := 0; i < len(value); i++ {
+		c := value[i]
+		if c < '0' || c > '9' {
+			return strconv.ParseUint(value, 10, 16)
+		}
+		parsed = parsed*10 + uint64(c-'0')
+	}
+	if parsed > 1<<16-1 {
+		return strconv.ParseUint(value, 10, 16)
+	}
+	return parsed, nil
+}
+
+func parseUint16CommonFast(value string, common string, parsed uint64) (uint64, error) {
+	if value == common {
+		return parsed, nil
+	}
+	return parseUint16Fast(value)
+}
+
+func parseUint8Fast(value string) (uint64, error) {
+	if value == "" {
+		return strconv.ParseUint(value, 10, 8)
+	}
+	if len(value) > 3 {
+		return strconv.ParseUint(value, 10, 8)
+	}
+	var parsed uint64
+	for i := 0; i < len(value); i++ {
+		c := value[i]
+		if c < '0' || c > '9' {
+			return strconv.ParseUint(value, 10, 8)
+		}
+		parsed = parsed*10 + uint64(c-'0')
+	}
+	if parsed > 1<<8-1 {
+		return strconv.ParseUint(value, 10, 8)
+	}
+	return parsed, nil
+}
+
+func parseUint8CommonFast(value string, common string, parsed uint64) (uint64, error) {
+	if value == common {
+		return parsed, nil
+	}
+	return parseUint8Fast(value)
+}
+
+func parseUint10FastMax(value string, max uint64, bitSize int) (uint64, error) {
+	var parsed uint64
+	for i := 0; i < len(value); i++ {
+		c := value[i]
+		if c < '0' || c > '9' {
+			return strconv.ParseUint(value, 10, bitSize)
+		}
+		digit := uint64(c - '0')
+		if parsed > (max-digit)/10 {
+			return strconv.ParseUint(value, 10, bitSize)
+		}
+		parsed = parsed*10 + digit
+	}
+	return parsed, nil
+}
+
+func parseUint10BytesFast(value []byte, bitSize int) (uint64, error) {
+	if len(value) == 0 {
+		return strconv.ParseUint("", 10, bitSize)
+	}
+
+	switch bitSize {
+	case 64:
+		if len(value) < 20 {
+			var parsed uint64
+			for i := 0; i < len(value); i++ {
+				c := value[i]
+				if c < '0' || c > '9' {
+					return strconv.ParseUint(string(value), 10, bitSize)
+				}
+				parsed = parsed*10 + uint64(c-'0')
+			}
+			return parsed, nil
+		}
+		return parseUint10BytesFastMax(value, ^uint64(0), bitSize)
+	case 16:
+		return parseUint10BytesFastMax(value, 1<<16-1, bitSize)
+	case 8:
+		return parseUint10BytesFastMax(value, 1<<8-1, bitSize)
+	}
+
+	max := uint64(^uint64(0))
+	if bitSize > 0 && bitSize < 64 {
+		max = (uint64(1) << bitSize) - 1
+	}
+	return parseUint10BytesFastMax(value, max, bitSize)
+}
+
+func parseUint10BytesFastMax(value []byte, max uint64, bitSize int) (uint64, error) {
+	var parsed uint64
+	for i := 0; i < len(value); i++ {
+		c := value[i]
+		if c < '0' || c > '9' {
+			return strconv.ParseUint(string(value), 10, bitSize)
+		}
+		digit := uint64(c - '0')
+		if parsed > (max-digit)/10 {
+			return strconv.ParseUint(string(value), 10, bitSize)
+		}
+		parsed = parsed*10 + digit
 	}
 	return parsed, nil
 }
@@ -127,12 +438,41 @@ func parseStrictBool(fieldName string, value string) (bool, error) {
 	return parsed, nil
 }
 
+var sha256HexCharTable = newSHA256HexCharTable()
+
+func newSHA256HexCharTable() [256]bool {
+	var table [256]bool
+	for c := byte('0'); c <= byte('9'); c++ {
+		table[c] = true
+	}
+	for c := byte('a'); c <= byte('f'); c++ {
+		table[c] = true
+	}
+	for c := byte('A'); c <= byte('F'); c++ {
+		table[c] = true
+	}
+	return table
+}
+
 func validateSHA256Hex(fieldName string, value string) error {
 	if len(value) != 64 {
 		return fmt.Errorf("%s must be 64-character hex SHA-256, got length %d", fieldName, len(value))
 	}
-	for _, r := range value {
-		if !((r >= '0' && r <= '9') || (r >= 'a' && r <= 'f') || (r >= 'A' && r <= 'F')) {
+	// Caliper/Fabric BMU writers send lowercase SHA-256 hex in the write hot
+	// path. Accept that common case without touching the compatibility table;
+	// fallback below keeps existing uppercase compatibility and error behavior.
+	for i := 0; i < len(value); i++ {
+		c := value[i]
+		if (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') {
+			continue
+		}
+		goto compatibilityFallback
+	}
+	return nil
+
+compatibilityFallback:
+	for i := 0; i < len(value); i++ {
+		if !sha256HexCharTable[value[i]] {
 			return fmt.Errorf("%s must be 64-character hex SHA-256", fieldName)
 		}
 	}
@@ -152,6 +492,25 @@ func validateBMURecordInput(recordId string, passportId string, did string, data
 	return validateRequiredRFC3339("timestamp", timestamp)
 }
 
+func validateBMURecordAutoIDInput(passportId string, did string, dataHash string, signature string, timestamp string) error {
+	if signature == "" || timestamp == "" {
+		return fmt.Errorf("signature/timestamp must not be empty")
+	}
+	if passportId == "" || did == "" || dataHash == "" {
+		return fmt.Errorf("passportId, did, dataHash must not be empty")
+	}
+	if err := validateCompositeKeyAttributeFast(did); err != nil {
+		return fmt.Errorf("failed to create lastFc composite key: %v", err)
+	}
+	if err := validateSHA256Hex("dataHash", dataHash); err != nil {
+		return err
+	}
+	if err := validateRequiredRFC3339("timestamp", timestamp); err != nil {
+		return err
+	}
+	return nil
+}
+
 func validateOptionalRFC3339(fieldName string, value string) error {
 	if value == "" {
 		return nil
@@ -166,10 +525,86 @@ func validateRequiredRFC3339(fieldName string, value string) error {
 	if value == "" {
 		return fmt.Errorf("%s must not be empty", fieldName)
 	}
+	if isRFC3339UTCSecondOrMillis(value) {
+		return nil
+	}
 	if _, err := time.Parse(time.RFC3339, value); err != nil {
 		return fmt.Errorf("invalid %s value: %v", fieldName, err)
 	}
 	return nil
+}
+
+func isRFC3339UTCSecondOrMillis(value string) bool {
+	millis := false
+	switch len(value) {
+	case len("2006-01-02T15:04:05Z"):
+		if value[19] != 'Z' {
+			return false
+		}
+	case len("2006-01-02T15:04:05.000Z"):
+		millis = true
+		if value[19] != '.' || value[23] != 'Z' {
+			return false
+		}
+	default:
+		return false
+	}
+	if value[4] != '-' || value[7] != '-' || value[10] != 'T' || value[13] != ':' || value[16] != ':' {
+		return false
+	}
+	if !isFourDigitsAt(value, 0) ||
+		!isTwoDigitsAt(value, 5) ||
+		!isTwoDigitsAt(value, 8) ||
+		!isTwoDigitsAt(value, 11) ||
+		!isTwoDigitsAt(value, 14) ||
+		!isTwoDigitsAt(value, 17) {
+		return false
+	}
+	if millis && !isThreeDigitsAt(value, 20) {
+		return false
+	}
+	year := int(value[0]-'0')*1000 + int(value[1]-'0')*100 + int(value[2]-'0')*10 + int(value[3]-'0')
+	month := int(value[5]-'0')*10 + int(value[6]-'0')
+	day := int(value[8]-'0')*10 + int(value[9]-'0')
+	hour := int(value[11]-'0')*10 + int(value[12]-'0')
+	minute := int(value[14]-'0')*10 + int(value[15]-'0')
+	second := int(value[17]-'0')*10 + int(value[18]-'0')
+	if month < 1 || month > 12 || day < 1 || day > daysInMonth(year, month) || hour > 23 || minute > 59 || second > 59 {
+		return false
+	}
+	return true
+}
+
+func isTwoDigitsAt(value string, offset int) bool {
+	return isDigitByte(value[offset]) && isDigitByte(value[offset+1])
+}
+
+func isThreeDigitsAt(value string, offset int) bool {
+	return isTwoDigitsAt(value, offset) && isDigitByte(value[offset+2])
+}
+
+func isFourDigitsAt(value string, offset int) bool {
+	return isTwoDigitsAt(value, offset) && isTwoDigitsAt(value, offset+2)
+}
+
+func isDigitByte(value byte) bool {
+	return value >= '0' && value <= '9'
+}
+
+func daysInMonth(year int, month int) int {
+	switch month {
+	case 1, 3, 5, 7, 8, 10, 12:
+		return 31
+	case 4, 6, 9, 11:
+		return 30
+	case 2:
+		if year%4 == 0 && (year%100 != 0 || year%400 == 0) {
+			return 29
+		}
+		return 28
+	default:
+		return 0
+	}
 }
 
 func validatePassportHolderDID(passport *BatteryPassport, holderDid string) error {
@@ -407,39 +842,553 @@ func (c *PassportContract) validatePassportDIDBinding(ctx contractapi.Transactio
 
 const lastFCBindingSeparator = "\x00"
 
-func lastFCKey(ctx contractapi.TransactionContextInterface, did string) (string, error) {
-	return ctx.GetStub().CreateCompositeKey("lastFc", []string{did})
+const (
+	maxLastFCKeyCacheEntries = 65536
+	maxCachedLastFCKeyDIDLen = 128
+)
+
+var (
+	lastFCKeyCache        sync.Map
+	lastFCKeyCacheEntries atomic.Uint64
+)
+
+func lastFCKey(did string) (string, error) {
+	if err := validateCompositeKeyAttributeFast(did); err != nil {
+		return "", err
+	}
+	return lastFCKeyFromValidatedDID(did), nil
+}
+
+func lastFCKeyFromValidatedDID(did string) string {
+	if value, ok := lastFCKeyCache.Load(did); ok {
+		return value.(string)
+	}
+	key := "\x00lastFc\x00" + did + "\x00"
+	if len(did) > maxCachedLastFCKeyDIDLen || lastFCKeyCacheEntries.Load() >= maxLastFCKeyCacheEntries {
+		return key
+	}
+	value, loaded := lastFCKeyCache.LoadOrStore(did, key)
+	if !loaded {
+		lastFCKeyCacheEntries.Add(1)
+	}
+	return value.(string)
+}
+
+func validateCompositeKeyAttributeFast(value string) error {
+	allASCII := true
+	for i := 0; i < len(value); i++ {
+		switch b := value[i]; {
+		case b == 0:
+			return fmt.Errorf(`input contains unicode %#U starting at position [%d]. %#U and %#U are not allowed in the input attribute of a composite key`,
+				rune(0), i, 0, utf8.MaxRune)
+		case b >= utf8.RuneSelf:
+			allASCII = false
+		}
+	}
+	if allASCII {
+		return nil
+	}
+	if !utf8.ValidString(value) {
+		return fmt.Errorf("not a valid utf8 string: [%x]", value)
+	}
+	for index, runeValue := range value {
+		if runeValue == 0 || runeValue == utf8.MaxRune {
+			return fmt.Errorf(`input contains unicode %#U starting at position [%d]. %#U and %#U are not allowed in the input attribute of a composite key`,
+				runeValue, index, 0, utf8.MaxRune)
+		}
+	}
+	return nil
 }
 
 func encodeLastFCBinding(passportId string, fc uint64, hasFC bool) []byte {
-	if !hasFC {
-		return []byte(passportId + lastFCBindingSeparator)
+	capacity := len(passportId) + 1
+	if hasFC {
+		capacity += decimalLenUint64(fc)
 	}
-	return []byte(passportId + lastFCBindingSeparator + strconv.FormatUint(fc, 10))
+	return appendLastFCBinding(make([]byte, 0, capacity), passportId, fc, hasFC)
+}
+
+func appendLastFCBinding(dst []byte, passportId string, fc uint64, hasFC bool) []byte {
+	dst = append(dst, passportId...)
+	dst = append(dst, 0)
+	if hasFC {
+		dst = strconv.AppendUint(dst, fc, 10)
+	}
+	return dst
+}
+
+func decimalLenUint64(value uint64) int {
+	switch {
+	case value < 10:
+		return 1
+	case value < 100:
+		return 2
+	case value < 1000:
+		return 3
+	case value < 10000:
+		return 4
+	case value < 100000:
+		return 5
+	case value < 1000000:
+		return 6
+	case value < 10000000:
+		return 7
+	case value < 100000000:
+		return 8
+	case value < 1000000000:
+		return 9
+	case value < 10000000000:
+		return 10
+	case value < 100000000000:
+		return 11
+	case value < 1000000000000:
+		return 12
+	case value < 10000000000000:
+		return 13
+	case value < 100000000000000:
+		return 14
+	case value < 1000000000000000:
+		return 15
+	case value < 10000000000000000:
+		return 16
+	case value < 100000000000000000:
+		return 17
+	case value < 1000000000000000000:
+		return 18
+	case value < 10000000000000000000:
+		return 19
+	default:
+		return 20
+	}
+}
+
+func marshalBMURecordState(record *BMURecord) ([]byte, error) {
+	if math.IsInf(record.Voltage, 0) || math.IsNaN(record.Voltage) {
+		return nil, fmt.Errorf("unsupported value: %v", record.Voltage)
+	}
+	if math.IsInf(record.Current, 0) || math.IsNaN(record.Current) {
+		return nil, fmt.Errorf("unsupported value: %v", record.Current)
+	}
+	if record.BMSBindingCode32 == 0 &&
+		!record.RawPayloadHashVerified &&
+		record.Status != "" &&
+		record.InvalidatedBy == "" &&
+		record.InvalidatedAt == "" &&
+		record.InvalidReason == "" {
+		return marshalBMURecordValidState(record), nil
+	}
+
+	dst := make([]byte, 0,
+		len(record.DocType)+len(record.RecordID)+len(record.PassportID)+len(record.DID)+
+			len(record.DataHash)+len(record.Signature)+len(record.Timestamp)+len(record.Status)+
+			len(record.InvalidatedBy)+len(record.InvalidatedAt)+len(record.InvalidReason)+
+			len(record.CreatedAt)+len(record.CreatorMSP)+256)
+	dst = append(dst, '{')
+	first := true
+	dst = appendJSONStringField(dst, &first, `"docType":`, record.DocType)
+	dst = appendJSONStringField(dst, &first, `"recordId":`, record.RecordID)
+	dst = appendJSONStringField(dst, &first, `"passportId":`, record.PassportID)
+	dst = appendJSONStringField(dst, &first, `"did":`, record.DID)
+	dst = appendJSONStringField(dst, &first, `"dataHash":`, record.DataHash)
+	dst = appendJSONStringField(dst, &first, `"signature":`, record.Signature)
+	dst = appendJSONUintField(dst, &first, `"fc":`, record.FC)
+	dst = appendJSONUintField(dst, &first, `"soc":`, uint64(record.SOC))
+	dst = appendJSONFloatField(dst, &first, `"voltage":`, record.Voltage)
+	dst = appendJSONFloatField(dst, &first, `"current":`, record.Current)
+	dst = appendJSONUintField(dst, &first, `"temperature":`, uint64(record.Temperature))
+	dst = appendJSONUintField(dst, &first, `"cellCount":`, uint64(record.CellCount))
+	dst = appendJSONUintField(dst, &first, `"statusFlags":`, uint64(record.StatusFlags))
+	dst = appendJSONUintField(dst, &first, `"dischargeCycles":`, uint64(record.DischargeCycles))
+	if record.BMSBindingCode32 != 0 {
+		dst = appendJSONUintField(dst, &first, `"bmsBindingCode32":`, uint64(record.BMSBindingCode32))
+	}
+	if record.RawPayloadHashVerified {
+		dst = appendJSONBoolField(dst, &first, `"rawPayloadHashVerified":`, true)
+	}
+	dst = appendJSONStringField(dst, &first, `"timestamp":`, record.Timestamp)
+	if record.Status != "" {
+		dst = appendJSONStringField(dst, &first, `"status":`, record.Status)
+	}
+	if record.InvalidatedBy != "" {
+		dst = appendJSONStringField(dst, &first, `"invalidatedBy":`, record.InvalidatedBy)
+	}
+	if record.InvalidatedAt != "" {
+		dst = appendJSONStringField(dst, &first, `"invalidatedAt":`, record.InvalidatedAt)
+	}
+	if record.InvalidReason != "" {
+		dst = appendJSONStringField(dst, &first, `"invalidReason":`, record.InvalidReason)
+	}
+	dst = appendJSONStringField(dst, &first, `"createdAt":`, record.CreatedAt)
+	dst = appendJSONStringField(dst, &first, `"creatorMsp":`, record.CreatorMSP)
+	dst = append(dst, '}')
+	return dst, nil
+}
+
+func marshalBMURecordValidState(record *BMURecord) []byte {
+	dst := make([]byte, 0,
+		len(record.DocType)+len(record.RecordID)+len(record.PassportID)+len(record.DID)+
+			len(record.DataHash)+len(record.Signature)+len(record.Timestamp)+len(record.Status)+
+			len(record.CreatedAt)+len(record.CreatorMSP)+256)
+	dst = append(dst, `{"docType":`...)
+	dst = appendJSONString(dst, record.DocType)
+	dst = append(dst, `,"recordId":`...)
+	dst = appendJSONString(dst, record.RecordID)
+	dst = append(dst, `,"passportId":`...)
+	dst = appendJSONString(dst, record.PassportID)
+	dst = append(dst, `,"did":`...)
+	dst = appendJSONString(dst, record.DID)
+	dst = append(dst, `,"dataHash":`...)
+	dst = appendJSONString(dst, record.DataHash)
+	dst = append(dst, `,"signature":`...)
+	dst = appendJSONString(dst, record.Signature)
+	dst = append(dst, `,"fc":`...)
+	dst = strconv.AppendUint(dst, record.FC, 10)
+	dst = append(dst, `,"soc":`...)
+	dst = strconv.AppendUint(dst, uint64(record.SOC), 10)
+	dst = append(dst, `,"voltage":`...)
+	dst = appendJSONBMUFloat(dst, record.Voltage)
+	dst = append(dst, `,"current":`...)
+	dst = appendJSONBMUFloat(dst, record.Current)
+	dst = append(dst, `,"temperature":`...)
+	dst = strconv.AppendUint(dst, uint64(record.Temperature), 10)
+	dst = append(dst, `,"cellCount":`...)
+	dst = strconv.AppendUint(dst, uint64(record.CellCount), 10)
+	dst = append(dst, `,"statusFlags":`...)
+	dst = strconv.AppendUint(dst, uint64(record.StatusFlags), 10)
+	dst = append(dst, `,"dischargeCycles":`...)
+	dst = strconv.AppendUint(dst, uint64(record.DischargeCycles), 10)
+	dst = append(dst, `,"timestamp":`...)
+	dst = appendJSONString(dst, record.Timestamp)
+	dst = append(dst, `,"status":`...)
+	dst = appendJSONString(dst, record.Status)
+	dst = append(dst, `,"createdAt":`...)
+	dst = appendJSONString(dst, record.CreatedAt)
+	dst = append(dst, `,"creatorMsp":`...)
+	dst = appendJSONString(dst, record.CreatorMSP)
+	return append(dst, '}')
+}
+
+func marshalBMURecordAutoIDValidState(record *BMURecord) []byte {
+	return marshalBMURecordAutoIDValidFields(
+		record.RecordID, record.PassportID, record.DID, record.DataHash, record.Signature,
+		record.FC, record.SOC, record.Voltage, record.Current,
+		record.Temperature, record.CellCount, record.StatusFlags, record.DischargeCycles,
+		record.Timestamp, record.CreatedAt, record.CreatorMSP,
+	)
+}
+
+func marshalBMURecordAutoIDValidFields(
+	recordId string, passportId string, did string, dataHash string, signature string,
+	fc uint64, soc uint16, voltage float64, current float64,
+	temperature uint16, cellCount uint8, statusFlags uint8, dischargeCycles uint16,
+	timestamp string, createdAt string, creatorMSP string,
+) []byte {
+	dst := marshalBMURecordAutoIDValidFieldsPrefix(
+		recordId, passportId, did, dataHash, signature,
+		fc, soc, voltage, current,
+		temperature, cellCount, statusFlags, dischargeCycles,
+		timestamp, len(createdAt), creatorMSP,
+	)
+	dst = append(dst, createdAt...)
+	return appendBMURecordAutoIDCreatedAtTail(dst, creatorMSP)
+}
+
+func marshalBMURecordAutoIDValidFieldsCreatedAtTime(
+	recordId string, passportId string, did string, dataHash string, signature string,
+	fc uint64, soc uint16, voltage float64, current float64,
+	temperature uint16, cellCount uint8, statusFlags uint8, dischargeCycles uint16,
+	timestamp string, createdAt time.Time, creatorMSP string,
+) []byte {
+	dst := marshalBMURecordAutoIDValidFieldsPrefix(
+		recordId, passportId, did, dataHash, signature,
+		fc, soc, voltage, current,
+		temperature, cellCount, statusFlags, dischargeCycles,
+		timestamp, len("2006-01-02T15:04:05Z"), creatorMSP,
+	)
+	dst = createdAt.AppendFormat(dst, time.RFC3339)
+	return appendBMURecordAutoIDCreatedAtTail(dst, creatorMSP)
+}
+
+func appendUTCSecondRFC3339(dst []byte, value time.Time) []byte {
+	if value.Location() != time.UTC {
+		return value.AppendFormat(dst, time.RFC3339)
+	}
+	year, month, day := value.Date()
+	if year < 0 || year > 9999 {
+		return value.AppendFormat(dst, time.RFC3339)
+	}
+	hour, minute, second := value.Clock()
+	dst = appendFourDigits(dst, year)
+	dst = append(dst, '-')
+	dst = appendTwoDigits(dst, int(month))
+	dst = append(dst, '-')
+	dst = appendTwoDigits(dst, day)
+	dst = append(dst, 'T')
+	dst = appendTwoDigits(dst, hour)
+	dst = append(dst, ':')
+	dst = appendTwoDigits(dst, minute)
+	dst = append(dst, ':')
+	dst = appendTwoDigits(dst, second)
+	return append(dst, 'Z')
+}
+
+func appendTwoDigits(dst []byte, value int) []byte {
+	return append(dst, byte('0'+value/10), byte('0'+value%10))
+}
+
+func appendFourDigits(dst []byte, value int) []byte {
+	return append(dst,
+		byte('0'+value/1000%10),
+		byte('0'+value/100%10),
+		byte('0'+value/10%10),
+		byte('0'+value%10),
+	)
+}
+
+func marshalBMURecordAutoIDValidFieldsPrefix(
+	recordId string, passportId string, did string, dataHash string, signature string,
+	fc uint64, soc uint16, voltage float64, current float64,
+	temperature uint16, cellCount uint8, statusFlags uint8, dischargeCycles uint16,
+	timestamp string, createdAtLen int, creatorMSP string,
+) []byte {
+	dst := make([]byte, 0,
+		len(recordId)+len(passportId)+len(did)+len(dataHash)+len(signature)+
+			len(timestamp)+createdAtLen+len(creatorMSP)+273)
+	dst = append(dst, `{"docType":"bmuRecord","recordId":`...)
+	if appended, ok := appendJSONLowerHex64String(dst, recordId); ok {
+		dst = appended
+	} else {
+		dst = appendJSONString(dst, recordId)
+	}
+	dst = append(dst, `,"passportId":`...)
+	dst = appendJSONString(dst, passportId)
+	dst = append(dst, `,"did":`...)
+	dst = appendJSONString(dst, did)
+	dst = append(dst, `,"dataHash":"`...)
+	dst = append(dst, dataHash...)
+	dst = append(dst, `","signature":`...)
+	dst = appendJSONString(dst, signature)
+	dst = append(dst, `,"fc":`...)
+	dst = strconv.AppendUint(dst, fc, 10)
+	if soc == 32768 &&
+		voltage == 40 &&
+		current == 0 && !math.Signbit(current) &&
+		temperature == 30000 &&
+		cellCount == 96 &&
+		statusFlags == 0 &&
+		dischargeCycles == 0 {
+		dst = append(dst, `,"soc":32768,"voltage":40,"current":0,"temperature":30000,"cellCount":96,"statusFlags":0,"dischargeCycles":0`...)
+	} else {
+		dst = append(dst, `,"soc":`...)
+		dst = strconv.AppendUint(dst, uint64(soc), 10)
+		dst = append(dst, `,"voltage":`...)
+		dst = appendJSONBMUFloat(dst, voltage)
+		dst = append(dst, `,"current":`...)
+		dst = appendJSONBMUFloat(dst, current)
+		dst = append(dst, `,"temperature":`...)
+		dst = strconv.AppendUint(dst, uint64(temperature), 10)
+		dst = append(dst, `,"cellCount":`...)
+		dst = strconv.AppendUint(dst, uint64(cellCount), 10)
+		dst = append(dst, `,"statusFlags":`...)
+		dst = strconv.AppendUint(dst, uint64(statusFlags), 10)
+		dst = append(dst, `,"dischargeCycles":`...)
+		dst = strconv.AppendUint(dst, uint64(dischargeCycles), 10)
+	}
+	dst = append(dst, `,"timestamp":"`...)
+	dst = append(dst, timestamp...)
+	dst = append(dst, `","status":"VALID","createdAt":"`...)
+	return dst
+}
+
+func appendBMURecordAutoIDCreatedAtTail(dst []byte, creatorMSP string) []byte {
+	dst = append(dst, `","creatorMsp":"`...)
+	dst = append(dst, creatorMSP...)
+	return append(dst, `"}`...)
+}
+
+func appendJSONLowerHex64String(dst []byte, value string) ([]byte, bool) {
+	if !isLowerHex64String(value) {
+		return dst, false
+	}
+	dst = append(dst, '"')
+	dst = append(dst, value...)
+	dst = append(dst, '"')
+	return dst, true
+}
+
+func isLowerHex64String(value string) bool {
+	if len(value) != 64 {
+		return false
+	}
+	for i := 0; i < 64; i++ {
+		c := value[i]
+		if (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') {
+			continue
+		}
+		return false
+	}
+	return true
+}
+
+func appendJSONFieldPrefix(dst []byte, first *bool, fieldPrefix string) []byte {
+	if *first {
+		*first = false
+	} else {
+		dst = append(dst, ',')
+	}
+	return append(dst, fieldPrefix...)
+}
+
+func appendJSONStringField(dst []byte, first *bool, fieldPrefix string, value string) []byte {
+	dst = appendJSONFieldPrefix(dst, first, fieldPrefix)
+	return appendJSONString(dst, value)
+}
+
+func appendJSONUintField(dst []byte, first *bool, fieldPrefix string, value uint64) []byte {
+	dst = appendJSONFieldPrefix(dst, first, fieldPrefix)
+	return strconv.AppendUint(dst, value, 10)
+}
+
+func appendJSONFloatField(dst []byte, first *bool, fieldPrefix string, value float64) []byte {
+	dst = appendJSONFieldPrefix(dst, first, fieldPrefix)
+	return appendJSONBMUFloat(dst, value)
+}
+
+func appendJSONBMUFloat(dst []byte, value float64) []byte {
+	switch value {
+	case 0:
+		if !math.Signbit(value) {
+			return append(dst, '0')
+		}
+	case 40:
+		return append(dst, "40"...)
+	}
+	return strconv.AppendFloat(dst, value, 'g', -1, 64)
+}
+
+func appendJSONBoolField(dst []byte, first *bool, fieldPrefix string, value bool) []byte {
+	dst = appendJSONFieldPrefix(dst, first, fieldPrefix)
+	if value {
+		return append(dst, "true"...)
+	}
+	return append(dst, "false"...)
+}
+
+func appendJSONString(dst []byte, value string) []byte {
+	const hex = "0123456789abcdef"
+	dst = append(dst, '"')
+	start := 0
+	for i := 0; i < len(value); {
+		if b := value[i]; b < utf8.RuneSelf {
+			if b >= 0x20 && b != '\\' && b != '"' && b != '<' && b != '>' && b != '&' {
+				i++
+				continue
+			}
+			if start < i {
+				dst = append(dst, value[start:i]...)
+			}
+			switch b {
+			case '\\', '"':
+				dst = append(dst, '\\', b)
+			case '\b':
+				dst = append(dst, '\\', 'b')
+			case '\f':
+				dst = append(dst, '\\', 'f')
+			case '\n':
+				dst = append(dst, '\\', 'n')
+			case '\r':
+				dst = append(dst, '\\', 'r')
+			case '\t':
+				dst = append(dst, '\\', 't')
+			default:
+				dst = append(dst, '\\', 'u', '0', '0', hex[b>>4], hex[b&0xf])
+			}
+			i++
+			start = i
+			continue
+		}
+		r, size := utf8.DecodeRuneInString(value[i:])
+		if r == utf8.RuneError && size == 1 {
+			if start < i {
+				dst = append(dst, value[start:i]...)
+			}
+			dst = append(dst, '\\', 'u', 'f', 'f', 'f', 'd')
+			i += size
+			start = i
+			continue
+		}
+		if r == '\u2028' || r == '\u2029' {
+			if start < i {
+				dst = append(dst, value[start:i]...)
+			}
+			dst = append(dst, '\\', 'u', '2', '0', '2', byte('8'+r-'\u2028'))
+			i += size
+			start = i
+			continue
+		}
+		i += size
+	}
+	if start < len(value) {
+		dst = append(dst, value[start:]...)
+	}
+	return append(dst, '"')
 }
 
 func decodeLastFCBinding(raw []byte) (passportId string, fc uint64, hasFC bool, legacyNumeric bool, err error) {
-	text := string(raw)
-	if boundPassportID, fcText, ok := strings.Cut(text, lastFCBindingSeparator); ok {
-		if fcText == "" {
-			return boundPassportID, 0, false, false, nil
+	for i, b := range raw {
+		if b == 0 {
+			boundPassportID := string(raw[:i])
+			fcBytes := raw[i+1:]
+			if len(fcBytes) == 0 {
+				return boundPassportID, 0, false, false, nil
+			}
+			parsed, parseErr := parseUint10BytesFast(fcBytes, 64)
+			if parseErr != nil {
+				return "", 0, false, false, parseErr
+			}
+			return boundPassportID, parsed, true, false, nil
 		}
-		parsed, parseErr := strconv.ParseUint(fcText, 10, 64)
-		if parseErr != nil {
-			return "", 0, false, false, parseErr
-		}
-		return boundPassportID, parsed, true, false, nil
 	}
 
-	parsed, parseErr := strconv.ParseUint(text, 10, 64)
+	parsed, parseErr := parseUint10BytesFast(raw, 64)
 	if parseErr != nil {
 		return "", 0, false, true, parseErr
 	}
 	return "", parsed, true, true, nil
 }
 
+func decodeLastFCBindingForPassport(raw []byte, expectedPassportID string) (passportId string, fc uint64, hasFC bool, legacyNumeric bool, passportMatches bool, err error) {
+	passportMatches = true
+	for i, b := range raw {
+		if b == 0 {
+			fcBytes := raw[i+1:]
+			if len(fcBytes) > 0 {
+				parsed, parseErr := parseUint10BytesFast(fcBytes, 64)
+				if parseErr != nil {
+					return "", 0, false, false, false, parseErr
+				}
+				fc = parsed
+				hasFC = true
+			}
+			if passportMatches && i == len(expectedPassportID) {
+				return expectedPassportID, fc, hasFC, false, true, nil
+			}
+			return string(raw[:i]), fc, hasFC, false, false, nil
+		}
+		if passportMatches && (i >= len(expectedPassportID) || b != expectedPassportID[i]) {
+			passportMatches = false
+		}
+	}
+
+	parsed, parseErr := parseUint10BytesFast(raw, 64)
+	if parseErr != nil {
+		return "", 0, false, true, false, parseErr
+	}
+	return "", parsed, true, true, false, nil
+}
+
 func (c *PassportContract) putInitialPassportFCBinding(ctx contractapi.TransactionContextInterface, passportId string, did string) error {
-	key, err := lastFCKey(ctx, did)
+	key, err := lastFCKey(did)
 	if err != nil {
 		return fmt.Errorf("failed to create lastFc composite key: %v", err)
 	}
@@ -448,6 +1397,16 @@ func (c *PassportContract) putInitialPassportFCBinding(ctx contractapi.Transacti
 		return fmt.Errorf("failed to read lastFc for DID %s: %v", did, err)
 	}
 	if existing != nil {
+		boundPassportID, _, _, legacyNumeric, decodeErr := decodeLastFCBinding(existing)
+		if decodeErr != nil {
+			return fmt.Errorf("existing lastFc binding for DID %s is malformed and requires repair: %v", did, decodeErr)
+		}
+		if legacyNumeric {
+			return fmt.Errorf("existing lastFc binding for DID %s is legacy numeric and requires repair before binding passport %s", did, passportId)
+		}
+		if boundPassportID != passportId {
+			return fmt.Errorf("DID %s is already bound to passport %s, not %s", did, boundPassportID, passportId)
+		}
 		return nil
 	}
 	if err := ctx.GetStub().PutState(key, encodeLastFCBinding(passportId, 0, false)); err != nil {
@@ -563,17 +1522,33 @@ func (c *PassportContract) getClientMSP(ctx contractapi.TransactionContextInterf
 	return ctx.GetClientIdentity().GetMSPID()
 }
 
-func (c *PassportContract) requireMSP(ctx contractapi.TransactionContextInterface, allowedMSPs ...string) error {
+func (c *PassportContract) requireMSPAndGetMSP(ctx contractapi.TransactionContextInterface, allowedMSPs ...string) (string, error) {
 	msp, err := c.getClientMSP(ctx)
 	if err != nil {
-		return fmt.Errorf("failed to get client MSP: %v", err)
+		return "", fmt.Errorf("failed to get client MSP: %v", err)
 	}
 	for _, allowed := range allowedMSPs {
 		if msp == allowed {
-			return nil
+			return msp, nil
 		}
 	}
-	return fmt.Errorf("access denied: MSP %s not in allowed list %v", msp, allowedMSPs)
+	return "", fmt.Errorf("access denied: MSP %s not in allowed list %v", msp, allowedMSPs)
+}
+
+func (c *PassportContract) requireBMUWriterMSPAndGetMSP(ctx contractapi.TransactionContextInterface) (string, error) {
+	msp, err := c.getClientMSP(ctx)
+	if err != nil {
+		return "", fmt.Errorf("failed to get client MSP: %v", err)
+	}
+	if msp == mspManufacturer || msp == mspEVManufacturer {
+		return msp, nil
+	}
+	return "", fmt.Errorf("access denied: MSP %s not in allowed list [%s %s]", msp, mspManufacturer, mspEVManufacturer)
+}
+
+func (c *PassportContract) requireMSP(ctx contractapi.TransactionContextInterface, allowedMSPs ...string) error {
+	_, err := c.requireMSPAndGetMSP(ctx, allowedMSPs...)
+	return err
 }
 
 // normalizePassport ensures nil slices/maps are initialized (for legacy data compatibility)

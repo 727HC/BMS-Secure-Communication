@@ -30,6 +30,72 @@ func (c *PassportContract) QueryPassport(ctx contractapi.TransactionContextInter
 	return passport, nil
 }
 
+// CheckBMUHotBinding reports whether the DID has a canonical lastFc hot binding.
+// It is read-only and exists so benchmark readiness can be proven before write runs.
+func (c *PassportContract) CheckBMUHotBinding(ctx contractapi.TransactionContextInterface,
+	passportId string, did string) (*BMUHotBindingStatus, error) {
+
+	if passportId == "" || did == "" {
+		return nil, fmt.Errorf("passportId and did must not be empty")
+	}
+	passport, err := c.loadPassport(ctx, passportId)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.checkPassportAccess(ctx, passport); err != nil {
+		return nil, err
+	}
+	if passport.DID != did {
+		return nil, fmt.Errorf("DID mismatch: passport %s is registered to DID %s, not %s", passportId, passport.DID, did)
+	}
+
+	status := &BMUHotBindingStatus{
+		PassportID: passportId,
+		DID:        did,
+		Status:     "unknown",
+	}
+
+	key, err := lastFCKey(did)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create lastFc composite key: %v", err)
+	}
+	raw, err := ctx.GetStub().GetState(key)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read lastFc for DID %s: %v", did, err)
+	}
+	if raw == nil {
+		status.Status = "missing"
+		status.Missing = true
+		return status, nil
+	}
+
+	boundPassportID, fc, hasFC, legacyNumeric, err := decodeLastFCBinding(raw)
+	if err != nil {
+		status.Status = "malformed"
+		status.Legacy = legacyNumeric
+		status.DecodeError = err.Error()
+		return status, nil
+	}
+	if legacyNumeric {
+		status.Status = "legacy"
+		status.FC = fc
+		status.HasFC = hasFC
+		status.Legacy = true
+		return status, nil
+	}
+
+	status.BoundPassportID = boundPassportID
+	status.FC = fc
+	status.HasFC = hasFC
+	if boundPassportID != passportId {
+		status.Status = "mismatch"
+		status.Mismatch = true
+		return status, nil
+	}
+	status.Status = "canonical"
+	return status, nil
+}
+
 // ============================================================
 // 14. QueryAllPassports (all orgs)
 // ============================================================

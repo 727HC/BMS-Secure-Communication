@@ -156,7 +156,40 @@ SK_FILE=$(org_sk_file "$ORG_NAME")
 REL_CONNPROFILE="$(org_connprofile "$ORG_NAME")"
 REL_KEYSTORE="../passport-network/organizations/peerOrganizations/${DOMAIN}/users/Admin@${DOMAIN}/msp/keystore/$(basename "$SK_FILE")"
 REL_SIGNCERT="../passport-network/organizations/peerOrganizations/${DOMAIN}/users/Admin@${DOMAIN}/msp/signcerts/cert.pem"
-CHANNEL_NAME="${CHANNEL_NAME:-passportchannel}"
+if [ -z "${CHANNEL_NAME:-}" ]; then
+    echo "ERROR: CHANNEL_NAME must be explicit for benchmark runs; refusing default live passportchannel." >&2
+    exit 1
+fi
+if [ "${CHANNEL_NAME}" = "passportchannel" ] && [ "${CALIPER_ALLOW_LIVE_PASSPORTCHANNEL:-false}" != "true" ]; then
+    echo "ERROR: run-bench refuses live passportchannel by default; use a disposable benchmark channel." >&2
+    exit 1
+fi
+
+WORKER_COUNT="${CALIPER_WORKERS:-4}"
+WRITE_TX_NUMBER="${CALIPER_WRITE_TX_NUMBER:-10000}"
+READ_TX_NUMBER="${CALIPER_READ_TX_NUMBER:-1000}"
+if ! [[ "${WORKER_COUNT}" =~ ^[0-9]+$ ]] || [ "${WORKER_COUNT}" -lt 1 ]; then
+    echo "ERROR: CALIPER_WORKERS must be a positive integer." >&2
+    exit 1
+fi
+if ! [[ "${WRITE_TX_NUMBER}" =~ ^[0-9]+$ ]] || [ "${WRITE_TX_NUMBER}" -lt 1 ]; then
+    echo "ERROR: CALIPER_WRITE_TX_NUMBER must be a positive integer." >&2
+    exit 1
+fi
+if [ $((WRITE_TX_NUMBER % WORKER_COUNT)) -ne 0 ]; then
+    echo "ERROR: CALIPER_WRITE_TX_NUMBER (${WRITE_TX_NUMBER}) must be divisible by CALIPER_WORKERS (${WORKER_COUNT}) so Caliper submits the expected number of writes." >&2
+    exit 1
+fi
+if [ "${CALIPER_SKIP_READ_ROUND:-false}" != "true" ]; then
+    if ! [[ "${READ_TX_NUMBER}" =~ ^[0-9]+$ ]] || [ "${READ_TX_NUMBER}" -lt 1 ]; then
+        echo "ERROR: CALIPER_READ_TX_NUMBER must be a positive integer." >&2
+        exit 1
+    fi
+    if [ $((READ_TX_NUMBER % WORKER_COUNT)) -ne 0 ]; then
+        echo "ERROR: CALIPER_READ_TX_NUMBER (${READ_TX_NUMBER}) must be divisible by CALIPER_WORKERS (${WORKER_COUNT}) so Caliper submits the expected number of reads." >&2
+        exit 1
+    fi
+fi
 
 if [ "${SKIP_PREPARE}" = "true" ]; then
     if [ -z "${INPUT_CALIPER_RUN_ID}" ]; then
@@ -168,6 +201,34 @@ if [ "${SKIP_PREPARE}" = "true" ]; then
         exit 1
     fi
 fi
+
+WRITE_RATE_CONTROL_TYPE="${CALIPER_WRITE_RATE_CONTROL_TYPE:-fixed-rate}"
+WRITE_RATE_CONTROL_OPTS_FILE="$(mktemp)"
+case "${WRITE_RATE_CONTROL_TYPE}" in
+    fixed-rate)
+        printf '          tps: %s\n' "${CALIPER_WRITE_TARGET_TPS:-300}" > "${WRITE_RATE_CONTROL_OPTS_FILE}"
+        ;;
+    fixed-load)
+        {
+            printf '          startTps: %s\n' "${CALIPER_WRITE_TARGET_TPS:-300}"
+            printf '          transactionLoad: %s\n' "${CALIPER_WRITE_TRANSACTION_LOAD:-1000}"
+        } > "${WRITE_RATE_CONTROL_OPTS_FILE}"
+        ;;
+    fixed-feedback-rate)
+        {
+            printf '          tps: %s\n' "${CALIPER_WRITE_TARGET_TPS:-300}"
+            printf '          transactionLoad: %s\n' "${CALIPER_WRITE_TRANSACTION_LOAD:-1000}"
+            if [ -n "${CALIPER_WRITE_SLEEP_TIME:-}" ]; then
+                printf '          sleepTime: %s\n' "${CALIPER_WRITE_SLEEP_TIME}"
+            fi
+        } > "${WRITE_RATE_CONTROL_OPTS_FILE}"
+        ;;
+    *)
+        echo "ERROR: unsupported CALIPER_WRITE_RATE_CONTROL_TYPE '${WRITE_RATE_CONTROL_TYPE}'. Use fixed-rate, fixed-load, or fixed-feedback-rate." >&2
+        rm -f "${WRITE_RATE_CONTROL_OPTS_FILE}"
+        exit 1
+        ;;
+esac
 
 # Generate resolved network and benchmark config
 {
@@ -189,16 +250,31 @@ HEADER
     done
 } > "${SCRIPT_DIR}/networkConfig.resolved.yaml"
 
-sed -e "s|WORKER_COUNT_PLACEHOLDER|${CALIPER_WORKERS:-4}|" \
-    -e "s|WRITE_TX_NUMBER_PLACEHOLDER|${CALIPER_WRITE_TX_NUMBER:-10000}|" \
+sed -e "s|WORKER_COUNT_PLACEHOLDER|${WORKER_COUNT}|" \
+    -e "s|WRITE_TX_NUMBER_PLACEHOLDER|${WRITE_TX_NUMBER}|" \
     -e "s|WRITE_TARGET_TPS_PLACEHOLDER|${CALIPER_WRITE_TARGET_TPS:-300}|" \
-    -e "s|READ_TX_NUMBER_PLACEHOLDER|${CALIPER_READ_TX_NUMBER:-1000}|" \
+    -e "s|WRITE_RATE_CONTROL_TYPE_PLACEHOLDER|${WRITE_RATE_CONTROL_TYPE}|" \
+    -e "s|READ_TX_NUMBER_PLACEHOLDER|${READ_TX_NUMBER}|" \
     -e "s|READ_TARGET_TPS_PLACEHOLDER|${CALIPER_READ_TARGET_TPS:-2200}|" \
     "${SCRIPT_DIR}/benchconfig.yaml" > "${SCRIPT_DIR}/benchconfig.resolved.yaml"
+awk -v replacement_file="${WRITE_RATE_CONTROL_OPTS_FILE}" '
+    /WRITE_RATE_CONTROL_OPTS_PLACEHOLDER/ {
+        while ((getline line < replacement_file) > 0) print line
+        close(replacement_file)
+        next
+    }
+    { print }
+' "${SCRIPT_DIR}/benchconfig.resolved.yaml" > "${SCRIPT_DIR}/benchconfig.resolved.yaml.tmp"
+mv "${SCRIPT_DIR}/benchconfig.resolved.yaml.tmp" "${SCRIPT_DIR}/benchconfig.resolved.yaml"
+rm -f "${WRITE_RATE_CONTROL_OPTS_FILE}"
+if [ "${CALIPER_SKIP_READ_ROUND:-false}" = "true" ]; then
+    awk '/^    - label: read-passport/{exit} {print}' "${SCRIPT_DIR}/benchconfig.resolved.yaml" > "${SCRIPT_DIR}/benchconfig.resolved.yaml.tmp"
+    mv "${SCRIPT_DIR}/benchconfig.resolved.yaml.tmp" "${SCRIPT_DIR}/benchconfig.resolved.yaml"
+fi
 
 DEFAULT_BMU_RECORD_KEYS="${NUM_PASSPORTS:-50}"
 if [ "${SUCCESSFUL_WRITE_MODE}" = "true" ]; then
-    DEFAULT_BMU_RECORD_KEYS="${CALIPER_WRITE_TX_NUMBER:-10000}"
+    DEFAULT_BMU_RECORD_KEYS="${WRITE_TX_NUMBER}"
 fi
 
 echo "=== Caliper Benchmark ==="
@@ -212,11 +288,16 @@ echo "  Successful write mode: ${SUCCESSFUL_WRITE_MODE}"
 echo "  Channel: ${CHANNEL_NAME}"
 echo "  Run ID: ${CALIPER_RUN_ID:-auto}"
 echo "  Invoke/Query Timeout: ${CALIPER_FABRIC_TIMEOUT_INVOKEORQUERY:-180}s"
-echo "  Workers: ${CALIPER_WORKERS:-4}"
-echo "  Write: ${CALIPER_WRITE_TX_NUMBER:-10000} tx @ ${CALIPER_WRITE_TARGET_TPS:-300} TPS"
-echo "  Read:  ${CALIPER_READ_TX_NUMBER:-1000} tx @ ${CALIPER_READ_TARGET_TPS:-2200} TPS"
+echo "  Workers: ${WORKER_COUNT}"
+echo "  Write: ${WRITE_TX_NUMBER} tx @ ${CALIPER_WRITE_TARGET_TPS:-300} TPS"
+echo "  Write rate control: ${WRITE_RATE_CONTROL_TYPE}"
+if [ "${WRITE_RATE_CONTROL_TYPE}" != "fixed-rate" ]; then
+    echo "  Write transaction load: ${CALIPER_WRITE_TRANSACTION_LOAD:-1000}"
+fi
+echo "  Read:  ${READ_TX_NUMBER} tx @ ${CALIPER_READ_TARGET_TPS:-2200} TPS"
 echo "  Skip prepare: ${SKIP_PREPARE}"
 echo "  Verify prepared: ${CALIPER_VERIFY_PREPARED:-${SKIP_PREPARE}}"
+echo "  Record AutoID: ${CALIPER_RECORD_AUTO_ID:-false}"
 echo "========================="
 
 cd "$SCRIPT_DIR"
@@ -227,6 +308,7 @@ export BMU_RECORD_KEYS="${BMU_RECORD_KEYS:-${DEFAULT_BMU_RECORD_KEYS}}"
 export CALIPER_RUN_ID="${CALIPER_RUN_ID:-$(date -u +%Y%m%d%H%M%S)}"
 export CALIPER_ORG_MSP="${MSP}"
 export CALIPER_WRITER_MSPS="${EFFECTIVE_WRITER_MSPS}"
+export CALIPER_RECORD_AUTO_ID="${CALIPER_RECORD_AUTO_ID:-false}"
 export ORG_CONNPROFILE="${REL_CONNPROFILE}"
 export ORG_KEYSTORE="${REL_KEYSTORE}"
 export ORG_SIGNCERT="${REL_SIGNCERT}"
@@ -244,6 +326,11 @@ fi
 
 if [ "${CALIPER_VERIFY_PREPARED}" = "true" ]; then
     node verify-passports.js
+fi
+
+if [ "${CALIPER_PREPARE_ONLY:-false}" = "true" ]; then
+    echo "[prepare-passports] prepare-only complete; skipping Caliper workload rounds"
+    exit 0
 fi
 
 npx caliper launch manager \

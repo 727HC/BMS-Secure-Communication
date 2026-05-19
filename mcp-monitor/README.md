@@ -291,6 +291,8 @@ printf '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"monitor_
 - **INVALIDATED 필터링** — BMU 쿼리 4지점 모두에서 일관 적용
 - **에러 시그널링 `throw` 통일** — 도구 레이어에서 throw → `index.js` catch가 `isError: true` 설정 → MCP 클라이언트가 정상 인식
 - **VC dataScope 필드** — 요청 org MSP에 따라 가시 범위 다름을 응답에 명시
+- **npm `overrides`로 jsrsasign 강제 업그레이드** — fabric-common 2.2.20이 명세하는 jsrsasign 10.x는 critical/high 7건(Marvin Attack 외) 잔존. `package.json`에 `"overrides": { "jsrsasign": "^11.1.3" }`로 11.x 강제. mcp-monitor는 **read-only `evaluateTransaction`만** 사용해 jsrsasign이 x509 파싱/ECDSA 검증 경로에만 닿으므로 11.x 호환. `monitor_bmu.latest` 라이브 호출로 회귀 검증 완료. (`npm audit fix --force`는 fabric-network 2.2.20 → 1.4.20 다운그레이드 시도 — **절대 금지**.)
+- **CA root 재발급 시 wallet 공유 정리 의존** — mcp-monitor는 자체 enrollment 없이 `bmu-agent/wallet`을 `FABRIC_WALLET_PATH` 기본값으로 공유. bmu-agent 측에서 wallet을 비우고 재기동하면 mcp-monitor도 자동 해소 (별도 작업 불필요).
 
 상세는 `wiki/decisions/003-*`, `wiki/mcp/overview.md`, `wiki/mcp/activity-log.md` 참고.
 
@@ -332,9 +334,19 @@ mcp-monitor/
 |--------|------|
 | `@modelcontextprotocol/sdk` ^1.12 | MCP 서버 프레임워크 (stdio 전송, 도구/리소스 등록) |
 | `fabric-network` ^2.2 | Fabric Gateway 클라이언트 (`evaluateTransaction` 전용) |
-| `axios` ^1.9 | Agent / VON / ACA-Py HTTP 프로브 |
+| `axios` ^1.16 | Agent / VON / ACA-Py HTTP 프로브 |
 | `dotenv` ^17 | `.env` 로드 |
 | `zod` (sdk 의존성 경유) | 입력 스키마 검증 |
+
+### overrides
+
+```json
+"overrides": {
+  "jsrsasign": "^11.1.3"
+}
+```
+
+fabric-common 2.2.20이 transitive로 끌어오는 jsrsasign 10.x의 critical/high 취약점(Marvin Attack 외 6건)을 11.x로 강제 해소. read-only `evaluateTransaction` 경로만 사용해서 API 호환 검증됨. elliptic은 6.6.1이 latest라 override 불가 — upstream 패치 출시 시 추가 예정.
 
 > `dockerode`, `fabric-ca-client`는 **의도적으로 제외** — docker는 `docker ps` 셸 호출로 대체, CA는 보안 이유로 제거.
 
@@ -344,7 +356,8 @@ mcp-monitor/
 
 - 로그 경로 기본값은 `../logs/agent.log` 기준 — bmu-agent가 로그를 기록 중이어야 의미 있는 데이터가 나옴
 - `FABRIC_DISCOVERY_AS_LOCALHOST=true`는 로컬 전용. 원격/운영 배치 시 `false` 로 두고 DNS/host 설정
-- `npm audit` 결과는 주기적으로 확인 필요 (의존성 트리 취약점 추적)
+- **`npm audit` 운영**: jsrsasign override 적용 후 critical/high 0건 유지가 기본 상태. 새 advisory가 뜨면 override 버전을 latest 패치(11.1.x)로 bump 후 `monitor_bmu.latest` 카나리 회귀 필수. **`npm audit fix --force` 절대 금지** (fabric-network 다운그레이드 함정).
+- **Fabric CA 재발급 SOP**: CA root가 재생성되면 `bmu-agent/wallet`을 비우고 bmu-agent 재기동 → mcp-monitor도 자동 해소 (자체 wallet 없음).
 - filter-repo 등 history 재작성 작업 시 `.env.example` placeholder 점검 (실제 코드 참조 여부 grep으로 재검증)
 
 ---

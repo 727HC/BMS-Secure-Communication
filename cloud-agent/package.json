@@ -15,5 +15,10 @@
     "fabric-network": "^2.2.20",
     "fabric-ca-client": "^2.2.20",
     "dotenv": "^16.4.0"
+  },
+  "overrides": {
+    "jsrsasign": "11.1.3",
+    "protobufjs": "7.6.0",
+    "@protobufjs/utf8": "1.1.1"
   }
 }

@@ -15,7 +15,7 @@ const MSP_ID = process.env.CALIPER_ORG_MSP;
 const CONNECTION_PROFILE = process.env.ORG_CONNPROFILE;
 const KEYSTORE = process.env.ORG_KEYSTORE;
 const SIGNCERT = process.env.ORG_SIGNCERT;
-const CHANNEL_NAME = process.env.CHANNEL_NAME || 'passportchannel';
+const CHANNEL_NAME = process.env.CHANNEL_NAME || '';
 const CHAINCODE_NAME = process.env.CHAINCODE_NAME || 'passport-contract';
 const CONCURRENCY = parsePositiveInt(process.env.CALIPER_PREPARE_CONCURRENCY || '25', 'CALIPER_PREPARE_CONCURRENCY');
 const CHECK_EXISTING = String(process.env.CALIPER_PREPARE_CHECK_EXISTING || 'true').toLowerCase() !== 'false';
@@ -31,6 +31,15 @@ function parsePositiveInt(value, name) {
 function requireEnv(name, value) {
     if (!value) {
         throw new Error(`${name} is required`);
+    }
+}
+
+function assertSafeBenchmarkChannel() {
+    if (!CHANNEL_NAME) {
+        throw new Error('CHANNEL_NAME must be explicit for benchmark passport preparation; refusing default live passportchannel');
+    }
+    if (CHANNEL_NAME === 'passportchannel' && process.env.CALIPER_ALLOW_LIVE_PASSPORTCHANNEL !== 'true') {
+        throw new Error('prepare-passports refuses live passportchannel by default; use a disposable benchmark channel');
     }
 }
 
@@ -111,6 +120,7 @@ function isMissingPassportError(err) {
 }
 
 async function main() {
+    assertSafeBenchmarkChannel();
     const { gateway, client } = await newGateway();
     try {
         const network = gateway.getNetwork(CHANNEL_NAME);

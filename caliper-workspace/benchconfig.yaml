@@ -8,9 +8,9 @@ test:
       description: RecordBMUData write - Target WRITE_TARGET_TPS_PLACEHOLDER+ TPS
       txNumber: WRITE_TX_NUMBER_PLACEHOLDER
       rateControl:
-        type: fixed-rate
+        type: WRITE_RATE_CONTROL_TYPE_PLACEHOLDER
         opts:
-          tps: WRITE_TARGET_TPS_PLACEHOLDER
+WRITE_RATE_CONTROL_OPTS_PLACEHOLDER
       workload:
         module: workloads/recordBMUData.js
 
