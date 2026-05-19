@@ -96,3 +96,70 @@ status: historical
 - 블록체인 `BindBMSIdentifier` 계약에 맞춰 lab 기준 `bmsManagementId=BMS-MGMT-001`, `bmsBindingId=did:battery:001#BMS-MGMT-001`, `evidenceHash=b3c37ed2cdd2831cc0c212445905ced4a20ea51e129bff2e7418deddf7223178`를 확정했다.
 - `wiki/Object/BMS__.pdf`와 `wiki/passport/bms-1-3-year-mapping-2026-05-08.md` 기준으로 1~3차년도 임베디드 반영 상태를 대조하고 타 세션 전달 메모를 handoff 문서에 추가했다.
 - 배터리여권 전달 요청 1~5번에 대한 명시 답변을 BMS identifier handoff 문서에 추가했다.
+
+## 2026-05-19 - CMU 재플래시 + bridge 파서 강화 + 빌드 환경 표준화 + CANoe rogue 격리
+
+### 작업 내용
+
+**E2E 재가동 + DID 회전 2회**
+- 세션 시작 시 BMU FC가 약 4.69M까지 누적 상태. CMU `CMU_UART_SIM_FALLBACK`이 활성 펌웨어(2026-04-14 빌드, `c3fdd4c`)에 남아있어 MATLAB 침묵 시 합성 데이터 송신 → bridge가 binding=0 stream을 agent에 흘림.
+- Bridge 재기동(`--did 4d5CE8NZbkAVJxcypzaVhw`) → JWT auth 정상화 후 chaincode lastFc=74471 충돌 발견. CANoe rogue가 같은 DID로 fc=74201~74471까지 올린 상태.
+- 블록체인 세션이 새 DID `HgBpAxtHJ4qRwsNiroaqvC` (passport `MATLAB-BMU-002`) 발급. bridge 재기동하여 즉시 `BMU recorded OK` 회복.
+
+**CMU 펌웨어 재빌드 + 재플래시**
+- `CMU_UART_SIM_FALLBACK` 제거된 현재 source(`2c0bfd1` 이후)로 빌드 → SIM_FALLBACK 코드 경로 strings 검증 빈 출력 확인.
+- PEmicro GDB Server로 CMU 보드 재플래시 (`flash.sh cmu`, CRC verified, GO).
+- 이후 MATLAB 침묵 시 CMU가 CAN-FD 송신 중단 → BMU 서명 출력도 멈춤 (예상 동작).
+
+**`serial_to_agent.py` 파서 강화**
+- `[SIGN]` 정규식 매치 이후에도 `signR`/`signS`가 정확히 64 hex chars인지, DATA가 96 hex chars인지 검증.
+- 비통과 시 라인 drop 또는 rawPayload만 제외(signature는 보존). 단위 테스트 4건 통과.
+
+**빌드 환경 표준화**
+- `BMU_BMS_S32K344/Debug_FLASH/src/main.args` 등 6+ 파일이 `C:/BMS/...` 절대경로 박혀있음 — 정션 없이 빌드 불가.
+- `scripts/setup-dev-env.bat`: `mklink /J C:\BMS <project_root>` 1회 실행 도우미 (관리자 권한 불필요).
+- `firmware/README.md` 빌드 섹션 맨 앞에 사전 setup 안내 + ADR-005 링크.
+
+**CANoe rogue POSTer 격리**
+- Vector CANoe 19 (`CANoe64.exe` PID 49128)가 `BMS_Test.cfg`의 HTTP Binding으로 약 35초마다 `/api/bmu/data`에 하드코딩 fixture(fc=74483, rawHead=`C02D73C032EB...`, sigLen=100) POST 중인 것 확인.
+- 사용자가 CANoe measurement Stop → replay 즉시 중단.
+- 영구 격리: `canoe/BMS_Test.cfg` → `canoe/BMS_Test.cfg.disabled-20260519` 이름 변경, `_backup/canoe-with-http-rogue-20260519/`에 원본 전체 백업.
+- 차후 CAN 작업 필요 시 ADR-006의 옵션 A/B/C 참조.
+
+**관측성 + 운영 도구**
+- `scripts/preflight-check.sh`: E2E 시작 전 C:\BMS 정션, BMS python procs, :3001 listener 수, CANoe64 실행 여부, COM 포트, spool.db pending 인벤토리.
+- 새 DID 적용 후 spool.db에 누적된 옛 DID 항목 49,686건 정리 → 0건.
+
+**문서 + 백로그**
+- 루트 `CLAUDE.md` / `AGENTS.md` / `DESIGN.md` git 추적 제거 (`.gitignore` 등록, 로컬 파일 유지, public 노출 차단).
+- `firmware/README.md` 디렉토리 구조 섹션 보강 (BMU/CMU 전 디렉토리 + 핵심 파일 역할).
+- `wiki/decisions/005-build-paths.md` 신규 — `C:\BMS` 정션 우회 + 장기 마이그레이션 옵션.
+- `wiki/decisions/006-canoe-bmu-poster.md` 신규 — CANoe rogue 격리 사건 + 운영 규칙.
+
+### 변경 파일
+
+- `firmware/tools/serial_to_agent.py` — hex 검증 추가
+- `CMU_BMS_S32K144/Debug_FLASH/CMU_BMS_S32K144.elf` — 재빌드 산출물 (커밋 대상 아님)
+- `scripts/setup-dev-env.bat` (신규)
+- `scripts/preflight-check.sh` (신규)
+- `firmware/README.md` — 디렉토리 구조 + 빌드 사전 setup 섹션
+- `wiki/decisions/005-build-paths.md` (신규)
+- `wiki/decisions/006-canoe-bmu-poster.md` (신규)
+- `.gitignore` — 내부 md 3개 + canoe/.disabled 패턴
+- `canoe/BMS_Test.cfg` → `BMS_Test.cfg.disabled-20260519` (rename)
+- `_backup/canoe-with-http-rogue-20260519/` (백업, 커밋 안 함)
+
+### 미완료 / 후속
+
+- bmu-agent `[BMU-INGEST]` 미들웨어 영구화 (passport 세션 책임)
+- bmu-agent 옛 DID `4d5CE8NZbkAVJxcypzaVhw` blacklist (passport 세션, optional)
+- CANoe configuration 재구성 시 HTTP Binding 절대 활성화 안 하는 운영 규칙 합의 (ADR-006 명시)
+- W5/W6 백로그 (`mighty-fluttering-pine.md`) — secrets 관리 문서화, FC reset ADR
+
+### 교훈
+
+- **부수 자산은 stateful + invisible**: CANoe configuration, MATLAB Simulink 설정, IDE workspace state 등 부수 도구가 정상 endpoint를 점유할 수 있다. observability 없으면 영원히 묻힌다.
+- **observability가 토대보다 먼저**: 보안 통신·체인코드는 멀쩡해도 source 추적 미들웨어 없으면 운영 불능. passport 세션 미들웨어 추가가 오늘 사건 전부 풀어준 키 트리거.
+- **cold-start 시나리오가 happy-path보다 더 많은 버그 드러냄**: MATLAB silent 상태로 보드만 켜놓는 케이스 처음 시도해서 SIM_FALLBACK + CANoe rogue 동시 발견.
+- **invisible setup의 위험**: `C:\BMS` 정션처럼 한 머신에서만 동작하는 환경 가정은 README 미명시 시 다음 개발자에게 함정. setup 스크립트로 강제 명문화.
+- **DID 회전은 격리 도구지, 근본 해결책이 아님**: 옛 DID로 떠드는 source가 살아있으면 audit log noise 누적. 동시에 source 제거 작업 필요.
