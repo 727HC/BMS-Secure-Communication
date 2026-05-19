@@ -63,7 +63,8 @@ React 빌드(`webapp/frontend-react/dist/`)가 있으면 `/`에서 자동 서빙
                        GET  /:id/vehicle-image
 /api/materials         GET, POST /
 /api/bmu               POST /data (rate-limited), GET /records/:passportId,
-                       POST /invalidate/:recordId
+                       POST /invalidate/:recordId,
+                       POST /reset-fc (Manufacturer · Regulator, 5건/시간/사용자)
 /api/realtime          GET  /passports, /passports/:id, /bmu/:passportId, /stats
 /api/maintenance       POST /:id/request, /:id/log, /:id/accident
 /api/analysis          POST /:id/request, /:id/result
@@ -115,6 +116,24 @@ bmsBindingCode32: 0x2c9a0e0c
 evidenceHash: b3c37ed2cdd2831cc0c212445905ced4a20ea51e129bff2e7418deddf7223178
 ```
 
+## FC 재동기화 (운영자 전용)
+
+장비 재부팅·교체·DID 재프로비저닝 등으로 BMU의 FC 카운터가 리셋되면 chaincode `lastFc`와 충돌해 모든 후속 `RecordBMUData`가 `400 fc N must be greater than last valid fc M`으로 거절된다. 사람 운영자가 명시 호출로 풀 수 있도록 `POST /api/bmu/reset-fc` 편의 계층을 제공한다.
+
+- **권한**: `ManufacturerMSP` 또는 `RegulatorMSP`만 허용 (서버 + 체인코드 이중 RBAC)
+- **rate limit**: 사용자당 5건 / 시간
+- **자동 호출 금지**: agent 내부 어떤 path에서도 자동 호출하지 않음. 운영자 form submit만 가능
+- **body**:
+  - `did` (필수)
+  - `reason` (필수, 50자 이상 — 1-eye 모드 보강 조건)
+  - `confirm: true` (필수, 파괴적 작업 명시 확인)
+  - `expected_next_fc?` (선택, 감사 기록 전용, 체인코드 enforcement 없음)
+- **flag**: `RESET_FC_REQUIRE_DUAL_APPROVAL=true` 환경변수일 때 501 반환 (2-eye 승인 워크플로우 future toggle)
+- **감사 다층화**: `audit.log` + agent `log.info('FC reset performed', ...)` + chaincode `FCRESET-{did}-{txid}`
+- **부수효과**: 성공 시 DID→passport 캐시 즉시 무효화
+
+webapp 프론트엔드는 `/bmu-operations` 별도 "운영" 섹션에서 폼 UI를 제공한다 (Manufacturer/Regulator만 사이드바 노출).
+
 ## 실시간 Passport snapshot / fallback
 
 조회 경로는 cloud-agent read model을 우선 사용한다. 단, `localhost:3002`가 내려가 있어도 Passport UI가 0 snapshot에 머물지 않도록 다음 fallback을 적용한다.
@@ -146,6 +165,28 @@ latestRawPayloadHashVerified, latestDataHash, updatedAt
 
 모든 500 응답은 내부 상세 대신 `{"error":"Internal server error"}`만 반환 (정보 유출 방지). 실제 원인은 서버 로그에만.
 
+### Source attribution — `action: BMUIngest`
+
+매 `POST /api/bmu/data` 진입 시 항상 구조화 로그 1줄을 남긴다. 이번 운영에서 CANoe HTTP Binding rogue replay + BMU 재부팅 FC 충돌 둘 다 이 로그로 5분 안에 source 식별이 가능했다.
+
+```json
+{"level":"info","category":"bmu","message":"BMU ingest","action":"BMUIngest",
+ "ip":"::1","rp":54800,"ua":"python-requests/2.31.0","fc":12770,
+ "bind":"0C0E9A2C","rawLen":96,"sigLen":128,
+ "rawHead":"2D886DC0A17F234251AF0500","isHex":true}
+```
+
+노출 필드는 incident 분리에 필요한 최소값만:
+- `ip`, `rp` (remote port) — host/process 추적
+- `ua` (user-agent) — 정상 stream과 sender library 구분
+- `fc` — monotonic violation 추적 키
+- `bind` (rawPayload offset 44~47, 8 hex chars) — BMS binding code
+- `rawLen`, `sigLen` — 형식 검증 (정상은 96 / 128)
+- `rawHead` (앞 24 hex chars = 12 byte) — 페이로드 fingerprint
+- `isHex` — `[0-9a-fA-F]+` 매치 여부
+
+전체 `rawPayload`, `signature` 본문, DID 외 어떤 secret도 로깅 안 됨.
+
 ## 보안 고려사항
 
 - BMU 데이터는 **서명 필수** (unsigned 거부). BMU 펌웨어는 100% 서명 포함
@@ -153,12 +194,25 @@ latestRawPayloadHashVerified, latestDataHash, updatedAt
 - 차량 이미지는 static tree 밖(`data/vehicle-images/`)에 저장 + 접근 시 passport 권한 재검증
 - Rate limit 버킷은 5분 주기 cleanup, DID 캐시는 TTL + LRU eviction
 - password-like 필드(password, token, secret, signature, rawPayload, privateKey, authorization)는 audit 로그에서 자동 제거
+- 운영자 명시 호출 (`/api/bmu/reset-fc`, `/api/bmu/invalidate/:recordId`)은 서버 + 체인코드 RBAC 이중화 + audit + rate limit
+
+### 의존성 알림 대응
+
+GitHub Dependabot 23건(bmu-agent path)에 대한 정리 결과:
+
+- **axios**: `^1.16.1`로 bump (prototype pollution, SSRF, CRLF injection 등 13개 advisory 해결)
+- **fabric SDK transitive overrides**: 보안 패치만 적용된 same-major 버전으로 핀
+  - `path-to-regexp` (express ReDoS), `lodash` (template injection / prototype pollution), `bn.js` (infinite loop), `qs` (DoS), `@protobufjs/utf8` (overlong UTF-8)
+- **`jsrsasign`**: fabric-ca-client의 crypto identity 의존성. 11.1.1로 override (현재 fabric SDK 2.2.x 호환 확인됨, Fabric attach + Ed25519 검증 통과)
+- **미해결 fabric SDK crypto core** (`sjcl`, `elliptic`, `protobufjs`): 패치 버전이 없거나 override 시 서명 검증 깨질 위험. 진정한 해결은 `@hyperledger/fabric-gateway` 3.x로 SDK 마이그레이션 (별도 트랙)
+
+증거: `.omx/evidence/github-alerts/dependabot-open.json`.
 
 ## 검증
 
 ```bash
 npm test
-# 40 tests pass
+# 47 tests pass
 ```
 
 Passport/Web 통합 기준은 `webapp/frontend-react/README.md`를 참고한다. 최신 기준 커밋은 `8b5db6e`다.
