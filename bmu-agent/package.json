@@ -32,6 +32,7 @@
     "bn.js": "^4.12.3",
     "qs": "^6.14.2",
     "@protobufjs/utf8": "^1.1.1",
-    "jsrsasign": "11.1.1"
+    "jsrsasign": "11.1.1",
+    "sjcl": "1.0.9"
   }
 }

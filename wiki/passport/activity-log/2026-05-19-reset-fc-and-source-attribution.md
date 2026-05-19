@@ -75,3 +75,26 @@ doc_type: log
 - **debug log gated console.log → structured logger info**가 incident response 시 결정적. 매 POST에 ip/rp/ua/bind/sigLen prefix 정도는 평시 로깅 가치가 비용을 압도. logger의 rotation/JSON 구조 덕에 follow-up grep/awk이 즉시 가능
 - **파괴적 운영 API는 별도 UI 섹션 + 다단계 확인**이 옳음 — 일반 admin 메뉴에 묻으면 위험도 인지가 흐려진다는 임베디드 지적이 정확. 50자 사유 + DID 재입력 + confirm 체크박스는 1-eye 모드 보강 조건으로 충분
 - **체인코드와 agent의 RBAC 이중화**는 중복이 아니라 방어 계층 — agent가 우회되거나 DB 직접 접근이 발생해도 체인코드가 마지막 게이트
+
+## Session 2 — 2026-05-19 (Codex, PR/branch cleanup)
+
+### 작업 주체
+- Codex
+
+### 요약
+Dependabot PR 정리 중 `bmu-agent`의 transitive `sjcl` high advisory가 lockfile bump만으로는 해소되지 않는 것을 확인했다. `fabric-common 2.2.20`이 `sjcl@1.0.8`을 끌고 오므로 `npm overrides`에 `sjcl@1.0.9`를 명시해 high advisory를 제거했다.
+
+### 변경 파일
+- `bmu-agent/package.json` — `overrides.sjcl = 1.0.9` 추가
+- `bmu-agent/package-lock.json` — `sjcl@1.0.9` override 반영
+- `wiki/passport/activity-log/2026-05-19-reset-fc-and-source-attribution.md` — 본 기록
+
+### 검증
+- `npm install` in `bmu-agent`
+- `npm audit --json --omit=dev` in `bmu-agent` → high 0, critical 0. 잔존 4 low는 `fabric-common -> elliptic` upstream fixed version 부재
+- `npm test` in `bmu-agent` → 47/47 pass
+- `python3 scripts/check-sensitive-patterns.py --include-untracked` → 0 findings
+
+### PR 처리 메모
+- PR #47 `sjcl` lockfile bump는 병합했지만, 실제 audit은 `fabric-common` transitive 때문에 high가 남아 별도 override가 필요했다.
+- PR #48은 minor/patch 그룹 PR이나 `bmu-agent` high를 해결하지 못하므로 그대로 병합하지 않고 supersede 처리 대상.
