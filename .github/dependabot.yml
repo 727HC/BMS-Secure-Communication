@@ -24,7 +24,9 @@ updates:
     schedule:
       interval: "monthly"
       timezone: "Asia/Seoul"
-    open-pull-requests-limit: 3
+    # Version-update PRs are disabled for npm to avoid noisy public branches.
+    # Security alerts are reviewed separately.
+    open-pull-requests-limit: 0
     groups:
       npm-minor-patch:
         patterns:
