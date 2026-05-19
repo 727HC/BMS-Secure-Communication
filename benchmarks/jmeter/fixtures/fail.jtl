@@ -1,3 +1,0 @@
-timeStamp,elapsed,label,responseCode,responseMessage,threadName,dataType,success,failureMessage,bytes,sentBytes,grpThreads,allThreads,URL,Latency,IdleTime,Connect
-1778473000000,80,GET cloud passport detail,200,OK,Thread Group 1-1,text,true,,1024,128,1,1,http://localhost:3002/api/passports/PASSPORT-BMU-DEVICE,70,0,8
-1778473000100,90,GET cloud BMU records,500,Internal Server Error,Thread Group 1-1,text,false,error,512,128,1,1,http://localhost:3002/api/bmu/PASSPORT-BMU-DEVICE,80,0,9

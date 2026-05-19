@@ -1,6 +1,5 @@
 # xEV BMS 보안 플랫폼 - 배터리 여권 시스템 아키텍처
 
-> **과제명:** xEV BMS 보안 플랫폼 개발
 > **연차:** 3차년도
 > **문서 버전:** 2.0.0
 > **최종 수정일:** 2026-03-20
@@ -493,41 +492,8 @@ cd passport-network && ./network.sh down
 
 ---
 
-## 9. 성능 측정 결과
 
-단일 클라이언트 순차 요청 기준 벤치마크 결과이다. 4-org 네트워크에서 `MAJORITY Endorsement` 정책 (최소 3개 조직 보증) 적용 환경에서 측정하였다.
-
-### 9.1 트랜잭션 성능
-
-| 작업 | 평균 응답시간 | TPS | 측정 환경 |
-|------|-------------|-----|-----------|
-| 배터리 여권 발급 (`CreateBatteryPassport`) | 1,863 ms | 0.35 | Submit TX, 4-org endorsement |
-| 여권 단건 조회 (`QueryPassport`) | 55 ms | 18.2 | Evaluate TX, 로컬 피어 |
-| BMU 데이터 기록 (`RecordBMUData`) | 2,186 ms | 0.32 | Submit TX + 여권 업데이트 |
-| 여권 목록 조회 (`QueryAllPassports`) | 120 ms | 8.3 | CouchDB Rich Query |
-| VIN 바인딩 (`BindToVehicle`) | 1,750 ms | 0.37 | Submit TX |
-| 여권 이력 조회 (`GetPassportHistory`) | 85 ms | 11.8 | History Query |
-
-### 9.2 측정 조건
-
-| 항목 | 값 |
-|------|-----|
-| 클라이언트 | 단일 클라이언트, 순차 요청 |
-| Orderer 합의 | etcdraft (단일 Orderer) |
-| 블록 생성 | BatchTimeout 2s, MaxMessageCount 10 |
-| 네트워크 | 로컬 Docker (WSL2) |
-| CouchDB | v3.3.2, 기본 설정 |
-
-### 9.3 비고
-
-- Submit 트랜잭션의 응답시간에는 보증(Endorsement) + 순서화(Ordering) + 커밋(Commit) 전 과정이 포함된다.
-- `RecordBMUData`는 BMU 레코드 저장 + 여권 상태 업데이트(2회 PutState)를 수행하므로 다른 Submit TX보다 느리다.
-- 병렬 클라이언트 환경에서는 TPS가 유의미하게 향상될 것으로 예상된다.
-- Evaluate 트랜잭션(조회)은 로컬 피어에서만 처리되므로 응답이 빠르다.
-
----
-
-## 10. 디렉토리 구조
+## 9. 디렉토리 구조
 
 ```
 bms-blockchain/

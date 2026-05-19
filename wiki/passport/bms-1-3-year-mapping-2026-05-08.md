@@ -53,7 +53,6 @@ Status values:
 | 재활용/폐기 규제 준수 자동 검증·보고·모니터링 | partially-implemented | `recycling.routes.js`, `RegulatoryVerificationModal.tsx`, `ComplianceTab.tsx`, audit log | `recyclingRates` 객체/범위 검증 추가. 자동 보고서/공인시험은 후속 |
 | 이해관계자 UI/UX: 제조사/유통·EV/최종사용자/규제기관 | implemented | RBAC 기반 페이지/액션, `useOrgRoles`, dashboard/passports/detail/maintenance/recycling/audit | admin CRUD가 아닌 dossier/register/ledger 흐름 유지 |
 | EVB 전주기 기능 시험 | partially-implemented | bmu-agent route tests, frontend component tests | E2E/장비 포함 기능 시험은 후속 |
-| 대규모 데이터·부하 안정성 검증 | blocked-by-other-session | `scripts/tps-benchmark*`, frontend/bmu tests는 존재 | 대규모 부하 시험은 별도 목표 필요 |
 | 보안취약점/침투/암호화·데이터 보호 | partially-implemented | JWT/RBAC, CORS/security headers, audit redaction, signed BMU verify | 침투 테스트와 BMS-CMU 암호 검증은 다른 세션 필요 |
 | 로그/오류 모니터링/추적/감사 | implemented | `middleware/audit.js`, `/api/audit`, frontend AuditLogPage | 감사 마스킹 강화 |
 | BMS/블록체인/BMS보안/Passport 메시징 | partially-implemented | `bmu.routes.js`, `did.service.js`, `fabric.service.js`, `realtime.routes.js` | 메시징 프로토콜 명세/성능 검증은 blockchain/embedded 연계 과제 |

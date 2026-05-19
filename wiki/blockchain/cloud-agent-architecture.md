@@ -57,14 +57,6 @@ REST API (포트 3002)
 | /api/stats | GET | 통계 (대시보드용) |
 | /health | GET | 헬스체크 |
 
-## TPS 성과
-
-| 측정 | TPS | 목표 |
-|------|-----|------|
-| Cloud READ (MongoDB) | **1,571** | 1,500 ✅ |
-| Fabric READ (CouchDB) | 407 | baseline |
-| Fabric WRITE | 25.9 | 150 (미달) |
-
 ## 운영
 
 ```bash
@@ -79,4 +71,3 @@ node initial-sync.js
 ```
 
 ## 참고
-- [[blockchain/kpi-targets|KPI 목표 및 달성 현황]]

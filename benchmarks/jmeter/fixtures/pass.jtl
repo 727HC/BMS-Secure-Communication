@@ -1,5 +1,0 @@
-timeStamp,elapsed,label,responseCode,responseMessage,threadName,dataType,success,failureMessage,bytes,sentBytes,grpThreads,allThreads,URL,Latency,IdleTime,Connect
-1778473000000,80,GET cloud passport detail,200,OK,Thread Group 1-1,text,true,,1024,128,1,1,http://localhost:3002/api/passports/PASSPORT-BMU-DEVICE,70,0,8
-1778473000100,90,GET cloud BMU records,200,OK,Thread Group 1-1,text,true,,2048,128,1,1,http://localhost:3002/api/bmu/PASSPORT-BMU-DEVICE,80,0,9
-1778473000200,100,GET cloud passport detail,200,OK,Thread Group 1-2,text,true,,1024,128,2,2,http://localhost:3002/api/passports/PASSPORT-BMU-DEVICE,85,0,9
-1778473000300,110,GET cloud BMU records,200,OK,Thread Group 1-2,text,true,,2048,128,2,2,http://localhost:3002/api/bmu/PASSPORT-BMU-DEVICE,95,0,10

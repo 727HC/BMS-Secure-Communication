@@ -36,7 +36,6 @@ status: current
 ## 5. 참고 자료
 - [[Object/README|참고 자료 안내]] *(배경 참조)*
 - [[passport/assets/README|Passport UI asset 허브]]
-- [[blockchain/assets/README|Blockchain KPI asset 허브]]
 
 ## 6. 추천 탐색 순서
 1. current canonical 문서로 현재 구조 파악

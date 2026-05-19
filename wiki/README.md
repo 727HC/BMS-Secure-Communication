@@ -52,8 +52,6 @@ xEV BMS 보안 플랫폼용 공용 Obsidian vault다.
 ### Blockchain
 - [[blockchain/README|Blockchain 허브]]
 - [[blockchain/overview|세션 개요]]
-- [[blockchain/kpi-targets|KPI 목표]]
-- [[blockchain/assets/README|KPI asset 허브]]
 
 ## 기록성 문서
 - [[reviews/README|review / QA 기록 허브]]

@@ -1,7 +1,7 @@
 # BMS Embedded Secure Communication
 
 > **NXP S32K344 (BMU) + S32K144 (CMU) 기반 CAN FD 보안 배터리 관리 시스템**
-> 무결성 · 인증 · **기밀성** 3계층 보안 완성 (KPI 10 달성)
+> 무결성 · 인증 · **기밀성** 3계층 보안 통신
 
 ---
 
@@ -29,15 +29,6 @@
 - **BMU** (Battery Management Unit, S32K344): CAN FD 수신 → CMAC 검증 → CBC 복호화 → Ed25519 서명 → UART
 - **PC 측 도구**: MATLAB/Simulink 시뮬레이터, 시리얼 브릿지, 블록체인 에이전트 연동
 
-### KPI 10 달성 현황 (국가과제 3차년도)
-
-| 보안 속성 | 메커니즘 | 성능 |
-|----------|---------|------|
-| **무결성** | AES-128 CMAC (HW 가속) | 373 µs |
-| **인증** | CMAC + Ed25519 서명 | 307 ms |
-| **기밀성** | **AES-128-CBC MAC-then-encrypt** | E2E 16.7 ms |
-
-실보드 테스트: 84 프레임 중 83 프레임 성공 (99%+)
 
 ---
 
@@ -504,6 +495,5 @@ BMU 복호화 → Fabric 체인코드 기록까지 **값 일치** 확인 (2026-0
 ## 관련 문서
 
 - [Wiki: 임베디드 빌드/플래시 가이드](../.omc/wiki/embedded-build-flash-guide.md)
-- [Wiki: KPI 10 Payload 암호화 상세](../.omc/wiki/kpi-10-payload-encryption.md)
 - [ADR-005: 임베디드 보안 강화 로드맵](../.omc/wiki/adr-005-embedded-hardening.md)
 - [루트 README](../README.md)

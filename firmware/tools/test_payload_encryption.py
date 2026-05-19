@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-KPI 10 Payload Encryption - Protocol Verification Test
+Payload Encryption - Protocol Verification Test
 Simulates CMU encrypt-then-MAC → BMU verify-then-decrypt flow.
 Validates AES-128-CBC + CMAC with FC-derived IV matches firmware logic.
 """
@@ -160,7 +160,7 @@ def test_legacy_compatibility():
 
 if __name__ == "__main__":
     print("=" * 60)
-    print("KPI 10 Payload Encryption - Protocol Verification")
+    print("Payload Encryption - Protocol Verification")
     print("=" * 60)
 
     test_encrypt_then_mac()

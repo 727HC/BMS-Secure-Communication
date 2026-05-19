@@ -40,7 +40,7 @@ hosts_file="${tmpdir}/hosts"
 cp /etc/hosts "${hosts_file}"
 {
   echo ""
-  echo "# Fabric hostnames for private benchmark namespace (${resolve_mode})"
+  echo "# Fabric hostnames for private Fabric namespace (${resolve_mode})"
   for container in "${containers[@]}"; do
     if [[ "${resolve_mode}" == "loopback" ]]; then
       ip="127.0.0.1"

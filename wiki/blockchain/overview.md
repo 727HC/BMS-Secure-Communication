@@ -18,7 +18,6 @@ status: current
 > 2026-04-06 재배분: 체인코드가 Passport → Blockchain 세션으로 이관됨 (ADR-002)
 
 ## 현재 목표
-- 국가과제 KPI 기준 정리
 - 체인코드 보안/운영 패턴 유지
 - 네트워크와 체인코드 구조의 현재 기준 문서화
 
@@ -45,7 +44,6 @@ status: current
 
 ## 현재 참고 우선순위
 - 구조: [[blockchain/chaincode-file-structure|체인코드 파일 구조]]
-- KPI: [[blockchain/kpi-targets|KPI 목표]]
 - 보안: [[blockchain/chaincode-security-fixes|체인코드 보안 수정 이력]]
 - 쿼리 패턴: [[blockchain/couchdb-injection-pattern|CouchDB JSON Injection 방지 패턴]]
 - 보조 아키텍처: [[blockchain/cloud-agent-architecture|Cloud Agent 아키텍처]]

@@ -690,9 +690,8 @@ ledger:
        internalQueryLimit: 1000
        # Limit on the number of records per CouchDB bulk update batch
        maxBatchUpdateSize: 5000
-       # Warm indexes after every N blocks. BMU write KPI uses key reads/writes,
-       # so warming rich-query indexes on every block only adds commit pressure.
-       # Queries still update indexes on demand; this preserves ledger semantics.
+       # Warm indexes after every N blocks. Key-based BMU writes do not need
+       # per-block rich-query index warming; queries still update indexes on demand.
        warmIndexesAfterNBlocks: 1000
        # Create the _global_changes system database
        # This is optional.  Creating the global changes database will require

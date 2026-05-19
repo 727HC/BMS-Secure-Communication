@@ -108,7 +108,7 @@ PUBLIC_EXCLUDE_PATTERNS = (
     "passport/review-*-code-review.md",
     "reviews/wiki-consolidation-review*.md",
     "blockchain/*offhost*.md",
-    "blockchain/full-benchmark-rerun-audit*.md",
+    "blockchain/full-*-rerun-audit*.md",
 )
 IGNORE_PARITY_PREFIXES = PUBLIC_EXCLUDE_PREFIXES
 WIKILINK_RE = re.compile(r"\[\[([^\]]+)\]\]")

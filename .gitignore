@@ -212,3 +212,25 @@ wiki/embedded/*binding*.md
 # Local BMS PDF drops are not part of the public repository
 /BMS.pdf
 /wiki/Object/BMS__.pdf
+# TPS / national-project benchmark material stays local-only
+/benchmarks/
+/caliper-workspace/
+/passport-network/compose/compose-benchmark-concurrency.yaml
+/passport-network/scripts/benchmark-safe.sh
+/passport-network/scripts/evaluation-dday-reset.sh
+/scripts/*benchmark*.sh
+/scripts/*tps*.js
+/scripts/*jmeter*.js
+/scripts/*jmeter*.sh
+/scripts/*caliper*.js
+/scripts/*write200*.py
+/scripts/*write200*.sh
+/scripts/collect-blockchain-evidence.js
+/scripts/reconcile-benchmark-state.js
+/scripts/safe-tar-extract.py
+/wiki/blockchain/*benchmark*.md
+/wiki/blockchain/*kpi*.md
+/wiki/blockchain/assets/kpi-*.png
+/wiki/decisions/*benchmark*.md
+/scripts/test-blockchain-repro-hardening.sh
+/wiki/blockchain/bmu-hot-path-map.md

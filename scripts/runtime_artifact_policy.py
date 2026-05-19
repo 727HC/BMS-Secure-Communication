@@ -13,7 +13,6 @@ RUNTIME_IGNORE_LINES = [
     '/e2e-tests/test-results/',
     '/webapp/frontend-react/dist/',
     '/webapp/frontend-react/*.tsbuildinfo',
-    '/caliper-workspace/report.html',
     '/passport-network/*.tar.gz',
     '/passport-network/log.txt',
 ]
@@ -31,7 +30,6 @@ DIR_GLOBS = [
 FILE_GLOBS = [
     'batp-*.png',
     'webapp/frontend-react/*.tsbuildinfo',
-    'caliper-workspace/report.html',
     'passport-network/*.tar.gz',
     'passport-network/log.txt',
 ]

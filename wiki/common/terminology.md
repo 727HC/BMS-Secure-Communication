@@ -64,7 +64,6 @@ status: current
 | MCP | Model Context Protocol — AI 도구 표준 프로토콜 |
 | stdio transport | 표준입출력 기반 MCP 통신 방식 |
 | NDJSON | Newline-Delimited JSON — 구조화 로그 포맷 |
-| TPS | Transactions Per Second — 초당 트랜잭션 처리량 |
 | dataScope | VC 쿼리 시 org RBAC에 따른 데이터 가시 범위 |
 | INVALIDATED | BMU 레코드 무효화 상태 (필터링 대상) |
 | evaluateTransaction | Fabric 읽기 전용 쿼리 (원장 변경 없음) |
