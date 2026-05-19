@@ -57,10 +57,17 @@ if command -v powershell.exe >/dev/null 2>&1; then
 fi
 
 section "spool.db pending count"
-SPOOL=C:/Users/heechan/Desktop/BMS/firmware/tools/spool.db
-[ ! -f "$SPOOL" ] && SPOOL=firmware/tools/spool.db
-if [ -f "$SPOOL" ]; then
-    COUNT=$(python -c "import sqlite3; c=sqlite3.connect('$SPOOL'); print(c.execute('SELECT COUNT(*) FROM pending').fetchone()[0]); c.close()" 2>/dev/null || echo "?")
+SPOOL="${BMS_SPOOL_DB:-}"
+if [ -z "$SPOOL" ]; then
+    for candidate in firmware/tools/spool.db C:/BMS/firmware/tools/spool.db /c/BMS/firmware/tools/spool.db; do
+        if [ -f "$candidate" ]; then
+            SPOOL="$candidate"
+            break
+        fi
+    done
+fi
+if [ -n "$SPOOL" ] && [ -f "$SPOOL" ]; then
+    COUNT=$(python -c "import sqlite3, sys; c=sqlite3.connect(sys.argv[1]); print(c.execute('SELECT COUNT(*) FROM pending').fetchone()[0]); c.close()" "$SPOOL" 2>/dev/null || echo "?")
     if [ "$COUNT" = "0" ]; then
         info "spool empty"
     elif [ "$COUNT" -gt 100 ] 2>/dev/null; then
