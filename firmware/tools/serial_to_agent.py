@@ -292,11 +292,11 @@ def main():
                 fc = parsed['fc']
                 # BMU reboot detection: alert once per peak when FC regresses sharply
                 if last_seen_fc > 100 and fc < last_seen_fc - 100 and reboot_alerted_at_peak != last_seen_fc:
-                    print(f"  [ALERT] BMU FC regression: prev_max={last_seen_fc}, now={fc} — board likely rebooted", flush=True)
+                    print(f"  [ALERT] BMU FC regression: prev_max={last_seen_fc}, now={fc} - board likely rebooted", flush=True)
                     if args.did:
-                        print(f"          → Manual recovery (if intentional): peer chaincode invoke ... ResetFCForDID '{args.did}' '<reason ≥10>'", flush=True)
+                        print(f"          -> Manual recovery (if intentional): peer chaincode invoke ... ResetFCForDID '{args.did}' '<reason 10+ chars>'", flush=True)
                     else:
-                        print(f"          → Manual recovery: ResetFCForDID against this BMU's DID", flush=True)
+                        print(f"          -> Manual recovery: ResetFCForDID against this BMU's DID", flush=True)
                     reboot_alerted_at_peak = last_seen_fc
                 if fc > last_seen_fc:
                     last_seen_fc = fc
