@@ -35,6 +35,15 @@ const bmuRateLimit = createRateLimiter({
   keyFn: (req) => req.ip || 'unknown',
 });
 
+// Reset-FC: 운영자 명시 호출만, 사용자당 5건/시간
+const RESET_FC_RATE_LIMIT = parseInt(process.env.RESET_FC_RATE_LIMIT || '5', 10);
+const RESET_FC_WINDOW_MS = parseInt(process.env.RESET_FC_WINDOW_MS || '3600000', 10);
+const resetFcRateLimit = createRateLimiter({
+  windowMs: RESET_FC_WINDOW_MS,
+  max: RESET_FC_RATE_LIMIT,
+  keyFn: (req) => req.user?.userId || req.ip || 'unknown',
+});
+
 // P1-8: DID → passportId cache with TTL + Promise deduplication
 const CACHE_TTL = DID_CACHE_TTL_MS;
 const DID_CACHE_MAX = parseInt(process.env.DID_CACHE_MAX || '500', 10);
@@ -140,10 +149,51 @@ async function resolvePassportForDid(did, options = {}) {
   return promise;
 }
 
+function clearDidPassportCache(options = {}) {
+  const { did, passportId } = typeof options === 'string' ? { did: options } : options;
+  let cleared = 0;
+
+  if (did) {
+    if (didPassportCache.delete(did)) cleared += 1;
+    didPassportPending.delete(did);
+    return cleared;
+  }
+
+  if (passportId) {
+    for (const [cachedDid, entry] of didPassportCache) {
+      if (entry?.passport?.passportId === passportId) {
+        didPassportCache.delete(cachedDid);
+        didPassportPending.delete(cachedDid);
+        cleared += 1;
+      }
+    }
+    return cleared;
+  }
+
+  cleared = didPassportCache.size;
+  didPassportCache.clear();
+  didPassportPending.clear();
+  return cleared;
+}
+
 // POST /api/bmu/data — Receive BMU data
 router.post('/data', authenticateToken, requireMSP(MSP.MANUFACTURER), bmuRateLimit, async (req, res) => {
   const { rawPayload, signature, did: reqDid } = req.body;
   const did = reqDid;
+  if (process.env.BMU_INGEST_DEBUG === 'true') {
+    console.log('[BMU-INGEST]', JSON.stringify({
+      t: new Date().toISOString(),
+      ip: req.ip,
+      rp: req.socket?.remotePort,
+      ua: req.get('user-agent') || '-',
+      fc: req.body?.fc,
+      bind: typeof rawPayload === 'string' && rawPayload.length >= 96 ? rawPayload.slice(88, 96) : null,
+      rawLen: typeof rawPayload === 'string' ? rawPayload.length : null,
+      sigLen: typeof signature === 'string' ? signature.length : null,
+      rawHead: typeof rawPayload === 'string' ? rawPayload.slice(0, 24) : null,
+      isHex: typeof rawPayload === 'string' ? /^[0-9a-fA-F]+$/.test(rawPayload) : null,
+    }));
+  }
 
   const bodyError = firstError(
     validateText(rawPayload, 'rawPayload', { min: 1, max: 512 }),
@@ -313,5 +363,48 @@ router.post('/invalidate/:recordId', authenticateToken, requireMSP(MSP.MANUFACTU
     sendChaincodeError(res, err);
   }
 });
+
+// POST /api/bmu/reset-fc — FC 재동기화 (장비 재부팅/교체/DID 재프로비저닝). 운영자 명시 호출만.
+router.post('/reset-fc', authenticateToken, requireMSP(MSP.MANUFACTURER, MSP.REGULATOR), resetFcRateLimit, async (req, res) => {
+  const { did, reason, confirm, expected_next_fc: expectedNextFc } = req.body;
+  const bodyError = firstError(
+    validateId(did, 'did', { max: 256, pattern: /^[A-Za-z0-9._:-]+$/ }),
+    validateText(reason, 'reason', { min: 50, max: 1024 })
+  );
+  if (bodyError) return validationError(res, bodyError);
+  if (confirm !== true) {
+    return validationError(res, 'confirm must be true to acknowledge destructive operation');
+  }
+  if (expectedNextFc !== undefined) {
+    if (!Number.isInteger(expectedNextFc) || expectedNextFc < 0) {
+      return validationError(res, 'expected_next_fc must be a non-negative integer');
+    }
+  }
+
+  // RESET_FC_REQUIRE_DUAL_APPROVAL=true 일 때만 2-eye 강제. 현 단계는 false(1-eye + 50자+ reason).
+  // 2-eye 워크플로우는 별도 approval 토큰 발급 endpoint 신설 시 enable.
+  if (process.env.RESET_FC_REQUIRE_DUAL_APPROVAL === 'true') {
+    return res.status(501).json({ error: 'dual approval workflow not implemented', category: 'CONFIG' });
+  }
+
+  try {
+    await fabricService.submitTransaction('ResetFCForDID', [did, reason], req.user);
+    clearDidPassportCache({ did });
+    log.info('FC reset performed', {
+      action: 'ResetFCForDID',
+      did,
+      reason,
+      expectedNextFc: expectedNextFc ?? null,
+      user: req.user?.userId,
+      orgMsp: req.user?.orgMsp,
+    });
+    res.json({ success: true, did, status: 'FC_RESET' });
+  } catch (err) {
+    log.error('FC reset failed', { action: 'ResetFCForDID', did, error: err.message });
+    sendChaincodeError(res, err);
+  }
+});
+
+router.clearDidPassportCache = clearDidPassportCache;
 
 module.exports = router;

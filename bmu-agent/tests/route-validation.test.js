@@ -23,6 +23,7 @@ const serverModule = require('../server');
 const { generateToken } = require('../services/auth.service');
 const fabricService = require('../services/fabric.service');
 const didService = require('../services/did.service');
+const bmuRoutes = require('../routes/bmu.routes');
 const {
   recordRuntimeBmuSnapshot,
   clearRuntimeBmuSnapshots,
@@ -334,6 +335,84 @@ test('passport bms-binding defaults to embedded/BMU confirmed identifiers', asyn
     'b3c37ed2cdd2831cc0c212445905ced4a20ea51e129bff2e7418deddf7223178',
     'initial BMS binding',
   ]);
+});
+
+test('passport bms-binding clears cached unbound DID lookup before next BMU ingest', async (t) => {
+  bmuRoutes.clearDidPassportCache();
+  t.after(() => bmuRoutes.clearDidPassportCache());
+
+  const did = 'did:web:bms:CACHE';
+  let didLookupCount = 0;
+  let recordSubmits = 0;
+  let bindSubmits = 0;
+
+  mockDidSignature(t, true);
+  mockFabric(t, {
+    evaluate(name, args) {
+      assert.equal(name, 'QueryBatteryByDID');
+      assert.deepEqual(args, [did]);
+      didLookupCount += 1;
+      if (didLookupCount === 1) {
+        return Buffer.from(JSON.stringify({ passportId: 'PASSPORT-CACHE' }));
+      }
+      return Buffer.from(JSON.stringify({
+        passportId: 'PASSPORT-CACHE',
+        bmsManagementId: 'BMS-MGMT-001',
+        bmsBindingCode32: 0x2c9a0e0c,
+      }));
+    },
+    submit(name) {
+      if (name === 'RecordBMUData') {
+        recordSubmits += 1;
+        return Buffer.from('');
+      }
+      if (name === 'BindBMSIdentifier') {
+        bindSubmits += 1;
+        return Buffer.from('');
+      }
+      throw new Error(`unexpected submit ${name}`);
+    },
+  });
+  const server = await listen(serverModule.createApp());
+  t.after(() => server.close());
+  const token = generateToken('mfg', 'ManufacturerMSP');
+
+  const beforeBinding = await request(server, '/api/bmu/data', {
+    token,
+    method: 'POST',
+    body: {
+      did,
+      rawPayload: buildBmuPayload({ bmsBindingCode32: 0, freshnessCounter: 1 }),
+      signature: 'a'.repeat(128),
+    },
+  });
+  assert.equal(beforeBinding.status, 200);
+  assert.equal(recordSubmits, 1);
+  assert.equal(didLookupCount, 1);
+
+  const bind = await request(server, '/api/passports/PASSPORT-CACHE/bms-binding', {
+    token,
+    method: 'POST',
+    body: { reason: 'bind after first BMU ingest' },
+  });
+  assert.equal(bind.status, 200);
+  assert.equal(bindSubmits, 1);
+
+  const afterBinding = await request(server, '/api/bmu/data', {
+    token,
+    method: 'POST',
+    body: {
+      did,
+      rawPayload: buildBmuPayload({ bmsBindingCode32: 0, freshnessCounter: 2 }),
+      signature: 'a'.repeat(128),
+    },
+  });
+
+  assert.equal(afterBinding.status, 400);
+  assert.equal(afterBinding.body.category, 'VAL');
+  assert.match(afterBinding.body.error, /BMS binding code mismatch/);
+  assert.equal(recordSubmits, 1);
+  assert.equal(didLookupCount, 2);
 });
 
 test('passport source-verification validates boolean result and records defaults', async (t) => {
@@ -753,4 +832,146 @@ test('vc issue rejects malformed expiresAt before Fabric query', async (t) => {
   assert.equal(res.body.category, 'VAL');
   assert.equal(res.body.error, 'expiresAt must be RFC3339');
   assert.equal(queried, false);
+});
+
+test('bmu reset-fc rejects MSP outside Manufacturer/Regulator', async (t) => {
+  const server = await listen(serverModule.createApp());
+  t.after(() => server.close());
+  const token = generateToken('svc', 'ServiceMSP');
+
+  const res = await request(server, '/api/bmu/reset-fc', {
+    token,
+    method: 'POST',
+    body: { did: 'did:web:bms:PASSPORT-1', reason: 'x'.repeat(60), confirm: true },
+  });
+
+  assert.equal(res.status, 403);
+});
+
+test('bmu reset-fc rejects reason shorter than 50 chars before Fabric submit', async (t) => {
+  let submitted = false;
+  mockFabric(t, {
+    submit() { submitted = true; },
+  });
+  const server = await listen(serverModule.createApp());
+  t.after(() => server.close());
+  const token = generateToken('mfg', 'ManufacturerMSP');
+
+  const res = await request(server, '/api/bmu/reset-fc', {
+    token,
+    method: 'POST',
+    body: { did: 'did:web:bms:PASSPORT-1', reason: 'too short', confirm: true },
+  });
+
+  assert.equal(res.status, 400);
+  assert.equal(res.body.category, 'VAL');
+  assert.match(res.body.error, /^reason too short/);
+  assert.equal(submitted, false);
+});
+
+test('bmu reset-fc requires confirm:true to acknowledge destructive op', async (t) => {
+  let submitted = false;
+  mockFabric(t, {
+    submit() { submitted = true; },
+  });
+  const server = await listen(serverModule.createApp());
+  t.after(() => server.close());
+  const token = generateToken('mfg', 'ManufacturerMSP');
+
+  const res = await request(server, '/api/bmu/reset-fc', {
+    token,
+    method: 'POST',
+    body: { did: 'did:web:bms:PASSPORT-1', reason: 'BMU board reboot after firmware update on 2026-05-19', confirm: false },
+  });
+
+  assert.equal(res.status, 400);
+  assert.equal(res.body.category, 'VAL');
+  assert.match(res.body.error, /confirm must be true/);
+  assert.equal(submitted, false);
+});
+
+test('bmu reset-fc rejects negative expected_next_fc', async (t) => {
+  let submitted = false;
+  mockFabric(t, {
+    submit() { submitted = true; },
+  });
+  const server = await listen(serverModule.createApp());
+  t.after(() => server.close());
+  const token = generateToken('mfg', 'ManufacturerMSP');
+
+  const res = await request(server, '/api/bmu/reset-fc', {
+    token,
+    method: 'POST',
+    body: {
+      did: 'did:web:bms:PASSPORT-1',
+      reason: 'BMU board reboot after firmware update on 2026-05-19',
+      confirm: true,
+      expected_next_fc: -1,
+    },
+  });
+
+  assert.equal(res.status, 400);
+  assert.equal(res.body.category, 'VAL');
+  assert.match(res.body.error, /expected_next_fc must be a non-negative integer/);
+  assert.equal(submitted, false);
+});
+
+test('bmu reset-fc returns 501 when dual approval is required (feature gated)', async (t) => {
+  const previous = process.env.RESET_FC_REQUIRE_DUAL_APPROVAL;
+  process.env.RESET_FC_REQUIRE_DUAL_APPROVAL = 'true';
+  t.after(() => {
+    if (previous == null) delete process.env.RESET_FC_REQUIRE_DUAL_APPROVAL;
+    else process.env.RESET_FC_REQUIRE_DUAL_APPROVAL = previous;
+  });
+  let submitted = false;
+  mockFabric(t, {
+    submit() { submitted = true; },
+  });
+  const server = await listen(serverModule.createApp());
+  t.after(() => server.close());
+  const token = generateToken('mfg', 'ManufacturerMSP');
+
+  const res = await request(server, '/api/bmu/reset-fc', {
+    token,
+    method: 'POST',
+    body: {
+      did: 'did:web:bms:PASSPORT-1',
+      reason: 'BMU board reboot after firmware update on 2026-05-19',
+      confirm: true,
+    },
+  });
+
+  assert.equal(res.status, 501);
+  assert.equal(submitted, false);
+});
+
+test('bmu reset-fc submits ResetFCForDID with did + reason on happy path', async (t) => {
+  let submittedArgs = null;
+  mockFabric(t, {
+    submit(name, args) {
+      submittedArgs = { name, args };
+    },
+  });
+  const server = await listen(serverModule.createApp());
+  t.after(() => server.close());
+  const token = generateToken('mfg', 'ManufacturerMSP');
+
+  const res = await request(server, '/api/bmu/reset-fc', {
+    token,
+    method: 'POST',
+    body: {
+      did: 'did:web:bms:PASSPORT-1',
+      reason: 'BMU board reboot after firmware update on 2026-05-19',
+      confirm: true,
+      expected_next_fc: 0,
+    },
+  });
+
+  assert.equal(res.status, 200);
+  assert.equal(res.body.success, true);
+  assert.equal(res.body.did, 'did:web:bms:PASSPORT-1');
+  assert.equal(res.body.status, 'FC_RESET');
+  assert.ok(submittedArgs);
+  assert.equal(submittedArgs.name, 'ResetFCForDID');
+  assert.deepEqual(submittedArgs.args, ['did:web:bms:PASSPORT-1', 'BMU board reboot after firmware update on 2026-05-19']);
 });
