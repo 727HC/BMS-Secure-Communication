@@ -336,6 +336,21 @@ python firmware/tools/test_bms_identifier_payload.py
 
 ## 빌드 & 플래시
 
+### 사전 setup (최초 1회)
+
+S32DS 프로젝트의 `.args` 빌드 인자 파일들이 `C:\BMS\...` 절대경로를 참조한다. 클론한 위치와 무관하게 빌드를 가능하게 하려면 디렉토리 정션을 만들어야 한다.
+
+```bat
+REM 프로젝트 루트에서 한 번만 실행
+scripts\setup-dev-env.bat
+```
+
+스크립트가 하는 일:
+1. `mklink /J C:\BMS <프로젝트_루트>` — 정션 생성 (관리자 권한 불필요)
+2. 이미 있으면 검증만 하고 종료
+
+> 장기적으로는 `.args` 파일들의 절대경로를 상대화하는 게 이상적이지만, S32DS GUI가 export 시 다시 절대경로로 resolve하는 한계가 있다. 상세는 [`wiki/decisions/005-build-paths.md`](../wiki/decisions/005-build-paths.md) 참조.
+
 ### CLI 빌드 (Git Bash + make)
 
 ```bash
