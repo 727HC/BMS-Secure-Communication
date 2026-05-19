@@ -314,7 +314,10 @@ mcp-monitor/
 │       └── query-errors.js     # Fabric query error 정규화/노출
 ├── .claude/                    # Claude Code 세션 격리 훅
 │   ├── settings.json
-│   └── hooks/                  # session-start / session-guard / auto-syntax-check / post-compact
+│   ├── session-start.sh
+│   ├── session-guard.sh
+│   ├── auto-syntax-check.sh
+│   └── post-compact.sh
 ├── .env.example                # 환경변수 샘플
 ├── CLAUDE.md                   # 세션 가이드
 ├── package.json                # @modelcontextprotocol/sdk, fabric-network, axios, dotenv

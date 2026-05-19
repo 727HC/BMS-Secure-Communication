@@ -946,3 +946,25 @@ GitHub 민감정보 정리 완료 감사를 하나의 재현 가능한 명령으
 
 ### 미완료 / 리스크
 - Scanner guard는 future prevention이며, hidden PR refs #1/#2 purge를 대체하지 않는다.
+
+---
+
+## Session 36 (2026-05-19)
+
+### 요약
+블록체인 세션 벤치마크 진행 중에는 non-interference 정책으로 static-only 점검만 수행했고, 종료 후 Fabric CA root 재발급(5/15)에 따른 wallet attach를 라이브 evaluateTransaction으로 검증했다. README의 `.claude/` 디렉토리 구조 표기를 실제 flat layout으로 정정하고, `npm audit fix --force`가 fabric-network를 2.x → 1.x로 다운그레이드 시도한다는 사실을 메모리에 영구 기록했다.
+
+### 작업 내용
+- `mcp-monitor/README.md` 디렉토리 구조 섹션 수정 — `.claude/hooks/` 서브디렉토리 표기 제거, 실제 flat 레이아웃(`session-start.sh`, `session-guard.sh`, `auto-syntax-check.sh`, `post-compact.sh`) 명시.
+- 공통 SOP 메모리 `common_fabric_ca_rotation_sop.md`에 mcp-monitor consumer 인벤토리 추가 — `FABRIC_WALLET_PATH` 기본값이 `bmu-agent/wallet` 공유, 자체 enrollment 없음 명시.
+- 신규 메모리 `mcp_fabric_network_audit_constraint.md` 작성 + MEMORY.md 색인 추가 — jsrsasign(Marvin Attack) → fabric-common → fabric-network 체인은 자동 fix 불가, `@hyperledger/fabric-gateway` 신SDK 마이그레이션이 진짜 해결책.
+
+### 검증
+- `system_status.fabric` JSON-RPC 호출 — `connected: true`, peers/orderers/CAs/couchdb 18 컨테이너 `up`, `fabricQuery.hasErrors: false`.
+- `monitor_bmu.latest limit=1` 실제 evaluateTransaction 호출 — Fabric에서 BMU 레코드 10건 정상 반환(`P-CAL-1c07ba41-*`), `access denied` 없음 → 신규 CA admin identity로 wallet attach PASS.
+- `npm audit fix --force --dry-run` — `Updating fabric-network to 1.4.20, which is a SemVer major change` 확인 → 실행 금지로 메모리화.
+
+### 미완료 / 리스크
+- npm audit 4건(critical 1 jsrsasign, high 1, low 2) 잔존 — Hyperledger 상류 SDK 문제, 자체 패치 불가. 임시 수용.
+- Hook 라이브 발화 검증(SessionStart/PreToolUse/PostToolUse/PostCompact 실제 트리거)은 다음 `mcp-monitor/` cwd 세션 진입 시 자연 확인 예정.
+- 블록체인 세션이 언급한 `_backup/mcp-wiki-activity-log.patch`는 양 세션 워크트리 모두에서 stash/파일 부재 확인 — phantom으로 종결.
