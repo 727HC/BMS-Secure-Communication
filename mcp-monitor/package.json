@@ -11,5 +11,8 @@
     "axios": "^1.16.0",
     "dotenv": "^17.3.1",
     "fabric-network": "^2.2.20"
+  },
+  "overrides": {
+    "jsrsasign": "^11.1.3"
   }
 }

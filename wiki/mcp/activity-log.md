@@ -965,6 +965,24 @@ GitHub 민감정보 정리 완료 감사를 하나의 재현 가능한 명령으
 - `npm audit fix --force --dry-run` — `Updating fabric-network to 1.4.20, which is a SemVer major change` 확인 → 실행 금지로 메모리화.
 
 ### 미완료 / 리스크
-- npm audit 4건(critical 1 jsrsasign, high 1, low 2) 잔존 — Hyperledger 상류 SDK 문제, 자체 패치 불가. 임시 수용.
+- ~~npm audit 4건(critical 1 jsrsasign, high 1, low 2) 잔존~~ → 후속 override 적용으로 3 low로 축소 (아래 참조).
 - Hook 라이브 발화 검증(SessionStart/PreToolUse/PostToolUse/PostCompact 실제 트리거)은 다음 `mcp-monitor/` cwd 세션 진입 시 자연 확인 예정.
 - 블록체인 세션이 언급한 `_backup/mcp-wiki-activity-log.patch`는 양 세션 워크트리 모두에서 stash/파일 부재 확인 — phantom으로 종결.
+
+### 후속: npm overrides 적용 (같은 세션 내, dependabot 8건 대응)
+GitHub dependabot에서 mcp-monitor 알림 8건(jsrsasign critical 1 + high 5 + low 1, elliptic low 1)이 올라와 npm overrides로 jsrsasign을 강제 업그레이드했다.
+
+작업 내용:
+- `mcp-monitor/package.json`: `"overrides": { "jsrsasign": "^11.1.3" }` 추가.
+- elliptic은 6.6.1이 최신이라 override 불가 (upstream 패치 대기).
+- `npm install` → `npm ls jsrsasign`: `fabric-common@2.2.20 → jsrsasign@11.1.3 overridden` 확인.
+
+검증:
+- `npm audit`: 4 vulnerabilities (critical 1 + high 1 + low 2) → **3 low** (모두 elliptic <=6.6.1 경유, critical/high 전부 제거).
+- 9개 JS 파일 `node -c` 통과.
+- `monitor_bmu.latest` 라이브 호출: Fabric에서 10건 정상 반환 (최신 `MATLAB-BMU-002 2026-05-19T06:26:20Z`), `fabricQuery.hasErrors: false` → jsrsasign 11.x 상태에서 fabric-common ECDSA/X.509 흐름 정상.
+
+미완료 / 리스크:
+- elliptic upstream 패치 출시 시 동일 패턴(`"elliptic": "^X.Y.Z"`) override 추가.
+- 새 jsrsasign CVE 발생 시 override 버전 bump + canary 재실행.
+- 메모리 `mcp_fabric_network_audit_constraint`에 override 검증 결과 반영함.
