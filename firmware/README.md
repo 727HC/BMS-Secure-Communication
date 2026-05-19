@@ -44,39 +44,67 @@
 ## 디렉토리 구조
 
 ```
-BMU_BMS_S32K344/            # BMU 펌웨어 (Cortex-M7, HSE)
+BMU_BMS_S32K344/                 # BMU 펌웨어 프로젝트 (S32K344, Cortex-M7 @200MHz, HSE)
 ├── src/
-│   ├── main.c              # FreeRTOS 태스크, HSE 연동, 프로토콜 상태 머신
-│   ├── tweetnacl.c         # Ed25519 SW fallback (HSE 미지원 시)
-│   └── common/
-│       ├── bms_protocol.h  # CMU/BMU 공유 정의 (CAN ID, 프레임 구조, KDF)
-│       └── secrets.h       # PSK + EdDSA seed (VCS 제외)
-├── Debug_FLASH/            # make 빌드 산출물 (.elf, .bin)
-├── FreeRTOS/               # FreeRTOS 커널 (Cortex-M7 포팅)
-└── RTD/                    # NXP AUTOSAR RTD (FlexCAN, HSE, Clock, Port)
+│   ├── main.c                     메인 — FreeRTOS 4-task (UartRx/Protocol/CanTx/Monitor)
+│   │                              HSE 초기화, CAN-FD, EdDSA 서명, UART 출력
+│   ├── bmu_board.h                보드별 HW 설정 (핀맵, 클럭, FlexCAN, LPUART6)
+│   ├── system_stub.c              startup/system 보조 (인터럽트, 초기화 훅)
+│   ├── tweetnacl.c / tweetnacl.h  소프트웨어 Ed25519 (HSE 미지원 환경 fallback, 현재 비활성)
+│   └── common/                    BMU 빌드용 헤더 카피 (캐노니컬 원본은 firmware/common/)
+│       ├── bms_protocol.h
+│       └── secrets.h              ★ git 제외 — 로컬에서 .example로부터 생성
+├── Debug_FLASH/                   make 빌드 산출물
+│   ├── BMU_BMS_S32K344.elf        보드에 플래시되는 ELF (~92KB)
+│   ├── BMU_BMS_S32K344.map        링커 맵
+│   ├── BMU_BMS_S32K344.args       빌드 플래그 (BMS_MODE 등)
+│   ├── makefile, objects.mk       빌드 시스템
+│   ├── src/, FreeRTOS/, RTD/      오브젝트(.o/.d) 산출 디렉토리
+│   └── generate/, Project_Settings/
+├── FreeRTOS/                      FreeRTOS 커널 (Cortex-M7 포팅, NXP 제공)
+├── RTD/                           NXP AUTOSAR RTD 드라이버 (FlexCAN, HSE, Clock, Port)
+├── board/                         S32 Config Tool 보드 정의
+├── generate/                      Pin Mux, Peripheral 자동 생성 코드
+└── Project_Settings/              링커 스크립트, startup, board init
 
-CMU_BMS_S32K144/            # CMU 펌웨어 (Cortex-M4, CSEc)
+CMU_BMS_S32K144/                 # CMU 펌웨어 프로젝트 (S32K144, Cortex-M4 @48MHz, CSEc)
 ├── src/
-│   ├── main.c              # FreeRTOS 태스크, CSEc 연동, 프로토콜 상태 머신
-│   └── common/             # (BMU와 동일 파일)
-├── Debug_FLASH/
-├── FreeRTOS/
-└── RTD/                    # NXP AUTOSAR RTD (FlexCAN, CSEc, Clock, Port)
+│   ├── main.c                     메인 — FreeRTOS 4-task (UartRx/Protocol/CanTx/Monitor)
+│   │                              CSEc 초기화, UART RX, CAN-FD 송신, MAC 생성
+│   ├── cmu_board.h                CMU 보드 HW 설정 (핀맵, 클럭, FlexCAN, LPUART1)
+│   └── common/                    CMU 빌드용 헤더 카피
+│       ├── bms_protocol.h
+│       └── secrets.h              ★ git 제외
+├── Debug_FLASH/                   make 빌드 산출물
+│   ├── CMU_BMS_S32K144.elf        보드에 플래시되는 ELF (~84KB)
+│   ├── CMU_BMS_S32K144.bin
+│   └── (BMU와 동일 구조의 makefile, objects.mk, src/, FreeRTOS/, RTD/)
+├── FreeRTOS/                      FreeRTOS 커널 (Cortex-M4 포팅)
+├── RTD/                           NXP AUTOSAR RTD (FlexCAN, CSEc, Clock, Port)
+├── board/, generate/, Project_Settings/
 
-firmware/
-├── common/
-│   ├── bms_protocol.h      # 프로토콜 정의 원본 (양쪽 보드에 복사)
-│   └── secrets.h.example   # 시크릿 템플릿
-└── tools/                  # PC 측 Python/MATLAB 도구
-    ├── dataProcess.py      # Simulink UDP → CMU UART 브릿지
-    ├── battery_simulator.py # 독립 배터리 시뮬레이터 (UDP)
-    ├── serial_to_agent.py  # BMU UART → 블록체인 에이전트 HTTP (JWT)
-    ├── serial_monitor.py   # BMU UART 실시간 모니터
-    ├── test_payload_encryption.py # 프로토콜 검증 (Python 단위)
-    ├── run_sim_standalone.m # MATLAB standalone 시뮬레이션
-    ├── run_bms_simulation.m # Simscape BEV 모델 연동
-    └── setup_simulink_udp.m # Simulink UDP Send 자동 설정
+firmware/                        # 공통 코드 + 호스트 PC 도구
+├── README.md                      이 문서
+├── common/                        ★ 캐노니컬 헤더 원본 (BMU/CMU src/common이 이걸 카피)
+│   ├── bms_protocol.h             프로토콜 정의 (CAN ID, BatteryData_t, FC, key handle, KDF)
+│   ├── secrets.h                  ★ PSK 16B + EdDSA seed 32B (git 제외)
+│   └── secrets.h.example          시크릿 템플릿 (git 추적, 형식 가이드)
+└── tools/                         PC 측 Python / MATLAB 도구
+    ├── dataProcess.py             MATLAB UDP(127.0.0.1:5005) → CMU UART(COM5@9600) 브릿지
+    ├── serial_to_agent.py         BMU UART(COM4@28800) → bmu-agent HTTP (JWT + SQLite 스풀)
+    ├── battery_simulator.py       독립 배터리 시뮬레이터 (MATLAB 대체, UDP 송신)
+    ├── serial_monitor.py          BMU UART 실시간 모니터 (디버그)
+    ├── test_payload_encryption.py 프로토콜 단위 테스트 (Encrypt/MAC 정합성)
+    ├── run_sim_standalone.m       MATLAB standalone 시뮬레이션
+    ├── run_bms_simulation.m       Simscape BEV 모델 연동
+    ├── create_bms_simulink.m      Simulink 모델 자동 생성
+    ├── setup_simulink_udp.m       Simulink UDP Send 블록 설정
+    ├── replay_bev_data.m          BEV 주행 로그 재생
+    └── spool.db                   런타임 재전송 큐 (gitignore, SQLite)
 ```
+
+**캐노니컬 단일 진실 소스**: `firmware/common/bms_protocol.h` 와 `firmware/common/secrets.h`.
+BMU/CMU 프로젝트의 `src/common/` 디렉토리는 빌드 환경별 카피본 — 프로토콜 변경 시 `firmware/common/` 만 수정하면 됨.
 
 ---
 
