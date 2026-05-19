@@ -27,6 +27,7 @@ VELKERN의 오퍼레이터 웹앱. 제조사 · EV 제조사 · 정비/분석 ·
 | `/recycling` | 회수·재활용 lifecycle + 원소별 평균 rate |
 | `/qr-scan` | QR · NFC 배터리 식별 조회 |
 | `/audit-log` | 체인 이벤트 감사 로그 + 활동 분류 분포 |
+| `/bmu-operations` | **BMU 운영** — FC 재동기화 (Manufacturer · Regulator만 사이드바 노출, 권한 외 진입 시 `/dashboard` 리다이렉트) |
 
 ## 실시간 Passport 표시 기준
 
