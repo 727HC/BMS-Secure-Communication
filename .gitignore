@@ -149,6 +149,19 @@ canoe/*.disabled-*
 firmware/tools/spool.db-shm
 firmware/tools/spool.db-wal
 
+# Cross-session local-only artifacts (public commit 금지 합의 2026-05-19)
+# 각 세션이 자기 영역 untrack 책임 (이미 추적 중인 파일은 git rm --cached)
+wiki/**/activity-log.md
+wiki/**/activity-log/
+wiki/handoffs/
+wiki/**/*handoff*.md
+wiki/**/_archive/activity-log*
+.harness/
+.obsidian/
+**/.obsidian/
+offhost/
+performance-goal/
+
 # harness 세션 실행 산출물 — cycle_* 루프 로그는 저장소에 보관 안 함
 .harness/cycle_*/
 
