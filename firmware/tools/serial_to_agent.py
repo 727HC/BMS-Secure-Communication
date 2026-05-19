@@ -254,6 +254,9 @@ def main():
     pending_data_by_fc = {}
     sent_count = 0
     loop_count = 0
+    # BMU reboot detection: alert once per peak when FC regresses sharply
+    last_seen_fc = 0
+    reboot_alerted_at_peak = 0
 
     try:
         while True:
@@ -287,6 +290,16 @@ def main():
 
             elif parsed['type'] == 'sign':
                 fc = parsed['fc']
+                # BMU reboot detection: alert once per peak when FC regresses sharply
+                if last_seen_fc > 100 and fc < last_seen_fc - 100 and reboot_alerted_at_peak != last_seen_fc:
+                    print(f"  [ALERT] BMU FC regression: prev_max={last_seen_fc}, now={fc} — board likely rebooted", flush=True)
+                    if args.did:
+                        print(f"          → Manual recovery (if intentional): peer chaincode invoke ... ResetFCForDID '{args.did}' '<reason ≥10>'", flush=True)
+                    else:
+                        print(f"          → Manual recovery: ResetFCForDID against this BMU's DID", flush=True)
+                    reboot_alerted_at_peak = last_seen_fc
+                if fc > last_seen_fc:
+                    last_seen_fc = fc
                 if args.min_fc > 0 and fc < args.min_fc:
                     # BMU FC restarted (e.g. reboot/key-exchange) but chaincode lastFc is higher.
                     # Silently skip until BMU's FC catches up. Print every 50 dropped to avoid spam.
