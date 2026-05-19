@@ -106,3 +106,54 @@ status: accepted
 | Agent 자동 리셋 호출 | 여권 세션 | BMU 재부팅 감지 시 ResetFCForDID 호출 |
 | FC 시나리오 문서 | 임베디드 세션 | 이 문서 (완료) |
 | 재부팅 테스트 | 임베디드 세션 | BMU 재부팅 → FC 충돌 재현 → 리셋 후 정상 확인 |
+| **임시 catch-up 가드 (bridge)** | **임베디드 세션** | **`serial_to_agent.py --min-fc <N>` — fc < N 인 SIGN 라인 silent drop. 2026-05-19 추가** |
+
+---
+
+## Update 2026-05-19 — 실측 시나리오 A 발생 + 임시 대응
+
+### 사건
+
+CANoe rogue replay(`fc=74483`) 격리 + DID 회전 후 새 DID `HgBpAxtHJ4qRwsNiroaqvC`로 정상 ingest 진행 중, **BMU 보드 재부팅으로 FC가 1로 리셋**됨 (시나리오 A 정확히 일치). chaincode `lastFc=18846` 상태에서 bridge가 fresh-counter SIGN(fc=1, 240, 253, ..., 590)을 그대로 POST → 38건 reject.
+
+passport 세션의 `[BMU-INGEST]` 미들웨어 + `did=HgBp + 4xx 38건` 통계로 신속 식별.
+
+### 임시 대응 (현재 적용)
+
+`serial_to_agent.py`에 `--min-fc <N>` 옵션 추가 (commit `a2691e9`):
+- `args.min_fc > 0 and fc < args.min_fc` 인 SIGN 라인은 silent drop
+- 50건 단위 진척 로그 (`[SKIP] FC=... < min-fc 18847`)
+- BMU FC가 N 이상으로 catch-up하면 자동으로 정상 ingest 재개
+
+운영 예:
+```bash
+python serial_to_agent.py ... --did HgBpAxtHJ4qRwsNiroaqvC --min-fc 18847
+```
+
+### 옵션 A vs 옵션 B 재검토 (실측 후)
+
+| 측면 | 옵션 A (체인코드 Reset) | 옵션 B (HSE NVM 저장) | 임시 가드 (--min-fc) |
+|---|---|---|---|
+| 펌웨어 수정 | 불필요 | 필요 (HSE NVM write API) | 불필요 |
+| 체인코드 수정 | 필요 | 불필요 | 불필요 |
+| 호스트 도구 수정 | 불필요 | 불필요 | 필요 (적용 완료) |
+| BMU 재부팅 후 데이터 손실 | 없음 (즉시 catch-up) | NVM 마지막 저장~재부팅 사이 gap | catch-up 기간 동안 drop |
+| 운영 절차 | Agent가 자동 reset | 자동 (NVM 복원) | 사람이 `--min-fc` 수동 갱신 |
+| NVM 수명 영향 | 없음 | 매 N번째 write (~10만회 한계) | 없음 |
+| 보안 (재전송 공격) | reset 남용 시 window 열림 | 자연스러움 | drop은 안전, agent 측은 무관 |
+
+**여전히 옵션 A 권장**. 옵션 B는 NVM 수명 + 구현 복잡도 비용이 옵션 A 대비 큼. 단, 옵션 A는 블체 세션의 chaincode 작업 필요.
+
+### 임베디드 세션의 옵션 B 검토 (별도 트랙)
+
+옵션 B (HSE NVM에 FC 저장/복원)는 옵션 A 부재 시의 fallback. 다음 검토 항목:
+- HSE Key Catalog의 NVM 영역에 user-managed 키로 FC 8 byte 저장 가능 여부
+- 저장 주기 100 frame vs 1000 frame trade-off (NVM 수명 vs gap window)
+- 부팅 시 NVM 읽기 + `g_freshness_counter` 초기화 코드 위치 (`main.c` BMU 측)
+- 실제 구현은 옵션 A 무산 시에만 진행
+
+### 미해결 / 후속
+
+- `ResetFCForDID` 체인코드 함수 (블체 세션) — 우선순위 상향 합의 완료 2026-05-19
+- Agent 측 BMU 재부팅 감지 + 자동 호출 로직 (passport 세션)
+- `--min-fc` 가드는 W6 영구 해결 전까지 유지. 매 DID 회전 / 재부팅 시점에 운영자가 `--min-fc` 값 갱신 필요
