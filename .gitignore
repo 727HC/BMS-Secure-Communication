@@ -144,6 +144,11 @@ TOOLS.md
 /AGENTS.md
 /DESIGN.md
 
+# CANoe disabled configurations + SQLite WAL/SHM artifacts
+canoe/*.disabled-*
+firmware/tools/spool.db-shm
+firmware/tools/spool.db-wal
+
 # harness 세션 실행 산출물 — cycle_* 루프 로그는 저장소에 보관 안 함
 .harness/cycle_*/
 
