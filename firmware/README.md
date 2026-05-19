@@ -391,6 +391,14 @@ pegdbserver_console.exe \
 
 ## 실행 방법
 
+### Preflight (E2E 시작 전 권장)
+
+```bash
+bash scripts/preflight-check.sh   # 또는 scripts/preflight-check.sh --strict
+```
+
+`C:\BMS` 정션, BMS python procs, `:3001` 단일 listener, **Vector CANoe64 실행 여부**(외부 POSTer 후보), COM 포트, `spool.db` pending 누계 인벤토리. CANoe가 실행 중이고 measurement Start 상태면 [ADR-006](../wiki/decisions/006-canoe-bmu-poster.md) HTTP Binding rogue replay 위험 — 사전 차단.
+
 ### 전체 E2E 파이프라인
 
 ```bash
@@ -399,15 +407,51 @@ matlab -batch "run_sim_standalone"       # 또는 Simulink Run
 
 # 2. UDP → CMU UART 브릿지
 cd firmware/tools
-python dataProcess.py --port COM5 --baud 9600
+python dataProcess.py --port COM5 --baud 9600 --bms-management-id BMS-MGMT-001
 
 # 3. BMU UART → 블록체인 에이전트 (JWT 인증)
 python serial_to_agent.py \
   --port COM4 --baud 28800 \
   --agent http://localhost:3001 \
   --did <BMU_DID> \
-  --user <USER> --password <PASSWORD> --org 1
+  --user <USER> --password <PASSWORD> --org 1 \
+  [--min-fc <N>]                    # BMU 재부팅 후 catch-up 보호 (선택)
 ```
+
+### Bridge 운영 기능 (`serial_to_agent.py`)
+
+| 기능 | 동작 |
+|---|---|
+| Hex 검증 | `[SIGN]` 라인 매치 후 signR/signS=64hex, DATA=96hex 검증. 미통과 시 silent drop 또는 rawPayload 제외 |
+| SQLite spool | POST 실패 시 페이로드 누적, 매 20 loop마다 자동 retry (max retry_count=50) |
+| `[ALERT] BMU FC regression` | 직전 peak 대비 fc < peak - 100 회귀 시 단발 출력 (BMU 재부팅 의심). **auto-call 금지** — `ResetFCForDID` 가이드 메시지만 표시 |
+| `--min-fc N` | chaincode lastFc 이하 SIGN 라인 silent drop. BMU FC가 N 이상 도달 시 자동 정상 ingest 재개 |
+
+### BMU 재부팅 후 FC 복구 절차
+
+체인코드는 DID별 `lastFc` 단조성 강제 (ADR-004). BMU 재부팅 시 FC가 1로 리셋되면 다음 순서로 복구:
+
+```bash
+# 1. bridge stdout에 [ALERT] BMU FC regression 출력 확인
+# 2. 의도된 재부팅이면 chaincode invoke (Manufacturer/Regulator 권한 필요)
+peer chaincode invoke -C bms-channel -n passport-contract \
+  -c '{"function":"ResetFCForDID","Args":["<did>","<reason 10+ chars>"]}'
+# 3. bridge 재기동 (--min-fc 옵션 제거하거나 새 값으로 갱신)
+```
+
+향후 `bmu-agent`에 `/api/bmu/reset-fc` HTTP endpoint + admin UI가 추가되면 manual peer invoke를 대체.
+
+장기 hardening — [HSE Monotonic Counter로 FC 영속화](../wiki/embedded/option-b-hse-nvm-fc-feasibility.md)는 production 진입 시 1순위 항목.
+
+### CANoe 함께 사용 시 (운영 규칙)
+
+⚠ **CANoe `BMS_Test.cfg`에 HTTP Binding 절대 활성화 금지**. 활성화 시 CANoe가 `/api/bmu/data` 점유하여 임베디드 bridge 송신과 충돌 ([ADR-006](../wiki/decisions/006-canoe-bmu-poster.md) 사건 참조).
+
+- CAN-FD 분석/공격 시뮬: CANoe (Panel/CAPL only)
+- HTTP/REST 통신: 임베디드 측 `serial_to_agent.py`만 담당
+- 두 도구 endpoint 절대 공유 금지
+
+CANoe configuration 재구성 시 Configuration → Connectivity에서 HTTP Binding 블록 제거 후 저장.
 
 ### 단독 모니터링
 

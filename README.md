@@ -48,17 +48,50 @@ cd ../../bmu-agent && FABRIC_ORG=1 node server.js
 ### 2. 임베디드 E2E
 
 ```bash
+# 사전 setup (최초 1회) — S32DS 빌드 인자가 C:\BMS 절대경로 참조
+scripts/setup-dev-env.bat            # mklink /J C:\BMS <repo>
+
+# E2E 시작 전 인벤토리 (외부 POSTer / 충돌 / 정션 검증)
+bash scripts/preflight-check.sh
+
 # 빌드 / 플래시 (PEmicro GDB Server)
 ./build.sh all
 ./flash.sh all
 
 # MATLAB → CMU → CAN-FD → BMU → Agent → Fabric
-python firmware/tools/dataProcess.py --port COM5 --baud 9600 &
+python firmware/tools/dataProcess.py --port COM5 --baud 9600 --bms-management-id BMS-MGMT-001 &
 python firmware/tools/serial_to_agent.py \
   --port COM4 --baud 28800 \
   --agent http://localhost:3001 \
-  --did <BMU_DID> --user <USER> --password <PASSWORD> --org 1
+  --did <BMU_DID> --user <USER> --password <PASSWORD> --org 1 \
+  [--min-fc <N>]                     # BMU 재부팅 후 catch-up 보호 (선택)
 ```
+
+#### Bridge 운영 기능 (`serial_to_agent.py`)
+
+- **Hex 검증**: UART jitter로 garbage 페이로드가 chain에 들어가는 사고 차단. 64/96 hex char 검증 미통과 시 silent drop
+- **SQLite spool**: agent 일시 중단 시 페이로드 누적, 복구 시 자동 재전송 (`spool.db`)
+- **`[ALERT] BMU FC regression`**: 보드 재부팅으로 FC가 직전 peak 대비 100+ 회귀 시 단발 출력 + `ResetFCForDID` 가이드 메시지. **auto-call 절대 없음** — 운영자 manual invoke 원칙
+- **`--min-fc N`**: chaincode `lastFc=N-1` 일 때 BMU 재부팅으로 fc<N인 SIGN 라인은 silent drop, BMU FC가 N 이상 도달 시 자동 재개
+
+#### FC 복구 (BMU 재부팅 후)
+
+체인코드의 lastFc 단조성 정책으로 BMU 재부팅 시 fc=1 재시작분이 reject되는 시나리오는 [ADR-004](wiki/decisions/004-fc-reset-mechanism.md)의 영구 메커니즘으로 해결:
+
+```bash
+# 1. 운영자가 의도된 재부팅 확인 + Manufacturer/Regulator 권한 보유
+# 2. chaincode admin invoke
+peer chaincode invoke -C bms-channel -n passport-contract \
+  -c '{"function":"ResetFCForDID","Args":["<did>","<reason 10+ chars>"]}'
+# 3. bridge 재기동 (--min-fc 옵션 제거 가능)
+```
+
+#### 임베디드 측 ADR
+
+- [ADR-004 FC reset](wiki/decisions/004-fc-reset-mechanism.md) — W6 영구 해결책, 실측 검증 완료
+- [ADR-005 build paths](wiki/decisions/005-build-paths.md) — `C:\BMS` 정션 우회 + 장기 마이그레이션
+- [ADR-006 CANoe HTTP rogue](wiki/decisions/006-canoe-bmu-poster.md) — Vector CANoe HTTP Binding이 `/api/bmu/data` 점유한 사건 격리. **운영 규칙: CANoe configuration에 HTTP Binding 절대 활성화 금지**
+- [option-b HSE NVM FC](wiki/embedded/option-b-hse-nvm-fc-feasibility.md) — HSE Monotonic Counter로 FC 영속화 (production 진입 시 1순위 hardening 항목)
 
 ## 보안 통신 (CAN-FD)
 
