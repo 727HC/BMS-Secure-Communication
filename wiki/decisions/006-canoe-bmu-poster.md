@@ -59,6 +59,12 @@ CANoe Connectivity HTTP Binding은 `.cfg` 바이너리 내부에 endpoint URL + 
 - `bash scripts/preflight-check.sh` 실행 시 CANoe64 running하면 ⚠ 경고 출력
 - 임베디드 bridge 신 DID `HgBpAxtHJ4qRwsNiroaqvC` POST 성공 (BMU recorded OK)
 
+## Closure 2026-05-19
+
+블록체인 세션이 옛 DID `4d5CE8NZbkAVJxcypzaVhw`에 대해 `ResetFCForDID` 호출 완료 — CANoe rogue source confinement closure marker로 `FCRESET-4d5CE8NZbkAVJxcypzaVhw-{txid}` 감사 이벤트 생성. `CheckBMUHotBinding` 결과 canonical 유지 + `hasFc=false`. 옛 DID에 남아있던 stale lastFc state 정리 완료.
+
+본 사건 완전 closure. CANoe configuration 재구성 시 운영 규칙(HTTP Binding 절대 활성화 안 함)은 [위 Operating Rules 섹션](#운영-규칙-operating-rules) 참조.
+
 ## Lessons (lessons_embedded.md에 반영)
 
 - **부수 자산(CANoe configuration, MATLAB Simulink 셋업 등)은 stateful + invisible** — 부수 도구가 정상 endpoint를 점유할 수 있고, observability 없으면 영원히 묻힘
