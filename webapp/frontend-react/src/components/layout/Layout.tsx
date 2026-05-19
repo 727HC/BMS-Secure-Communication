@@ -47,6 +47,14 @@ const NAV_ITEMS: NavItem[] = [
 ];
 
 const AUDIT_ALLOWED_ORGS = new Set(['ManufacturerMSP', 'RegulatorMSP']);
+const OPS_ALLOWED_ORGS = new Set(['ManufacturerMSP', 'RegulatorMSP']);
+
+const OPS_NAV_ITEMS: NavItem[] = [
+  {
+    to: '/bmu-operations', label: 'BMU 운영',
+    icon: <svg className="ev-sidebar-glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9"><path d="M12 2v4"/><path d="M12 18v4"/><path d="M4.93 4.93l2.83 2.83"/><path d="M16.24 16.24l2.83 2.83"/><path d="M2 12h4"/><path d="M18 12h4"/><circle cx="12" cy="12" r="4"/></svg>,
+  },
+];
 
 function userInitials(userId: string | null): string {
   if (!userId) return '?';
@@ -62,6 +70,7 @@ export default function Layout({ children }: { children: ReactNode }) {
 
   const orgLabel = org ? (MSP_LABELS[org] || org) : '';
   const canReadAudit = org ? AUDIT_ALLOWED_ORGS.has(org) : false;
+  const canSeeOps = org ? OPS_ALLOWED_ORGS.has(org) : false;
 
   const handleLogout = () => {
     logout();
@@ -91,6 +100,26 @@ export default function Layout({ children }: { children: ReactNode }) {
               </Link>
             );
           })}
+
+          {canSeeOps && (
+            <>
+              <div className="ev-sidebar-section-label" style={{ marginTop: 18 }}>운영</div>
+              {OPS_NAV_ITEMS.map((item) => {
+                const isActive = location.pathname === item.to;
+                return (
+                  <Link
+                    key={item.to}
+                    to={item.to}
+                    className={`ev-sidebar-link${isActive ? ' active' : ''}`}
+                    style={{ textDecoration: 'none' }}
+                  >
+                    {item.icon}
+                    <span>{item.label}</span>
+                  </Link>
+                );
+              })}
+            </>
+          )}
         </div>
 
         <div style={{ paddingTop: 16, borderTop: '1px solid var(--color-border)', display: 'flex', flexDirection: 'column', gap: 4 }}>
