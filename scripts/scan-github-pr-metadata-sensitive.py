@@ -61,30 +61,51 @@ def add_item(items: list[tuple[str, str]], label: str, value: Any) -> None:
     items.append((label, str(value)))
 
 
+def load_prs(repo: str, *, limit: int, state: str, pr_number: int | None, head_ref: str | None) -> list[dict[str, Any]]:
+    fields = "number,title,body,headRefName,baseRefName,author,url,state"
+    if pr_number is not None:
+        pr = run_gh_json(["pr", "view", str(pr_number), "--repo", repo, "--json", fields])
+        return [pr] if pr else []
+
+    args = [
+        "pr",
+        "list",
+        "--repo",
+        repo,
+        "--state",
+        state,
+        "--limit",
+        str(limit),
+        "--json",
+        fields,
+    ]
+    if head_ref:
+        args.extend(["--head", head_ref])
+    return run_gh_json(args) or []
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(
         description="Scan GitHub PR metadata for high-signal sensitive markers."
     )
     parser.add_argument("--repo", default=None, help="GitHub repo in OWNER/NAME form")
     parser.add_argument("--limit", type=int, default=100, help="maximum PRs to request")
+    parser.add_argument("--state", default="open", choices=["open", "closed", "merged", "all"], help="PR state to scan when no explicit PR selector is provided")
+    parser.add_argument("--pr-number", type=int, default=None, help="scan exactly one PR number")
+    parser.add_argument("--head-ref", default=None, help="scan PRs whose head branch matches this ref")
+    parser.add_argument("--allow-empty", action="store_true", help="return success when an explicit selector matches no PR")
     args = parser.parse_args()
 
     scanner = load_scanner()
     repo = args.repo or default_repo()
-    prs = run_gh_json(
-        [
-            "pr",
-            "list",
-            "--repo",
-            repo,
-            "--state",
-            "all",
-            "--limit",
-            str(args.limit),
-            "--json",
-            "number,title,body,headRefName,baseRefName,author,url,state",
-        ]
-    ) or []
+    prs = load_prs(repo, limit=args.limit, state=args.state, pr_number=args.pr_number, head_ref=args.head_ref)
+    if not prs and (args.pr_number is not None or args.head_ref) and args.allow_empty:
+        print(f"repo={repo}")
+        print("pull_requests_scanned=0")
+        print("pr_metadata_items_scanned=0")
+        print("pr_metadata_sensitive_findings=0")
+        print("scan_scope=empty_selector")
+        return 0
 
     items: list[tuple[str, str]] = []
     for pr in prs:

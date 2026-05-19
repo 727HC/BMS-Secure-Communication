@@ -21,8 +21,30 @@ jobs:
       - name: Run high-signal sensitive marker scan
         run: python3 scripts/check-sensitive-patterns.py
 
-      - name: Run GitHub PR metadata sensitive marker scan
-        if: github.event_name != 'pull_request'
+      - name: Run GitHub PR metadata sensitive marker scan for current PR
+        if: github.event_name == 'pull_request'
         env:
           GH_TOKEN: ${{ github.token }}
-        run: python3 scripts/scan-github-pr-metadata-sensitive.py --repo "$GITHUB_REPOSITORY"
+        run: >-
+          python3 scripts/scan-github-pr-metadata-sensitive.py
+          --repo "$GITHUB_REPOSITORY"
+          --pr-number "${{ github.event.pull_request.number }}"
+
+      - name: Run GitHub PR metadata sensitive marker scan for pushed branch PR
+        if: github.event_name == 'push'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: >-
+          python3 scripts/scan-github-pr-metadata-sensitive.py
+          --repo "$GITHUB_REPOSITORY"
+          --head-ref "$GITHUB_REF_NAME"
+          --allow-empty
+
+      - name: Run GitHub PR metadata sensitive marker scan for all open PRs
+        if: github.event_name == 'workflow_dispatch'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: >-
+          python3 scripts/scan-github-pr-metadata-sensitive.py
+          --repo "$GITHUB_REPOSITORY"
+          --state open
