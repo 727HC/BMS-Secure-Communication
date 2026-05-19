@@ -7,10 +7,9 @@ status: current
 ---
 # Object/
 
-외부 PDF, 원문 자료, 발표 / 과제 기준 문서를 두는 **배경 참조 허브**다.
+외부 PDF, 원문 자료, 공개 기준 문서를 두는 **배경 참조 허브**다.
 
 ## 현재 자료
-- `BMS__.pdf` — BMS 관련 원문 / 참고 PDF
 - `gba-bp-pilot-master ko 한글판.pdf` — GBA 배터리 여권 파일럿 기준 한글판
 
 ## 이 폴더에 두는 것

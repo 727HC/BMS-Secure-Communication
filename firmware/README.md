@@ -538,6 +538,7 @@ BMU 복호화 → Fabric 체인코드 기록까지 **값 일치** 확인 (2026-0
 
 ## 관련 문서
 
-- [Wiki: 임베디드 빌드/플래시 가이드](../.omc/wiki/embedded-build-flash-guide.md)
-- [ADR-005: 임베디드 보안 강화 로드맵](../.omc/wiki/adr-005-embedded-hardening.md)
+- [Wiki: 임베디드 개요](../wiki/embedded/overview.md)
+- [ADR-005: 빌드 경로 결정](../wiki/decisions/005-build-paths.md)
+- [ADR-006: 임베디드 보안 강화](../wiki/decisions/006-embedded-security-hardening.md)
 - [루트 README](../README.md)

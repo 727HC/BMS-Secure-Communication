@@ -142,7 +142,7 @@ node src/index.js
 - `verbose: true` 로 컨테이너 상세 포함
 - Fabric connectivity probe 실패는 `fabricQuery.errors[]`에 포함된다.
 
-### 5. `monitor_passport` — Passport 3차년도 관찰 표면
+### 5. `monitor_passport` — Passport 관찰 표면
 
 | action | 설명 | 주요 파라미터 |
 |--------|------|---------------|
@@ -156,7 +156,7 @@ node src/index.js
 - `/api/audit`: 감사 total/write/failure/action/statusCode trend (`PASSPORT_AUDIT_TOKEN` 필요)
 - BMU: record count, invalidation count, ingestion failure trend, ingestion error rate, stale/freshness counter anomaly
 - BMU monitoring events: `missingSignature`, `invalidRawPayload`, `staleFC`, `didMismatch`, `bindingCode`를 `trends.bmu.monitoringEvents.*`에서 분리 표시
-- 3차년도 증적 경로: 각 BMU monitoring event는 `evidencePath.route = ["BMU","Agent","Fabric","Passport/MCP"]`를 포함
+- E2E 관찰 경로: 각 BMU monitoring event는 `evidencePath.route = ["BMU","Agent","Fabric","Passport/MCP"]`를 포함
 - Sequence 3 BMS binding: `trends.sequence3BmsBinding`에 확정값과 관찰값을 비교 표시
   - `bmsManagementId`: `BMS-MGMT-001`
   - `bmsBindingId`: `did:battery:001#BMS-MGMT-001`
@@ -176,7 +176,7 @@ node src/index.js
 - API/로컬 감사 로그 응답 모두 MCP 출력 단계에서 `password/token/secret/signature/rawPayload/privateKey/authorization` 필드를 추가 redaction한다.
 - Passport audit middleware 특성상 GET probe도 감사 로그 1건을 남길 수 있지만, 원장/업무 데이터 mutation은 없다.
 
-Alert/handoff payload 예시는 `monitor_passport`의 `observation_plan` 또는 `trends` 응답에 포함된다. 주요 handoff 대상:
+Alert/escalation payload 예시는 `monitor_passport`의 `observation_plan` 또는 `trends` 응답에 포함된다. 주요 escalation 대상:
 - ingestion error rate / BMU validation spike / stale FC / freshness counter anomaly → 배터리여권 + 임베디드
 - binding code zero/mismatch → 배터리여권 + 블록체인 + 임베디드
 - Sequence 3 binding drift → 배터리여권 + 블록체인 + 임베디드

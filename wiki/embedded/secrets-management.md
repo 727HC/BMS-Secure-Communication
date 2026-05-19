@@ -134,15 +134,15 @@ secrets.h → #include → main.c:82-95 randombytes()
 | DID seed 파생 | 결정론적 시드 → keypair | HSE 내부 Ed25519 키 생성 (export 불가) |
 | 빌드 머신 침해 대응 | 키 노출 (`.h` 파일 + 빌드 산출물) | 키 불필요 (NVM 측에만 존재) |
 
-향후 마이그레이션은 [ADR-005 임베디드 보안 강화 로드맵](./adr-005-embedded-hardening.md)에서 다룬다.
+향후 마이그레이션은 [ADR-006 임베디드 보안 강화](../decisions/006-embedded-security-hardening.md)에서 다룬다.
 
 ## 관련 문서
 
 - `firmware/common/secrets.h.example` — 인라인 사용 가이드 (개발자 1차 참조)
 - [ADR-004 FC reset mechanism](../decisions/004-fc-reset-mechanism.md) — EdDSA_Seed 회전 시 chain FC 처리
 - [ADR-005 build paths](../decisions/005-build-paths.md) — secrets.h가 의존하는 빌드 경로 정책
-- [ADR-005 임베디드 보안 강화](./adr-005-embedded-hardening.md) (wiki 측 인덱스)
-- [`firmware/README.md`](../../firmware/README.md) "운영 보안 권고" 섹션
+- [ADR-006 임베디드 보안 강화](../decisions/006-embedded-security-hardening.md)
+- `firmware/README.md` "운영 보안 권고" 섹션
 
 ## 잠재 사고 사례 (학습용)
 

@@ -247,3 +247,4 @@ wiki/embedded/*binding*.md
 /wiki/decisions/*benchmark*.md
 /scripts/test-blockchain-repro-hardening.sh
 /wiki/blockchain/bmu-hot-path-map.md
+wiki/passport/bms-*-year-mapping*.md

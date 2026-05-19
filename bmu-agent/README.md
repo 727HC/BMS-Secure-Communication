@@ -99,7 +99,7 @@ POST /api/bmu/data
 
 `parseRawPayload`는 raw soc_u16 그대로 반환 (보정 없음). bytes 44..47은 v1.1 `bmsBindingCode32`(little-endian uint32, `0=legacy`)로 노출한다. `dataHash`는 전체 48B `rawPayload` 기준이므로 `bmsBindingCode32`도 자동 포함된다.
 
-## 3차년도 확장 속성 / BMS binding
+## 확장 속성 / BMS binding
 
 초기 `CreateBatteryPassport` 인자 순서는 유지한다. 발급 직후 다음 Passport API가 live chaincode Version 1.4 / Sequence 5 트랜잭션을 호출한다. Fabric client는 chaincode name `passport-contract`로 호출하므로 Agent에서 sequence를 별도 지정하지 않는다.
 
