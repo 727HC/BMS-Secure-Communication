@@ -208,3 +208,7 @@ scripts/test-portable-fallback-import-route.sh
 wiki/blockchain/*offhost*.md
 wiki/blockchain/full-benchmark-rerun-audit*.md
 wiki/embedded/*binding*.md
+
+# Local BMS PDF drops are not part of the public repository
+/BMS.pdf
+/wiki/Object/BMS__.pdf
