@@ -229,6 +229,8 @@ def main():
     parser.add_argument("--user", default=None, help="Agent login user ID")
     parser.add_argument("--password", default=None, help="Agent login password")
     parser.add_argument("--org", type=int, default=1, help="Agent org number (default: 1=Manufacturer)")
+    parser.add_argument("--min-fc", type=int, default=0,
+                        help="Drop SIGN frames with fc < this value (catch-up after BMU reboot vs chaincode lastFc). 0 = no filter.")
     args = parser.parse_args()
 
     spool_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "spool.db")
@@ -243,6 +245,8 @@ def main():
     print(f"  Agent:  {args.agent}")
     print(f"  Auth:   {'JWT (' + args.user + ')' if auth else 'none'}")
     print(f"  Spool:  {spool_path}")
+    if args.min_fc > 0:
+        print(f"  MinFC:  {args.min_fc} (drop SIGN frames below this until BMU catches up)")
     print(f"  Press Ctrl+C to stop\n", flush=True)
 
     spool = init_spool(spool_path)
@@ -283,6 +287,13 @@ def main():
 
             elif parsed['type'] == 'sign':
                 fc = parsed['fc']
+                if args.min_fc > 0 and fc < args.min_fc:
+                    # BMU FC restarted (e.g. reboot/key-exchange) but chaincode lastFc is higher.
+                    # Silently skip until BMU's FC catches up. Print every 50 dropped to avoid spam.
+                    pending_data_by_fc.pop(fc, None)
+                    if fc % 50 == 0:
+                        print(f"  [SKIP] FC={fc} < min-fc {args.min_fc} (waiting for BMU FC catch-up)", flush=True)
+                    continue
                 data_record = pending_data_by_fc.pop(fc, None)
                 print(f"[SIGN] FC={fc} R={parsed['signR'][:16]}... S={parsed['signS'][:16]}...", flush=True)
 
