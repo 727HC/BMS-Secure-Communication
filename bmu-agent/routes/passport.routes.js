@@ -17,6 +17,7 @@ const {
   overlayPassportWithLatestBmu,
   overlayPassportPageWithLatestBmu,
 } = require('../services/passportSnapshotOverlay.service');
+const { clearDidPassportCache } = require('./bmu.routes');
 
 // Vehicle image upload config — static tree 밖에 저장하여 직접 접근 차단
 const fs = require('fs');
@@ -352,6 +353,7 @@ router.post('/:id/bms-binding', authenticateToken, requireMSP(MSP.MANUFACTURER, 
       evidenceHash,
       (req.body.reason || 'initial BMS binding').trim(),
     ], req.user);
+    clearDidPassportCache({ passportId: req.params.id });
     res.json({
       success: true,
       passportId: req.params.id,
