@@ -2,7 +2,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const { KJUR, KEYUTIL } = require('jsrsasign');
 
-test('jsrsasign KJUR SHA256withECDSA P-256 sign+verify round-trip', () => {
+test('jsrsasign KEYUTIL+KJUR P-256 API surface smoke (fabric key-format consumer)', () => {
   const kp = KEYUTIL.generateKeypair('EC', 'secp256r1');
   const msg = 'fabric-attach canary message';
 

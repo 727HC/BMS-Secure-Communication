@@ -1558,13 +1558,11 @@ test('D3: BMUIngest log never contains signature body, only sigLen integer', asy
 
 // E3: Ed25519 verify (tweetnacl path) — sign valid + tamper → false
 // Use nacl primitives directly; no DID resolver network call needed.
-test('E3: tweetnacl Ed25519 verifySignature returns true for valid sig and false for tampered sig', async (t) => {
+test('E3: tweetnacl Ed25519 verifySignature returns true for valid sig and false for tampered sig', async (_t) => {
   const nacl = require('tweetnacl');
-  const bs58 = require('bs58').default;
 
   // Generate a real Ed25519 keypair
   const kp = nacl.sign.keyPair();
-  const verkey = bs58.encode(kp.publicKey);
   const message = Buffer.from('E3 canary message for tweetnacl verify path');
 
   // Compute valid detached signature
