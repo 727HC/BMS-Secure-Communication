@@ -44,14 +44,14 @@ test.describe('Cycle 03 — BMU Operations / C4 Happy Path (Manufacturer)', () =
     page.on('pageerror', (err) => errors.push(err.message));
 
     await bootstrapAs(page, 'ManufacturerMSP');
-    await page.goto(`${BASE}/#/bmu-operations`, { waitUntil: 'domcontentloaded' });
+    await page.goto(`${BASE}/bmu-operations`, { waitUntil: 'domcontentloaded' });
 
     // 사이드바 "운영" 섹션 노출 확인
     await expect(page.getByText('운영', { exact: true }).first()).toBeVisible();
-    await expect(page.getByText('BMU 운영')).toBeVisible();
+    await expect(page.getByRole('link', { name: 'BMU 운영' })).toBeVisible();
 
     // 페이지 진입 확인
-    await expect(page.getByText('FC 재동기화')).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'FC 재동기화' })).toBeVisible();
 
     // DID 입력
     await page.getByLabel('대상 DID').fill('did:web:bms:test-e2e-01');
@@ -83,14 +83,14 @@ test.describe('Cycle 03 — BMU Operations / C5 RBAC (Service redirect)', () => 
     page.on('pageerror', (err) => errors.push(err.message));
 
     await bootstrapAs(page, 'ServiceMSP');
-    await page.goto(`${BASE}/#/dashboard`, { waitUntil: 'domcontentloaded' });
+    await page.goto(`${BASE}/dashboard`, { waitUntil: 'domcontentloaded' });
 
     // 사이드바에 "운영" 섹션 미노출
     await expect(page.getByText('BMU 운영')).not.toBeVisible();
 
     // /bmu-operations 직접 접근 → /dashboard 리다이렉트
-    await page.goto(`${BASE}/#/bmu-operations`, { waitUntil: 'domcontentloaded' });
-    await expect(page).toHaveURL(/#\/dashboard/);
+    await page.goto(`${BASE}/bmu-operations`, { waitUntil: 'domcontentloaded' });
+    await expect(page).toHaveURL(/\/dashboard$/);
 
     await page.screenshot({ path: 'screenshots/c03_bmu_ops_rbac_service.png', fullPage: true });
     expect(errors).toEqual([]);
