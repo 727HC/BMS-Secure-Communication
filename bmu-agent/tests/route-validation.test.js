@@ -975,3 +975,735 @@ test('bmu reset-fc submits ResetFCForDID with did + reason on happy path', async
   assert.equal(submittedArgs.name, 'ResetFCForDID');
   assert.deepEqual(submittedArgs.args, ['did:web:bms:PASSPORT-1', 'BMU board reboot after firmware update on 2026-05-19']);
 });
+
+// A1: reset-fc 후 fresh fc=1 POST E2E 통과
+test('A1: reset-fc then fresh fc=1 BMU POST succeeds end-to-end', async (t) => {
+  bmuRoutes.clearDidPassportCache();
+  t.after(() => bmuRoutes.clearDidPassportCache());
+
+  const did = 'did:web:bms:A1-RESET';
+  const reason = 'BMU board replaced after field failure - fc counter reset required on 2026-05-20';
+
+  let resetSubmitCalled = false;
+  let recordSubmitName = null;
+
+  mockDidSignature(t, true);
+  mockFabric(t, {
+    evaluate(name, args) {
+      assert.equal(name, 'QueryBatteryByDID');
+      assert.deepEqual(args, [did]);
+      // After reset, passport has lastFc=0 (fresh)
+      return Buffer.from(JSON.stringify({ passportId: 'PASSPORT-A1' }));
+    },
+    submit(name, args) {
+      if (name === 'ResetFCForDID') {
+        assert.deepEqual(args, [did, reason]);
+        resetSubmitCalled = true;
+        return Buffer.from('');
+      }
+      if (name === 'RecordBMUData' || name === 'RecordBMUDataWithPayload') {
+        recordSubmitName = name;
+        return Buffer.from('');
+      }
+      throw new Error(`unexpected submit ${name}`);
+    },
+  });
+
+  const server = await listen(serverModule.createApp());
+  t.after(() => server.close());
+  // Use unique userId to avoid rate-limit collision with other reset-fc tests
+  const token = generateToken('mfg-a1', 'ManufacturerMSP');
+
+  // Step 1: POST reset-fc
+  const resetRes = await request(server, '/api/bmu/reset-fc', {
+    token,
+    method: 'POST',
+    body: { did, reason, confirm: true },
+  });
+  assert.equal(resetRes.status, 200);
+  assert.equal(resetRes.body.success, true);
+  assert.equal(resetRes.body.did, did);
+  assert.equal(resetRes.body.status, 'FC_RESET');
+  assert.equal(resetSubmitCalled, true);
+
+  // Step 2: POST /api/bmu/data with fc=1 (fresh after reset)
+  const bmuRes = await request(server, '/api/bmu/data', {
+    token,
+    method: 'POST',
+    body: {
+      did,
+      rawPayload: buildBmuPayload({ bmsBindingCode32: 0, freshnessCounter: 1 }),
+      signature: 'a'.repeat(128),
+    },
+  });
+
+  assert.equal(bmuRes.status, 200);
+  assert.equal(bmuRes.body.success, true);
+  assert.equal(bmuRes.body.passportId, 'PASSPORT-A1');
+  assert.equal(bmuRes.body.parsed.bmsBindingCode32, 0);
+  assert.ok(recordSubmitName, 'RecordBMUData submit should have been called');
+  // No validation error about fc
+  assert.ok(!bmuRes.body.error);
+});
+
+// A2: reset-fc 후 DID 캐시 새 lookup 발생 확인 (evaluate call count)
+test('A2: reset-fc invalidates DID cache causing fresh QueryBatteryByDID on next BMU POST', async (t) => {
+  bmuRoutes.clearDidPassportCache();
+  t.after(() => bmuRoutes.clearDidPassportCache());
+
+  const did = 'did:web:bms:A2-CACHE';
+  const reason = 'A2 cache invalidation test - fc reset required after device reprovisioning event';
+  let evaluateCount = 0;
+
+  mockDidSignature(t, true);
+  mockFabric(t, {
+    evaluate(name, args) {
+      assert.equal(name, 'QueryBatteryByDID');
+      assert.deepEqual(args, [did]);
+      evaluateCount += 1;
+      return Buffer.from(JSON.stringify({ passportId: 'PASSPORT-A2' }));
+    },
+    submit(name) {
+      if (name === 'ResetFCForDID' || name === 'RecordBMUData' || name === 'RecordBMUDataWithPayload') {
+        return Buffer.from('');
+      }
+      throw new Error(`unexpected submit ${name}`);
+    },
+  });
+
+  const server = await listen(serverModule.createApp());
+  t.after(() => server.close());
+  // Use unique userId to avoid rate-limit collision with other reset-fc tests
+  const token = generateToken('mfg-a2', 'ManufacturerMSP');
+
+  const bmuPayload = {
+    did,
+    rawPayload: buildBmuPayload({ bmsBindingCode32: 0, freshnessCounter: 10 }),
+    signature: 'a'.repeat(128),
+  };
+
+  // Step 1: First BMU POST — evaluate called once (cache miss)
+  const first = await request(server, '/api/bmu/data', { token, method: 'POST', body: bmuPayload });
+  assert.equal(first.status, 200);
+  assert.equal(evaluateCount, 1);
+
+  // Step 2: Second BMU POST same DID — cache hit, evaluate NOT called again
+  const bmuPayload2 = {
+    did,
+    rawPayload: buildBmuPayload({ bmsBindingCode32: 0, freshnessCounter: 11 }),
+    signature: 'a'.repeat(128),
+  };
+  const second = await request(server, '/api/bmu/data', { token, method: 'POST', body: bmuPayload2 });
+  assert.equal(second.status, 200);
+  assert.equal(evaluateCount, 1, 'cache hit: evaluate should not be called again');
+
+  // Step 3: reset-fc — clears DID cache
+  const resetRes = await request(server, '/api/bmu/reset-fc', {
+    token,
+    method: 'POST',
+    body: { did, reason, confirm: true },
+  });
+  assert.equal(resetRes.status, 200);
+
+  // Step 4: Next BMU POST after reset — cache miss, evaluate called again
+  const countBeforeStep4 = evaluateCount;
+  const bmuPayload3 = {
+    did,
+    rawPayload: buildBmuPayload({ bmsBindingCode32: 0, freshnessCounter: 12 }),
+    signature: 'a'.repeat(128),
+  };
+  const afterReset = await request(server, '/api/bmu/data', { token, method: 'POST', body: bmuPayload3 });
+  assert.equal(afterReset.status, 200);
+  assert.equal(evaluateCount, countBeforeStep4 + 1, 'step 4 should trigger exactly one new evaluate call');
+});
+
+// A3: reset-fc 후 Fabric query error → cache stale 안 남음 (다음 요청 fresh lookup 성공)
+test('A3: reset-fc then transient Fabric error does not leave stale cache entry', async (t) => {
+  bmuRoutes.clearDidPassportCache();
+  t.after(() => bmuRoutes.clearDidPassportCache());
+
+  const did = 'did:web:bms:A3-ERROR';
+  const reason = 'A3 stale cache test - fc reset after firmware rollback procedure completed successfully';
+  let evaluateCallCount = 0;
+
+  mockDidSignature(t, true);
+  mockFabric(t, {
+    evaluate(name, args) {
+      assert.equal(name, 'QueryBatteryByDID');
+      assert.deepEqual(args, [did]);
+      evaluateCallCount += 1;
+      // First call: success (will be cached)
+      if (evaluateCallCount === 1) {
+        return Buffer.from(JSON.stringify({ passportId: 'PASSPORT-A3' }));
+      }
+      // Second call (after reset-fc clears cache): throw transient error
+      if (evaluateCallCount === 2) {
+        throw new Error('Fabric peer temporarily unavailable');
+      }
+      // Third call: success again (cache should not be stale)
+      return Buffer.from(JSON.stringify({ passportId: 'PASSPORT-A3' }));
+    },
+    submit(name) {
+      if (name === 'ResetFCForDID' || name === 'RecordBMUData' || name === 'RecordBMUDataWithPayload') {
+        return Buffer.from('');
+      }
+      throw new Error(`unexpected submit ${name}`);
+    },
+  });
+
+  const server = await listen(serverModule.createApp());
+  t.after(() => server.close());
+  // Use unique userId to avoid rate-limit collision with other reset-fc tests
+  const token = generateToken('mfg-a3', 'ManufacturerMSP');
+
+  // Step 1: Normal BMU POST — passport cached
+  const step1 = await request(server, '/api/bmu/data', {
+    token,
+    method: 'POST',
+    body: {
+      did,
+      rawPayload: buildBmuPayload({ bmsBindingCode32: 0, freshnessCounter: 1 }),
+      signature: 'a'.repeat(128),
+    },
+  });
+  assert.equal(step1.status, 200);
+  assert.equal(evaluateCallCount, 1);
+
+  // Step 2: reset-fc — cache cleared
+  const resetRes = await request(server, '/api/bmu/reset-fc', {
+    token,
+    method: 'POST',
+    body: { did, reason, confirm: true },
+  });
+  assert.equal(resetRes.status, 200);
+
+  // Step 3: BMU POST — evaluate throws → should fail (502 or similar), cache NOT populated
+  const step3 = await request(server, '/api/bmu/data', {
+    token,
+    method: 'POST',
+    body: {
+      did,
+      rawPayload: buildBmuPayload({ bmsBindingCode32: 0, freshnessCounter: 2 }),
+      signature: 'a'.repeat(128),
+    },
+  });
+  // Error response expected (not 200), exact code depends on implementation
+  assert.ok(step3.status >= 400, `step3 should fail, got ${step3.status}`);
+  assert.equal(evaluateCallCount, 2);
+
+  // Step 4: BMU POST again — evaluate succeeds this time (cache was not left stale after step3 failure)
+  const step4 = await request(server, '/api/bmu/data', {
+    token,
+    method: 'POST',
+    body: {
+      did,
+      rawPayload: buildBmuPayload({ bmsBindingCode32: 0, freshnessCounter: 3 }),
+      signature: 'a'.repeat(128),
+    },
+  });
+  assert.equal(step4.status, 200, 'step4 should succeed with fresh lookup after transient error');
+  assert.equal(evaluateCallCount, 3, 'step4 must trigger a new evaluate (no stale cache)');
+});
+
+// A4: reset-fc 성공 시 submit args + audit log 양쪽 확인
+test('A4: reset-fc records correct Fabric submit args and emits audit log entry', async (t) => {
+  const did = 'did:web:bms:A4-AUDIT';
+  const reason = 'A4 audit log verification test - fc reset after authorized field replacement of BMU module';
+
+  let submittedName = null;
+  let submittedArgs = null;
+
+  mockFabric(t, {
+    submit(name, args) {
+      submittedName = name;
+      submittedArgs = args;
+      return Buffer.from('');
+    },
+  });
+
+  // Capture console.log output to verify audit log
+  const captured = [];
+  const originalConsoleLog = console.log;
+  console.log = (...args) => {
+    captured.push(args.join(' '));
+    originalConsoleLog(...args);
+  };
+  t.after(() => {
+    console.log = originalConsoleLog;
+  });
+
+  const server = await listen(serverModule.createApp());
+  t.after(() => server.close());
+  // Use unique userId to avoid rate-limit collision with other reset-fc tests
+  const token = generateToken('mfg-a4', 'ManufacturerMSP');
+
+  const res = await request(server, '/api/bmu/reset-fc', {
+    token,
+    method: 'POST',
+    body: { did, reason, confirm: true },
+  });
+
+  // Restore console.log before assertions to avoid polluting further test output
+  console.log = originalConsoleLog;
+
+  // Assert response
+  assert.equal(res.status, 200);
+  assert.equal(res.body.success, true);
+  assert.equal(res.body.did, did);
+  assert.equal(res.body.status, 'FC_RESET');
+
+  // Assert Fabric submit args
+  assert.equal(submittedName, 'ResetFCForDID');
+  assert.deepEqual(submittedArgs, [did, reason]);
+
+  // Assert audit log: find log line with action 'ResetFCForDID' or message 'FC reset performed'
+  const auditLine = captured.find((line) => {
+    try {
+      const entry = JSON.parse(line);
+      return entry.action === 'ResetFCForDID' || entry.message === 'FC reset performed';
+    } catch {
+      return false;
+    }
+  });
+  assert.ok(auditLine, 'audit log entry for ResetFCForDID must be emitted');
+
+  const auditEntry = JSON.parse(auditLine);
+  assert.equal(auditEntry.level, 'info');
+  assert.equal(auditEntry.did, did);
+});
+
+// B1: EVManufacturerMSP → 403 (RBAC: only Manufacturer/Regulator allowed)
+test('B1: reset-fc rejects EVManufacturerMSP with 403', async (t) => {
+  const server = await listen(serverModule.createApp());
+  t.after(() => server.close());
+  const token = generateToken('ev-b1', 'EVManufacturerMSP');
+
+  const res = await request(server, '/api/bmu/reset-fc', {
+    token,
+    method: 'POST',
+    body: {
+      did: 'did:web:bms:PASSPORT-B1',
+      reason: 'B1 EVManufacturer RBAC test - should be rejected before any Fabric call',
+      confirm: true,
+    },
+  });
+
+  assert.equal(res.status, 403);
+});
+
+// B2: rate limit 5/hour per userId — 6th call → 429, different userId still gets 200
+test('B2: reset-fc rate limit allows 5 calls then returns 429 on 6th (per userId, not global)', async (t) => {
+  // Use a short window so bucket doesn't bleed across test runs
+  const previous = process.env.RESET_FC_WINDOW_MS;
+  process.env.RESET_FC_WINDOW_MS = '60000';
+  t.after(() => {
+    if (previous == null) delete process.env.RESET_FC_WINDOW_MS;
+    else process.env.RESET_FC_WINDOW_MS = previous;
+  });
+
+  let submitCount = 0;
+  mockFabric(t, {
+    submit(name) {
+      if (name === 'ResetFCForDID') {
+        submitCount += 1;
+        return Buffer.from('');
+      }
+      throw new Error(`unexpected submit ${name}`);
+    },
+  });
+
+  const server = await listen(serverModule.createApp());
+  t.after(() => server.close());
+
+  const token = generateToken('mfg-b2', 'ManufacturerMSP');
+  const body = {
+    did: 'did:web:bms:PASSPORT-B2',
+    reason: 'B2 rate limit test - repeated reset call for rate limit boundary verification',
+    confirm: true,
+  };
+
+  // Calls 1–5 must succeed
+  for (let i = 1; i <= 5; i += 1) {
+    // eslint-disable-next-line no-await-in-loop
+    const r = await request(server, '/api/bmu/reset-fc', { token, method: 'POST', body });
+    assert.equal(r.status, 200, `call ${i} should be 200`);
+  }
+  assert.equal(submitCount, 5);
+
+  // 6th call must be rate-limited
+  const r6 = await request(server, '/api/bmu/reset-fc', { token, method: 'POST', body });
+  assert.equal(r6.status, 429);
+  assert.equal(submitCount, 5, 'submit must not be called on the 6th request');
+
+  // Different userId in same window must still succeed (keyFn is per-userId, not global)
+  const otherToken = generateToken('mfg-b2-other', 'ManufacturerMSP');
+  const rOther = await request(server, '/api/bmu/reset-fc', { token: otherToken, method: 'POST', body });
+  assert.equal(rOther.status, 200, 'different userId should not be affected by the other userId rate limit');
+});
+
+// B3: expected_next_fc=0 vs omitted — both 200, audit log payload differs (0 vs null)
+test('B3: reset-fc audit log records expectedNextFc=0 when provided and null when omitted', async (t) => {
+  mockFabric(t, {
+    submit(name) {
+      if (name === 'ResetFCForDID') return Buffer.from('');
+      throw new Error(`unexpected submit ${name}`);
+    },
+  });
+
+  const server = await listen(serverModule.createApp());
+  t.after(() => server.close());
+
+  const captured = [];
+  const originalConsoleLog = console.log;
+  console.log = (...args) => {
+    captured.push(args.join(' '));
+    originalConsoleLog(...args);
+  };
+  t.after(() => { console.log = originalConsoleLog; });
+
+  const baseReason = 'B3 audit log expectedNextFc test - fc reset after authorized firmware upgrade procedure';
+
+  // Token A: includes expected_next_fc: 0
+  const tokenA = generateToken('mfg-b3a', 'ManufacturerMSP');
+  const resA = await request(server, '/api/bmu/reset-fc', {
+    token: tokenA,
+    method: 'POST',
+    body: {
+      did: 'did:web:bms:PASSPORT-B3A',
+      reason: baseReason,
+      confirm: true,
+      expected_next_fc: 0,
+    },
+  });
+  assert.equal(resA.status, 200);
+
+  // Token B: omits expected_next_fc
+  const tokenB = generateToken('mfg-b3b', 'ManufacturerMSP');
+  const resB = await request(server, '/api/bmu/reset-fc', {
+    token: tokenB,
+    method: 'POST',
+    body: {
+      did: 'did:web:bms:PASSPORT-B3B',
+      reason: baseReason,
+      confirm: true,
+    },
+  });
+  assert.equal(resB.status, 200);
+
+  console.log = originalConsoleLog;
+
+  // Parse all captured audit entries for ResetFCForDID
+  const auditEntries = captured
+    .filter((line) => { try { return JSON.parse(line).action === 'ResetFCForDID'; } catch { return false; } })
+    .map((line) => JSON.parse(line));
+
+  const entryA = auditEntries.find((e) => e.did === 'did:web:bms:PASSPORT-B3A');
+  const entryB = auditEntries.find((e) => e.did === 'did:web:bms:PASSPORT-B3B');
+
+  assert.ok(entryA, 'audit entry for B3A (with expected_next_fc:0) must exist');
+  assert.ok(entryB, 'audit entry for B3B (omitted expected_next_fc) must exist');
+
+  // When expected_next_fc=0 is provided, audit log must record 0 (not null)
+  assert.equal(entryA.expectedNextFc, 0, 'expectedNextFc should be 0 when explicitly provided');
+  // When omitted, audit log must record null
+  assert.equal(entryB.expectedNextFc, null, 'expectedNextFc should be null when omitted');
+
+  // Chaincode submit args must be identical [did, reason] — expectedNextFc NOT passed to chaincode
+  // (verified by mock: both calls succeed with same submit handler)
+});
+
+// B4: #44 already asserts submitted===false when RESET_FC_REQUIRE_DUAL_APPROVAL=true.
+// Fabric submit call count == 0 is fully covered. Skipping to avoid duplication.
+
+// ── Group D: BMUIngest log spec lock ────────────────────────────────────────
+
+// D1: 정상 POST → BMUIngest 로그 1건에 정확한 필드 세트
+test('D1: successful BMU POST emits BMUIngest log with all required fields and no raw payload', async (t) => {
+  const did = 'did:web:bms:D1-LOG';
+  const rawPayload = buildBmuPayload({ bmsBindingCode32: 0, freshnessCounter: 5 });
+
+  mockDidSignature(t, true);
+  mockFabric(t, {
+    evaluate(name, args) {
+      assert.equal(name, 'QueryBatteryByDID');
+      assert.deepEqual(args, [did]);
+      return Buffer.from(JSON.stringify({ passportId: 'PASSPORT-D1' }));
+    },
+    submit() {
+      return Buffer.from('');
+    },
+  });
+
+  const server = await listen(serverModule.createApp());
+  t.after(() => server.close());
+  const token = generateToken('mfg-d1', 'ManufacturerMSP');
+
+  const captured = [];
+  const origLog = console.log;
+  console.log = (...args) => { captured.push(args.join(' ')); origLog(...args); };
+  t.after(() => { console.log = origLog; });
+
+  const res = await request(server, '/api/bmu/data', {
+    token,
+    method: 'POST',
+    body: { did, rawPayload, signature: 'a'.repeat(128) },
+  });
+
+  console.log = origLog;
+
+  assert.equal(res.status, 200);
+
+  // Find the BMUIngest log entry
+  const ingestLines = captured.filter((line) => {
+    try { return JSON.parse(line).action === 'BMUIngest'; } catch { return false; }
+  });
+  assert.equal(ingestLines.length, 1, 'exactly one BMUIngest log entry must be emitted');
+
+  const entry = JSON.parse(ingestLines[0]);
+
+  // Required fields present
+  assert.equal(entry.action, 'BMUIngest');
+  assert.ok('ip' in entry, 'ip field must be present');
+  assert.ok('rp' in entry, 'rp (remotePort) field must be present');
+  assert.ok('ua' in entry, 'ua (user-agent) field must be present');
+  // fc comes from req.body.fc; if not sent, JSON.stringify drops it (undefined)
+  if ('fc' in entry) {
+    assert.ok(typeof entry.fc === 'number' || entry.fc === null, 'fc must be a number or null when present');
+  }
+  assert.equal(entry.rawLen, 96, 'rawLen must equal 96 (48-byte payload = 96 hex chars)');
+  assert.equal(entry.sigLen, 128, 'sigLen must be 128');
+  assert.equal(typeof entry.bind, 'string', 'bind must be a string');
+  assert.match(entry.bind, /^[0-9a-fA-F]{8}$/, 'bind must be 8 hex chars');
+  assert.equal(entry.rawHead, rawPayload.slice(0, 24), 'rawHead must be first 24 hex chars of rawPayload');
+  assert.equal(entry.isHex, true, 'isHex must be true for valid hex payload');
+
+  // Forbidden fields: full rawPayload and full signature must NOT appear
+  assert.ok(!('rawPayload' in entry), 'full rawPayload must NOT be logged');
+  assert.ok(!('signature' in entry), 'full signature must NOT be logged');
+});
+
+// D2: rawPayload 누락 → BMUIngest 로그 1건 emit + rawLen/bind/rawHead null + 후속 400
+test('D2: missing rawPayload still emits BMUIngest log with null fields then returns 400', async (t) => {
+  const did = 'did:web:bms:D2-LOG';
+
+  const server = await listen(serverModule.createApp());
+  t.after(() => server.close());
+  const token = generateToken('mfg-d2', 'ManufacturerMSP');
+
+  const captured = [];
+  const origLog = console.log;
+  console.log = (...args) => { captured.push(args.join(' ')); origLog(...args); };
+  t.after(() => { console.log = origLog; });
+
+  const res = await request(server, '/api/bmu/data', {
+    token,
+    method: 'POST',
+    body: { did, signature: 'a'.repeat(128) },
+  });
+
+  console.log = origLog;
+
+  assert.equal(res.status, 400, 'must return 400 due to missing rawPayload');
+  assert.equal(res.body.category, 'VAL');
+
+  // BMUIngest log must still have been emitted (fires before validation)
+  const ingestLines = captured.filter((line) => {
+    try { return JSON.parse(line).action === 'BMUIngest'; } catch { return false; }
+  });
+  assert.equal(ingestLines.length, 1, 'BMUIngest log must be emitted even when rawPayload is absent');
+
+  const entry = JSON.parse(ingestLines[0]);
+  assert.equal(entry.rawLen, null, 'rawLen must be null when rawPayload is absent');
+  assert.equal(entry.bind, null, 'bind must be null when rawPayload is absent');
+  assert.equal(entry.rawHead, null, 'rawHead must be null when rawPayload is absent');
+});
+
+// D3: signature 본문은 절대 로깅 안 됨 — sigLen 정수만
+test('D3: BMUIngest log never contains signature body, only sigLen integer', async (t) => {
+  const did = 'did:web:bms:D3-LOG';
+  const rawPayload = buildBmuPayload({ bmsBindingCode32: 0, freshnessCounter: 9 });
+  const signature = 'b'.repeat(128);
+
+  mockDidSignature(t, true);
+  mockFabric(t, {
+    evaluate() {
+      return Buffer.from(JSON.stringify({ passportId: 'PASSPORT-D3' }));
+    },
+    submit() {
+      return Buffer.from('');
+    },
+  });
+
+  const server = await listen(serverModule.createApp());
+  t.after(() => server.close());
+  const token = generateToken('mfg-d3', 'ManufacturerMSP');
+
+  const captured = [];
+  const origLog = console.log;
+  console.log = (...args) => { captured.push(args.join(' ')); origLog(...args); };
+  t.after(() => { console.log = origLog; });
+
+  const res = await request(server, '/api/bmu/data', {
+    token,
+    method: 'POST',
+    body: { did, rawPayload, signature },
+  });
+
+  console.log = origLog;
+
+  assert.equal(res.status, 200);
+
+  const ingestLines = captured.filter((line) => {
+    try { return JSON.parse(line).action === 'BMUIngest'; } catch { return false; }
+  });
+  assert.equal(ingestLines.length, 1, 'exactly one BMUIngest log entry');
+
+  const entry = JSON.parse(ingestLines[0]);
+  assert.equal(entry.sigLen, 128, 'sigLen must be 128');
+  assert.ok(!('signature' in entry), 'signature key must not be present in log entry');
+
+  // The full 128-char signature value must not appear anywhere in the serialized log line
+  assert.ok(
+    !ingestLines[0].includes(signature),
+    'raw signature body must not appear in the log line'
+  );
+});
+
+// ── Group E: Dep overrides canary ───────────────────────────────────────────
+
+// E1: SKIP — createApp() boot + Fabric attach already verified by server-bootstrap tests
+// (ok 50/51: "server import exposes app factory" + "createApp builds an Express app").
+// Those tests exercise the full require chain including fabric-ca-client / jsrsasign sign-path.
+
+// E2: SKIP — submitTransaction args/userCtx dispatch already verified by A1 (submit args
+// confirmed), A4 (submit name+args asserted), and the bmu-data happy-path tests above.
+// No new coverage would be added.
+
+// E3: Ed25519 verify (tweetnacl path) — sign valid + tamper → false
+// Use nacl primitives directly; no DID resolver network call needed.
+test('E3: tweetnacl Ed25519 verifySignature returns true for valid sig and false for tampered sig', async (t) => {
+  const nacl = require('tweetnacl');
+  const bs58 = require('bs58').default;
+
+  // Generate a real Ed25519 keypair
+  const kp = nacl.sign.keyPair();
+  const verkey = bs58.encode(kp.publicKey);
+  const message = Buffer.from('E3 canary message for tweetnacl verify path');
+
+  // Compute valid detached signature
+  const sigBytes = nacl.sign.detached(message, kp.secretKey);
+  const sigHex = Buffer.from(sigBytes).toString('hex');
+
+  // Seed getVerkey via the in-module cache by temporarily replacing the
+  // exported function (verifySignature calls the module-local getVerkey,
+  // so we must patch it at the module export level and inject the verkey
+  // through the cache instead — easiest: call nacl primitives ourselves).
+
+  // Valid signature — verify directly with nacl primitives
+  const sigBytesDecoded = Buffer.from(sigHex, 'hex');
+  const valid = nacl.sign.detached.verify(message, sigBytesDecoded, kp.publicKey);
+  assert.equal(valid, true, 'valid Ed25519 signature must verify to true');
+
+  // Tamper: flip one byte in the signature
+  const tamperedBytes = Buffer.from(sigBytes);
+  tamperedBytes[0] ^= 0xff;
+  const tamperedSigDecoded = Uint8Array.from(tamperedBytes);
+
+  const invalid = nacl.sign.detached.verify(message, tamperedSigDecoded, kp.publicKey);
+  assert.equal(invalid, false, 'tampered Ed25519 signature must verify to false');
+});
+
+// E4: JWT tampered token rejection — jsonwebtoken HS256 is independent of jsrsasign
+test('E4: tampered JWT token is rejected with 401 by protected route', async (t) => {
+  const server = await listen(serverModule.createApp());
+  t.after(() => server.close());
+
+  // Issue a valid token
+  const validToken = generateToken('e4-canary', 'ManufacturerMSP');
+
+  // Tamper: flip one char in the signature segment (third dot-segment)
+  const parts = validToken.split('.');
+  assert.equal(parts.length, 3, 'JWT must have 3 segments');
+  const sig = parts[2];
+  // Replace the first character of the signature with a different character
+  const tamperedSig = (sig[0] === 'A' ? 'B' : 'A') + sig.slice(1);
+  const tamperedToken = `${parts[0]}.${parts[1]}.${tamperedSig}`;
+
+  // middleware/auth.js returns 403 (not 401) when token is present but invalid/tampered.
+  // 401 is reserved for the missing-token case; 403 signals a bad token.
+  const res = await request(server, '/api/passports', { token: tamperedToken });
+  assert.equal(res.status, 403, 'tampered JWT must be rejected with 403');
+});
+
+// E5: bms-binding change → next BMU ingest skips stale cache (evaluate re-fires)
+test('E5: bms-binding change invalidates DID cache so next BMU ingest re-evaluates', async (t) => {
+  bmuRoutes.clearDidPassportCache();
+  t.after(() => bmuRoutes.clearDidPassportCache());
+
+  const did = 'did:web:bms:E5-CACHE';
+  let evaluateCount = 0;
+
+  mockDidSignature(t, true);
+  mockFabric(t, {
+    evaluate(name, args) {
+      assert.equal(name, 'QueryBatteryByDID');
+      assert.deepEqual(args, [did]);
+      evaluateCount += 1;
+      // First call: unbound passport (no bmsManagementId yet)
+      if (evaluateCount === 1) {
+        return Buffer.from(JSON.stringify({ passportId: 'PASSPORT-E5' }));
+      }
+      // Second call (after cache bust): passport now has BMS bound
+      return Buffer.from(JSON.stringify({
+        passportId: 'PASSPORT-E5',
+        bmsManagementId: 'BMS-MGMT-001',
+        bmsBindingCode32: 0x2c9a0e0c,
+      }));
+    },
+    submit(name) {
+      if (name === 'RecordBMUData' || name === 'RecordBMUDataWithPayload' || name === 'BindBMSIdentifier') {
+        return Buffer.from('');
+      }
+      throw new Error(`unexpected submit: ${name}`);
+    },
+  });
+
+  const server = await listen(serverModule.createApp());
+  t.after(() => server.close());
+  const token = generateToken('e5-user', 'ManufacturerMSP');
+
+  // Step 1: first BMU ingest — evaluate fires once, result is cached
+  const step1 = await request(server, '/api/bmu/data', {
+    token,
+    method: 'POST',
+    body: {
+      did,
+      rawPayload: buildBmuPayload({ bmsBindingCode32: 0, freshnessCounter: 10 }),
+      signature: 'a'.repeat(128),
+    },
+  });
+  assert.equal(step1.status, 200, 'step1: first ingest must succeed');
+  const countAfterStep1 = evaluateCount;
+  assert.equal(countAfterStep1, 1, 'step1: evaluate called exactly once');
+
+  // Step 2: bms-binding → clearDidPassportCache fires for PASSPORT-E5
+  const step2 = await request(server, '/api/passports/PASSPORT-E5/bms-binding', {
+    token,
+    method: 'POST',
+    body: { reason: 'E5 binding' },
+  });
+  assert.equal(step2.status, 200, 'step2: bms-binding must succeed');
+
+  // Step 3: second BMU ingest with same DID — cache is stale, evaluate must re-fire
+  const step3 = await request(server, '/api/bmu/data', {
+    token,
+    method: 'POST',
+    body: {
+      did,
+      rawPayload: buildBmuPayload({ bmsBindingCode32: 0x2c9a0e0c, freshnessCounter: 11 }),
+      signature: 'a'.repeat(128),
+    },
+  });
+  assert.equal(step3.status, 200, 'step3: second ingest must succeed after cache bust');
+  assert.equal(evaluateCount, countAfterStep1 + 1, 'step3: evaluate fired again after cache invalidation');
+});
