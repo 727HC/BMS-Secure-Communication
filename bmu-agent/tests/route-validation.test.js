@@ -73,6 +73,14 @@ function mockDidSignature(t, value = true) {
   });
 }
 
+function captureLogs(t) {
+  const captured = [];
+  const orig = console.log;
+  console.log = (...args) => { captured.push(args.join(' ')); orig(...args); };
+  t.after(() => { console.log = orig; });
+  return captured;
+}
+
 function buildBmuPayload({ bmsBindingCode32 = 0, freshnessCounter = 42 } = {}) {
   const buf = Buffer.alloc(48);
   buf.writeFloatLE(-15.25, 0);
@@ -834,10 +842,13 @@ test('vc issue rejects malformed expiresAt before Fabric query', async (t) => {
   assert.equal(queried, false);
 });
 
+// Each reset-fc test uses a unique userId because resetFcRateLimit (5/hour per
+// req.user.userId) bucket persists in module scope across tests. Reuse causes
+// silent 429s for the 6th+ caller.
 test('bmu reset-fc rejects MSP outside Manufacturer/Regulator', async (t) => {
   const server = await listen(serverModule.createApp());
   t.after(() => server.close());
-  const token = generateToken('svc', 'ServiceMSP');
+  const token = generateToken('mfg-rfc-r1', 'ServiceMSP');
 
   const res = await request(server, '/api/bmu/reset-fc', {
     token,
@@ -855,7 +866,7 @@ test('bmu reset-fc rejects reason shorter than 50 chars before Fabric submit', a
   });
   const server = await listen(serverModule.createApp());
   t.after(() => server.close());
-  const token = generateToken('mfg', 'ManufacturerMSP');
+  const token = generateToken('mfg-rfc-r2', 'ManufacturerMSP');
 
   const res = await request(server, '/api/bmu/reset-fc', {
     token,
@@ -876,7 +887,7 @@ test('bmu reset-fc requires confirm:true to acknowledge destructive op', async (
   });
   const server = await listen(serverModule.createApp());
   t.after(() => server.close());
-  const token = generateToken('mfg', 'ManufacturerMSP');
+  const token = generateToken('mfg-rfc-r3', 'ManufacturerMSP');
 
   const res = await request(server, '/api/bmu/reset-fc', {
     token,
@@ -897,7 +908,7 @@ test('bmu reset-fc rejects negative expected_next_fc', async (t) => {
   });
   const server = await listen(serverModule.createApp());
   t.after(() => server.close());
-  const token = generateToken('mfg', 'ManufacturerMSP');
+  const token = generateToken('mfg-rfc-r4', 'ManufacturerMSP');
 
   const res = await request(server, '/api/bmu/reset-fc', {
     token,
@@ -929,7 +940,7 @@ test('bmu reset-fc returns 501 when dual approval is required (feature gated)', 
   });
   const server = await listen(serverModule.createApp());
   t.after(() => server.close());
-  const token = generateToken('mfg', 'ManufacturerMSP');
+  const token = generateToken('mfg-rfc-r5', 'ManufacturerMSP');
 
   const res = await request(server, '/api/bmu/reset-fc', {
     token,
@@ -954,7 +965,7 @@ test('bmu reset-fc submits ResetFCForDID with did + reason on happy path', async
   });
   const server = await listen(serverModule.createApp());
   t.after(() => server.close());
-  const token = generateToken('mfg', 'ManufacturerMSP');
+  const token = generateToken('mfg-rfc-r6', 'ManufacturerMSP');
 
   const res = await request(server, '/api/bmu/reset-fc', {
     token,
@@ -1222,15 +1233,7 @@ test('A4: reset-fc records correct Fabric submit args and emits audit log entry'
   });
 
   // Capture console.log output to verify audit log
-  const captured = [];
-  const originalConsoleLog = console.log;
-  console.log = (...args) => {
-    captured.push(args.join(' '));
-    originalConsoleLog(...args);
-  };
-  t.after(() => {
-    console.log = originalConsoleLog;
-  });
+  const captured = captureLogs(t);
 
   const server = await listen(serverModule.createApp());
   t.after(() => server.close());
@@ -1242,9 +1245,6 @@ test('A4: reset-fc records correct Fabric submit args and emits audit log entry'
     method: 'POST',
     body: { did, reason, confirm: true },
   });
-
-  // Restore console.log before assertions to avoid polluting further test output
-  console.log = originalConsoleLog;
 
   // Assert response
   assert.equal(res.status, 200);
@@ -1353,13 +1353,7 @@ test('B3: reset-fc audit log records expectedNextFc=0 when provided and null whe
   const server = await listen(serverModule.createApp());
   t.after(() => server.close());
 
-  const captured = [];
-  const originalConsoleLog = console.log;
-  console.log = (...args) => {
-    captured.push(args.join(' '));
-    originalConsoleLog(...args);
-  };
-  t.after(() => { console.log = originalConsoleLog; });
+  const captured = captureLogs(t);
 
   const baseReason = 'B3 audit log expectedNextFc test - fc reset after authorized firmware upgrade procedure';
 
@@ -1389,8 +1383,6 @@ test('B3: reset-fc audit log records expectedNextFc=0 when provided and null whe
     },
   });
   assert.equal(resB.status, 200);
-
-  console.log = originalConsoleLog;
 
   // Parse all captured audit entries for ResetFCForDID
   const auditEntries = captured
@@ -1438,18 +1430,13 @@ test('D1: successful BMU POST emits BMUIngest log with all required fields and n
   t.after(() => server.close());
   const token = generateToken('mfg-d1', 'ManufacturerMSP');
 
-  const captured = [];
-  const origLog = console.log;
-  console.log = (...args) => { captured.push(args.join(' ')); origLog(...args); };
-  t.after(() => { console.log = origLog; });
+  const captured = captureLogs(t);
 
   const res = await request(server, '/api/bmu/data', {
     token,
     method: 'POST',
     body: { did, rawPayload, signature: 'a'.repeat(128) },
   });
-
-  console.log = origLog;
 
   assert.equal(res.status, 200);
 
@@ -1490,18 +1477,13 @@ test('D2: missing rawPayload still emits BMUIngest log with null fields then ret
   t.after(() => server.close());
   const token = generateToken('mfg-d2', 'ManufacturerMSP');
 
-  const captured = [];
-  const origLog = console.log;
-  console.log = (...args) => { captured.push(args.join(' ')); origLog(...args); };
-  t.after(() => { console.log = origLog; });
+  const captured = captureLogs(t);
 
   const res = await request(server, '/api/bmu/data', {
     token,
     method: 'POST',
     body: { did, signature: 'a'.repeat(128) },
   });
-
-  console.log = origLog;
 
   assert.equal(res.status, 400, 'must return 400 due to missing rawPayload');
   assert.equal(res.body.category, 'VAL');
@@ -1538,18 +1520,13 @@ test('D3: BMUIngest log never contains signature body, only sigLen integer', asy
   t.after(() => server.close());
   const token = generateToken('mfg-d3', 'ManufacturerMSP');
 
-  const captured = [];
-  const origLog = console.log;
-  console.log = (...args) => { captured.push(args.join(' ')); origLog(...args); };
-  t.after(() => { console.log = origLog; });
+  const captured = captureLogs(t);
 
   const res = await request(server, '/api/bmu/data', {
     token,
     method: 'POST',
     body: { did, rawPayload, signature },
   });
-
-  console.log = origLog;
 
   assert.equal(res.status, 200);
 
