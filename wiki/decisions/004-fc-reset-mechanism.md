@@ -178,6 +178,26 @@ CANoe rogue replay(`fc=74483`) 격리 + DID 회전 후 새 DID `HgBpAxtHJ4qRwsNi
 - 부팅 시 NVM 읽기 + `g_freshness_counter` 초기화 코드 위치 (`main.c` BMU 측)
 - 실제 구현은 옵션 A 무산 또는 운영상 reset 절차가 부적합하다고 판단될 때만 진행
 
+## Update 2026-05-22 — Option B 구현 완료 ([ADR-007](./007-bmu-fc-nvm-persistence.md))
+
+Option B (HSE Monotonic Counter NVM 영속화) 구현 + 실보드 검증 완료. 자세한 결정은 [ADR-007](./007-bmu-fc-nvm-persistence.md).
+
+### Option A의 새 역할
+
+`ResetFCForDID`는 폐기되지 않고 **DID 회전 fail-safe**로 유지:
+
+1. DID 회전 시 옛 DID의 chain lastFc 정리 — Option B는 새 DID에 영향 없음
+2. NVM read 영구 실패 시 운영자 복구 절차 — BMU 측 `[FATAL] HSE counter read failed` halt 후
+3. 256-boot wrap (Option B의 known limit, ~85일) 도달 시 신규 DID로 회전 + 옛 DID 정리
+
+평상시 (보드 reset 1~수회/일) `ResetFCForDID` 호출 0회/일 기대. 호출 발생 시 위 3개 시나리오 중 하나 — root cause 분석 필수.
+
+### 변경된 운영 절차
+
+- 보드 reset 후 운영자 수동 chaincode 호출 **불필요** — BMU가 자동으로 chain에 monotonic FC 전송
+- bridge `--min-fc` 가드도 평상시 불필요 — Option B로 FC가 자동 catch-up
+- MCP monitor에 새 alert 등록 권장 (ADR-007 Operations Notes 섹션)
+
 ## 금지/주의
 
 - Agent/bridge가 자동으로 `ResetFCForDID`를 호출하면 안 된다.

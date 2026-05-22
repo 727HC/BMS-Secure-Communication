@@ -441,7 +441,7 @@ peer chaincode invoke -C bms-channel -n passport-contract \
 
 향후 `bmu-agent`에 `/api/bmu/reset-fc` HTTP endpoint + admin UI가 추가되면 manual peer invoke를 대체.
 
-장기 hardening — [HSE Monotonic Counter로 FC 영속화](../wiki/embedded/option-b-hse-nvm-fc-feasibility.md)는 production 진입 시 1순위 항목.
+**Option B 구현 완료 (2026-05-22, [ADR-007](../wiki/decisions/007-bmu-fc-nvm-persistence.md))**: BMU FC는 HSE Monotonic Counter slot 0에 NVM 영속화. 보드 reset 후 `ResetFCForDID` 수동 호출 불필요. `ResetFCForDID`는 DID 회전 시 fail-safe로만 유지. NVM read 실패 3회 시 BMU는 `[FATAL]` 로그 후 halt — UART 확인 필수.
 
 ### CANoe 함께 사용 시 (운영 규칙)
 
