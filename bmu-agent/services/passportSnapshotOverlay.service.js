@@ -39,18 +39,26 @@ function latestRecord(records) {
 function overlayLatestBmu(passport, latest) {
   if (!passport || !latest) return passport;
   const recordId = latest.recordId || latest.id || passport.lastBMUDataID || passport.lastBmuDataId;
+  const latestSoc = latest.soc ?? latest.currentSoc;
+  const latestTemperature = latest.temperature ?? latest.currentTemperature;
+  const latestStatusFlags = latest.statusFlags ?? latest.currentStatusFlags;
+  const latestDischargeCycles = latest.dischargeCycles ?? latest.totalDischargeCycles;
+  const latestRawPayloadHashVerified = latest.rawPayloadHashVerified ?? latest.latestRawPayloadHashVerified;
+  const latestDataHash = latest.dataHash ?? latest.latestDataHash;
   return {
     ...passport,
-    currentSoc: latest.soc ?? passport.currentSoc,
-    temperature: latest.temperature ?? passport.temperature,
-    statusFlags: latest.statusFlags ?? passport.statusFlags,
-    totalDischargeCycles: latest.dischargeCycles ?? latest.totalDischargeCycles ?? passport.totalDischargeCycles,
+    currentSoc: latestSoc ?? passport.currentSoc,
+    currentTemperature: latestTemperature ?? passport.currentTemperature,
+    temperature: latestTemperature ?? passport.temperature,
+    currentStatusFlags: latestStatusFlags ?? passport.currentStatusFlags,
+    statusFlags: latestStatusFlags ?? passport.statusFlags,
+    totalDischargeCycles: latestDischargeCycles ?? passport.totalDischargeCycles,
     lastBmuDataId: recordId,
     lastBMUDataID: recordId,
     bmsBindingCode32: latest.bmsBindingCode32 ?? passport.bmsBindingCode32,
     bmsBindingCodeHex: latest.bmsBindingCodeHex ?? passport.bmsBindingCodeHex,
-    latestRawPayloadHashVerified: latest.rawPayloadHashVerified ?? passport.latestRawPayloadHashVerified,
-    latestDataHash: latest.dataHash ?? passport.latestDataHash,
+    latestRawPayloadHashVerified: latestRawPayloadHashVerified ?? passport.latestRawPayloadHashVerified,
+    latestDataHash: latestDataHash ?? passport.latestDataHash,
     updatedAt: latest.timestamp || passport.updatedAt,
   };
 }

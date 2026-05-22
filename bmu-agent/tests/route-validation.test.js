@@ -25,6 +25,7 @@ const fabricService = require('../services/fabric.service');
 const didService = require('../services/did.service');
 const bmuRoutes = require('../routes/bmu.routes');
 const {
+  getRuntimeBmuSnapshot,
   recordRuntimeBmuSnapshot,
   clearRuntimeBmuSnapshots,
 } = require('../services/runtimeBmuSnapshot.service');
@@ -134,6 +135,8 @@ test('passport detail overlays latest BMU data when snapshot fields are stale', 
         return Buffer.from(JSON.stringify({
           passportId: 'PASSPORT-1',
           currentSoc: 0,
+          currentTemperature: 0,
+          currentStatusFlags: 0,
           currentSoh: 100,
           totalDischargeCycles: 0,
           updatedAt: '2026-05-08T00:00:00Z',
@@ -166,7 +169,9 @@ test('passport detail overlays latest BMU data when snapshot fields are stale', 
 
   assert.equal(res.status, 200);
   assert.equal(res.body.currentSoc, 50000);
+  assert.equal(res.body.currentTemperature, 34567);
   assert.equal(res.body.temperature, 34567);
+  assert.equal(res.body.currentStatusFlags, 3);
   assert.equal(res.body.totalDischargeCycles, 9);
   assert.equal(res.body.lastBMUDataID, 'BMU-LATEST');
   assert.equal(res.body.latestRawPayloadHashVerified, true);
@@ -545,6 +550,8 @@ test('bmu data exposes bmsBindingCode32 evidence after successful ingest', async
 });
 
 test('bmu data uses RecordBMUDataWithPayload when passport has BMS binding and reports comparison result', async (t) => {
+  clearRuntimeBmuSnapshots();
+  t.after(() => clearRuntimeBmuSnapshots());
   let submitted;
   const did = 'did:web:bms:BOUND';
   const rawPayload = buildBmuPayload({ bmsBindingCode32: 0x2c9a0e0c, freshnessCounter: 77 });
@@ -584,6 +591,7 @@ test('bmu data uses RecordBMUDataWithPayload when passport has BMS binding and r
   assert.equal(res.body.bindingSignals.expectedBmsBindingCode32, 0x2c9a0e0c);
   assert.equal(submitted.name, 'RecordBMUDataWithPayload');
   assert.equal(submitted.args[14], rawPayload);
+  assert.equal(getRuntimeBmuSnapshot('PASSPORT-BOUND').rawPayloadHashVerified, true);
 });
 
 test('bmu data rejects BMS binding code mismatch before chaincode submit', async (t) => {
@@ -630,6 +638,7 @@ test('realtime passport falls back to Fabric and overlays latest BMU record', as
         return Buffer.from(JSON.stringify({
           passportId: 'PASSPORT-1',
           currentSoc: 0,
+          currentTemperature: 0,
           temperature: null,
           updatedAt: '2026-05-08T00:00:00Z',
         }));
@@ -662,7 +671,9 @@ test('realtime passport falls back to Fabric and overlays latest BMU record', as
 
   assert.equal(res.status, 200);
   assert.equal(res.body.currentSoc, 32768);
+  assert.equal(res.body.currentTemperature, 4567);
   assert.equal(res.body.temperature, 4567);
+  assert.equal(res.body.currentStatusFlags, 7);
   assert.equal(res.body.statusFlags, 7);
   assert.equal(res.body.totalDischargeCycles, 1234);
   assert.equal(res.body.lastBMUDataID, 'BMU-1');
@@ -702,6 +713,7 @@ test('realtime passport list falls back to Fabric and prepends runtime BMU passp
         return Buffer.from(JSON.stringify({
           passportId: 'PASSPORT-LIVE',
           currentSoc: 0,
+          currentTemperature: 0,
           updatedAt: '2026-05-08T00:00:00Z',
         }));
       }
@@ -717,7 +729,9 @@ test('realtime passport list falls back to Fabric and prepends runtime BMU passp
   assert.equal(res.status, 200);
   assert.equal(res.body.records[0].passportId, 'PASSPORT-LIVE');
   assert.equal(res.body.records[0].currentSoc, 40000);
+  assert.equal(res.body.records[0].currentTemperature, 33000);
   assert.equal(res.body.records[0].temperature, 33000);
+  assert.equal(res.body.records[0].currentStatusFlags, 1);
   assert.equal(res.body.records[0].lastBMUDataID, 'BMU-LIVE');
   assert.equal(res.body.records[1].passportId, 'PASSPORT-OLD');
 });

@@ -284,6 +284,7 @@ router.post('/data', authenticateToken, requireMSP(MSP.MANUFACTURER), bmuRateLim
       timestamp,
       bmsBindingCode32: parsed.bmsBindingCode32,
       bmsBindingCodeHex: parsed.bmsBindingCodeHex,
+      rawPayloadHashVerified: txName === 'RecordBMUDataWithPayload' ? true : undefined,
     });
 
     log.info('BMU recorded', {
