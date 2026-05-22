@@ -100,6 +100,25 @@ extern "C" {
 #define FC_WINDOW_SIZE              100U    /* Freshness counter acceptance window */
 
 /*============================================================================
+ *  HSE Monotonic Counter Slot Allocation (Option B — BMU FC NVM persistence)
+ *  Slot  | Purpose                            | Owner
+ *  ------+------------------------------------+---------
+ *  0     | BMU Frame Counter (anti-replay)    | Option B
+ *  1-15  | Reserved for future use            | -
+ *
+ *  RPBitSize=40 (40-bit Rollover Protection + 24-bit Volatile Counter)
+ *  provides 5,400+ year NVM headroom at our 5fps frame rate.
+ *  Reference: wiki/embedded/option-b-hse-nvm-fc-feasibility.md
+ *  ADR: wiki/decisions/007-bmu-fc-nvm-persistence.md
+ *============================================================================*/
+#define HSE_COUNTER_SLOT_BMU_FC     (0U)
+#define HSE_COUNTER_RP_BITSIZE      (40U)
+/* VC size = 64 - RPBitSize = 24 bits. Advancing by 2^24 forces RP update on every
+ * boot, ensuring cross-boot monotonicity (small per-frame increments stay in VC
+ * which is RAM-only and lost on power cycle). */
+#define HSE_COUNTER_EPOCH_STEP      (0x01000000U)  /* 2^24, one VC overflow */
+
+/*============================================================================
  *  CAN-FD Hardware
  *============================================================================*/
 #define CANFD_TDC_OFFSET            6U      /* Transceiver Delay Compensation  */

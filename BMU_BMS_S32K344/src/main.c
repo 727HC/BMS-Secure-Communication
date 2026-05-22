@@ -124,7 +124,8 @@ static Hse_Ip_MuStateType g_hse_mu_state;
  *  State Variables
  *============================================================================*/
 static ProtocolState_t  g_proto_state = PROTO_STATE_INIT;
-static uint32           g_expected_fc = 0U;
+static uint32           g_expected_fc = 0U;   /* CMU-side FC (per-session, resets via key exchange) */
+static uint32           g_chain_fc    = 0U;   /* BMU-side FC sent to chain — globally monotonic, NVM-seeded (ADR-007) */
 static uint8            g_cmac_fail_count = 0U;
 
 /* Decrypted key material */
@@ -330,6 +331,118 @@ static hseSrvResponse_t BMU_FormatKeyCatalogs(void)
                                      .pCallbackParam  = NULL_PTR,
                                      .u32Timeout      = HSE_TIMEOUT_TICKS
                                  }, pDesc);
+}
+
+/*============================================================================
+ *  HSE Monotonic Counter Helpers (Option B — BMU FC NVM persistence)
+ *  ADR-007. Probe-validated 2026-05-22: config 93ms (boot 1x), read 126us,
+ *  increment 197us (per-frame Mode 1 safe).
+ *============================================================================*/
+
+/** Configure HSE monotonic counter slot for BMU FC (idempotent via read-first guard).
+ *  Returns HSE_SRV_RSP_OK on success OR if already configured.
+ *  hseConfigSecCounter is NOT idempotent (re-config wipes counter), so we read
+ *  first: if read succeeds, counter is already configured and we skip config. */
+static hseSrvResponse_t BMU_ConfigureFcCounter(void)
+{
+    uint64_t probe = 0ULL;
+    uint8 ch;
+    hseSrvDescriptor_t *pd;
+    hseSrvResponse_t rsp;
+    const Hse_Ip_ReqType req = {
+        .eReqType       = HSE_IP_REQTYPE_SYNC,
+        .pfCallback     = NULL_PTR,
+        .pCallbackParam = NULL_PTR,
+        .u32Timeout     = HSE_TIMEOUT_TICKS
+    };
+
+    /* Read-first guard: if read returns OK, counter already configured -> skip config */
+    ch = Hse_Ip_GetFreeChannel(HSE_MU_INSTANCE);
+    pd = &g_hse_srv_desc[ch];
+    memset(pd, 0, sizeof(hseSrvDescriptor_t));
+    pd->srvId = HSE_SRV_ID_READ_COUNTER;
+    pd->hseSrv.readCounterReq.counterIndex = HSE_COUNTER_SLOT_BMU_FC;
+    pd->hseSrv.readCounterReq.pCounterVal  = (HOST_ADDR)&probe;
+    rsp = Hse_Ip_ServiceRequest(HSE_MU_INSTANCE, ch, (Hse_Ip_ReqType *)&req, pd);
+    if (rsp == HSE_SRV_RSP_OK) {
+        return HSE_SRV_RSP_OK;
+    }
+
+    /* Not configured (typically HSE_SRV_RSP_INVALID_PARAM=0x55A5A399) -> configure now */
+    ch = Hse_Ip_GetFreeChannel(HSE_MU_INSTANCE);
+    pd = &g_hse_srv_desc[ch];
+    memset(pd, 0, sizeof(hseSrvDescriptor_t));
+    pd->srvId = HSE_SRV_ID_CONFIG_COUNTER;
+    pd->hseSrv.configSecCounter.counterIndex = HSE_COUNTER_SLOT_BMU_FC;
+    pd->hseSrv.configSecCounter.RPBitSize    = HSE_COUNTER_RP_BITSIZE;
+    return Hse_Ip_ServiceRequest(HSE_MU_INSTANCE, ch, (Hse_Ip_ReqType *)&req, pd);
+}
+
+/** Read BMU FC counter from HSE NVM with 3-retry fail-safe.
+ *  Returns HSE_SRV_RSP_OK + value via out pointer, or halts on persistent failure.
+ *  Fail-safe policy (spec Q6): silent fallback risks anti-replay bypass, so we
+ *  emit a visible [FATAL] UART message and spin forever. */
+static hseSrvResponse_t BMU_ReadFcCounter(uint64_t *out)
+{
+    const Hse_Ip_ReqType req = {
+        .eReqType       = HSE_IP_REQTYPE_SYNC,
+        .pfCallback     = NULL_PTR,
+        .pCallbackParam = NULL_PTR,
+        .u32Timeout     = HSE_TIMEOUT_TICKS
+    };
+    hseSrvResponse_t rsp = HSE_SRV_RSP_GENERAL_ERROR;
+    uint8 attempt;
+    for (attempt = 0U; attempt < 3U; attempt++) {
+        uint8 ch = Hse_Ip_GetFreeChannel(HSE_MU_INSTANCE);
+        hseSrvDescriptor_t *pd = &g_hse_srv_desc[ch];
+        memset(pd, 0, sizeof(hseSrvDescriptor_t));
+        pd->srvId = HSE_SRV_ID_READ_COUNTER;
+        pd->hseSrv.readCounterReq.counterIndex = HSE_COUNTER_SLOT_BMU_FC;
+        pd->hseSrv.readCounterReq.pCounterVal  = (HOST_ADDR)out;
+        rsp = Hse_Ip_ServiceRequest(HSE_MU_INSTANCE, ch, (Hse_Ip_ReqType *)&req, pd);
+        if (rsp == HSE_SRV_RSP_OK) {
+            return rsp;
+        }
+    }
+    UART_SendString("[FATAL] HSE counter read failed status=0x");
+    { static const char hx[]="0123456789ABCDEF"; uint32 v=(uint32)rsp;
+      int i; for(i=28;i>=0;i-=4) UART_SendChar(hx[(v>>i)&0xF]); }
+    UART_SendString(" after 3 retries - halting\r\n");
+    for (;;) { /* spin */ }
+}
+
+/** Advance BMU FC counter epoch by 2^24 (boot-time only).
+ *  HSE Monotonic Counter NVM persistence model: only Rollover Protection (RP) part
+ *  is written to flash; Volatile Counter (VC) part is RAM-only and lost on power.
+ *  With RPBitSize=40, VC is 24 bits — small increments stay in VC and are lost on
+ *  reboot. Advancing by 2^24 (HSE_COUNTER_EPOCH_STEP) forces RP update on every
+ *  boot, guaranteeing cross-boot monotonicity: boot N reads epoch N*2^24.
+ *  Wear: ~3 boots/day * 365 = 1095 RP-updates/year vs 51.1M NVM budget = 46,000+
+ *  year lifetime. Per-frame increments are RAM-only (g_expected_fc in main.c). */
+static hseSrvResponse_t BMU_AdvanceFcEpoch(void)
+{
+    const Hse_Ip_ReqType req = {
+        .eReqType       = HSE_IP_REQTYPE_SYNC,
+        .pfCallback     = NULL_PTR,
+        .pCallbackParam = NULL_PTR,
+        .u32Timeout     = HSE_TIMEOUT_TICKS
+    };
+    uint8 ch = Hse_Ip_GetFreeChannel(HSE_MU_INSTANCE);
+    hseSrvDescriptor_t *pd = &g_hse_srv_desc[ch];
+    memset(pd, 0, sizeof(hseSrvDescriptor_t));
+    pd->srvId = HSE_SRV_ID_INCREMENT_COUNTER;
+    pd->hseSrv.incCounterReq.counterIndex = HSE_COUNTER_SLOT_BMU_FC;
+    pd->hseSrv.incCounterReq.value        = HSE_COUNTER_EPOCH_STEP;
+    hseSrvResponse_t rsp = Hse_Ip_ServiceRequest(HSE_MU_INSTANCE, ch,
+                                                  (Hse_Ip_ReqType *)&req, pd);
+    if (rsp != HSE_SRV_RSP_OK) {
+        UART_SendString("[FATAL] HSE FC epoch advance failed status=0x");
+        { static const char hx[]="0123456789ABCDEF"; uint32 v=(uint32)rsp;
+          int i; for(i=28;i>=0;i-=4) UART_SendChar(hx[(v>>i)&0xF]); }
+        UART_SendString(" - halting\r\n");
+        for (;;) { /* spin — anti-replay protection requires cross-boot monotonicity */ }
+    }
+    return rsp;
 }
 
 /** Import a symmetric key into HSE RAM catalog */
@@ -605,8 +718,9 @@ static boolean BMU_HandleKeyExchange(const uint8 *rx_data)
     /* Clear session key from RAM */
     memset(g_session_key, 0, AES_KEY_SIZE);
 
-    /* 7. Reset freshness counter */
-    g_expected_fc = 1U;  /* CMU starts at 1 (pre-increments) */
+    /* 7. Reset freshness counter for CMU-side per-session anti-replay.
+     * BMU's chain-side FC (g_chain_fc) keeps monotonic across key exchanges — set at boot only. */
+    g_expected_fc = 1U;
     g_cmac_fail_count = 0U;
 
     UART_SendString("[BMU] Session key derived and imported\r\n");
@@ -688,7 +802,7 @@ static boolean BMU_VerifySecuredData(const uint8 *rx_payload)
         {
             /* Copy decrypted data back so downstream parsing works unchanged */
             memcpy((uint8 *)rx_payload, g_decrypted_payload, BATTERY_DATA_SIZE);
-            g_expected_fc = rx_fc + 1U;
+            g_expected_fc = rx_fc + 1U;  /* RAM-only per-frame (boot epoch advance handles cross-boot) */
             g_cmac_fail_count = 0U;
             decrypted = TRUE;
         }
@@ -735,7 +849,7 @@ static boolean BMU_VerifySecuredData(const uint8 *rx_payload)
         return FALSE;
     }
 
-    g_expected_fc = rx_fc + 1U;
+    g_expected_fc = rx_fc + 1U;  /* RAM-only per-frame (boot epoch advance handles cross-boot) */
     g_cmac_fail_count = 0U;
     return TRUE;
 #endif
@@ -1043,6 +1157,39 @@ int main(void)
           int i; for(i=28;i>=0;i-=4) UART_SendChar(hx[(v>>i)&0xF]); }
         UART_SendString("\r\n");
 
+        /* === Option B: HSE Monotonic Counter NVM-backed BMU FC (ADR-007) ===
+         * Pre-scheduler boot sequence: configure (one-time, idempotent via
+         * read-first guard) + read NVM value -> seed g_expected_fc. */
+        {
+            hseSrvResponse_t fc_cfg = BMU_ConfigureFcCounter();
+            UART_SendString("[HSE] FcCfg=0x");
+            { static const char hx[]="0123456789ABCDEF"; uint32 v=(uint32)fc_cfg;
+              int i; for(i=28;i>=0;i-=4) UART_SendChar(hx[(v>>i)&0xF]); }
+            UART_SendString("\r\n");
+            if (fc_cfg != HSE_SRV_RSP_OK) {
+                UART_SendString("[FATAL] FC counter config failed - halting\r\n");
+                for (;;) { /* spin */ }
+            }
+            /* Advance epoch by 2^24 to force RP write -> persists across power cycle.
+             * Halts on failure (anti-replay protection requires cross-boot monotonicity). */
+            (void)BMU_AdvanceFcEpoch();
+            uint64_t fc_initial = 0ULL;
+            (void)BMU_ReadFcCounter(&fc_initial);
+            /* g_chain_fc is BMU's globally monotonic FC sent to chaincode.
+             * Initialized from NVM (epoch * 2^24); persists across boot/keyexchange/resync.
+             * Wraps at 256 boots (2^32 / 2^24) — document as known limit, mitigated by DID rotation. */
+            g_chain_fc = (uint32)(fc_initial & 0xFFFFFFFFULL);
+            /* g_expected_fc tracks CMU-side per-session FC (resets via key exchange). */
+            g_expected_fc = 0U;
+            UART_SendString("[HSE] FC=0x");
+            { static const char hx[]="0123456789ABCDEF"; uint32 v=g_chain_fc;
+              int i; for(i=28;i>=0;i-=4) UART_SendChar(hx[(v>>i)&0xF]); }
+            UART_SendString(" hi=0x");
+            { static const char hx[]="0123456789ABCDEF"; uint32 v=(uint32)(fc_initial >> 32);
+              int i; for(i=28;i>=0;i-=4) UART_SendChar(hx[(v>>i)&0xF]); }
+            UART_SendString("\r\n");
+        }
+
         #ifdef BMS_MODE_EDDSA
         /* Ed25519: generate key pair with TweetNaCl, then try HSE HW import */
         {
@@ -1271,8 +1418,14 @@ static void BMU_ProtocolTask(void *pvParameters)
                     g_batt_cellV0  = batt->cell_voltage[0];
                     g_batt_cellV1  = batt->cell_voltage[1];
 
-                    /* Forward to DataProcessTask for UART output + EDDSA */
-                    item.fc = g_expected_fc - 1U;
+                    /* Forward to DataProcessTask for UART output + EdDSA signing.
+                     * Rewrite freshness_counter in the payload to BMU's globally monotonic
+                     * chain FC. CMU-side CMAC verification already passed using CMU's FC;
+                     * the EdDSA signature will be over the rewritten payload so chaincode's
+                     * extracted FC matches what BMU signed. (ADR-007) */
+                    ((BatteryData_t *)item.data)->freshness_counter = g_chain_fc;
+                    item.fc = g_chain_fc;
+                    g_chain_fc++;
                     if (xQueueSend(procQueue, &item, 0U) != pdPASS)
                     {
                         g_procQueueDropCount++;
@@ -1297,6 +1450,7 @@ static void BMU_ProtocolTask(void *pvParameters)
             xQueueReset(dataQueue);
             xQueueReset(procQueue);
             g_cmac_fail_count = 0U;
+            /* Resync resets CMU-side counter only. g_chain_fc keeps monotonic. */
             g_expected_fc = 0U;
             if (BMU_ImportSymKey(HSE_PSK_KEY_HANDLE, PreSharedKey, AES_KEY_BITS)
                 != HSE_SRV_RSP_OK)
