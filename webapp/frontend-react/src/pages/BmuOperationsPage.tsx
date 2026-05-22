@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import { PageHead } from '../components/ui';
 import { useAuth } from '../contexts/AuthContext';
@@ -14,16 +14,72 @@ type SubmitState =
   | { kind: 'success'; did: string }
   | { kind: 'error'; message: string };
 
+type BmuOperationAlert = {
+  id: string;
+  type: 'RESET_FC_CALLED' | 'FC_WRAP_NEAR' | string;
+  severity: 'red' | 'yellow' | string;
+  title: string;
+  message: string;
+  createdAt?: string;
+  did?: string | null;
+  passportId?: string | null;
+  fcHex?: string | null;
+};
+
+type BmuOperationsStatus = {
+  optionB?: {
+    expectedResetFcCallsPerDay?: number;
+    fcPattern?: string;
+  };
+  fcWindow?: {
+    status?: 'normal' | 'yellow' | string;
+    observationCount?: number;
+    maxFcHex?: string | null;
+    maxObservedAt?: string | null;
+    thresholdHex?: string | null;
+    maxDid?: string | null;
+    maxPassportId?: string | null;
+    maxBootSlot?: number | null;
+  };
+  resetFcDailyCount?: number;
+  alerts?: BmuOperationAlert[];
+};
+
+type StatusState =
+  | { kind: 'loading' }
+  | { kind: 'ready'; data: BmuOperationsStatus }
+  | { kind: 'error'; message: string };
+
 export default function BmuOperationsPage() {
   const { org } = useAuth();
+  const allowed = !!org && ALLOWED_ORGS.has(org);
   const [did, setDid] = useState('');
   const [didConfirm, setDidConfirm] = useState('');
   const [reason, setReason] = useState('');
   const [expectedNextFc, setExpectedNextFc] = useState('');
   const [confirm, setConfirm] = useState(false);
   const [submit, setSubmit] = useState<SubmitState>({ kind: 'idle' });
+  const [status, setStatus] = useState<StatusState>({ kind: 'loading' });
 
-  if (!org || !ALLOWED_ORGS.has(org)) {
+  useEffect(() => {
+    if (!allowed) return undefined;
+    let cancelled = false;
+    setStatus({ kind: 'loading' });
+    api.get<BmuOperationsStatus>('/bmu/operations/status')
+      .then((data) => {
+        if (!cancelled) setStatus({ kind: 'ready', data });
+      })
+      .catch((err) => {
+        const message =
+          err instanceof ApiError ? `${err.status} ${err.message}` : (err as Error).message;
+        if (!cancelled) setStatus({ kind: 'error', message });
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [allowed]);
+
+  if (!allowed) {
     return <Navigate to="/dashboard" replace />;
   }
 
@@ -86,9 +142,11 @@ export default function BmuOperationsPage() {
     <>
       <PageHead
         eyebrow="BMU 운영"
-        title="FC 재동기화"
+        title="BMU 상태와 FC fail-safe"
         subtitle={`현재 권한: ${MSP_LABELS[org] ?? org}. 이 화면의 작업은 모두 감사 로그에 영구 기록됩니다.`}
       />
+
+      <StatusPanel state={status} />
 
       <section
         role="alert"
@@ -102,12 +160,12 @@ export default function BmuOperationsPage() {
         }}
       >
         <p style={{ margin: 0, fontWeight: 700, fontSize: '0.95rem' }}>
-          ⚠ 파괴적 작업입니다
+          ⚠ ResetFCForDID는 평상시 사용하지 않는 fail-safe입니다
         </p>
         <p className="sn-body" style={{ margin: '0.4rem 0 0', fontSize: '0.9rem' }}>
-          ResetFCForDID는 해당 DID의 lastFc 카운터를 0으로 초기화합니다. passport binding은
-          유지되지만, 재전송 공격 방어 윈도우가 일시적으로 넓어집니다. 장비 재부팅·교체·DID
-          재프로비저닝 등 명확한 운영 사유에만 사용하세요.
+          Option B 적용 후 BMU가 HSE NVM 기반 FC를 자동 복원하므로 일상 reset 호출은
+          0회/일이 정상입니다. 이 버튼은 DID 회전, counter 손상, embedded fail-safe halt,
+          256-boot wrap 근접 같은 비상 상황에만 사용하세요.
         </p>
       </section>
 
@@ -259,6 +317,115 @@ export default function BmuOperationsPage() {
     </>
   );
 }
+
+function StatusPanel({ state }: { state: StatusState }) {
+  if (state.kind === 'loading') {
+    return (
+      <section className="sn-panel" style={statusPanelStyle}>
+        <p className="sn-eyebrow" style={{ margin: 0 }}>Option B 상태</p>
+        <p className="sn-body" style={{ margin: '0.35rem 0 0' }}>BMU 운영 상태를 불러오는 중입니다.</p>
+      </section>
+    );
+  }
+
+  if (state.kind === 'error') {
+    return (
+      <section className="sn-panel" style={statusPanelStyle}>
+        <p className="sn-eyebrow" style={{ margin: 0 }}>Option B 상태</p>
+        <p style={{ margin: '0.35rem 0 0', color: 'var(--color-danger, #ef4444)' }}>
+          상태 조회 실패: {state.message}
+        </p>
+      </section>
+    );
+  }
+
+  const { data } = state;
+  const fc = data.fcWindow;
+  const alerts = data.alerts || [];
+  const hasYellow = fc?.status === 'yellow' || alerts.some((a) => a.severity === 'yellow');
+  const hasRed = alerts.some((a) => a.severity === 'red');
+  const borderColor = hasRed
+    ? 'var(--color-danger, #ef4444)'
+    : hasYellow
+      ? 'var(--color-warning, #f59e0b)'
+      : 'var(--color-border)';
+
+  return (
+    <section className="sn-panel" style={{ ...statusPanelStyle, borderColor }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', gap: '1rem', flexWrap: 'wrap' }}>
+        <div>
+          <p className="sn-eyebrow" style={{ margin: 0 }}>Option B 상태</p>
+          <h2 style={{ margin: '0.25rem 0 0', fontSize: '1.05rem' }}>
+            HSE NVM-backed FC persistence
+          </h2>
+          <p className="sn-body" style={{ margin: '0.4rem 0 0', fontSize: '0.88rem' }}>
+            {data.optionB?.fcPattern || '0xNN000000 boot jump-start 패턴으로 BMU가 FC를 재작성합니다.'}
+          </p>
+        </div>
+        <div style={{ textAlign: 'right' }}>
+          <p className="sn-eyebrow" style={{ margin: 0 }}>최근 24h reset-fc</p>
+          <strong style={{ fontSize: '1.4rem', color: hasRed ? 'var(--color-danger, #ef4444)' : 'var(--color-text-1)' }}>
+            {data.resetFcDailyCount ?? 0}
+          </strong>
+          <span className="sn-body"> 회</span>
+        </div>
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: '0.75rem', marginTop: '1rem' }}>
+        <Metric label="24h max FC" value={fc?.maxFcHex || '미수집'} />
+        <Metric label="wrap yellow 기준" value={fc?.thresholdHex || '0xf8000000'} />
+        <Metric label="boot slot" value={fc?.maxBootSlot == null ? '-' : String(fc.maxBootSlot)} />
+        <Metric label="관측 건수" value={String(fc?.observationCount ?? 0)} />
+      </div>
+
+      {alerts.length > 0 ? (
+        <div style={{ marginTop: '1rem', display: 'flex', flexDirection: 'column', gap: '0.55rem' }}>
+          {alerts.slice(0, 5).map((alert) => (
+            <article
+              key={alert.id}
+              style={{
+                padding: '0.7rem 0.8rem',
+                borderRadius: 10,
+                border: `1px solid ${alert.severity === 'red' ? 'var(--color-danger, #ef4444)' : 'var(--color-warning, #f59e0b)'}`,
+                background: 'color-mix(in srgb, var(--color-surface) 85%, transparent)',
+              }}
+            >
+              <p style={{ margin: 0, fontWeight: 700 }}>
+                {alert.severity === 'red' ? '🚨' : '⚠'} {alert.title}
+              </p>
+              <p className="sn-body" style={{ margin: '0.25rem 0 0', fontSize: '0.85rem' }}>
+                {alert.message}
+              </p>
+              <p className="sn-stat-note" style={{ margin: '0.3rem 0 0' }}>
+                {[alert.did, alert.passportId, alert.fcHex, alert.createdAt].filter(Boolean).join(' · ')}
+              </p>
+            </article>
+          ))}
+        </div>
+      ) : (
+        <p className="sn-stat-note" style={{ margin: '0.9rem 0 0' }}>
+          현재 BMU 운영 alert 없음. reset-fc는 0회/일 상태를 유지하는 것이 정상입니다.
+        </p>
+      )}
+    </section>
+  );
+}
+
+function Metric({ label, value }: { label: string; value: string }) {
+  return (
+    <div style={{ padding: '0.65rem', borderRadius: 10, background: 'var(--color-surface)' }}>
+      <p className="sn-eyebrow" style={{ margin: 0, fontSize: '0.7rem' }}>{label}</p>
+      <p style={{ margin: '0.25rem 0 0', fontFamily: 'var(--font-mono)', fontWeight: 700 }}>{value}</p>
+    </div>
+  );
+}
+
+const statusPanelStyle: React.CSSProperties = {
+  marginBottom: '1.25rem',
+  padding: '1rem',
+  borderRadius: 12,
+  border: '1px solid var(--color-border)',
+};
 
 const inputStyle: React.CSSProperties = {
   padding: '0.55rem 0.7rem',

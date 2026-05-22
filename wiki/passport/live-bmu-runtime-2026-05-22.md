@@ -13,6 +13,7 @@ status: current
 - Agent/UI는 sequence를 직접 지정하지 않고 chaincode name `passport-contract`로 호출한다.
 - DID 서명 검증은 ACA-Py ledger verkey 조회에 의존하므로 `localhost:8031`이 내려가 있으면 BMU POST가 chain 기록까지 가지 못한다.
 - `cloud-agent`/read model `localhost:3002`는 선택 경로다. 꺼져 있어도 Passport UI는 Fabric + runtime BMU snapshot overlay로 최신값을 표시한다.
+- 임베디드 Option B(HSE NVM-backed FC persistence) 적용 후 BMU는 부팅마다 `0xNN000000` FC jump-start를 사용한다. CMU의 `1,2,3...` 카운터는 BMU에서 재작성되므로 chain에는 도달하지 않는다.
 
 ## 현재 MATLAB/BMU 대상
 - Passport ID: `MATLAB-BMU-002`
@@ -32,6 +33,37 @@ status: current
 | VON webserver | `localhost:9000` |
 | Fabric channel | `passportchannel` |
 | Fabric contract | `passport-contract` |
+
+## Option B 이후 운영 기준
+- `POST /api/bmu/reset-fc`는 유지하되 평상시 호출 `0회/일`이 정상이다.
+- reset-fc 성공 호출은 `RESET_FC_CALLED` red alert로 간주한다.
+  - 의미: DID 회전, counter 손상, embedded fail-safe halt, manufacturing 단계 새 보드 onboard, 또는 256-boot wrap 근접 가능성
+- `GET /api/bmu/operations/status`가 최근 24h process-local max FC를 반환한다.
+- max FC가 `0xf8000000` 이상이면 `FC_WRAP_NEAR` yellow alert를 반환한다.
+- ingest decoded log는 다음 FC 필드를 남긴다.
+
+```text
+"action":"BMUIngestDecoded"
+"fc":587202560
+"fcHex":"0x23000000"
+"fcBootSlot":35
+"fcBootOffset":0
+"fcJumpStartPattern":true
+```
+- BMU UART `[HSE]`, `[FATAL]` 라인은 sample ingest와 분리해서 `POST /api/bmu/event`로 올린다. 이 endpoint는 JWT + Manufacturer 권한으로 인증한 뒤 `logs/agent.log`에 `category="hse"` 이벤트 한 줄을 남긴다.
+
+```json
+{
+  "level": "fatal",
+  "eventType": "HSE_NVM_READ_FAIL",
+  "source": "bmu-uart",
+  "message": "[FATAL] HSE NVM counter read failed",
+  "fcHex": "0xf8000001",
+  "data": {
+    "status": "NVM_READ_FAIL"
+  }
+}
+```
 
 ## 데이터 흐름
 1. MATLAB/BMU가 bridge를 통해 `POST /api/bmu/data`로 rawPayload + DID + signature를 전송한다.
@@ -78,6 +110,8 @@ status: current
   - rawPayload bytes `44..47`이 `0c 0e 9a 2c`로 보존되지 않은 경우를 우선 의심한다.
 - UI 개요 일부가 0으로 남음
   - 2026-05-22에 `currentTemperature/currentStatusFlags/latestRawPayloadHashVerified` overlay를 보정했다.
+- reset-fc 호출 발생
+  - Option B 이후에는 일반 복구 루틴이 아니라 alert다. `BMU 운영` 화면과 `RESET_FC` audit/action log를 확인한다.
 
 ## 관련 문서
 - [[passport/activity-log/2026-05-22-matlab-live-stream-recovery|2026-05-22 MATLAB live stream E2E 복구]]

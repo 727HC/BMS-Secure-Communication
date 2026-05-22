@@ -29,6 +29,9 @@ const {
   recordRuntimeBmuSnapshot,
   clearRuntimeBmuSnapshots,
 } = require('../services/runtimeBmuSnapshot.service');
+const {
+  clearBmuOperationsState,
+} = require('../services/bmuOperations.service');
 
 function listen(app) {
   return new Promise((resolve) => {
@@ -551,7 +554,9 @@ test('bmu data exposes bmsBindingCode32 evidence after successful ingest', async
 
 test('bmu data uses RecordBMUDataWithPayload when passport has BMS binding and reports comparison result', async (t) => {
   clearRuntimeBmuSnapshots();
+  clearBmuOperationsState();
   t.after(() => clearRuntimeBmuSnapshots());
+  t.after(() => clearBmuOperationsState());
   let submitted;
   const did = 'did:web:bms:BOUND';
   const rawPayload = buildBmuPayload({ bmsBindingCode32: 0x2c9a0e0c, freshnessCounter: 77 });
@@ -592,6 +597,139 @@ test('bmu data uses RecordBMUDataWithPayload when passport has BMS binding and r
   assert.equal(submitted.name, 'RecordBMUDataWithPayload');
   assert.equal(submitted.args[14], rawPayload);
   assert.equal(getRuntimeBmuSnapshot('PASSPORT-BOUND').rawPayloadHashVerified, true);
+});
+
+test('bmu operations status turns yellow when FC approaches 256-boot wrap threshold', async (t) => {
+  clearBmuOperationsState();
+  t.after(() => clearBmuOperationsState());
+  const did = 'did:web:bms:WRAP';
+  mockDidSignature(t, true);
+  mockFabric(t, {
+    evaluate(name, args) {
+      assert.equal(name, 'QueryBatteryByDID');
+      assert.deepEqual(args, [did]);
+      return Buffer.from(JSON.stringify({
+        passportId: 'PASSPORT-WRAP',
+        bmsManagementId: 'BMS-MGMT-001',
+        bmsBindingCode32: 0x2c9a0e0c,
+      }));
+    },
+    submit() {
+      return Buffer.from('');
+    },
+  });
+  const server = await listen(serverModule.createApp());
+  t.after(() => server.close());
+  const token = generateToken('mfg-wrap', 'ManufacturerMSP');
+
+  const ingest = await request(server, '/api/bmu/data', {
+    token,
+    method: 'POST',
+    body: {
+      did,
+      rawPayload: buildBmuPayload({ bmsBindingCode32: 0x2c9a0e0c, freshnessCounter: 0xf8000001 }),
+      signature: 'a'.repeat(128),
+    },
+  });
+  assert.equal(ingest.status, 200);
+
+  const status = await request(server, '/api/bmu/operations/status', { token });
+  assert.equal(status.status, 200);
+  assert.equal(status.body.fcWindow.status, 'yellow');
+  assert.equal(status.body.fcWindow.maxFcHex, '0xf8000001');
+  assert.equal(status.body.alerts[0].type, 'FC_WRAP_NEAR');
+  assert.equal(status.body.alerts[0].severity, 'yellow');
+});
+
+test('bmu ingest decoded log exposes Option B FC jump-start pattern', async (t) => {
+  clearBmuOperationsState();
+  t.after(() => clearBmuOperationsState());
+  const captured = captureLogs(t);
+  const did = 'did:web:bms:JUMP';
+  mockDidSignature(t, true);
+  mockFabric(t, {
+    evaluate() {
+      return Buffer.from(JSON.stringify({ passportId: 'PASSPORT-JUMP' }));
+    },
+    submit() {
+      return Buffer.from('');
+    },
+  });
+  const server = await listen(serverModule.createApp());
+  t.after(() => server.close());
+  const token = generateToken('mfg-jump', 'ManufacturerMSP');
+
+  const res = await request(server, '/api/bmu/data', {
+    token,
+    method: 'POST',
+    body: {
+      did,
+      rawPayload: buildBmuPayload({ freshnessCounter: 0x23000000 }),
+      signature: 'a'.repeat(128),
+    },
+  });
+
+  assert.equal(res.status, 200);
+  assert.ok(captured.some((line) => line.includes('"action":"BMUIngestDecoded"')
+    && line.includes('"fcHex":"0x23000000"')
+    && line.includes('"fcJumpStartPattern":true')));
+});
+
+test('bmu event endpoint relays HSE UART JSON into hse agent log', async (t) => {
+  const captured = captureLogs(t);
+  const server = await listen(serverModule.createApp());
+  t.after(() => server.close());
+  const token = generateToken('mfg-hse', 'ManufacturerMSP');
+
+  const res = await request(server, '/api/bmu/event', {
+    token,
+    method: 'POST',
+    body: {
+      level: 'info',
+      eventType: 'HSE_NVM_READ_FAIL',
+      source: 'bmu-uart',
+      message: '[HSE] nvm read failed, fail-safe halt',
+      did: 'HgBpAxtHJ4qRwsNiroaqvC',
+      fc: 0xf8000001,
+      fcHex: '0xf8000001',
+      data: {
+        status: 'NVM_READ_FAIL',
+        token: 'must-not-log',
+      },
+    },
+  });
+
+  assert.equal(res.status, 200);
+  assert.equal(res.body.success, true);
+  assert.equal(res.body.status, 'LOGGED');
+  assert.equal(res.body.eventType, 'HSE_NVM_READ_FAIL');
+  assert.equal(res.body.level, 'info');
+  assert.ok(captured.some((line) => line.includes('"category":"hse"')
+    && line.includes('"action":"BmuEvent"')
+    && line.includes('"eventType":"HSE_NVM_READ_FAIL"')
+    && line.includes('"fcHex":"0xf8000001"')
+    && line.includes('"token":"[REDACTED]"')));
+});
+
+test('bmu event endpoint rejects invalid level before logging', async (t) => {
+  const server = await listen(serverModule.createApp());
+  t.after(() => server.close());
+  const token = generateToken('mfg-hse-invalid', 'ManufacturerMSP');
+
+  const res = await request(server, '/api/bmu/event', {
+    token,
+    method: 'POST',
+    body: {
+      level: 'loud',
+      eventType: 'HSE_UNKNOWN',
+      message: '[HSE] invalid level',
+      data: {},
+    },
+  });
+
+  assert.equal(res.status, 400);
+  assert.equal(res.body.category, 'VAL');
+  assert.match(res.body.error, /level must be one of/);
 });
 
 test('bmu data rejects BMS binding code mismatch before chaincode submit', async (t) => {
@@ -971,6 +1109,8 @@ test('bmu reset-fc returns 501 when dual approval is required (feature gated)', 
 });
 
 test('bmu reset-fc submits ResetFCForDID with did + reason on happy path', async (t) => {
+  clearBmuOperationsState();
+  t.after(() => clearBmuOperationsState());
   let submittedArgs = null;
   mockFabric(t, {
     submit(name, args) {
@@ -999,6 +1139,13 @@ test('bmu reset-fc submits ResetFCForDID with did + reason on happy path', async
   assert.ok(submittedArgs);
   assert.equal(submittedArgs.name, 'ResetFCForDID');
   assert.deepEqual(submittedArgs.args, ['did:web:bms:PASSPORT-1', 'BMU board reboot after firmware update on 2026-05-19']);
+
+  const status = await request(server, '/api/bmu/operations/status', { token });
+  assert.equal(status.status, 200);
+  assert.equal(status.body.resetFcDailyCount, 1);
+  assert.equal(status.body.alerts[0].type, 'RESET_FC_CALLED');
+  assert.equal(status.body.alerts[0].severity, 'red');
+  assert.match(status.body.alerts[0].message, /Option B/);
 });
 
 // A1: reset-fc 후 fresh fc=1 POST E2E 통과

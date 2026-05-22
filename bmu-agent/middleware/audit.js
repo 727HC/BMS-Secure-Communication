@@ -131,6 +131,8 @@ function classifyAction(method, url) {
   if (url.includes('/bind')) return 'BIND_VEHICLE';
   if (url.includes('/vehicle-image')) return 'UPLOAD_IMAGE';
   if (url.includes('/bmu/data')) return 'RECORD_BMU';
+  if (url.includes('/bmu/event')) return 'BMU_EVENT';
+  if (url.includes('/bmu/reset-fc')) return 'RESET_FC';
   if (url.includes('/invalidate')) return 'INVALIDATE_BMU';
   if (url.includes('/correct')) return 'CORRECT_DATA';
   if (url.includes('/materials') && method === 'POST') return 'REGISTER_MATERIAL';

@@ -63,7 +63,8 @@ React 빌드(`webapp/frontend-react/dist/`)가 있으면 `/`에서 자동 서빙
                        GET  /:id/vehicle-image
 /api/materials         GET, POST /
 /api/bmu               POST /data (rate-limited), GET /records/:passportId,
-                       POST /invalidate/:recordId,
+                       POST /event, POST /invalidate/:recordId,
+                       GET  /operations/status,
                        POST /reset-fc (Manufacturer · Regulator, 5건/시간/사용자)
 /api/realtime          GET  /passports, /passports/:id, /bmu/:passportId, /stats
 /api/maintenance       POST /:id/request, /:id/log, /:id/accident
@@ -116,9 +117,11 @@ bmsBindingCode32: 0x2c9a0e0c
 evidenceHash: b3c37ed2cdd2831cc0c212445905ced4a20ea51e129bff2e7418deddf7223178
 ```
 
-## FC 재동기화 (운영자 전용)
+## FC 재동기화 / Option B 모니터링 (운영자 전용)
 
-장비 재부팅·교체·DID 재프로비저닝 등으로 BMU의 FC 카운터가 리셋되면 chaincode `lastFc`와 충돌해 모든 후속 `RecordBMUData`가 `400 fc N must be greater than last valid fc M`으로 거절된다. 사람 운영자가 명시 호출로 풀 수 있도록 `POST /api/bmu/reset-fc` 편의 계층을 제공한다.
+임베디드 Option B(HSE NVM-backed FC persistence) 적용 후 BMU는 부팅마다 `0xNN000000` 형태로 FC를 jump-start하고 CMU의 `1,2,3...` 카운터를 chain 도달 전에 재작성한다. 따라서 평상시 `POST /api/bmu/reset-fc` 호출은 `0회/일`이 정상이다.
+
+`reset-fc`는 삭제하지 않고 DID 회전, counter 손상, manufacturing 단계 새 보드 onboard, embedded fail-safe halt, 256-boot wrap 근접 같은 비상 상황용 fail-safe로 유지한다.
 
 - **권한**: `ManufacturerMSP` 또는 `RegulatorMSP`만 허용 (서버 + 체인코드 이중 RBAC)
 - **rate limit**: 사용자당 5건 / 시간
@@ -129,10 +132,44 @@ evidenceHash: b3c37ed2cdd2831cc0c212445905ced4a20ea51e129bff2e7418deddf7223178
   - `confirm: true` (필수, 파괴적 작업 명시 확인)
   - `expected_next_fc?` (선택, 감사 기록 전용, 체인코드 enforcement 없음)
 - **flag**: `RESET_FC_REQUIRE_DUAL_APPROVAL=true` 환경변수일 때 501 반환 (2-eye 승인 워크플로우 future toggle)
-- **감사 다층화**: `audit.log` + agent `log.info('FC reset performed', ...)` + chaincode `FCRESET-{did}-{txid}`
+- **alert**: 성공 호출 시 `RESET_FC_CALLED` red alert + `log.warn('BMU reset-fc alert', ...)`
+- **감사 다층화**: `audit.log` (`RESET_FC`) + agent `log.info('FC reset performed', ...)` + chaincode `FCRESET-{did}-{txid}`
 - **부수효과**: 성공 시 DID→passport 캐시 즉시 무효화
 
-webapp 프론트엔드는 `/bmu-operations` 별도 "운영" 섹션에서 폼 UI를 제공한다 (Manufacturer/Regulator만 사이드바 노출).
+운영 상태 조회:
+
+- `GET /api/bmu/operations/status` — Manufacturer/Regulator 전용
+- 최근 24h max FC를 process-local로 추적하고 `0xf8000000` 이상이면 `FC_WRAP_NEAR` yellow alert 반환
+- BMU ingest decoded log는 `fc`, `fcHex`, `fcBootSlot`, `fcBootOffset`, `fcJumpStartPattern`을 남긴다.
+
+webapp 프론트엔드는 `/bmu-operations` 별도 "운영" 섹션에서 Option B 상태, reset-fc 24h count, FC wrap alert, fail-safe form을 제공한다 (Manufacturer/Regulator만 사이드바 노출).
+
+## BMU HSE/FATAL UART event relay
+
+임베디드 bridge가 BMU UART의 `[HSE]`, `[FATAL]` 라인을 별도 운영 이벤트로 올릴 수 있도록 `POST /api/bmu/event`를 제공한다. 이 경로는 CMU↔BMU sample ingest(`/api/bmu/data`)와 독립이며, chaincode에 쓰지 않고 `logs/agent.log`에 `category="hse"` 한 줄을 남긴다.
+
+- **권한**: `ManufacturerMSP`
+- **rate limit**: IP당 120건 / 분 (`BMU_EVENT_RATE_LIMIT`, `BMU_EVENT_RATE_WINDOW_MS`)
+- **body 예시**:
+
+```json
+{
+  "level": "fatal",
+  "eventType": "HSE_NVM_READ_FAIL",
+  "source": "bmu-uart",
+  "message": "[FATAL] HSE NVM counter read failed",
+  "did": "HgBpAxtHJ4qRwsNiroaqvC",
+  "fc": 4160749569,
+  "fcHex": "0xf8000001",
+  "data": {
+    "status": "NVM_READ_FAIL"
+  }
+}
+```
+
+- `level`: `info | warn | error | fatal` (`fatal`은 agent.log level `error`로 기록)
+- `data`는 object만 허용하며 `password/token/secret/signature/rawPayload/privateKey/authorization` 계열 key는 `[REDACTED]` 처리
+- 응답: `{ "success": true, "status": "LOGGED", "eventType": "...", "level": "..." }`
 
 ## 실시간 Passport snapshot / fallback
 

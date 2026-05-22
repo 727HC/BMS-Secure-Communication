@@ -34,6 +34,7 @@ VELKERN의 오퍼레이터 웹앱. 제조사 · EV 제조사 · 정비/분석 ·
 - Dashboard와 Passport detail은 `/api/realtime/*`를 우선 조회한다.
 - `cloud-agent:3002` read model이 꺼져 있어도 `bmu-agent`가 Fabric ledger + runtime BMU snapshot fallback으로 최신 BMU 값을 overlay한다.
 - Passport detail은 3초 주기 silent refresh로 열린 화면에서도 SOC/SOH/temperature를 갱신한다.
+- `/bmu-operations`는 Option B(HSE NVM-backed FC persistence) 이후 reset-fc를 평상시 작업이 아닌 fail-safe로 표시하고, `/api/bmu/operations/status`의 최근 24h max FC / reset-fc alert를 보여준다.
 - BMU가 제공하지 않는 `SOCE=0`은 `0%`가 아니라 `미수집`으로 표시한다.
 - 현재 BMS binding E2E 기준은 `RecordBMUDataWithPayload`이며, rawPayload bytes `44..47`의 little-endian `bmsBindingCode32=0x2c9a0e0c`를 사용한다.
 

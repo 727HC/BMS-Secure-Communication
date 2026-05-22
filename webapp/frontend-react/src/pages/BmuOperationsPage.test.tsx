@@ -24,11 +24,41 @@ function authAs(org: string) {
 }
 
 const VALID_REASON = '2026-05-19 펌웨어 업데이트 후 BMU 보드 재부팅으로 FC 카운터가 리셋되어 재동기화가 필요합니다.';
+const DEFAULT_STATUS = {
+  optionB: {
+    expectedResetFcCallsPerDay: 0,
+    fcPattern: '0xNN000000 boot jump-start',
+  },
+  fcWindow: {
+    status: 'normal',
+    observationCount: 0,
+    maxFcHex: null,
+    thresholdHex: '0xf8000000',
+    maxBootSlot: null,
+  },
+  resetFcDailyCount: 0,
+  alerts: [],
+};
+
+function okJson(data: unknown) {
+  return {
+    ok: true,
+    status: 200,
+    json: async () => data,
+  };
+}
+
+function findPostCall(fetchMock: ReturnType<typeof vi.fn>) {
+  const call = fetchMock.mock.calls.find(([, init]) => init?.method === 'POST');
+  if (!call) throw new Error('POST call not found');
+  return call;
+}
 
 describe('BmuOperationsPage', () => {
   beforeEach(() => {
     sessionStorage.clear();
     localStorage.clear();
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(okJson(DEFAULT_STATUS)));
   });
   afterEach(() => {
     vi.unstubAllGlobals();
@@ -37,14 +67,44 @@ describe('BmuOperationsPage', () => {
   it('renders form when org is Manufacturer', () => {
     authAs('ManufacturerMSP');
     const { getByText, getByLabelText } = renderPage();
-    expect(getByText('FC 재동기화')).not.toBeNull();
+    expect(getByText('BMU 상태와 FC fail-safe')).not.toBeNull();
     expect(getByLabelText('대상 DID')).not.toBeNull();
   });
 
   it('renders form when org is Regulator', () => {
     authAs('RegulatorMSP');
     const { getByText } = renderPage();
-    expect(getByText('FC 재동기화')).not.toBeNull();
+    expect(getByText('BMU 상태와 FC fail-safe')).not.toBeNull();
+  });
+
+  it('renders Option B status and FC wrap yellow alert', async () => {
+    authAs('ManufacturerMSP');
+    const fetchMock = vi.fn().mockResolvedValue(okJson({
+      ...DEFAULT_STATUS,
+      fcWindow: {
+        status: 'yellow',
+        observationCount: 5,
+        maxFcHex: '0xf8000001',
+        thresholdHex: '0xf8000000',
+        maxBootSlot: 248,
+      },
+      resetFcDailyCount: 1,
+      alerts: [{
+        id: 'A1',
+        type: 'FC_WRAP_NEAR',
+        severity: 'yellow',
+        title: 'BMU FC 256-boot wrap 근접',
+        message: '최근 24시간 max FC가 0xF8000000 이상입니다.',
+        fcHex: '0xf8000001',
+      }],
+    }));
+    vi.stubGlobal('fetch', fetchMock);
+
+    const { findAllByText, getByText } = renderPage();
+
+    expect((await findAllByText('0xf8000001')).length).toBeGreaterThan(0);
+    expect(getByText(/BMU FC 256-boot wrap/)).not.toBeNull();
+    expect(getByText('최근 24h reset-fc')).not.toBeNull();
   });
 
   it('redirects to dashboard when org lacks permission', () => {
@@ -79,11 +139,9 @@ describe('BmuOperationsPage', () => {
 
   it('POSTs /api/bmu/reset-fc with did, reason, confirm:true on submit', async () => {
     authAs('ManufacturerMSP');
-    const fetchMock = vi.fn().mockResolvedValue({
-      ok: true,
-      status: 200,
-      json: async () => ({ success: true, did: 'did:web:bms:1', status: 'FC_RESET' }),
-    });
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(okJson(DEFAULT_STATUS))
+      .mockResolvedValueOnce(okJson({ success: true, did: 'did:web:bms:1', status: 'FC_RESET' }));
     vi.stubGlobal('fetch', fetchMock);
 
     const { getByLabelText, getByRole, findByText } = renderPage();
@@ -93,8 +151,8 @@ describe('BmuOperationsPage', () => {
     fireEvent.click(getByLabelText(/본 작업이 chaincode lastFc를 초기화하고/));
     fireEvent.click(getByRole('button', { name: /FC 재동기화 실행/ }));
 
-    await waitFor(() => expect(fetchMock).toHaveBeenCalled());
-    const [url, init] = fetchMock.mock.calls[0];
+    await waitFor(() => expect(fetchMock.mock.calls.some(([, init]) => init?.method === 'POST')).toBe(true));
+    const [url, init] = findPostCall(fetchMock);
     expect(String(url)).toContain('/api/bmu/reset-fc');
     expect(init.method).toBe('POST');
     const sent = JSON.parse(init.body);
@@ -107,11 +165,9 @@ describe('BmuOperationsPage', () => {
 
   it('includes expected_next_fc when provided as non-negative integer', async () => {
     authAs('ManufacturerMSP');
-    const fetchMock = vi.fn().mockResolvedValue({
-      ok: true,
-      status: 200,
-      json: async () => ({ success: true, did: 'did:web:bms:1', status: 'FC_RESET' }),
-    });
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(okJson(DEFAULT_STATUS))
+      .mockResolvedValueOnce(okJson({ success: true, did: 'did:web:bms:1', status: 'FC_RESET' }));
     vi.stubGlobal('fetch', fetchMock);
 
     const { getByLabelText, getByRole } = renderPage();
@@ -122,18 +178,20 @@ describe('BmuOperationsPage', () => {
     fireEvent.click(getByLabelText(/본 작업이 chaincode lastFc를 초기화하고/));
     fireEvent.click(getByRole('button', { name: /FC 재동기화 실행/ }));
 
-    await waitFor(() => expect(fetchMock).toHaveBeenCalled());
-    const sent = JSON.parse(fetchMock.mock.calls[0][1].body);
+    await waitFor(() => expect(fetchMock.mock.calls.some(([, init]) => init?.method === 'POST')).toBe(true));
+    const sent = JSON.parse(findPostCall(fetchMock)[1].body);
     expect(sent.expected_next_fc).toBe(42);
   });
 
   it('shows API error message when server rejects', async () => {
     authAs('ManufacturerMSP');
-    const fetchMock = vi.fn().mockResolvedValue({
-      ok: false,
-      status: 429,
-      json: async () => ({ error: 'rate limit exceeded' }),
-    });
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(okJson(DEFAULT_STATUS))
+      .mockResolvedValueOnce({
+        ok: false,
+        status: 429,
+        json: async () => ({ error: 'rate limit exceeded' }),
+      });
     vi.stubGlobal('fetch', fetchMock);
 
     const { getByLabelText, getByRole, findByText } = renderPage();
@@ -149,7 +207,9 @@ describe('BmuOperationsPage', () => {
   // C1: 네트워크 에러 → 에러 메시지 표시, 필드 값 보존
   it('shows network error message and preserves form fields for retry', async () => {
     authAs('ManufacturerMSP');
-    const fetchMock = vi.fn().mockRejectedValue(new TypeError('Failed to fetch'));
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(okJson(DEFAULT_STATUS))
+      .mockRejectedValueOnce(new TypeError('Failed to fetch'));
     vi.stubGlobal('fetch', fetchMock);
 
     const { getByLabelText, getByRole, findByText } = renderPage();

@@ -22,7 +22,14 @@ const {
   isDashboardPassportSeedEnabled,
 } = require('../services/devPassportSeed.service');
 const { recordRuntimeBmuSnapshot } = require('../services/runtimeBmuSnapshot.service');
+const {
+  analyzeFreshnessCounter,
+  getBmuOperationsStatus,
+  recordBmuFcObservation,
+  recordResetFcAlert,
+} = require('../services/bmuOperations.service');
 const log = createLogger('bmu');
+const hseLog = createLogger('hse');
 
 // P0-3: unsigned BMU 완전 거부 (임베디드 확인: BMU는 100% 서명 포함)
 
@@ -32,6 +39,15 @@ const BMU_RATE_WINDOW_MS = parseInt(process.env.BMU_RATE_WINDOW_MS || '60000', 1
 const bmuRateLimit = createRateLimiter({
   windowMs: BMU_RATE_WINDOW_MS,
   max: BMU_RATE_LIMIT,
+  keyFn: (req) => req.ip || 'unknown',
+});
+
+// HSE/FATAL UART event relay — lower volume than BMU samples, but still bounded.
+const BMU_EVENT_RATE_LIMIT = parseInt(process.env.BMU_EVENT_RATE_LIMIT || '120', 10);
+const BMU_EVENT_RATE_WINDOW_MS = parseInt(process.env.BMU_EVENT_RATE_WINDOW_MS || '60000', 10);
+const bmuEventRateLimit = createRateLimiter({
+  windowMs: BMU_EVENT_RATE_WINDOW_MS,
+  max: BMU_EVENT_RATE_LIMIT,
   keyFn: (req) => req.ip || 'unknown',
 });
 
@@ -52,6 +68,80 @@ const didPassportPending = new Map();
 
 function validationError(res, error) {
   return res.status(400).json({ error, category: 'VAL' });
+}
+
+function isPlainObject(value) {
+  return value != null && typeof value === 'object' && !Array.isArray(value);
+}
+
+function normalizeEventLevel(value) {
+  const raw = typeof value === 'string' ? value.trim().toLowerCase() : '';
+  if (!raw || raw === 'info' || raw === 'debug') return { value: 'info', original: raw || 'info' };
+  if (raw === 'warn' || raw === 'warning' || raw === 'hse') return { value: 'warn', original: raw };
+  if (raw === 'error' || raw === 'fatal' || raw === 'panic') return { value: 'error', original: raw };
+  return { error: 'level must be one of info, warn, error, fatal' };
+}
+
+function truncateText(value, max = 512) {
+  const text = String(value);
+  return text.length > max ? `${text.slice(0, max)}…` : text;
+}
+
+function sanitizeEventValue(value, depth = 0) {
+  if (depth > 3) return '[MAX_DEPTH]';
+  if (value == null || typeof value === 'boolean' || typeof value === 'number') return value;
+  if (typeof value === 'string') return truncateText(value, 512);
+  if (Array.isArray(value)) return value.slice(0, 20).map((item) => sanitizeEventValue(item, depth + 1));
+  if (typeof value === 'object') {
+    const output = {};
+    for (const [key, itemValue] of Object.entries(value).slice(0, 64)) {
+      if (/password|token|secret|signature|rawPayload|privateKey|authorization/i.test(key)) {
+        output[key] = '[REDACTED]';
+      } else {
+        output[key] = sanitizeEventValue(itemValue, depth + 1);
+      }
+    }
+    return output;
+  }
+  return truncateText(value);
+}
+
+function normalizeBmuEventBody(body) {
+  if (!isPlainObject(body)) return { error: 'body must be an object' };
+
+  const level = normalizeEventLevel(body.level ?? body.severity ?? body.priority);
+  if (level.error) return { error: level.error };
+
+  const eventType = String(body.eventType || body.type || body.code || 'BMU_UART_EVENT').trim();
+  const source = String(body.source || body.origin || 'bmu-uart').trim();
+  const message = String(body.message || body.line || eventType).trim();
+  const timestamp = body.timestamp == null || body.timestamp === '' ? null : String(body.timestamp).trim();
+  const data = body.data ?? body.details ?? body.context ?? {};
+
+  const bodyError = firstError(
+    validateText(eventType, 'eventType', { min: 1, max: 96 }),
+    validateText(source, 'source', { min: 1, max: 96 }),
+    validateText(message, 'message', { min: 1, max: 1024 }),
+    timestamp ? validateText(timestamp, 'timestamp', { min: 1, max: 128 }) : null
+  );
+  if (bodyError) return { error: bodyError };
+  if (!isPlainObject(data)) return { error: 'data must be an object' };
+
+  return {
+    value: {
+      level: level.value,
+      originalLevel: level.original,
+      eventType,
+      source,
+      message,
+      eventTimestamp: timestamp,
+      did: typeof body.did === 'string' ? body.did.trim() : null,
+      passportId: typeof body.passportId === 'string' ? body.passportId.trim() : null,
+      fc: Number.isInteger(body.fc) ? body.fc : null,
+      fcHex: typeof body.fcHex === 'string' ? body.fcHex.trim() : null,
+      data: sanitizeEventValue(data),
+    },
+  };
 }
 
 function isBmuBindingRequired() {
@@ -212,6 +302,18 @@ router.post('/data', authenticateToken, requireMSP(MSP.MANUFACTURER), bmuRateLim
 
   try {
     const parsed = parseRawPayload(rawPayload);
+    const fcSignals = analyzeFreshnessCounter(parsed.freshnessCounter);
+    log.info('BMU ingest decoded', {
+      action: 'BMUIngestDecoded',
+      did,
+      fc: fcSignals.fc,
+      fcHex: fcSignals.fcHex,
+      fcBootSlot: fcSignals.bootSlot,
+      fcBootOffset: fcSignals.bootOffset,
+      fcJumpStartPattern: fcSignals.fcJumpStartPattern,
+      bmsBindingCode32: parsed.bmsBindingCode32,
+      bmsBindingCodeHex: parsed.bmsBindingCodeHex,
+    });
     if (isBmuBindingRequired() && parsed.bmsBindingCode32 === 0) {
       return validationError(res, 'bmsBindingCode32 required');
     }
@@ -269,6 +371,26 @@ router.post('/data', authenticateToken, requireMSP(MSP.MANUFACTURER), bmuRateLim
 
     // BMU 데이터는 제조사 admin으로 기록 (M2M 통신)
     await fabricService.submitTransaction(txName, txArgs);
+    const fcObservation = recordBmuFcObservation({
+      fc: parsed.freshnessCounter,
+      did,
+      passportId,
+      recordId,
+      timestamp,
+    });
+    if (fcObservation.alert) {
+      log.warn('BMU FC wrap warning', {
+        action: 'BmuFcWrapWarning',
+        did,
+        passportId,
+        recordId,
+        fc: fcObservation.alert.fc,
+        fcHex: fcObservation.alert.fcHex,
+        thresholdHex: fcObservation.alert.thresholdHex,
+        bootSlot: fcObservation.alert.bootSlot,
+        bootOffset: fcObservation.alert.bootOffset,
+      });
+    }
     recordRuntimeBmuSnapshot({
       recordId,
       passportId,
@@ -321,6 +443,41 @@ router.post('/data', authenticateToken, requireMSP(MSP.MANUFACTURER), bmuRateLim
     }
     sendChaincodeError(res, err);
   }
+});
+
+// POST /api/bmu/event — relay BMU UART HSE/FATAL events into logs/agent.log
+router.post('/event', authenticateToken, requireMSP(MSP.MANUFACTURER), bmuEventRateLimit, async (req, res) => {
+  const normalized = normalizeBmuEventBody(req.body);
+  if (normalized.error) return validationError(res, normalized.error);
+  const event = normalized.value;
+
+  hseLog[event.level]('BMU UART event', {
+    action: 'BmuEvent',
+    eventType: event.eventType,
+    source: event.source,
+    originalLevel: event.originalLevel,
+    eventTimestamp: event.eventTimestamp,
+    did: event.did,
+    passportId: event.passportId,
+    fc: event.fc,
+    fcHex: event.fcHex,
+    user: req.user?.userId,
+    orgMsp: req.user?.orgMsp,
+    data: event.data,
+    line: event.message,
+  });
+
+  res.json({
+    success: true,
+    status: 'LOGGED',
+    eventType: event.eventType,
+    level: event.level,
+  });
+});
+
+// GET /api/bmu/operations/status — BMU 운영 상태 / Option B FC monitor
+router.get('/operations/status', authenticateToken, requireMSP(MSP.MANUFACTURER, MSP.REGULATOR), async (req, res) => {
+  res.json(getBmuOperationsStatus());
 });
 
 // GET /api/bmu/records/:passportId
@@ -391,6 +548,22 @@ router.post('/reset-fc', authenticateToken, requireMSP(MSP.MANUFACTURER, MSP.REG
   try {
     await fabricService.submitTransaction('ResetFCForDID', [did, reason], req.user);
     clearDidPassportCache({ did });
+    const alert = recordResetFcAlert({
+      did,
+      reason,
+      expectedNextFc: expectedNextFc ?? null,
+      userId: req.user?.userId,
+      orgMsp: req.user?.orgMsp,
+    });
+    log.warn('BMU reset-fc alert', {
+      action: 'ResetFCAlert',
+      did,
+      expectedNextFc: expectedNextFc ?? null,
+      user: req.user?.userId,
+      orgMsp: req.user?.orgMsp,
+      alertType: alert.type,
+      severity: alert.severity,
+    });
     log.info('FC reset performed', {
       action: 'ResetFCForDID',
       did,
@@ -399,7 +572,7 @@ router.post('/reset-fc', authenticateToken, requireMSP(MSP.MANUFACTURER, MSP.REG
       user: req.user?.userId,
       orgMsp: req.user?.orgMsp,
     });
-    res.json({ success: true, did, status: 'FC_RESET' });
+    res.json({ success: true, did, status: 'FC_RESET', alert: { type: alert.type, severity: alert.severity, message: alert.message } });
   } catch (err) {
     log.error('FC reset failed', { action: 'ResetFCForDID', did, error: err.message });
     sendChaincodeError(res, err);
