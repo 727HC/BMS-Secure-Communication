@@ -50,15 +50,40 @@ RPBitSize=40 → VC=24 bits. **VC만 RAM, RP만 flash 영속화**. 소규모 inc
 
 3개 구성 요소로 분리:
 
-1. **Boot-time NVM epoch advance** — `BMU_AdvanceFcEpoch()`가 매 boot에서 counter를
-   `+2^24` (`HSE_COUNTER_EPOCH_STEP`) 증가시켜 VC 오버플로우를 유발 → RP increment →
-   flash write. 다음 boot에서 read는 이전 epoch보다 큰 값을 반환.
-2. **RAM-only per-frame** — `g_expected_fc` 갱신은 RAM에서만 (`g_expected_fc = rx_fc + 1U`).
+1. **Per-boot NVM epoch advance — ProtocolTask post-scheduler** — `BMU_AdvanceFcEpoch()`가
+   매 boot 시 ProtocolTask가 시작된 직후 한 번 호출되어 counter를 `+2^24`
+   (`HSE_COUNTER_EPOCH_STEP`) 증가시켜 VC 오버플로우 → RP increment → flash write.
+   다음 boot에서 read는 이전 epoch보다 큰 값을 반환. **중요**: 이 호출은 **반드시 FreeRTOS
+   scheduler 가동 이후 task 컨텍스트에서** 실행되어야 함 (이유는 "Pre-Scheduler Hazard"
+   섹션 참조).
+2. **Boot init — Config + Read only (no flash write)** — 부트 시퀀스에서는 NVM read만
+   수행하고 `g_chain_fc`를 이전 boot의 NVM 값으로 초기화. flash-blocking 작업은 task 진입까지 지연.
+3. **RAM-only per-frame** — `g_expected_fc` 갱신은 RAM에서만 (`g_expected_fc = rx_fc + 1U`).
    HSE counter는 per-frame에 호출하지 않음 — 어차피 VC만 갱신되어 persistence 없음.
-3. **Chain FC rewrite** — BMU가 chaincode에 전송하는 FC는 `g_chain_fc` (NVM 기반 globally
+4. **Chain FC rewrite** — BMU가 chaincode에 전송하는 FC는 `g_chain_fc` (NVM 기반 globally
    monotonic) 로 재작성. CMU의 freshness_counter (CMU-side per-session, key exchange마다
    리셋)는 transport-level CMAC IV로만 사용되고, EdDSA signature 직전 payload의
    `freshness_counter` 필드를 `g_chain_fc` 로 덮어쓴 후 sign.
+
+### Pre-Scheduler Hazard (2026-05-22 실측)
+
+초기 구현은 `BMU_AdvanceFcEpoch()` 를 `vTaskStartScheduler()` 호출 직전 boot 시퀀스에 두었다.
+실보드에서 `[Task] CanRx started` 만 출력되고 ProtocolTask/DataProcessTask/MonitorTask가
+시작 print를 못 남기는 회귀가 발생.
+
+가설: HSE 측 flash write (`hseIncrementCounter`가 RP 변경을 위해 data flash erase + program
+유발) 가 SYNC 응답 반환 이후에도 짧게 잔여 busy 상태로 남아, scheduler 부트스트랩 단계에서
+SysTick 또는 task switch 인터럽트 분배에 영향. 결과적으로 가장 먼저 스케줄된 CanRx 만 실행되고
+이하 우선순위 task는 활성화 못 됨.
+
+해결: `BMU_AdvanceFcEpoch()` 호출을 `BMU_ProtocolTask()` 진입 직후 (post-scheduler) 로 이동.
+FreeRTOS preemption이 활성 상태이므로 flash write 동안 다른 task가 정상적으로 timeslice 획득.
+
+확인 (2026-05-22 실보드):
+- Boot1: `[HSE] FC=0x08000000` (read), Protocol task `[HSE] EpochAdvance FC=0x09000000` (write+read)
+- Boot2 (reflash): `[HSE] FC=0x09000000` → `[HSE] EpochAdvance FC=0x0A000000` (이전 epoch 보존)
+- All 4 tasks (CanRx, Protocol, DataProc, Monitor) `started` 출력 확인
+- MATLAB → chain ingest 정상, 30+ [SIGN] frame 모두 `Blockchain: BMU-... OK`
 
 ### 구성 파라미터
 
@@ -98,7 +123,8 @@ N=256 (256 * 2^24 = 2^32) 시 low 32 bits가 0으로 wrap.
 ### Negative
 
 - HSE counter slot 0 영구 점유 (1-15는 reserved)
-- Boot 시퀀스에 93ms config + ~100ms epoch advance ≈ 200ms one-time cost (pre-scheduler 흡수)
+- Boot 시퀀스 (pre-scheduler) 에 93ms config + ~5ms read = ~100ms 비용 (FreeRTOS 시작 전 흡수)
+- ProtocolTask 진입 직후 ~100ms epoch advance — task 컨텍스트에서 흐르므로 다른 task에 영향 없음
 - 256-boot wrap → 주기적 DID 회전 필요
 - BMU가 freshness_counter 재작성 — chain은 CMU의 원본 FC를 보지 못함 (의도된 설계)
 
@@ -117,7 +143,7 @@ N=256 (256 * 2^24 = 2^32) 시 low 32 bits가 0으로 wrap.
 | File | Change |
 |---|---|
 | `BMU_BMS_S32K344/src/common/bms_protocol.h` | `HSE_COUNTER_SLOT_BMU_FC`, `HSE_COUNTER_RP_BITSIZE`, `HSE_COUNTER_EPOCH_STEP` 매크로 + slot allocation table 코멘트 |
-| `BMU_BMS_S32K344/src/main.c` | 3 함수 (`BMU_ConfigureFcCounter`, `BMU_ReadFcCounter`, `BMU_AdvanceFcEpoch`) + `g_chain_fc` 전역 + boot 시퀀스 (Configure → Advance → Read → init g_chain_fc) + procQueue 인큐 시 payload freshness_counter 재작성 (`g_chain_fc`) + 기존 `#ifdef HSE_FC_PROBE` 블록 삭제 |
+| `BMU_BMS_S32K344/src/main.c` | 3 함수 (`BMU_ConfigureFcCounter`, `BMU_ReadFcCounter`, `BMU_AdvanceFcEpoch`) + `g_chain_fc` 전역 + boot 시퀀스 (Configure → Read → init g_chain_fc, **flash write 안 함**) + ProtocolTask 진입 시 (post-scheduler) AdvanceEpoch + Re-read + g_chain_fc 업데이트 + procQueue 인큐 시 payload freshness_counter 재작성 (`g_chain_fc`) + 기존 `#ifdef HSE_FC_PROBE` 블록 삭제 |
 | `firmware/tools/test_hse_fc_mock.py` | 신규 — 5 unittest: first-boot, read-first 가드, increment 누적, retry 복구, halt 경로 |
 | `firmware/README.md` | "FC reset 운영" 섹션에 Option B 완료 명시 + ADR-007 링크 |
 | `wiki/decisions/004-fc-reset-mechanism.md` | Closure에 ADR-007 cross-link 추가 |
@@ -146,12 +172,15 @@ python firmware/tools/test_hse_fc_mock.py -v
 
 | 시나리오 | 결과 |
 |---|---|
-| Boot 1 첫 플래시 | `[HSE] FC=0x01000000 hi=0x00000000` (epoch 1) ✅ |
-| Boot 2 재플래시 (= power cycle) | `[HSE] FC=0x02000000 hi=0x00000000` (epoch 2, +2^24) ✅ |
-| Boot 3 재플래시 | `[HSE] FC=0x03000000 hi=0x00000000` (epoch 3, +2^24) ✅ |
+| Boot 1 — 첫 epoch advance | `[HSE] FC=0x00000000` (read) → ProtocolTask `[HSE] EpochAdvance FC=0x01000000` (write+re-read) ✅ |
+| Boot N → N+1 (power cycle) | boot read = `0xNN000000`, ProtocolTask 후 `0x(NN+1)000000` ✅ NVM 영속화 |
+| 누적 검증 | epoch 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 → 9 → **10** (단조 +2^24 / boot) ✅ |
 | `BMU_FC_PERSIST_TEST` diagnostic (Mode 1 검증) | Boot1 after=5, Boot2 before=0 — Mode 1 persistence 실패 확인 (Mode 0 도입 근거) |
+| Pre-scheduler AdvanceFcEpoch 실패 케이스 | ProtocolTask/DataProc/Monitor `started` 못 출력 — task scheduling block. ProtocolTask로 이동 후 해결 ✅ |
+| End-to-end MATLAB → chain ingest | 30+ [SIGN] frames 송신 + 모두 `Blockchain: BMU-... OK`. FC=0x0A000000+ 단조 증가. 수동 ResetFCForDID 호출 0회 ✅ |
+| HSE-EVENT 경로 (Passport `/api/bmu/event`) | `[HSE-EVENT] info BOOT_FC -> /api/bmu/event` POST 200 OK ✅ |
 
-추가 통합 테스트 (사용자 ↔ MATLAB + bridge + chain 연계) 후 acceptance criteria C2-C6 완료 예정.
+Acceptance criteria C2-C6 통합 검증 완료.
 
 ## Operations Notes
 

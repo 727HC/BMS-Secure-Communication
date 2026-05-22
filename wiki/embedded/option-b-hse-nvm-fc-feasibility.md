@@ -284,9 +284,10 @@ val 검증:
 
 ### Implementation 함의
 
-- **Mode 1 per-frame 확정** — Mode 2 batch fallback 불필요
+- **Mode 0 채택 (Mode 1은 cross-boot persistence 미보장)** — ADR-007 참조. probe v2에서 per-frame increment latency는 합격이지만 **flash write 미발생** (RP 변동 없이 VC만 갱신) → power cycle 시 VC 손실. 따라서 boot-time `+2^24` epoch advance + RAM per-frame + chain FC rewrite로 설계 전환
 - **Config은 idempotent 아님** — production 코드는 "read-first 가드" 패턴 필요: read status가 OK면 skip, INVALID_PARAM이면 config 호출
-- **Boot-time config 93ms** — pre-scheduler 위치에서 흡수, scheduler 시작 후 task에 영향 없음
+- **Boot-time Config + Read는 pre-scheduler OK** — read-only HSE 호출은 scheduler 시작에 영향 없음
+- **AdvanceFcEpoch (flash write)는 post-scheduler 필수** — ProtocolTask 진입 직후 1회 실행. pre-scheduler에서 호출하면 HSE flash blocking 잔여 효과로 후속 task scheduling 실패 (2026-05-22 실보드 확인)
 - **HSE_TIMEOUT_TICKS 충분**: increment 197us는 1M tick timeout의 0.001% — 절대 timeout 안 됨
 
 ### 의사결정 트리

@@ -71,19 +71,19 @@ python firmware/tools/serial_to_agent.py \
 
 - **Hex 검증**: UART jitter로 garbage 페이로드가 chain에 들어가는 사고 차단. 64/96 hex char 검증 미통과 시 silent drop
 - **SQLite spool**: agent 일시 중단 시 페이로드 누적, 복구 시 자동 재전송 (`spool.db`)
-- **Option B FC 영속화**: BMU가 HSE NVM-backed counter로 부팅마다 `0xNN000000` 형태의 FC를 jump-start한다. CMU의 `1,2,3...` 카운터는 BMU에서 재작성되므로 chain에 도달하지 않는다.
-- **HSE/FATAL 이벤트 분리**: BMU UART의 `[HSE]`, `[FATAL]` 라인은 sample ingest와 독립적으로 `POST /api/bmu/event`로 올라가고, `logs/agent.log`에 `category="hse"`로 남는다.
+- **Option B FC 영속화** ([ADR-007](wiki/decisions/007-bmu-fc-nvm-persistence.md)): BMU가 HSE NVM-backed counter로 부팅마다 `0xNN000000` 형태의 FC를 jump-start한다. CMU의 `1,2,3...` 카운터는 BMU에서 재작성되므로 chain에 도달하지 않는다.
+- **HSE/FATAL 이벤트 분리**: BMU UART의 `[HSE]`, `[FATAL]` 라인은 sample ingest와 독립적으로 `POST /api/bmu/event`로 올라가고, `logs/agent.log`에 `category="hse"`로 남는다. bridge는 `BRIDGE_USER`/`BRIDGE_PASSWORD` env var로 자격증명을 전달할 수 있다 (cmdline 노출 차단).
 - **`[ALERT] BMU FC regression` / `--min-fc N`**: Option B 이전 또는 fail-safe 상황의 보호 장치로 보존한다. 정상 운영에서는 `ResetFCForDID` 자동 호출이 없고, 호출 발생 자체가 운영 alert다.
 
 #### FC 운영 / 복구
 
-임베디드 Option B 적용 후 BMU는 HSE Monotonic Counter 기반 boot epoch를 FC 상위 바이트에 반영해 chain에 **globally monotonic FC**를 보냅니다. 정상 보드 재부팅은 더 이상 `fc=1` 회귀로 처리되지 않고 `0x01000000`, `0x02000000`, ...처럼 `+2^24` 단위 점프가 발생합니다.
+임베디드 Option B ([ADR-007](wiki/decisions/007-bmu-fc-nvm-persistence.md)) 적용 후 BMU는 HSE Monotonic Counter 기반 boot epoch를 FC 상위 바이트에 반영해 chain에 **globally monotonic FC**를 보냅니다. 정상 보드 재부팅은 더 이상 `fc=1` 회귀로 처리되지 않고 `0x01000000`, `0x02000000`, ...처럼 `+2^24` 단위 점프가 발생합니다.
 
 운영 기준:
 
 - 체인코드는 기존 `fc > lastFc` 정책을 유지합니다. boot epoch 점프는 정상 monotonic 증가입니다.
 - `POST /api/bmu/reset-fc` / `ResetFCForDID`는 삭제하지 않고 emergency fail-safe로만 사용합니다.
-- 평상시 `FCRESET-*` audit event는 **0건/일**이 정상입니다. 발생하면 DID 회전, counter 손상, manufacturing/onboarding, 256-boot wrap 여부를 확인합니다.
+- 평상시 `FCRESET-*` audit event는 **0건/일**이 정상입니다. 발생하면 DID 회전, counter 손상, manufacturing/onboarding, 256-boot wrap (~85일, g_chain_fc uint32 한계) 여부를 확인합니다.
 - 256-boot wrap으로 FC가 `0xFFFFFFFF` 이후 `0x00000000`으로 돌아오면 chain reject가 시작되므로 DID 회전 + 수동 reset 절차를 사용합니다.
 
 비상 수동 복구:
@@ -101,6 +101,8 @@ curl -X POST http://localhost:3001/api/bmu/reset-fc \
 - [ADR-004 FC reset / Option B](wiki/decisions/004-fc-reset-mechanism.md) — ResetFCForDID는 fail-safe, 정상 재부팅은 HSE monotonic FC로 처리
 - [ADR-005 build paths](wiki/decisions/005-build-paths.md) — `C:\BMS` 정션 우회 + 장기 마이그레이션
 - [ADR-006 CANoe HTTP rogue](wiki/decisions/006-canoe-bmu-poster.md) — Vector CANoe HTTP Binding이 `/api/bmu/data` 점유한 사건 격리. **운영 규칙: CANoe configuration에 HTTP Binding 절대 활성화 금지**
+- [ADR-007 BMU FC NVM persistence](wiki/decisions/007-bmu-fc-nvm-persistence.md) — Option B 구현 (HSE Monotonic Counter NVM-backed FC, ProtocolTask post-scheduler epoch advance, g_chain_fc rewrite). 2026-05-22 실보드 검증 완료, MATLAB → chain ingest 정상
+- [option-b feasibility](wiki/embedded/option-b-hse-nvm-fc-feasibility.md) — Phase A probe 측정 + Mode 0 의사결정
 - [ResetFCForDID runbook](wiki/blockchain/reset-fc-runbook.md) — emergency manual recovery 절차와 감사 기준
 
 ## 보안 통신 (CAN-FD)
@@ -164,8 +166,8 @@ React 웹 콘솔과 `bmu-agent`가 배터리 여권 발급, 확장 속성, BMS b
 | `POST /api/passports/:id/bms-binding` | `BindBMSIdentifier` |
 | `POST /api/passports/:id/source-verification` | `RecordSourceVerification` |
 | `POST /api/bmu/data` (bound passport) | `RecordBMUDataWithPayload(..., rawPayload)` |
-| `POST /api/bmu/reset-fc` (Manufacturer · Regulator, 5건/시간) | `ResetFCForDID(did, reason)` — Option B 이후 비상 fail-safe. 성공 호출은 `RESET_FC_CALLED` alert |
-| `POST /api/bmu/event` (Manufacturer) | Chaincode write 없음 — BMU UART `[HSE]`/`[FATAL]` 이벤트를 `logs/agent.log`에 `category="hse"`로 기록 |
+| `POST /api/bmu/reset-fc` (Manufacturer · Regulator, 5건/시간, audit 다층) | `ResetFCForDID(did, reason)` — Option B ([ADR-007](wiki/decisions/007-bmu-fc-nvm-persistence.md)) 적용 후 **fail-safe 전용**: DID 회전 / NVM 영구 실패 / 256-boot wrap 대응. 성공 호출은 `RESET_FC_CALLED` alert. webapp `/bmu-operations`에서 운영자 폼으로 호출 |
+| `POST /api/bmu/event` (Manufacturer JWT) | BMU UART `[HSE]`/`[FATAL]` 이벤트 → `logs/agent.log` (`category: "hse"`). MCP `monitor_bmu` action `hse` 가 소비. chain write 없음 |
 | `GET /api/bmu/operations/status` (Manufacturer · Regulator) | 최근 24h max FC, reset-fc count, `FC_WRAP_NEAR` / `RESET_FC_CALLED` 상태 조회 |
 
 기본 BMS binding 값:
