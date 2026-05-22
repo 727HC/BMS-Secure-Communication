@@ -24,6 +24,64 @@ import time
 _HEX64_RE = re.compile(r'^[0-9a-fA-F]{64}$')
 _HEX96_RE = re.compile(r'^[0-9a-fA-F]{96}$')
 
+# HSE event patterns (ADR-007 Option B). POSTed to /api/bmu/event for MCP alerting.
+_HSE_BOOT_FC_RE = re.compile(
+    r'^\[HSE\] FC=0x([0-9A-Fa-f]{8})\s+hi=0x([0-9A-Fa-f]{8})')
+_HSE_FATAL_READ_RE = re.compile(
+    r'^\[FATAL\] HSE counter read failed status=0x([0-9A-Fa-f]+)\s+after 3 retries')
+_HSE_FATAL_CONFIG_RE = re.compile(
+    r'^\[FATAL\] FC counter config failed - halting')
+_HSE_FATAL_EPOCH_RE = re.compile(
+    r'^\[FATAL\] HSE FC epoch advance failed status=0x([0-9A-Fa-f]+)')
+_HSE_WARN_INC_RE = re.compile(
+    r'^\[WARN\] HSE counter increment failed status=0x([0-9A-Fa-f]+)')
+
+
+def parse_hse_event(line):
+    """Parse BMU HSE UART line into structured event dict, or None."""
+    m = _HSE_BOOT_FC_RE.match(line)
+    if m:
+        fc_hex = m.group(1)
+        hi_hex = m.group(2)
+        fc_int = int(fc_hex, 16)
+        # epoch_nn = high byte of low 32 bits (boot epoch counter, ADR-007 256-wrap)
+        epoch_nn = (fc_int >> 24) & 0xFF
+        return {
+            'level': 'info',
+            'code': 'BOOT_FC',
+            'fc': fc_int,
+            'fcHex': '0x' + fc_hex,
+            'data': {'hi_hex': '0x' + hi_hex, 'epoch_nn': epoch_nn},
+            'message': line,
+        }
+    m = _HSE_FATAL_READ_RE.match(line)
+    if m:
+        return {
+            'level': 'error', 'code': 'COUNTER_READ_FAIL',
+            'data': {'status_hex': '0x' + m.group(1)},
+            'message': line,
+        }
+    if _HSE_FATAL_CONFIG_RE.match(line):
+        return {
+            'level': 'error', 'code': 'CONFIG_FAIL',
+            'message': line,
+        }
+    m = _HSE_FATAL_EPOCH_RE.match(line)
+    if m:
+        return {
+            'level': 'error', 'code': 'EPOCH_ADVANCE_FAIL',
+            'data': {'status_hex': '0x' + m.group(1)},
+            'message': line,
+        }
+    m = _HSE_WARN_INC_RE.match(line)
+    if m:
+        return {
+            'level': 'warn', 'code': 'INCREMENT_WARN',
+            'data': {'status_hex': '0x' + m.group(1)},
+            'message': line,
+        }
+    return None
+
 
 def parse_bmu_line(line):
     """Parse BMU serial output line. Returns None on malformed input."""
@@ -144,6 +202,36 @@ class AgentAuth:
         if token:
             return {"Authorization": f"Bearer {token}"}
         return {}
+
+
+def post_event_to_agent(agent_url, event, auth=None, did=None):
+    """POST HSE event to /api/bmu/event. Soft-fail (returns bool, no spool)."""
+    try:
+        api_url = f"{agent_url}/api/bmu/event"
+        body = dict(event)
+        body['source'] = 'bmu-firmware'
+        if did:
+            body['did'] = did
+        hdrs = auth.headers() if auth else {}
+        resp = requests.post(api_url, json=body, headers=hdrs, timeout=5)
+        if resp.status_code == 401 and auth:
+            auth.token = None
+            hdrs = auth.headers()
+            resp = requests.post(api_url, json=body, headers=hdrs, timeout=5)
+        if resp.status_code in (200, 201, 204):
+            return True
+        # 404 = Passport endpoint not deployed yet; warn once per process
+        if resp.status_code == 404 and not getattr(post_event_to_agent, '_404_warned', False):
+            print(f"  [EVENT] /api/bmu/event 404 - Passport endpoint may not be live yet (suppressing further 404s)", flush=True)
+            post_event_to_agent._404_warned = True
+        elif resp.status_code != 404:
+            print(f"  [EVENT] POST failed: {resp.status_code} {resp.text[:80]}", flush=True)
+        return False
+    except requests.exceptions.ConnectionError:
+        return False
+    except Exception as e:
+        print(f"  [EVENT] error: {e}", flush=True)
+        return False
 
 
 def post_to_agent(agent_url, payload, auth=None):
@@ -273,6 +361,15 @@ def main():
 
             line = raw.decode('ascii', errors='replace').strip()
             if not line:
+                continue
+
+            # HSE event ingest (ADR-007) — independent of [SIGN]/[DATA] pipeline
+            hse_event = parse_hse_event(line)
+            if hse_event:
+                code = hse_event.get('code', '?')
+                level = hse_event.get('level', '?')
+                print(f"[HSE-EVENT] {level} {code} -> /api/bmu/event", flush=True)
+                post_event_to_agent(args.agent, hse_event, auth=auth, did=args.did)
                 continue
 
             parsed = parse_bmu_line(line)
