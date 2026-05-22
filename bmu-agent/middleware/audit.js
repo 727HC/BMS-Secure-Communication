@@ -8,8 +8,10 @@ const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
 
-const AUDIT_DIR = path.resolve(__dirname, '..', '..', 'logs');
-const AUDIT_FILE = path.join(AUDIT_DIR, 'audit.log');
+const AUDIT_FILE = process.env.BMS_AUDIT_LOG_FILE
+  ? path.resolve(process.env.BMS_AUDIT_LOG_FILE)
+  : path.join(path.resolve(__dirname, '..', '..', 'logs'), 'audit.log');
+const AUDIT_DIR = path.dirname(AUDIT_FILE);
 const MAX_AUDIT_SIZE = 50 * 1024 * 1024; // 50MB rotation
 const MEMORY_BUFFER_SIZE = 1000; // recent logs in memory for fast queries
 let auditStream = null;

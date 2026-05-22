@@ -55,7 +55,7 @@ status: current
 ```json
 {
   "level": "fatal",
-  "eventType": "HSE_NVM_READ_FAIL",
+  "code": "COUNTER_READ_FAIL",
   "source": "bmu-uart",
   "message": "[FATAL] HSE NVM counter read failed",
   "fcHex": "0xf8000001",
@@ -64,6 +64,8 @@ status: current
   }
 }
 ```
+
+`/api/bmu/event`는 `eventType`, `type`, `code` 순서로 이름을 고르고 prefix를 추가하지 않는다. bridge가 `code="COUNTER_READ_FAIL"`로 보내면 agent log의 `eventType`도 `COUNTER_READ_FAIL`이다.
 
 ## 데이터 흐름
 1. MATLAB/BMU가 bridge를 통해 `POST /api/bmu/data`로 rawPayload + DID + signature를 전송한다.

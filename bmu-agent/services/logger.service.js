@@ -3,8 +3,10 @@
 const fs = require('fs');
 const path = require('path');
 
-const LOG_DIR = path.resolve(__dirname, '..', '..', 'logs');
-const LOG_FILE = path.join(LOG_DIR, 'agent.log');
+const LOG_FILE = process.env.BMS_AGENT_LOG_FILE
+  ? path.resolve(process.env.BMS_AGENT_LOG_FILE)
+  : path.join(path.resolve(__dirname, '..', '..', 'logs'), 'agent.log');
+const LOG_DIR = path.dirname(LOG_FILE);
 const MAX_LOG_SIZE = 10 * 1024 * 1024; // 10MB rotation
 let logStream = null;
 let currentLogSize = 0;

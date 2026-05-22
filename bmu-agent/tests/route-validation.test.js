@@ -1,6 +1,9 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const http = require('node:http');
+const fs = require('node:fs');
+const os = require('node:os');
+const path = require('node:path');
 
 process.env.JWT_SECRET ||= 'test-jwt-secret';
 process.env.FABRIC_ADMIN_SECRET ||= 'test-admin-secret';
@@ -18,6 +21,14 @@ process.env.FABRIC_ORG4_DOMAIN ||= 'regulator.example.com';
 process.env.FABRIC_ORG4_CA_NAME ||= 'ca-regulator';
 process.env.CLOUD_AGENT_API_KEY ||= 'test-cloud-agent-key';
 process.env.CLOUD_AGENT_BASE ||= 'http://127.0.0.1:1';
+process.env.BMS_AGENT_LOG_FILE ||= path.join(os.tmpdir(), `bmu-agent-test-${process.pid}.log`);
+process.env.BMS_AUDIT_LOG_FILE ||= path.join(os.tmpdir(), `bmu-agent-audit-test-${process.pid}.log`);
+try { fs.unlinkSync(process.env.BMS_AGENT_LOG_FILE); } catch {}
+try { fs.unlinkSync(process.env.BMS_AUDIT_LOG_FILE); } catch {}
+process.once('exit', () => {
+  try { fs.unlinkSync(process.env.BMS_AGENT_LOG_FILE); } catch {}
+  try { fs.unlinkSync(process.env.BMS_AUDIT_LOG_FILE); } catch {}
+});
 
 const serverModule = require('../server');
 const { generateToken } = require('../services/auth.service');
@@ -675,7 +686,7 @@ test('bmu ingest decoded log exposes Option B FC jump-start pattern', async (t) 
     && line.includes('"fcJumpStartPattern":true')));
 });
 
-test('bmu event endpoint relays HSE UART JSON into hse agent log', async (t) => {
+test('bmu event endpoint relays HSE UART code into hse agent log without renaming', async (t) => {
   const captured = captureLogs(t);
   const server = await listen(serverModule.createApp());
   t.after(() => server.close());
@@ -686,7 +697,7 @@ test('bmu event endpoint relays HSE UART JSON into hse agent log', async (t) => 
     method: 'POST',
     body: {
       level: 'info',
-      eventType: 'HSE_NVM_READ_FAIL',
+      code: 'COUNTER_READ_FAIL',
       source: 'bmu-uart',
       message: '[HSE] nvm read failed, fail-safe halt',
       did: 'HgBpAxtHJ4qRwsNiroaqvC',
@@ -702,11 +713,11 @@ test('bmu event endpoint relays HSE UART JSON into hse agent log', async (t) => 
   assert.equal(res.status, 200);
   assert.equal(res.body.success, true);
   assert.equal(res.body.status, 'LOGGED');
-  assert.equal(res.body.eventType, 'HSE_NVM_READ_FAIL');
+  assert.equal(res.body.eventType, 'COUNTER_READ_FAIL');
   assert.equal(res.body.level, 'info');
   assert.ok(captured.some((line) => line.includes('"category":"hse"')
     && line.includes('"action":"BmuEvent"')
-    && line.includes('"eventType":"HSE_NVM_READ_FAIL"')
+    && line.includes('"eventType":"COUNTER_READ_FAIL"')
     && line.includes('"fcHex":"0xf8000001"')
     && line.includes('"token":"[REDACTED]"')));
 });

@@ -155,7 +155,7 @@ webapp 프론트엔드는 `/bmu-operations` 별도 "운영" 섹션에서 Option 
 ```json
 {
   "level": "fatal",
-  "eventType": "HSE_NVM_READ_FAIL",
+  "code": "COUNTER_READ_FAIL",
   "source": "bmu-uart",
   "message": "[FATAL] HSE NVM counter read failed",
   "did": "HgBpAxtHJ4qRwsNiroaqvC",
@@ -168,6 +168,7 @@ webapp 프론트엔드는 `/bmu-operations` 별도 "운영" 섹션에서 Option 
 ```
 
 - `level`: `info | warn | error | fatal` (`fatal`은 agent.log level `error`로 기록)
+- event name은 `eventType`, `type`, `code` 순서로 받으며 prefix를 추가하지 않는다. bridge가 `code="COUNTER_READ_FAIL"`로 보내면 agent log의 `eventType`도 `COUNTER_READ_FAIL`이다.
 - `data`는 object만 허용하며 `password/token/secret/signature/rawPayload/privateKey/authorization` 계열 key는 `[REDACTED]` 처리
 - 응답: `{ "success": true, "status": "LOGGED", "eventType": "...", "level": "..." }`
 
