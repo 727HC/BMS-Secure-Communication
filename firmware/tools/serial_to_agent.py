@@ -314,8 +314,10 @@ def main():
                         help="BMS Agent URL (default: http://localhost:3001)")
     parser.add_argument("--did", default=None,
                         help="BMU DID for signature verification (e.g. MPGsQGEaPz9qcySnxfFt4B)")
-    parser.add_argument("--user", default=None, help="Agent login user ID")
-    parser.add_argument("--password", default=None, help="Agent login password")
+    parser.add_argument("--user", default=os.environ.get("BRIDGE_USER"),
+                        help="Agent login user ID (or BRIDGE_USER env var)")
+    parser.add_argument("--password", default=os.environ.get("BRIDGE_PASSWORD"),
+                        help="Agent login password (or BRIDGE_PASSWORD env var to avoid cmdline leakage)")
     parser.add_argument("--org", type=int, default=1, help="Agent org number (default: 1=Manufacturer)")
     parser.add_argument("--min-fc", type=int, default=0,
                         help="Drop SIGN frames with fc < this value (catch-up after BMU reboot vs chaincode lastFc). 0 = no filter.")
