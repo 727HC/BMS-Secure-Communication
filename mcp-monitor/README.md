@@ -110,10 +110,12 @@ node src/index.js
 | `latest` | 최신 BMU 데이터 | `passport_id`, `limit` |
 | `frequency` | 수신 빈도 분석 | `hours` |
 | `thresholds` | 임계값 조회/변경 | `set_thresholds` (soc/voltage/temp) |
+| `hse` | BMU HSE/boot UART 이벤트 분류 + epoch_nn 임계 | `hours` |
 
 - **INVALIDATED 필터링**: `status !== 'INVALIDATED'` 레코드만 분석에 포함 (`invalidatedFiltered` 카운트 응답 포함)
 - **Cross-validation**: threshold 변경 시 `*_min < *_max` 검증
 - **query error**: 전체 passport scan 또는 passport별 BMU query 실패를 `fabricQuery.errors[]`에 노출
+- **HSE 이벤트 분류 (`action: 'hse'`)**: `category=hse` 로그를 eventType prefix 기반으로 info(`BOOT_FC`) / warn(`*_WARN`) / critical(`*_FAIL`, `FATAL_*`) 분류. 알 수 없는 eventType은 `unknown` severity로 보존(silent drop 금지). epoch_nn은 `data.epoch_nn` → `fcHex` top byte → `fc` top byte 순으로 추출. DID별 latest epoch에 임계 적용 — `>= 0xF8` yellow, `>= 0xFE` red. 응답 필드: `counts`, `currentEpochByDid`, `recentFatal[]`, `alerts[]`. 평상시 `counts.FATAL` baseline 0 기대.
 
 ### 3. `monitor_vc` — VC 이벤트
 
@@ -292,7 +294,7 @@ mcp-monitor/
 │   ├── index.js                # MCP 서버 진입점, 5 tool + 1 resource 등록
 │   ├── tools/
 │   │   ├── tx-monitor.js       # 트랜잭션 (recent/stats/search)
-│   │   ├── bmu-monitor.js      # BMU (anomalies/latest/frequency/thresholds)
+│   │   ├── bmu-monitor.js      # BMU (anomalies/latest/frequency/thresholds/hse)
 │   │   ├── vc-monitor.js       # VC (events/expiring/stats/revoked)
 │   │   ├── system-status.js    # 시스템 (overview/fabric/von/acapy/agent/docker)
 │   │   └── passport-monitor.js # Passport API/audit/BMU/VC/error trend 관찰

@@ -32,7 +32,7 @@ MCP client ← stdio → index.js ←→ tools/*.js ←→ Fabric / Passport API
 | Tool | Action | 설명 |
 |------|--------|------|
 | `monitor_transactions` | recent / stats / search | 트랜잭션 로그와 통계 |
-| `monitor_bmu` | anomalies / latest / frequency / thresholds | BMU 이상치 및 수신 상태 |
+| `monitor_bmu` | anomalies / latest / frequency / thresholds / hse | BMU 이상치, 수신 상태, HSE/boot UART 이벤트 분류 |
 | `monitor_vc` | events / expiring / stats / revoked | VC 이벤트와 통계 |
 | `system_status` | overview / fabric / von / acapy / agent / docker | 전체 시스템 상태 |
 | `monitor_passport` | status / audit / trends / observation_plan | Passport API·감사·BMU/VC/error trend 읽기 전용 관찰 |

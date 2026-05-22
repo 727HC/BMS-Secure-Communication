@@ -290,6 +290,117 @@ async function execute(params) {
       };
     }
 
+    case 'hse': {
+      // BMU HSE/boot UART events ingested into agent.log (category=hse).
+      // Schema agreed cross-session 2026-05-22: eventType + fcHex top byte = epoch_nn.
+      // Severity from eventType prefix; unknown types kept under 'unknown' so the
+      // map can be extended without churning this code.
+      const since = new Date(Date.now() - hours * 3600000).toISOString();
+      const { logs } = readRecentLogs(2000, { category: 'hse', since });
+
+      const EPOCH_YELLOW = 0xF8; // 248
+      const EPOCH_RED = 0xFE;    // 254
+
+      const severityOf = (eventType) => {
+        if (eventType === 'BOOT_FC') return 'info';
+        if (/_WARN$/.test(eventType)) return 'warn';
+        if (/_FAIL$/.test(eventType) || /^FATAL_/.test(eventType)) return 'critical';
+        return 'unknown';
+      };
+
+      const parseEpochNn = (entry) => {
+        if (entry.data && Number.isInteger(entry.data.epoch_nn)) return entry.data.epoch_nn;
+        const hex = entry.fcHex || (entry.data && entry.data.fc_hex);
+        if (typeof hex === 'string' && /^0x[0-9a-fA-F]+$/.test(hex)) {
+          const v = parseInt(hex, 16);
+          if (Number.isFinite(v)) return (v >>> 24) & 0xFF;
+        }
+        if (Number.isInteger(entry.fc)) return (entry.fc >>> 24) & 0xFF;
+        return null;
+      };
+
+      const epochSeverity = (nn) => {
+        if (nn === null) return 'green';
+        if (nn >= EPOCH_RED) return 'red';
+        if (nn >= EPOCH_YELLOW) return 'yellow';
+        return 'green';
+      };
+
+      const counts = { BOOT_FC: 0, WARN: 0, FATAL: 0, UNKNOWN: 0 };
+      const currentEpochByDid = {};
+      const recentFatal = [];
+      const alerts = [];
+
+      for (const entry of logs) {
+        const et = entry.eventType || 'UNKNOWN';
+        const sev = severityOf(et);
+
+        if (et === 'BOOT_FC') counts.BOOT_FC += 1;
+        else if (sev === 'warn') counts.WARN += 1;
+        else if (sev === 'critical') counts.FATAL += 1;
+        else if (sev === 'unknown') counts.UNKNOWN += 1;
+
+        const did = entry.did || null;
+        const nn = parseEpochNn(entry);
+        if (did && nn !== null) {
+          const prev = currentEpochByDid[did];
+          const ts = entry.timestamp || null;
+          if (!prev || (ts && ts >= prev.timestamp)) {
+            currentEpochByDid[did] = {
+              epoch_nn: nn,
+              epoch_nn_hex: `0x${nn.toString(16).toUpperCase().padStart(2, '0')}`,
+              severity: epochSeverity(nn),
+              fcHex: entry.fcHex || null,
+              timestamp: ts,
+            };
+          }
+        }
+
+        if (sev === 'critical') {
+          recentFatal.push({
+            timestamp: entry.timestamp,
+            did,
+            eventType: et,
+            status: entry.data ? entry.data.status || entry.data.status_hex || null : null,
+            line: entry.line || null,
+          });
+          alerts.push({
+            type: 'HSE_FATAL',
+            severity: 'critical',
+            did,
+            eventType: et,
+            timestamp: entry.timestamp,
+          });
+        }
+      }
+
+      for (const [did, info] of Object.entries(currentEpochByDid)) {
+        if (info.severity === 'red' || info.severity === 'yellow') {
+          alerts.push({
+            type: 'EPOCH_THRESHOLD',
+            severity: info.severity,
+            did,
+            epoch_nn: info.epoch_nn,
+            epoch_nn_hex: info.epoch_nn_hex,
+            timestamp: info.timestamp,
+          });
+        }
+      }
+
+      recentFatal.sort((a, b) => (b.timestamp || '').localeCompare(a.timestamp || ''));
+
+      return {
+        action: 'hse',
+        period: `${hours}h`,
+        totalEvents: logs.length,
+        counts,
+        currentEpochByDid,
+        recentFatal: recentFatal.slice(0, 20),
+        alerts,
+        thresholds: { epoch_yellow_hex: '0xF8', epoch_red_hex: '0xFE' },
+      };
+    }
+
     case 'thresholds': {
       if (set_thresholds) {
         // Apply updates to a copy first for cross-validation

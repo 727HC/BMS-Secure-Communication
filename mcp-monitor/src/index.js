@@ -50,8 +50,8 @@ server.tool(
   'monitor_bmu',
   'BMU 배터리 데이터 이상 탐지. SOC/전압/온도 임계값 초과, 데이터 수신 빈도 모니터링, 서명 검증 상태',
   {
-    action: z.enum(['anomalies', 'latest', 'frequency', 'thresholds']).describe(
-      'anomalies: 임계값 초과 데이터 탐지, latest: 최신 BMU 데이터, frequency: 수신 빈도 분석, thresholds: 현재 임계값 설정 조회/변경'
+    action: z.enum(['anomalies', 'latest', 'frequency', 'thresholds', 'hse']).describe(
+      'anomalies: 임계값 초과 데이터 탐지, latest: 최신 BMU 데이터, frequency: 수신 빈도 분석, thresholds: 임계값 조회/변경, hse: BMU HSE/boot UART 이벤트 + epoch_nn 임계 분류'
     ),
     passport_id: z.string().optional().describe('특정 여권 ID로 필터링'),
     limit: z.number().int().min(1).max(500).optional().default(50).describe('조회할 레코드 수'),
