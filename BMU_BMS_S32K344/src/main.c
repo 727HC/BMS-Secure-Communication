@@ -1170,9 +1170,8 @@ int main(void)
                 UART_SendString("[FATAL] FC counter config failed - halting\r\n");
                 for (;;) { /* spin */ }
             }
-            /* Advance epoch by 2^24 to force RP write -> persists across power cycle.
-             * Halts on failure (anti-replay protection requires cross-boot monotonicity). */
-            (void)BMU_AdvanceFcEpoch();
+            /* Epoch advance is deferred to ProtocolTask post-scheduler — pre-scheduler
+             * HSE flash write blocks subsequent task creation/scheduling. */
             uint64_t fc_initial = 0ULL;
             (void)BMU_ReadFcCounter(&fc_initial);
             /* g_chain_fc is BMU's globally monotonic FC sent to chaincode.
@@ -1363,6 +1362,21 @@ static void BMU_ProtocolTask(void *pvParameters)
     CanRxItem_t item;
 
     UART_SendString("[Task] Protocol started\r\n");
+
+    /* Option B: Advance HSE FC epoch in task context (post-scheduler).
+     * Doing this pre-scheduler hangs other tasks because HSE flash write blocks
+     * critical setup. Here, FreeRTOS preemption keeps the system responsive while
+     * HSE writes the new RP value to flash. One-shot per boot. */
+    {
+        (void)BMU_AdvanceFcEpoch();
+        uint64_t fc_after = 0ULL;
+        (void)BMU_ReadFcCounter(&fc_after);
+        g_chain_fc = (uint32)(fc_after & 0xFFFFFFFFULL);
+        UART_SendString("[HSE] EpochAdvance FC=0x");
+        { static const char hx[]="0123456789ABCDEF"; uint32 v=g_chain_fc;
+          int i; for(i=28;i>=0;i-=4) UART_SendChar(hx[(v>>i)&0xF]); }
+        UART_SendString("\r\n");
+    }
 
     for (;;)
     {
