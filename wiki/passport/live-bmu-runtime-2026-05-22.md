@@ -74,20 +74,39 @@ status: current
 6. 성공 record는 원장에 남고, 동시에 `runtimeBmuSnapshot.service.js`에 최신 snapshot으로 저장된다.
 7. 여권 API는 최신 BMU record를 `currentSoc`, `currentTemperature`, `currentStatusFlags`, `totalDischargeCycles`, `latestDataHash`, `latestRawPayloadHashVerified`에 overlay한다.
 
-## 2026-05-22 확인값
+## 2026-05-22 17:16 KST 확인값
 `localhost:3001` 기준:
 
 - `/api/status` → `fabric=connected`, `channel=passportchannel`, `contract=passport-contract`, `org=ManufacturerMSP`
-- `/api/passports/MATLAB-BMU-002`
-  - `currentSoc=56609`
-  - `currentTemperature=38583`
-  - `temperature=38583`
-  - `latestRawPayloadHashVerified=true`
-  - `bmsBindingCode32=748293644`
-  - `bmsBindingCodeHex=0x2c9a0e0c`
-- `/api/bmu/records/MATLAB-BMU-002?pageSize=3`
-  - latest `fc=1269810`
+- `/api/bmu/records/MATLAB-BMU-002?pageSize=1`
+  - latest `recordId=BMU-37cd2d3c-b837-4336-b3bd-55adf1982318`
+  - latest `fc=167775324` / `0x0a000c5c`
+  - latest `timestamp=2026-05-22T08:16:41.490Z`
   - latest `rawPayloadHashVerified=true`
+  - latest `dataHash=a1fc87dfc1820af6b1c5b780c1d74779762abac739adf6c0b88d363eea2fb102`
+- `/api/passports/MATLAB-BMU-002`
+  - `currentSoc=30899`
+  - `currentTemperature=34565`
+  - `temperature=34565`
+  - `currentStatusFlags=0`
+  - `latestRawPayloadHashVerified=true`
+  - `latestDataHash=a1fc87dfc1820af6b1c5b780c1d74779762abac739adf6c0b88d363eea2fb102`
+- `/api/bmu/operations/status`
+  - `resetFcDailyCount=0`
+  - `fcWindow.status=normal`
+  - `fcWindow.observationCount=244`
+  - `fcWindow.maxFcHex=0x0a000c5c`
+  - `alerts=[]`
+
+HSE event path도 별도 확인됐다.
+
+```text
+"action":"BmuEvent"
+"eventType":"BOOT_FC"
+"source":"bmu-firmware"
+"fcHex":"0x09000000"
+"category":"hse"
+```
 
 ## 정상 로그 패턴
 ```text
@@ -114,5 +133,5 @@ status: current
   - Option B 이후에는 일반 복구 루틴이 아니라 alert다. `BMU 운영` 화면과 `RESET_FC` audit/action log를 확인한다.
 
 ## 관련 문서
-- [[passport/activity-log/2026-05-22-matlab-live-stream-recovery|2026-05-22 MATLAB live stream E2E 복구]]
+- local-only activity log: `passport/activity-log/2026-05-22-matlab-live-stream-recovery.md`
 - [[passport/live-bmu-runtime-2026-05-08|2026-05-08 MATLAB/BMU live runtime 기준]]

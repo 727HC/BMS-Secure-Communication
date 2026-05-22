@@ -184,3 +184,20 @@ CANoe rogue replay(`fc=74483`) 격리 + DID 회전 후 새 DID `HgBpAxtHJ4qRwsNi
 - CANoe/fixture replay가 남아 있는 DID에는 reset을 남발하지 않는다.
 - `reason`에는 운영 맥락을 남기되 secret/token/path를 넣지 않는다.
 - old DID cleanup은 source 격리 여부를 확인한 뒤 별도 운영 판단으로 진행한다.
+
+---
+
+## Update 2026-05-22 — Option B 적용 완료: HSE Monotonic Counter 기반 globally monotonic FC
+
+임베디드 측 Option B 구현이 완료되어 BMU가 chain에 globally monotonic FC를 전송한다. 이 변경은 체인코드 변경을 요구하지 않는다. 기존 `RecordBMUData*` 경로는 `fc > lastFc`만 검증하므로 boot epoch 단위의 큰 증가를 정상 monotonic 증가로 처리한다.
+
+### 블록체인 운영 의미
+
+- `ResetFCForDID`는 삭제하지 않는다. DID 회전 fail-safe, FC counter 손상, manufacturing/onboarding, 256-boot wrap 대응용으로 유지한다.
+- `FCRESET-{did}-{txid}` audit event는 평상시 0건/일을 기대한다. 발생 시 alert로 취급한다.
+- 정상 FC 패턴은 기존 `1,2,...,N reset`이 아니라 boot epoch마다 `+2^24` 점프하는 값이다. 예: `0x01000000`, `0x02000000`, ...
+- 256-boot wrap으로 `0xFFFFFFFF` 이후 `0x00000000`이 오면 현재 `lastFc`보다 작으므로 chain reject가 시작된다. 이 시점에는 DID 회전 + `ResetFCForDID` 운영 절차를 사용한다.
+
+### 기존 옵션 A/B 판단 갱신
+
+이 ADR의 Option A(`ResetFCForDID`)는 여전히 emergency/manual recovery로 유효하다. 다만 정상 보드 재부팅 복구 경로는 Option B가 담당하므로, 운영자가 보드 reset마다 `ResetFCForDID`를 호출하는 패턴은 더 이상 표준이 아니다.

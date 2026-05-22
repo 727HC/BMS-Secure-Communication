@@ -21,7 +21,7 @@ status: current
 ## 현재 상태
 - 배터리 여권 UI의 현재 제품명은 VELKERN이며, 기준 구현은 React 기반 화면군이다.
 - 랜딩/로그인/대시보드/등록부/상세/원자재/BMU/정비/재활용/QR/감사 로그가 현재 흐름으로 정리돼 있다.
-- 2026-05-22 기준 MATLAB/BMU live demo는 `MATLAB-BMU-002`와 DID `HgBpAxtHJ4qRwsNiroaqvC`를 대상으로 동작한다.
+- 2026-05-22 기준 MATLAB/BMU live demo는 `MATLAB-BMU-002`와 DID `HgBpAxtHJ4qRwsNiroaqvC`를 대상으로 동작한다. Option B 이후 BMU FC는 `0xNN000000` boot-slot 패턴으로 유지되고 reset-fc는 fail-safe로만 사용한다.
 - cloud-agent read model `localhost:3002`가 꺼져 있어도 `bmu-agent`가 Fabric fallback + runtime BMU snapshot overlay로 dashboard/detail 개요에 최신 BMU 값을 표시한다.
 - live Fabric 기준 chaincode는 `passport-contract` Version `1.4`, Sequence `5`다. Agent/UI는 sequence를 직접 지정하지 않고 chaincode name `passport-contract`로 호출한다.
 
@@ -45,7 +45,7 @@ status: current
 | passport | `/api/passports` | GET /, POST /, GET /:id, PUT /:id/bind, POST /:id/correct, POST /:id/extended-attributes, POST /:id/bms-binding, POST /:id/source-verification |
 | realtime | `/api/realtime` | GET /passports, GET /passports/:id, GET /bmu/:passportId, GET /stats |
 | material | `/api/materials` | GET /, POST /, POST /:id/materials |
-| bmu | `/api/bmu` | POST /data, GET /records/:passportId, POST /invalidate/:recordId |
+| bmu | `/api/bmu` | POST /data, POST /event, GET /records/:passportId, GET /operations/status, POST /invalidate/:recordId, POST /reset-fc |
 | maintenance | `/api/maintenance` | POST /:id/request, POST /:id/log, POST /:id/accident |
 | analysis | `/api/analysis` | POST /:id/request, POST /:id/result |
 | recycling | `/api/recycling` | PUT /:id/availability, POST /:id/extract, POST /:id/dispose |

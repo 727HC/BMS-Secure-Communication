@@ -23,7 +23,7 @@ status: current
 - [[decisions/003-mcp-monitor-read-only|ADR-003]]
 
 ### Embedded / Blockchain 연계
-- [[decisions/004-fc-reset-mechanism|ADR-004]]
+- [[decisions/004-fc-reset-mechanism|ADR-004 — FC reset / Option B HSE monotonic FC 운영 기준]]
 - [[decisions/006-embedded-security-hardening|ADR-006]]
 
 ## 이 폴더에 두는 것

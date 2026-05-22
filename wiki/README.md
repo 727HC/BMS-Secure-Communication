@@ -45,6 +45,7 @@ xEV BMS 보안 플랫폼용 공용 Obsidian vault다.
 ### Passport
 - [[passport/README|Passport 허브]]
 - [[passport/overview|세션 개요]]
+- [[passport/live-bmu-runtime-2026-05-22|2026-05-22 MATLAB/BMU live runtime 기준]]
 - [[passport/frontend|프론트엔드 구조]]
 - [[passport/design-tokens|디자인 토큰]]
 - [[passport/assets/README|UI asset 허브]]
@@ -52,6 +53,8 @@ xEV BMS 보안 플랫폼용 공용 Obsidian vault다.
 ### Blockchain
 - [[blockchain/README|Blockchain 허브]]
 - [[blockchain/overview|세션 개요]]
+- [[blockchain/reset-fc-runbook|ResetFCForDID 운영 runbook]]
+- [[decisions/004-fc-reset-mechanism|ADR-004 — FC reset / Option B]]
 
 ## 기록성 문서
 - [[reviews/README|review / QA 기록 허브]]

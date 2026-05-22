@@ -11,7 +11,7 @@ status: current
 
 ## 현재 기준 문서
 - [[passport/overview|세션 개요]]
-- [[passport/live-bmu-runtime-2026-05-22|2026-05-22 MATLAB/BMU live runtime 기준]]
+- [[passport/live-bmu-runtime-2026-05-22|2026-05-22 MATLAB/BMU live runtime 기준]] — `MATLAB-BMU-002`, Option B FC, `/api/bmu/event`, `/bmu-operations`
 - [[passport/frontend|프론트엔드 구조]]
 - [[passport/design-tokens|디자인 토큰]]
 - [[passport/ui-references|UI 레퍼런스]]

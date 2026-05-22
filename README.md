@@ -64,34 +64,44 @@ python firmware/tools/serial_to_agent.py \
   --port COM4 --baud 28800 \
   --agent http://localhost:3001 \
   --did <BMU_DID> --user <USER> --password <PASSWORD> --org 1 \
-  [--min-fc <N>]                     # BMU 재부팅 후 catch-up 보호 (선택)
+  [--min-fc <N>]                     # legacy/fail-safe catch-up 보호 (선택)
 ```
 
 #### Bridge 운영 기능 (`serial_to_agent.py`)
 
 - **Hex 검증**: UART jitter로 garbage 페이로드가 chain에 들어가는 사고 차단. 64/96 hex char 검증 미통과 시 silent drop
 - **SQLite spool**: agent 일시 중단 시 페이로드 누적, 복구 시 자동 재전송 (`spool.db`)
-- **`[ALERT] BMU FC regression`**: 보드 재부팅으로 FC가 직전 peak 대비 100+ 회귀 시 단발 출력 + `ResetFCForDID` 가이드 메시지. **auto-call 절대 없음** — 운영자 manual invoke 원칙
-- **`--min-fc N`**: chaincode `lastFc=N-1` 일 때 BMU 재부팅으로 fc<N인 SIGN 라인은 silent drop, BMU FC가 N 이상 도달 시 자동 재개
+- **Option B FC 영속화**: BMU가 HSE NVM-backed counter로 부팅마다 `0xNN000000` 형태의 FC를 jump-start한다. CMU의 `1,2,3...` 카운터는 BMU에서 재작성되므로 chain에 도달하지 않는다.
+- **HSE/FATAL 이벤트 분리**: BMU UART의 `[HSE]`, `[FATAL]` 라인은 sample ingest와 독립적으로 `POST /api/bmu/event`로 올라가고, `logs/agent.log`에 `category="hse"`로 남는다.
+- **`[ALERT] BMU FC regression` / `--min-fc N`**: Option B 이전 또는 fail-safe 상황의 보호 장치로 보존한다. 정상 운영에서는 `ResetFCForDID` 자동 호출이 없고, 호출 발생 자체가 운영 alert다.
 
-#### FC 복구 (BMU 재부팅 후)
+#### FC 운영 / 복구
 
-체인코드의 lastFc 단조성 정책으로 BMU 재부팅 시 fc=1 재시작분이 reject되는 시나리오는 [ADR-004](wiki/decisions/004-fc-reset-mechanism.md)의 영구 메커니즘으로 해결:
+임베디드 Option B 적용 후 BMU는 HSE Monotonic Counter 기반 boot epoch를 FC 상위 바이트에 반영해 chain에 **globally monotonic FC**를 보냅니다. 정상 보드 재부팅은 더 이상 `fc=1` 회귀로 처리되지 않고 `0x01000000`, `0x02000000`, ...처럼 `+2^24` 단위 점프가 발생합니다.
+
+운영 기준:
+
+- 체인코드는 기존 `fc > lastFc` 정책을 유지합니다. boot epoch 점프는 정상 monotonic 증가입니다.
+- `POST /api/bmu/reset-fc` / `ResetFCForDID`는 삭제하지 않고 emergency fail-safe로만 사용합니다.
+- 평상시 `FCRESET-*` audit event는 **0건/일**이 정상입니다. 발생하면 DID 회전, counter 손상, manufacturing/onboarding, 256-boot wrap 여부를 확인합니다.
+- 256-boot wrap으로 FC가 `0xFFFFFFFF` 이후 `0x00000000`으로 돌아오면 chain reject가 시작되므로 DID 회전 + 수동 reset 절차를 사용합니다.
+
+비상 수동 복구:
 
 ```bash
-# 1. 운영자가 의도된 재부팅 확인 + Manufacturer/Regulator 권한 보유
-# 2. chaincode admin invoke
-peer chaincode invoke -C bms-channel -n passport-contract \
-  -c '{"function":"ResetFCForDID","Args":["<did>","<reason 10+ chars>"]}'
-# 3. bridge 재기동 (--min-fc 옵션 제거 가능)
+# Manufacturer 또는 Regulator JWT 필요
+curl -X POST http://localhost:3001/api/bmu/reset-fc \
+  -H "Authorization: Bearer <JWT>" \
+  -H "Content-Type: application/json" \
+  -d '{"did":"<did>","reason":"<50+ chars reason>","confirm":true}'
 ```
 
 #### 임베디드 측 ADR
 
-- [ADR-004 FC reset](wiki/decisions/004-fc-reset-mechanism.md) — W6 영구 해결책, 실측 검증 완료
+- [ADR-004 FC reset / Option B](wiki/decisions/004-fc-reset-mechanism.md) — ResetFCForDID는 fail-safe, 정상 재부팅은 HSE monotonic FC로 처리
 - [ADR-005 build paths](wiki/decisions/005-build-paths.md) — `C:\BMS` 정션 우회 + 장기 마이그레이션
 - [ADR-006 CANoe HTTP rogue](wiki/decisions/006-canoe-bmu-poster.md) — Vector CANoe HTTP Binding이 `/api/bmu/data` 점유한 사건 격리. **운영 규칙: CANoe configuration에 HTTP Binding 절대 활성화 금지**
-- [option-b HSE NVM FC](wiki/embedded/option-b-hse-nvm-fc-feasibility.md) — HSE Monotonic Counter로 FC 영속화 (production 진입 시 1순위 hardening 항목)
+- [ResetFCForDID runbook](wiki/blockchain/reset-fc-runbook.md) — emergency manual recovery 절차와 감사 기준
 
 ## 보안 통신 (CAN-FD)
 
@@ -154,7 +164,9 @@ React 웹 콘솔과 `bmu-agent`가 배터리 여권 발급, 확장 속성, BMS b
 | `POST /api/passports/:id/bms-binding` | `BindBMSIdentifier` |
 | `POST /api/passports/:id/source-verification` | `RecordSourceVerification` |
 | `POST /api/bmu/data` (bound passport) | `RecordBMUDataWithPayload(..., rawPayload)` |
-| `POST /api/bmu/reset-fc` (Manufacturer · Regulator only, 5건/시간, audit 다층) | `ResetFCForDID(did, reason)` — 장비 재부팅·교체 후 FC monotonic 충돌 복구. webapp `/bmu-operations`에서 운영자 폼으로 호출 |
+| `POST /api/bmu/reset-fc` (Manufacturer · Regulator, 5건/시간) | `ResetFCForDID(did, reason)` — Option B 이후 비상 fail-safe. 성공 호출은 `RESET_FC_CALLED` alert |
+| `POST /api/bmu/event` (Manufacturer) | Chaincode write 없음 — BMU UART `[HSE]`/`[FATAL]` 이벤트를 `logs/agent.log`에 `category="hse"`로 기록 |
+| `GET /api/bmu/operations/status` (Manufacturer · Regulator) | 최근 24h max FC, reset-fc count, `FC_WRAP_NEAR` / `RESET_FC_CALLED` 상태 조회 |
 
 기본 BMS binding 값:
 
@@ -165,12 +177,22 @@ bmsBindingCode32: 0x2c9a0e0c
 evidenceHash: b3c37ed2cdd2831cc0c212445905ced4a20ea51e129bff2e7418deddf7223178
 ```
 
+현재 MATLAB/BMU live 기준:
+
+```text
+passportId: MATLAB-BMU-002
+did: HgBpAxtHJ4qRwsNiroaqvC
+bmsBindingCode32: 748293644 / 0x2c9a0e0c
+chaincode: passport-contract Version 1.4 / Sequence 5
+```
+
 ### 실시간 화면 반영
 
 - 기본 흐름은 `cloud-agent` read model을 사용합니다.
 - `cloud-agent:3002`가 꺼져 있어도 `bmu-agent`가 Fabric BMU record와 runtime snapshot으로 화면 값을 보강합니다.
 - Dashboard 개요, Passport detail 개요, BMU 진단 탭은 같은 BMU 기준값을 봅니다.
 - Passport detail은 열린 상태에서도 3초마다 SOC/SOH/temperature를 조용히 갱신합니다.
+- `/bmu-operations`는 Option B 운영 상태, 최근 24h max FC, reset-fc alert를 표시하고 reset-fc를 fail-safe 폼으로만 노출합니다.
 
 ---
 
@@ -183,7 +205,7 @@ evidenceHash: b3c37ed2cdd2831cc0c212445905ced4a20ea51e129bff2e7418deddf7223178
 | Tool | 역할 |
 |---|---|
 | `monitor_transactions` | Fabric/Agent tx 로그와 상태 |
-| `monitor_bmu` | BMU 최신값, 이상치, 수신 빈도, 임계값 |
+| `monitor_bmu` | BMU 최신값, 이상치, 수신 빈도, 임계값, HSE/boot FC event |
 | `monitor_vc` | VC 발급/검증/만료/폐기 추세 |
 | `system_status` | Fabric/VON/ACA-Py/Agent/Docker 상태 |
 | `monitor_passport` | Passport `/api/status`·`/api/audit`, validation trend, BMS binding 증적 |
