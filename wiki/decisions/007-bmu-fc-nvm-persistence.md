@@ -152,7 +152,7 @@ N=256 (256 * 2^24 = 2^32) 시 low 32 bits가 0으로 wrap.
 ### Build verification
 
 ```bash
-cd /c/Users/heechan/Desktop/BMS
+cd <repo-root>
 source ./config.env
 export PATH="$TOOLCHAIN_PATH:$MAKE_PATH:$PATH"
 cd BMU_BMS_S32K344/Debug_FLASH

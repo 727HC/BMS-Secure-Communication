@@ -187,7 +187,7 @@ deep-dive 결과 implementation 전 30분 probe로 3개 unknown을 동시에 검
 probe 코드는 `BMU_BMS_S32K344/src/main.c`의 `[HSE] Imp=` 출력 직후, EdDSA 키 셋업 전에 `#ifdef HSE_FC_PROBE` 가드로 삽입됨. 활성 빌드:
 
 ```bash
-cd /c/Users/heechan/Desktop/BMS
+cd <repo-root>
 source ./config.env
 export PATH="$TOOLCHAIN_PATH:$MAKE_PATH:$PATH"
 cd BMU_BMS_S32K344/Debug_FLASH
