@@ -14,6 +14,7 @@ CC_COLL_CONFIG="NA"
 DELAY="3"
 MAX_RETRY="5"
 VERBOSE="false"
+CHAINCODE_INSTALL_ORGS="${CHAINCODE_INSTALL_ORGS:-1,2,3,4}"
 
 # Parse command line arguments
 while [[ $# -ge 1 ]] ; do
@@ -90,6 +91,7 @@ println "- CC_INIT_FCN: ${C_GREEN}${CC_INIT_FCN}${C_RESET}"
 println "- DELAY: ${C_GREEN}${DELAY}${C_RESET}"
 println "- MAX_RETRY: ${C_GREEN}${MAX_RETRY}${C_RESET}"
 println "- VERBOSE: ${C_GREEN}${VERBOSE}${C_RESET}"
+println "- CHAINCODE_INSTALL_ORGS: ${C_GREEN}${CHAINCODE_INSTALL_ORGS}${C_RESET}"
 
 INIT_REQUIRED="--init-required"
 # check if the init fcn should be called
@@ -140,6 +142,39 @@ function installChaincode() {
   cat log.txt
   verifyResult $res "Chaincode installation on peer0.org${ORG} has failed"
   successln "Chaincode is installed on peer0.org${ORG}"
+}
+
+function orgName() {
+  case "$1" in
+    1) echo "manufacturer" ;;
+    2) echo "evmanufacturer" ;;
+    3) echo "service" ;;
+    4) echo "regulator" ;;
+    *) echo "" ;;
+  esac
+}
+
+function installChaincodeForConfiguredOrgs() {
+  local install_orgs=()
+  local org org_name
+  IFS=',' read -r -a install_orgs <<< "${CHAINCODE_INSTALL_ORGS}"
+  if [ "${#install_orgs[@]}" -eq 0 ]; then
+    errorln "CHAINCODE_INSTALL_ORGS must include at least one org number"
+    exit 1
+  fi
+
+  for org in "${install_orgs[@]}"; do
+    org="${org//[[:space:]]/}"
+    org_name="$(orgName "${org}")"
+    if [ -z "${org_name}" ]; then
+      errorln "Invalid CHAINCODE_INSTALL_ORGS entry '${org}'. Expected comma-separated org numbers from 1 to 4."
+      exit 1
+    fi
+    infoln "Installing chaincode on peer0.${org_name}..."
+    installChaincode "${org}"
+  done
+
+  QUERY_INSTALLED_ORG="${install_orgs[0]//[[:space:]]/}"
 }
 
 # queryInstalled PEER ORG
@@ -311,18 +346,15 @@ packageChaincode
 
 PACKAGE_ID=$(peer lifecycle chaincode calculatepackageid ${CC_NAME}.tar.gz)
 
-## Install chaincode on all 4 peers
-infoln "Installing chaincode on peer0.manufacturer..."
-installChaincode 1
-infoln "Installing chaincode on peer0.evmanufacturer..."
-installChaincode 2
-infoln "Installing chaincode on peer0.service..."
-installChaincode 3
-infoln "Installing chaincode on peer0.regulator..."
-installChaincode 4
+## Install chaincode on configured peers.
+## Default keeps the historical all-4-org behavior. Operators may narrow
+## package installation to the orgs that need to execute the chaincode while
+## leaving definition approvals and channel commit validation unchanged.
+QUERY_INSTALLED_ORG=1
+installChaincodeForConfiguredOrgs
 
 ## query whether the chaincode is installed
-queryInstalled 1
+queryInstalled "${QUERY_INSTALLED_ORG}"
 
 ## approve the definition for each org
 approveForMyOrg 1
