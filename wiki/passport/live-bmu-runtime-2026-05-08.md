@@ -3,9 +3,11 @@ title: "2026-05-08 MATLAB/BMU live runtime 기준"
 date: 2026-05-08
 tags: [passport, bmu, matlab, realtime, fabric, sequence5]
 doc_type: reference
-status: current
+status: superseded
 ---
 # 2026-05-08 MATLAB/BMU live runtime 기준
+
+> 2026-05-22 현재 live target은 `MATLAB-BMU-002` / `HgBpAxtHJ4qRwsNiroaqvC`다. 최신 기준은 [[passport/live-bmu-runtime-2026-05-22|2026-05-22 MATLAB/BMU live runtime 기준]]을 본다.
 
 ## 현재 기준
 - `bmu-agent`는 `localhost:3001`에서 Fabric `passport-contract`를 호출한다.
