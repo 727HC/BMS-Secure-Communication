@@ -6,6 +6,17 @@
 #   COUCHDB_USER, COUCHDB_PASSWORD
 # 포트는 호스트에 노출하지 않음 (peer 컨테이너에서만 접근)
 
+# Named CouchDB data volumes: without these the couchdb:3.4.2 image's
+# `VOLUME /opt/couchdb/data` creates a fresh anonymous volume on every container
+# (re)creation, orphaning the previous one. Naming them makes each network rebuild
+# reuse the same volume instead of accumulating orphans across reset cycles.
+# CouchDB state is rebuildable from the peer ledger, so reusing/recreating these is safe.
+volumes:
+  couchdb0:
+  couchdb1:
+  couchdb2:
+  couchdb3:
+
 networks:
   passport:
     name: passport_net
@@ -22,6 +33,8 @@ services:
       - COUCHDB_PASSWORD=${COUCHDB_PASSWORD:?COUCHDB_PASSWORD must be set}
     networks:
       - passport
+    volumes:
+      - couchdb0:/opt/couchdb/data
 
   peer0.manufacturer.battery.com:
     environment:
@@ -42,6 +55,8 @@ services:
       - COUCHDB_PASSWORD=${COUCHDB_PASSWORD:?COUCHDB_PASSWORD must be set}
     networks:
       - passport
+    volumes:
+      - couchdb1:/opt/couchdb/data
 
   peer0.evmanufacturer.battery.com:
     environment:
@@ -62,6 +77,8 @@ services:
       - COUCHDB_PASSWORD=${COUCHDB_PASSWORD:?COUCHDB_PASSWORD must be set}
     networks:
       - passport
+    volumes:
+      - couchdb2:/opt/couchdb/data
 
   peer0.service.battery.com:
     environment:
@@ -82,6 +99,8 @@ services:
       - COUCHDB_PASSWORD=${COUCHDB_PASSWORD:?COUCHDB_PASSWORD must be set}
     networks:
       - passport
+    volumes:
+      - couchdb3:/opt/couchdb/data
 
   peer0.regulator.battery.com:
     environment:
