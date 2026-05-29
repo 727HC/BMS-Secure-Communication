@@ -248,3 +248,8 @@ wiki/embedded/*binding*.md
 /scripts/test-blockchain-repro-hardening.sh
 /wiki/blockchain/bmu-hot-path-map.md
 wiki/passport/bms-*-year-mapping*.md
+
+# Runtime-generated Fabric CA server config: fabric-ca rewrites registry.identities pass
+# to the resolved plaintext admin password on every bootstrap (-b). Track the *.template
+# (CHANGE_ME placeholder) instead; never commit the live runtime file. (Passport 합의 2026-05-29)
+/passport-network/organizations/fabric-ca/*/fabric-ca-server-config.yaml
