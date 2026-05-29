@@ -64,11 +64,21 @@ describe('BmuStateView', () => {
     expect(queryByText('데이터가 없습니다')).toBeNull();
   });
 
-  it('errorMsg without accessDenied falls through to empty-result panel', () => {
+  it('errorMsg without accessDenied shows the load-error panel (not the empty-result panel)', () => {
     const { getByText, queryByText } = render(
       <BmuStateView {...build({ hasSearched: true, errorMsg: 'transient', accessDenied: false, recordsCount: 0 })} />,
     );
-    expect(getByText('데이터가 없습니다')).not.toBeNull();
+    expect(getByText('BMU 기록을 불러오지 못했습니다')).not.toBeNull();
+    expect(getByText(/오류: transient/)).not.toBeNull();
+    expect(queryByText('데이터가 없습니다')).toBeNull();
     expect(queryByText(/계정으로는/)).toBeNull();
+  });
+
+  it('empty-result panel still shows when searched + 0 records + no error', () => {
+    const { getByText, queryByText } = render(
+      <BmuStateView {...build({ hasSearched: true, errorMsg: null, accessDenied: false, recordsCount: 0 })} />,
+    );
+    expect(getByText('데이터가 없습니다')).not.toBeNull();
+    expect(queryByText('BMU 기록을 불러오지 못했습니다')).toBeNull();
   });
 });

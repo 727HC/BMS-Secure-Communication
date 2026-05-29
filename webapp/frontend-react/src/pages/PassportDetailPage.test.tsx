@@ -29,6 +29,7 @@ const labelsState = {
 const mutationsState = {
   submitting: false,
   submitError: null as string | null,
+  setSubmitError: vi.fn(),
   onBind: vi.fn(),
   onMaintenanceRequest: vi.fn(),
   onMaintenanceLog: vi.fn(),

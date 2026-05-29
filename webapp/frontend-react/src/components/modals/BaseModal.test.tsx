@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { fireEvent, render } from '@testing-library/react';
-import BaseModal from './BaseModal';
+import BaseModal, { ModalErrorContext } from './BaseModal';
 
 describe('BaseModal', () => {
   it('renders nothing when open=false', () => {
@@ -73,5 +73,22 @@ describe('BaseModal', () => {
     unmount();
     fireEvent.keyDown(document, { key: 'Escape' });
     expect(onClose).not.toHaveBeenCalled();
+  });
+
+  it('renders the error banner from ModalErrorContext when an error is set', () => {
+    const { getByRole, getByText } = render(
+      <ModalErrorContext.Provider value="제출에 실패했습니다">
+        <BaseModal open={true} title="X" onClose={vi.fn()}><p>body</p></BaseModal>
+      </ModalErrorContext.Provider>,
+    );
+    expect(getByRole('alert')).not.toBeNull();
+    expect(getByText('제출에 실패했습니다')).not.toBeNull();
+  });
+
+  it('renders no error banner when there is no context error', () => {
+    const { queryByRole } = render(
+      <BaseModal open={true} title="X" onClose={vi.fn()}><p>body</p></BaseModal>,
+    );
+    expect(queryByRole('alert')).toBeNull();
   });
 });

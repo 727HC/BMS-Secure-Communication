@@ -81,6 +81,26 @@ export default function BmuStateView({
     );
   }
 
+  if (hasSearched && errorMsg && !accessDenied && !loading) {
+    return (
+      <div className="sn-panel" style={{ overflow: 'hidden' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '2rem 1.5rem', textAlign: 'center' }}>
+          <div style={{ width: 56, height: 56, borderRadius: 12, background: 'var(--color-danger-soft)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 18 }}>
+            <svg width="26" height="26" fill="none" stroke="var(--color-danger)" strokeWidth="1.8" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+          </div>
+          <h3 style={{ fontSize: '1.125rem', fontWeight: 700, color: 'var(--color-text-1)', margin: '0 0 8px' }}>
+            BMU 기록을 불러오지 못했습니다
+          </h3>
+          <p style={{ fontSize: '0.9375rem', color: 'var(--color-text-2)', maxWidth: '32rem', margin: '0 0 6px' }}>
+            데이터를 가져오는 중 오류가 발생했습니다. 여권 ID를 확인한 뒤 다시 조회해 주세요. (오류: {errorMsg})
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   if (hasSearched && recordsCount === 0 && !loading) {
     return (
       <div className="sn-panel" style={{ overflow: 'hidden' }}>

@@ -15,6 +15,7 @@ import { usePassportDetailData } from '../components/passport-detail/usePassport
 import { usePassportDossierLabels } from '../components/passport-detail/usePassportDossierLabels';
 import PassportDetailFocusPanel from '../components/passport-detail/PassportDetailFocusPanel';
 import PassportDetailTabNav from '../components/passport-detail/PassportDetailTabNav';
+import { ModalErrorContext } from '../components/modals/BaseModal';
 
 function DetailSectionFallback() {
   return (
@@ -49,18 +50,22 @@ export default function PassportDetailPage() {
   const gbaCompliance = useMemo(() => computeGbaCompliance(passport), [passport]);
   const grade = useMemo(() => complianceGrade(gbaCompliance.pct), [gbaCompliance]);
 
-  const closeAll = () => {
-    setOpenModal(null);
-    setSelectedVcId(null);
-  };
-
   const mutations = usePassportMutations({
     passport,
     selectedVcId,
     onAfterSuccess: fetchAll,
-    onClose: closeAll,
+    onClose: () => {
+      setOpenModal(null);
+      setSelectedVcId(null);
+    },
   });
-  const { submitting, submitError } = mutations;
+  const { submitting, submitError, setSubmitError } = mutations;
+
+  const closeAll = () => {
+    setOpenModal(null);
+    setSelectedVcId(null);
+    setSubmitError(null);
+  };
 
   const openVerifyModal = (credentialId: string) => {
     setSelectedVcId(credentialId);
@@ -183,14 +188,16 @@ export default function PassportDetailPage() {
       </div>
 
       <Suspense fallback={null}>
-        <PassportDetailModalRouter
-          openModal={openModal}
-          submitting={submitting}
-          selectedVcId={selectedVcId}
-          passportDid={passport?.did}
-          onClose={closeAll}
-          handlers={mutations.handlers}
-        />
+        <ModalErrorContext.Provider value={submitError}>
+          <PassportDetailModalRouter
+            openModal={openModal}
+            submitting={submitting}
+            selectedVcId={selectedVcId}
+            passportDid={passport?.did}
+            onClose={closeAll}
+            handlers={mutations.handlers}
+          />
+        </ModalErrorContext.Provider>
       </Suspense>
     </div>
   );

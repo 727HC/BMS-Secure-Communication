@@ -21,6 +21,7 @@ export function useQrScanner() {
   const [nfcScanning, setNfcScanning] = useState(false);
   const scannerRef = useRef<QrScannerInstance | null>(null);
   const scannerModuleRef = useRef<Promise<typeof import('html5-qrcode')> | null>(null);
+  const nfcAbortRef = useRef<AbortController | null>(null);
 
   const loadScannerModule = () => {
     if (!scannerModuleRef.current) {
@@ -94,10 +95,12 @@ export function useQrScanner() {
     try {
       // @ts-expect-error Web NFC NDEFReader not in all TS lib dom versions
       const reader = new NDEFReader();
-      await reader.scan();
+      const controller = new AbortController();
+      nfcAbortRef.current = controller;
+      await reader.scan({ signal: controller.signal });
       setNfcScanning(true);
       setScanError(null);
-      // @ts-expect-error NDEFReader event types
+      // @ts-ignore Web NFC 'reading' params are untyped in the pinned lib.dom (suppression needed) but typed in newer ones (where @ts-expect-error trips TS2578); @ts-ignore holds under both
       reader.addEventListener('reading', ({ serialNumber, message }) => {
         let passportId = '';
         for (const record of message.records) {
@@ -120,12 +123,19 @@ export function useQrScanner() {
         }
       });
     } catch {
+      nfcAbortRef.current = null;
       setNfcScanning(false);
       setScanError('NFC 스캔을 시작할 수 없습니다. 기기 NFC가 활성화되어 있는지 확인하세요.');
     }
   };
 
-  const stopNfc = () => setNfcScanning(false);
+  const stopNfc = () => {
+    if (nfcAbortRef.current) {
+      nfcAbortRef.current.abort();
+      nfcAbortRef.current = null;
+    }
+    setNfcScanning(false);
+  };
 
   const handleManualSearch = () => {
     const id = manualId.trim();
@@ -147,7 +157,13 @@ export function useQrScanner() {
   };
 
   useEffect(() => {
-    return () => { stopScan(); };
+    return () => {
+      stopScan();
+      if (nfcAbortRef.current) {
+        nfcAbortRef.current.abort();
+        nfcAbortRef.current = null;
+      }
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

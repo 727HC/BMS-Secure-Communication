@@ -1,4 +1,8 @@
-import { type ReactNode, useEffect } from 'react';
+import { type ReactNode, createContext, useContext, useEffect } from 'react';
+
+// Surfaces the current modal's submit error inside the modal (above the
+// z-index:80 overlay). Null when there is no error / no provider.
+export const ModalErrorContext = createContext<string | null>(null);
 
 interface BaseModalProps {
   open: boolean;
@@ -9,6 +13,8 @@ interface BaseModalProps {
 }
 
 export default function BaseModal({ open, title, onClose, children, maxWidth = 520 }: BaseModalProps) {
+  const error = useContext(ModalErrorContext);
+
   useEffect(() => {
     if (!open) return;
     const handler = (e: KeyboardEvent) => {
@@ -37,6 +43,14 @@ export default function BaseModal({ open, title, onClose, children, maxWidth = 5
             ×
           </button>
         </div>
+        {error && (
+          <div
+            role="alert"
+            style={{ marginBottom: '1rem', padding: '0.75rem 0.9rem', borderRadius: '0.6rem', background: 'var(--color-danger-soft)', color: 'var(--color-danger)', border: '1px solid var(--color-border)', fontSize: '0.9rem', lineHeight: 1.6 }}
+          >
+            {error}
+          </div>
+        )}
         {children}
       </div>
     </div>
