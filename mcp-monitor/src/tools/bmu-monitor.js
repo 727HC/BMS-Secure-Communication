@@ -295,6 +295,10 @@ async function execute(params) {
       // Schema agreed cross-session 2026-05-22: eventType + fcHex top byte = epoch_nn.
       // Severity from eventType prefix; unknown types kept under 'unknown' so the
       // map can be extended without churning this code.
+      // FC_WRAP_NEAR (cross-session 2026-06-08): firmware emits an explicit boot-epoch
+      // wrap warning ([HSE] FC_WRAP_NEAR=YELLOW|RED epoch=0xNN) ahead of the 256-boot
+      // wrap (ADR-007) so the DID can be rotated in time. Same epoch convention as
+      // EPOCH_THRESHOLD: high byte >= 0xF8 yellow, >= 0xFE red.
       const since = new Date(Date.now() - hours * 3600000).toISOString();
       const { logs } = readRecentLogs(2000, { category: 'hse', since });
 
@@ -303,9 +307,27 @@ async function execute(params) {
 
       const severityOf = (eventType) => {
         if (eventType === 'BOOT_FC') return 'info';
+        if (eventType === 'FC_WRAP_NEAR') return 'warn';
         if (/_WARN$/.test(eventType)) return 'warn';
         if (/_FAIL$/.test(eventType) || /^FATAL_/.test(eventType)) return 'critical';
         return 'unknown';
+      };
+
+      // Severity ranking for fail-closed reconciliation of firmware-declared vs
+      // monitor-computed wrap severity (take the worse of the two, never silently lower).
+      const SEV_RANK = { green: 0, yellow: 1, red: 2 };
+      const worseSeverity = (a, b) => ((SEV_RANK[a] ?? -1) >= (SEV_RANK[b] ?? -1) ? a : b) || 'green';
+
+      // Firmware-declared severity from the FC_WRAP_NEAR event (data.severity or the
+      // raw "FC_WRAP_NEAR=YELLOW|RED" UART message). null when not declared.
+      const declaredWrapSeverity = (entry) => {
+        const d = entry.data || {};
+        const raw = String(d.severity || d.alert || '').toUpperCase();
+        if (raw === 'RED') return 'red';
+        if (raw === 'YELLOW') return 'yellow';
+        const msg = String(entry.message || entry.line || '');
+        const m = /FC_WRAP_NEAR\s*=\s*(RED|YELLOW)/i.exec(msg);
+        return m ? m[1].toLowerCase() : null;
       };
 
       const parseEpochNn = (entry) => {
@@ -326,8 +348,9 @@ async function execute(params) {
         return 'green';
       };
 
-      const counts = { BOOT_FC: 0, WARN: 0, FATAL: 0, UNKNOWN: 0 };
+      const counts = { BOOT_FC: 0, FC_WRAP_NEAR: 0, WARN: 0, FATAL: 0, UNKNOWN: 0 };
       const currentEpochByDid = {};
+      const wrapNearByKey = {}; // key = did || '(no-did)' -> latest FC_WRAP_NEAR observation
       const recentFatal = [];
       const alerts = [];
 
@@ -336,12 +359,39 @@ async function execute(params) {
         const sev = severityOf(et);
 
         if (et === 'BOOT_FC') counts.BOOT_FC += 1;
+        else if (et === 'FC_WRAP_NEAR') counts.FC_WRAP_NEAR += 1;
         else if (sev === 'warn') counts.WARN += 1;
         else if (sev === 'critical') counts.FATAL += 1;
         else if (sev === 'unknown') counts.UNKNOWN += 1;
 
         const did = entry.did || null;
         const nn = parseEpochNn(entry);
+
+        // Explicit firmware wrap-near warning: always surfaced (did-independent),
+        // reconciling firmware-declared severity with the epoch-derived severity.
+        if (et === 'FC_WRAP_NEAR') {
+          const key = did || '(no-did)';
+          const ts = entry.timestamp || null;
+          const prev = wrapNearByKey[key];
+          if (!prev || (ts && ts >= prev.timestamp)) {
+            const declared = declaredWrapSeverity(entry);
+            const computed = epochSeverity(nn);
+            let effective = worseSeverity(declared || 'green', computed);
+            if (effective === 'green') effective = 'yellow'; // an explicit wrap-near is at least yellow
+            wrapNearByKey[key] = {
+              did,
+              severity: effective,
+              epoch_nn: nn,
+              epoch_nn_hex: nn === null ? null : `0x${nn.toString(16).toUpperCase().padStart(2, '0')}`,
+              declaredSeverity: declared,
+              computedSeverity: computed,
+              severityMismatch: declared && nn !== null && declared !== computed ? { declared, computed } : null,
+              fcHex: entry.fcHex || null,
+              timestamp: ts,
+            };
+          }
+        }
+
         if (did && nn !== null) {
           const prev = currentEpochByDid[did];
           const ts = entry.timestamp || null;
@@ -374,7 +424,30 @@ async function execute(params) {
         }
       }
 
+      // Explicit FC_WRAP_NEAR alerts (one per did / per did-less source, latest wins).
+      for (const info of Object.values(wrapNearByKey)) {
+        const alert = {
+          type: 'FC_WRAP_NEAR',
+          severity: info.severity,
+          did: info.did,
+          epoch_nn: info.epoch_nn,
+          epoch_nn_hex: info.epoch_nn_hex,
+          declaredSeverity: info.declaredSeverity,
+          computedSeverity: info.computedSeverity,
+          timestamp: info.timestamp,
+        };
+        if (info.severityMismatch) alert.severityMismatch = info.severityMismatch;
+        alerts.push(alert);
+      }
+
+      // Derived epoch-threshold alerts. Suppress only when an explicit FC_WRAP_NEAR
+      // alert already covers this did at >= severity (redundant double-noise). If the
+      // latest tracked epoch is WORSE than the wrap-near alert — e.g. FC_WRAP_NEAR fired
+      // once at 0xF8, then plain BOOT_FC climbed to 0xFE without re-warning — still
+      // surface it; never let suppression hide a more severe epoch (fail-closed).
       for (const [did, info] of Object.entries(currentEpochByDid)) {
+        const wn = wrapNearByKey[did];
+        if (wn && (SEV_RANK[wn.severity] ?? -1) >= (SEV_RANK[info.severity] ?? -1)) continue;
         if (info.severity === 'red' || info.severity === 'yellow') {
           alerts.push({
             type: 'EPOCH_THRESHOLD',
@@ -395,6 +468,7 @@ async function execute(params) {
         totalEvents: logs.length,
         counts,
         currentEpochByDid,
+        fcWrapNear: wrapNearByKey,
         recentFatal: recentFatal.slice(0, 20),
         alerts,
         thresholds: { epoch_yellow_hex: '0xF8', epoch_red_hex: '0xFE' },

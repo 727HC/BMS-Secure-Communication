@@ -67,10 +67,15 @@ function readRecentLogs(count = 100, filter) {
     }
   }
 
-  // Deduplicate (tee + logger can write the same entry twice)
+  // Deduplicate (tee + logger can write the same entry twice). The base key is
+  // timestamp|category|message, but hse events log a constant message literal
+  // ("BMU UART event") with the real content in line/eventType/did/fcHex — so without
+  // those, two distinct devices' events sharing a millisecond timestamp collapse and
+  // one alert is silently dropped. Adding fields only increases key specificity:
+  // byte-identical double-writes still dedup; genuinely distinct events no longer do.
   const seen = new Set();
   logs = logs.filter((l) => {
-    const key = `${l.timestamp}|${l.category}|${l.message}`;
+    const key = `${l.timestamp}|${l.category}|${l.message}|${l.line}|${l.eventType}|${l.did}|${l.fcHex}`;
     if (seen.has(key)) return false;
     seen.add(key);
     return true;
