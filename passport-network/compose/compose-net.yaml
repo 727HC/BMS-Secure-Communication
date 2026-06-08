@@ -54,7 +54,8 @@ services:
     ports:
       - 7050:7050
       - 7053:7053
-      - 9443:9443
+      # PN-3: operations/metrics 포트는 무인증 평문 — 기본 localhost (원격 스크레이프 시 OPS_BIND_HOST=0.0.0.0)
+      - "${OPS_BIND_HOST:-127.0.0.1}:9443:9443"
     networks:
       - passport
 
@@ -98,7 +99,7 @@ services:
     command: peer node start
     ports:
       - 7051:7051
-      - 9444:9444
+      - "${OPS_BIND_HOST:-127.0.0.1}:9444:9444"
     networks:
       - passport
 
@@ -142,7 +143,7 @@ services:
     command: peer node start
     ports:
       - 9051:9051
-      - 9445:9445
+      - "${OPS_BIND_HOST:-127.0.0.1}:9445:9445"
     networks:
       - passport
 
@@ -186,7 +187,7 @@ services:
     command: peer node start
     ports:
       - 11051:11051
-      - 9446:9446
+      - "${OPS_BIND_HOST:-127.0.0.1}:9446:9446"
     networks:
       - passport
 
@@ -230,6 +231,6 @@ services:
     command: peer node start
     ports:
       - 13051:13051
-      - 9447:9447
+      - "${OPS_BIND_HOST:-127.0.0.1}:9447:9447"
     networks:
       - passport

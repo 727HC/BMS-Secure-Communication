@@ -5,6 +5,9 @@
 # Fabric CA 부트스트랩 크레덴셜은 .env 또는 셸 환경변수로 주입해야 함:
 #   CA_ADMIN_USER, CA_ADMIN_PASSWORD (전 CA 공통)
 # 운영 환경에서는 CA별 개별 시크릿 권장
+#
+# PN-3: operations/metrics 포트(1X054)는 무인증 평문이라 기본 127.0.0.1 바인딩.
+#   원격 Prometheus 스크레이프가 필요하면 OPS_BIND_HOST=0.0.0.0 으로 오버라이드.
 
 networks:
   passport:
@@ -28,7 +31,7 @@ services:
       - FABRIC_CA_SERVER_CFG_IDENTITIES_PASSWORDATTEMPTS=${CA_PASSWORD_ATTEMPTS:-10}
     ports:
       - "7054:7054"
-      - "17054:17054"
+      - "${OPS_BIND_HOST:-127.0.0.1}:17054:17054"
     command: sh -c 'fabric-ca-server start -b "${CA_ADMIN_USER}:${CA_ADMIN_PASSWORD}" -d'
     volumes:
       - ../organizations/fabric-ca/manufacturer:/etc/hyperledger/fabric-ca-server
@@ -52,7 +55,7 @@ services:
       - FABRIC_CA_SERVER_CFG_IDENTITIES_PASSWORDATTEMPTS=${CA_PASSWORD_ATTEMPTS:-10}
     ports:
       - "8054:8054"
-      - "18054:18054"
+      - "${OPS_BIND_HOST:-127.0.0.1}:18054:18054"
     command: sh -c 'fabric-ca-server start -b "${CA_ADMIN_USER}:${CA_ADMIN_PASSWORD}" -d'
     volumes:
       - ../organizations/fabric-ca/evmanufacturer:/etc/hyperledger/fabric-ca-server
@@ -76,7 +79,7 @@ services:
       - FABRIC_CA_SERVER_CFG_IDENTITIES_PASSWORDATTEMPTS=${CA_PASSWORD_ATTEMPTS:-10}
     ports:
       - "9054:9054"
-      - "19054:19054"
+      - "${OPS_BIND_HOST:-127.0.0.1}:19054:19054"
     command: sh -c 'fabric-ca-server start -b "${CA_ADMIN_USER}:${CA_ADMIN_PASSWORD}" -d'
     volumes:
       - ../organizations/fabric-ca/service:/etc/hyperledger/fabric-ca-server
@@ -100,7 +103,7 @@ services:
       - FABRIC_CA_SERVER_CFG_IDENTITIES_PASSWORDATTEMPTS=${CA_PASSWORD_ATTEMPTS:-10}
     ports:
       - "10054:10054"
-      - "20054:20054"
+      - "${OPS_BIND_HOST:-127.0.0.1}:20054:20054"
     command: sh -c 'fabric-ca-server start -b "${CA_ADMIN_USER}:${CA_ADMIN_PASSWORD}" -d'
     volumes:
       - ../organizations/fabric-ca/regulator:/etc/hyperledger/fabric-ca-server
@@ -124,7 +127,7 @@ services:
       - FABRIC_CA_SERVER_CFG_IDENTITIES_PASSWORDATTEMPTS=${CA_PASSWORD_ATTEMPTS:-10}
     ports:
       - "11054:11054"
-      - "21054:21054"
+      - "${OPS_BIND_HOST:-127.0.0.1}:21054:21054"
     command: sh -c 'fabric-ca-server start -b "${CA_ADMIN_USER}:${CA_ADMIN_PASSWORD}" -d'
     volumes:
       - ../organizations/fabric-ca/ordererOrg:/etc/hyperledger/fabric-ca-server
