@@ -451,7 +451,14 @@ router.post('/event', authenticateToken, requireMSP(MSP.MANUFACTURER), bmuEventR
   if (normalized.error) return validationError(res, normalized.error);
   const event = normalized.value;
 
-  hseLog[event.level]('BMU UART event', {
+  // Discriminating message so the consumer dedup key (timestamp|category|message)
+  // does not degenerate for hse logs: distinct BMUs/epochs/event-types emitting in
+  // the same millisecond stay distinct instead of one being dropped as a tee+logger
+  // duplicate. Identical for the same logical event, so true duplicates still dedup.
+  const hseSummary = `BMU UART ${event.eventType || 'EVENT'}`
+    + (event.did ? ` did=${event.did}` : '')
+    + (event.fcHex ? ` fc=${event.fcHex}` : '');
+  hseLog[event.level](hseSummary, {
     action: 'BmuEvent',
     eventType: event.eventType,
     source: event.source,
