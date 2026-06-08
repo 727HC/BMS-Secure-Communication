@@ -23,6 +23,9 @@ const { connectGateway, startBlockListener } = require('./services/fabric-listen
 const app = express();
 app.disable('x-powered-by');
 app.set('etag', false);
+app.set('query parser', 'simple'); // CA-1: qs 중첩객체 파싱 비활성 (NoSQL 연산자 주입 차단)
+// CA-6: 리버스 프록시 뒤일 때만 TRUST_PROXY로 활성 (rate-limit이 실제 클라 IP를 키로 쓰도록)
+if (process.env.TRUST_PROXY) app.set('trust proxy', process.env.TRUST_PROXY);
 app.use(express.json({ limit: '64kb' })); // M-5: body size 명시
 app.use(helmet());                         // H-1: 보안 헤더
 
@@ -59,7 +62,9 @@ const LISTENER_ENABLED = process.env.CLOUD_AGENT_LISTENER_ENABLED !== 'false';
 const FABRIC_CHANNEL = process.env.FABRIC_CHANNEL || 'passportchannel';
 const READ_MODEL_PROVENANCE = process.env.CLOUD_READ_MODEL_PROVENANCE || 'channel-bound';
 const PASSPORT_DETAIL_CACHE_TTL_MS = parseInt(process.env.PASSPORT_DETAIL_CACHE_TTL_MS || '1000', 10);
+const PASSPORT_DETAIL_CACHE_MAX = parseInt(process.env.PASSPORT_DETAIL_CACHE_MAX || '10000', 10); // CA-3: 캐시 엔트리 상한
 const passportDetailCache = new Map();
+const BIND_HOST = process.env.BIND_HOST || '127.0.0.1';
 
 // H-8: production에서 MongoDB 인증 없는 URI 거부
 if (process.env.NODE_ENV === 'production' && !MONGODB_URI.includes('@')) {
@@ -79,8 +84,16 @@ if (!API_KEY) {
   console.warn('[cloud-agent] WARNING: CLOUD_AGENT_API_KEY not set — API auth disabled (dev mode)');
 }
 
+// CA-2: 공개 인터페이스 바인딩인데 API 키가 없으면 무인증 노출 → 기동 거부 (NODE_ENV 무관, fail-closed)
+const isPublicBind = BIND_HOST !== '127.0.0.1' && BIND_HOST !== 'localhost';
+if (isPublicBind && !API_KEY) {
+  console.error(`[cloud-agent] FATAL: refusing public bind (${BIND_HOST}) without CLOUD_AGENT_API_KEY`);
+  process.exit(1);
+}
+
 let db = null;
 let mongoClient = null;
+let fabricGateway = null; // CA-4: graceful shutdown에서 disconnect 위해 모듈 스코프
 
 // H-6: timing-safe API key 비교 (timing attack 방지)
 function safeApiKeyMatch(provided, expected) {
@@ -109,6 +122,19 @@ function escapeRegex(str) {
   return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
+// CA-1: 쿼리 파라미터를 스칼라 문자열로만 허용 — 배열/객체면 null 반환(주입 시도 → 호출부에서 400)
+function asQueryString(v) {
+  if (v === undefined) return undefined;
+  return typeof v === 'string' ? v : null;
+}
+
+// CA-11: 정수 쿼리 파라미터 안전 파싱 + 범위 클램프 (배열/비정상 입력 방어)
+function parseIntParam(v, def, min, max) {
+  const n = parseInt(typeof v === 'string' ? v : '', 10);
+  const base = Number.isFinite(n) ? n : def;
+  return Math.min(Math.max(base, min), max);
+}
+
 // ============================================================
 // REST API — 고속 조회 (MongoDB direct)
 // ============================================================
@@ -117,7 +143,16 @@ function escapeRegex(str) {
 // GET /api/passports/search — 여권 검색 (VIN, DID, model 등)
 app.get('/api/passports/search', async (req, res) => {
   try {
-    const { vin, did, model, manufacturer, status } = req.query;
+    // CA-1: 모든 검색 파라미터를 문자열로 강제 — 배열/객체면 400 (NoSQL 연산자 주입 차단)
+    const vin = asQueryString(req.query.vin);
+    const did = asQueryString(req.query.did);
+    const model = asQueryString(req.query.model);
+    const manufacturer = asQueryString(req.query.manufacturer);
+    const status = asQueryString(req.query.status);
+    if ([vin, did, model, manufacturer, status].includes(null)) {
+      return res.status(400).json({ error: 'invalid query parameter' });
+    }
+
     const filter = { docType: 'batteryPassport' };
     if (vin) filter.vin = vin;
     if (did) filter.did = did;
@@ -125,7 +160,7 @@ app.get('/api/passports/search', async (req, res) => {
     if (manufacturer) filter.manufacturerName = { $regex: escapeRegex(manufacturer), $options: 'i' };
     if (status) filter.status = status;
 
-    const pageSize = Math.min(parseInt(req.query.pageSize || '100', 10), 500);
+    const pageSize = parseIntParam(req.query.pageSize, 100, 1, 500);
     const records = await db.collection('passports')
       .find(filter)
       .sort({ updatedAt: -1 })
@@ -141,8 +176,8 @@ app.get('/api/passports/search', async (req, res) => {
 // GET /api/passports — 여권 목록
 app.get('/api/passports', async (req, res) => {
   try {
-    const pageSize = Math.min(parseInt(req.query.pageSize || '100', 10), 500);
-    const page = Math.max(parseInt(req.query.page || '1', 10), 1);
+    const pageSize = parseIntParam(req.query.pageSize, 100, 1, 500);
+    const page = parseIntParam(req.query.page, 1, 1, 1000000);
     const skip = (page - 1) * pageSize;
 
     const collection = db.collection('passports');
@@ -180,6 +215,11 @@ app.get('/api/passports/:id', async (req, res) => {
 
     const body = JSON.stringify(passport);
     if (PASSPORT_DETAIL_CACHE_TTL_MS > 0) {
+      // CA-3: 엔트리 상한 초과 시 가장 오래된 항목 방출 (메모리 무한 증가 방지)
+      if (passportDetailCache.size >= PASSPORT_DETAIL_CACHE_MAX) {
+        const oldest = passportDetailCache.keys().next().value;
+        if (oldest !== undefined) passportDetailCache.delete(oldest);
+      }
       passportDetailCache.set(cacheKey, {
         status: 200,
         body,
@@ -197,7 +237,7 @@ app.get('/api/passports/:id', async (req, res) => {
 // GET /api/bmu/:idOrDid — BMU 데이터 조회 (passportId 또는 DID 매칭)
 app.get('/api/bmu/:idOrDid', async (req, res) => {
   try {
-    const pageSize = Math.min(parseInt(req.query.pageSize || '50', 10), 500);
+    const pageSize = parseIntParam(req.query.pageSize, 50, 1, 500);
     const idOrDid = req.params.idOrDid;
     const records = await db.collection('bmuRecords')
       .find({ status: 'VALID', $or: [{ passportId: idOrDid }, { did: idOrDid }] })
@@ -260,6 +300,20 @@ app.get('/health', (req, res) => {
   });
 });
 
+// CA-5: 종단 에러 핸들러 — 잘못된 JSON 본문/내부 에러에서 스택 노출 차단
+// eslint-disable-next-line no-unused-vars
+app.use((err, req, res, next) => {
+  if (err && err.type === 'entity.parse.failed') {
+    return res.status(400).json({ error: 'invalid JSON body' });
+  }
+  if (err && err.type === 'entity.too.large') {
+    return res.status(413).json({ error: 'payload too large' });
+  }
+  console.error('[cloud-agent] request error:', err && err.message);
+  if (res.headersSent) return next(err);
+  res.status(500).json({ error: 'internal server error' });
+});
+
 // ============================================================
 // Startup
 // ============================================================
@@ -305,8 +359,8 @@ async function main() {
   // 3. Fabric Block Event Listener 시작
   if (LISTENER_ENABLED) {
     try {
-      const gateway = await connectGateway();
-      await startBlockListener(gateway, db);
+      fabricGateway = await connectGateway();
+      await startBlockListener(fabricGateway, db);
       console.log('[cloud-agent] Fabric block listener started');
     } catch (err) {
       console.error('[cloud-agent] Fabric listener failed (will retry):', err.message);
@@ -316,10 +370,9 @@ async function main() {
     console.log('[cloud-agent] Fabric block listener disabled by CLOUD_AGENT_LISTENER_ENABLED=false');
   }
 
-  // 4. Express 서버 시작 — LOW: 기본 127.0.0.1 바인딩 (공개 시 BIND_HOST=0.0.0.0)
-  const host = process.env.BIND_HOST || '127.0.0.1';
-  app.listen(PORT, host, () => {
-    console.log(`[cloud-agent] Cloud Agent started: http://${host}:${PORT}`);
+  // 4. Express 서버 시작 — 기본 127.0.0.1 바인딩 (공개 시 BIND_HOST=0.0.0.0 + API 키 필수, CA-2)
+  app.listen(PORT, BIND_HOST, () => {
+    console.log(`[cloud-agent] Cloud Agent started: http://${BIND_HOST}:${PORT}`);
     console.log('[cloud-agent] Architecture: Fabric → Block Event → MongoDB → REST API');
   });
 }
@@ -334,9 +387,14 @@ main().catch(err => {
   process.exit(1);
 });
 
-// H-3: graceful shutdown
+// H-3 / CA-4: graceful shutdown — Fabric gateway + MongoDB 모두 정리
 function shutdown(signal) {
   console.log(`[cloud-agent] ${signal} received, shutting down...`);
+  try {
+    if (fabricGateway) fabricGateway.disconnect();
+  } catch (e) {
+    // gateway disconnect 실패는 무시하고 계속 종료
+  }
   if (mongoClient) {
     mongoClient.close().then(() => {
       console.log('[cloud-agent] MongoDB disconnected');
@@ -348,3 +406,12 @@ function shutdown(signal) {
 }
 process.on('SIGINT', () => shutdown('SIGINT'));
 process.on('SIGTERM', () => shutdown('SIGTERM'));
+
+// CA-8: 프로세스 레벨 안전망 — 미처리 거부/예외 로깅
+process.on('unhandledRejection', (reason) => {
+  console.error('[cloud-agent] unhandledRejection:', (reason && reason.message) || reason);
+});
+process.on('uncaughtException', (err) => {
+  console.error('[cloud-agent] uncaughtException:', err && err.message);
+  process.exit(1);
+});
