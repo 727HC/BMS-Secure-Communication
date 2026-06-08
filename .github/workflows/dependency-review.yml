@@ -1,0 +1,22 @@
+name: Dependency Review
+
+# RH-1: PR에서 새로 추가/변경되는 의존성에 알려진 취약점이 있으면 차단한다.
+# (Dependabot 경보는 머지 후 사후 탐지 — 이건 머지 전 게이트)
+on:
+  pull_request:
+    branches: [master]
+
+permissions:
+  contents: read
+
+jobs:
+  dependency-review:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Dependency Review
+        uses: actions/dependency-review-action@v4
+        with:
+          fail-on-severity: high
+          comment-summary-in-pr: on-failure

@@ -1,0 +1,60 @@
+name: CodeQL
+
+# RH-1: 정적 보안 분석(SAST) 게이트. 자사 Node 서비스(cloud-agent / mcp-monitor /
+# wiki-mcp / webapp)와 Go 체인코드(passport-contract)를 대상으로 한다.
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+  schedule:
+    - cron: "0 6 * * 1" # 매주 월요일 06:00 UTC 전체 재스캔
+
+permissions:
+  contents: read
+
+jobs:
+  analyze:
+    name: Analyze (${{ matrix.language }})
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+      contents: read
+      actions: read
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - language: javascript-typescript
+            build-mode: none
+          - language: go
+            build-mode: manual
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        if: matrix.language == 'go'
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: chaincode/passport-contract/go.mod
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: ${{ matrix.language }}
+          build-mode: ${{ matrix.build-mode }}
+          config-file: ./.github/codeql/codeql-config.yml
+
+      # Go는 manual build — 체인코드 모듈만 컴파일해서 fabric-samples 등 벤더 코드는 건드리지 않는다.
+      - name: Build Go chaincode
+        if: matrix.language == 'go'
+        shell: bash
+        run: |
+          cd chaincode/passport-contract
+          go build ./...
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: "/language:${{ matrix.language }}"

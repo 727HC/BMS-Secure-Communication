@@ -1,0 +1,12 @@
+name: "BMS CodeQL config"
+
+# 자사 코드만 분석한다. 벤더링된 third-party와 빌드 산출물/의존성은 제외해
+# 노이즈와 잘못된 소유권 알림을 막는다.
+paths-ignore:
+  - "fabric-samples"
+  - "von-network"
+  - "islab-hlf-k8s"
+  - "caliper-benchmarks"
+  - "**/node_modules"
+  - "**/dist"
+  - "**/build"
