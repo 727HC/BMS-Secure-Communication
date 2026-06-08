@@ -1,4 +1,5 @@
 const express = require('express');
+const rateLimit = require('express-rate-limit');
 const router = express.Router();
 const authService = require('../services/auth.service');
 const { authenticateToken } = require('../middleware/auth');
@@ -11,6 +12,18 @@ const {
   firstError,
 } = require('../utils/request-validation');
 const log = createLogger('auth');
+
+// Brute-force guard for credential endpoints. Stricter than the global /api limiter.
+// skipSuccessfulRequests: only failed attempts count, so legitimate users are never
+// locked out — only repeated failures (password guessing / registration abuse) trip it.
+const authLimiter = rateLimit({
+  windowMs: parseInt(process.env.AUTH_RATE_LIMIT_WINDOW_MS || '900000', 10), // 15 min
+  max: parseInt(process.env.AUTH_RATE_LIMIT_MAX || '10', 10),
+  skipSuccessfulRequests: true,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'too many authentication attempts', category: 'RATE' },
+});
 
 const isOpenReg = process.env.ALLOW_OPEN_REGISTRATION === 'true';
 const USER_ID_OPTIONS = { max: 64, pattern: /^[A-Za-z0-9._-]+$/ };
@@ -28,7 +41,7 @@ function validationError(res, error) {
 }
 
 // POST /api/auth/register (production: 인증 필요, dev: ALLOW_OPEN_REGISTRATION=true로 개방)
-router.post('/register', ...(isOpenReg ? [] : [authenticateToken]), async (req, res) => {
+router.post('/register', authLimiter, ...(isOpenReg ? [] : [authenticateToken]), async (req, res) => {
   const { userId, password, orgNum } = req.body;
 
   const bodyError = validateAuthBody({ userId, password, orgNum });
@@ -69,7 +82,7 @@ router.post('/register', ...(isOpenReg ? [] : [authenticateToken]), async (req, 
 });
 
 // POST /api/auth/login
-router.post('/login', async (req, res) => {
+router.post('/login', authLimiter, async (req, res) => {
   const { userId, password, orgNum } = req.body;
 
   const bodyError = validateAuthBody({ userId, password, orgNum });

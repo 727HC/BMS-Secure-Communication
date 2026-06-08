@@ -1,4 +1,5 @@
 const express = require('express');
+const rateLimit = require('express-rate-limit');
 const path = require('path');
 require('dotenv').config({ path: path.join(__dirname, '.env') });
 const fs = require('fs');
@@ -34,8 +35,28 @@ function securityHeaders(allowedOrigins = getAllowedOrigins()) {
   };
 }
 
+// Global API rate limiter (cloud-agent H-2 parity). Scoped to /api only so static
+// frontend assets and the SPA fallback are never throttled. High-throughput BMU
+// ingest routes (/api/bmu/data, /api/bmu/event) are skipped here because they carry
+// their own tuned per-IP limiters in bmu.routes.js — double-counting them on the
+// global bucket would throttle the live MATLAB/BMU stream.
+function createApiLimiter() {
+  return rateLimit({
+    windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS || '60000', 10),
+    max: parseInt(process.env.RATE_LIMIT_MAX || '300', 10),
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: 'too many requests', category: 'RATE' },
+    skip: (req) => {
+      const p = (req.originalUrl || req.url || '').split('?')[0];
+      return p === '/api/bmu/data' || p === '/api/bmu/event';
+    },
+  });
+}
+
 function createApiRouter() {
   const apiRouter = express.Router();
+  apiRouter.use(createApiLimiter());
   apiRouter.use('/auth', require('./routes/auth.routes'));
   apiRouter.use('/passports', require('./routes/passport.routes'));
   apiRouter.use('/bmu', require('./routes/bmu.routes'));
