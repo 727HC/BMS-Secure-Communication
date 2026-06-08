@@ -452,6 +452,13 @@ func (c *PassportContract) AddMaintenanceLog(ctx contractapi.TransactionContextI
 		return err
 	}
 
+	// CP-2: AddAccidentLog 의 Service 분기와 동일하게 passport 접근권 확인.
+	// ServiceMSP 는 상태가 MAINTENANCE/ANALYSIS 거나 기존 정비이력 보유 시에만 허용 —
+	// 사전 관계 없는 ACTIVE 여권에 임의 정비로그 기록을 차단한다.
+	if err := c.checkPassportAccess(ctx, passport); err != nil {
+		return err
+	}
+
 	msp, err := c.getClientMSP(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to get client MSP: %v", err)

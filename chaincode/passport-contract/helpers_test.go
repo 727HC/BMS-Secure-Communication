@@ -2103,3 +2103,50 @@ func TestInvalidateBMURecordSnapshotRecoveryScansDIDSelectorWithoutHotPathIndex(
 		t.Fatalf("snapshot was not recovered from latest valid DID record: %+v", updatedSnapshot)
 	}
 }
+
+// CP-2 regression: ServiceMSP 는 사전 관계(MAINTENANCE/ANALYSIS 상태이거나 기존 정비이력 보유)가
+// 없으면 ACTIVE 여권에 정비로그를 기록할 수 없어야 한다. AddAccidentLog 의 Service 분기와 동일한
+// checkPassportAccess 게이트가 AddMaintenanceLog 에도 걸려 있는지 락인한다.
+func TestAddMaintenanceLogRequiresPassportAccess(t *testing.T) {
+	contract := &PassportContract{}
+
+	putPassport := func(stub *stateStub, status string) {
+		t.Helper()
+		p := BatteryPassport{
+			DocType:    docTypePassport,
+			PassportID: "P1",
+			DID:        "did:test:1",
+			Status:     status,
+		}
+		b, err := json.Marshal(p)
+		if err != nil {
+			t.Fatalf("marshal passport: %v", err)
+		}
+		if err := stub.PutState("P1", b); err != nil {
+			t.Fatalf("PutState passport: %v", err)
+		}
+	}
+
+	// 1) 사전 관계 없는 ServiceMSP + ACTIVE 여권 → 접근 거부 (CP-2 이전엔 통과하던 경로)
+	denyStub := newStateStub()
+	putPassport(denyStub, "ACTIVE")
+	denyCtx := fakeTxContext{msp: mspService, stub: denyStub}
+	if err := contract.AddMaintenanceLog(denyCtx, "P1", "routine", "oil change", "tech-1"); err == nil {
+		t.Fatal("expected access denied for unrelated ServiceMSP on ACTIVE passport, got nil")
+	}
+
+	// 2) 정비 의뢰된(MAINTENANCE) 여권 → 허용 + 로그 기록 (정상 정비 플로우 회귀 방지)
+	allowStub := newStateStub()
+	putPassport(allowStub, "MAINTENANCE")
+	allowCtx := fakeTxContext{msp: mspService, stub: allowStub}
+	if err := contract.AddMaintenanceLog(allowCtx, "P1", "routine", "oil change", "tech-1"); err != nil {
+		t.Fatalf("expected ServiceMSP to log maintenance on MAINTENANCE passport, got %v", err)
+	}
+	var updated BatteryPassport
+	if err := json.Unmarshal(allowStub.state["P1"], &updated); err != nil {
+		t.Fatalf("unmarshal updated passport: %v", err)
+	}
+	if len(updated.MaintenanceLogs) != 1 || updated.MaintenanceLogs[0].OrgMSP != mspService {
+		t.Fatalf("expected exactly one ServiceMSP maintenance log, got %+v", updated.MaintenanceLogs)
+	}
+}
