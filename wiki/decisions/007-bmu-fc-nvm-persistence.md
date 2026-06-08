@@ -110,6 +110,27 @@ N=256 (256 * 2^24 = 2^32) 시 low 32 bits가 0으로 wrap.
 
 이 한계는 학술 데모 단계 acceptable로 spec Non-Goals에 명시.
 
+### FC(Frame Counter) 폭 계약 — uint64
+
+- **계약:** chain FC는 BMU↔chaincode 간 uint64(8-byte) 값이다. chaincode는 이미
+  end-to-end uint64로 처리한다 — 파싱 parseUint64Fast(fc)(bmu_tx.go), 저장
+  encodeLastFCBinding(fc uint64)=uint64 10진 문자열·가변길이·폭 제한 없음(helpers.go:903/915),
+  비교 fcVal<=lastFcVal 단조성(bmu_tx.go:256). 따라서 프로토콜 FC를 4→8byte로
+  확장해도 chaincode 파싱/인코딩/비교 변경은 0건이다.
+
+- **불변식:** per-DID FC는 strictly 단조 증가해야 한다(anti-replay). commit 시
+  requireNextBMUFCForKey가 fcVal<=lastFcVal를 reject한다. 8-byte 확장의 목적은
+  단조성이 깨지는 wrap(예: 256-boot wrap)을 사실상 제거하는 것이다.
+
+- **전환 보장(필수):** 이미 4-byte 스킴으로 lastFc가 기록된 DID에 대해, 새 8-byte
+  FC 값은 저장된 lastFcVal보다 "수치적으로 커야" 한다(전역 단조성). 위배 시 해당
+  DID는 reject되며 RepairFCBindingForDID로 복구해야 한다.
+  → 권고: 8-byte 레이아웃이 기존 값에서 이어서 증가(상위바이트 0, 하위 연속)하도록
+    설계하거나, active DID 일괄 lastFc repair를 전환 절차에 포함한다.
+
+> 블록체인 세션 권위 검증 완료(2026-06-08). rollback 커맨드의 `-DBMS_WHITELIST_DISCOVERY`
+> 제거(B)는 빌드 보류 해제 시 별도 진행.
+
 ## Consequences
 
 ### Positive
