@@ -18,8 +18,10 @@ source "$BMS_DIR/config.env"
 
 export PATH="$TOOLCHAIN_PATH:$MAKE_PATH:$PATH"
 LOG_DIR="$BMS_DIR/logs"
-# Dev builds use whitelist discovery mode; production omits this flag
-WHITELIST_FLAG="-DBMS_WHITELIST_DISCOVERY"
+# Whitelist mode. Dev (default): discovery — auto-register CMU UIDs (single-CMU bring-up 편의).
+# Production: enforcement — set BMS_WHITELIST_FLAG="-UBMS_WHITELIST_DISCOVERY" to undefine the
+# -DBMS_WHITELIST_DISCOVERY baked into Debug_FLASH/src/main.args (gcc last-wins -> enforcement).
+WHITELIST_FLAG="${BMS_WHITELIST_FLAG:--DBMS_WHITELIST_DISCOVERY}"
 mkdir -p "$LOG_DIR"
 
 PIDS=()

@@ -128,8 +128,8 @@ N=256 (256 * 2^24 = 2^32) 시 low 32 bits가 0으로 wrap.
   → 권고: 8-byte 레이아웃이 기존 값에서 이어서 증가(상위바이트 0, 하위 연속)하도록
     설계하거나, active DID 일괄 lastFc repair를 전환 절차에 포함한다.
 
-> 블록체인 세션 권위 검증 완료(2026-06-08). rollback 커맨드의 `-DBMS_WHITELIST_DISCOVERY`
-> 제거(B)는 빌드 보류 해제 시 별도 진행.
+> 블록체인 세션 권위 검증 완료(2026-06-08). rollback 커맨드의 dev 플래그 처리(B)는 2026-06-08
+> 적용됨 — production reflash는 `-UBMS_WHITELIST_DISCOVERY`로 enforcement(아래 Rollback procedure).
 
 ## Consequences
 
@@ -224,7 +224,9 @@ Acceptance criteria C2-C6 통합 검증 완료.
    ```bash
    git checkout HEAD~ -- BMU_BMS_S32K344/src/main.c BMU_BMS_S32K344/src/common/bms_protocol.h
    cd BMU_BMS_S32K344/Debug_FLASH
-   rm -f src/main.o; make -j4 all CFLAGS_EXTRA="-DBMS_MODE_EDDSA -DBMS_WHITELIST_DISCOVERY"
+   rm -f src/main.o; make -j4 all CFLAGS_EXTRA="-DBMS_MODE_EDDSA -UBMS_WHITELIST_DISCOVERY"
+   # production = enforcement: -U undefines the dev -DBMS_WHITELIST_DISCOVERY in main.args.
+   # (dev rebuild이면 -U 생략 — main.args 기본이 discovery.)
    # flash via PEmicro
    ```
 3. 옛 DID 사용 중이면 manual `ResetFCForDID` 호출로 chain lastFc 정리
