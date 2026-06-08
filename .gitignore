@@ -224,7 +224,9 @@ wiki/embedded/*binding*.md
 
 # Local BMS PDF drops are not part of the public repository
 /BMS.pdf
+/BMS__.pdf
 /wiki/Object/BMS__.pdf
+BMS__.pdf
 # TPS / national-project benchmark material stays local-only
 /benchmarks/
 /caliper-workspace/
