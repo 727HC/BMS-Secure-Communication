@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Payload Encryption - Protocol Verification Test
-Simulates CMU encrypt-then-MAC → BMU verify-then-decrypt flow.
+Simulates CMU MAC-then-encrypt → BMU decrypt-then-verify flow.
 Validates AES-128-CBC + CMAC with FC-derived IV matches firmware logic.
 """
 import struct
@@ -58,8 +58,8 @@ def cmac_verify(key: bytes, data: bytes, tag: bytes) -> bool:
         return False
 
 
-def test_encrypt_then_mac():
-    """Full protocol test: CMU encrypt-then-MAC → BMU verify-then-decrypt"""
+def test_mac_then_encrypt():
+    """Full protocol test: CMU MAC-then-encrypt → BMU decrypt-then-verify"""
     # Simulate session key (derived from KDF in real firmware)
     session_key = os.urandom(AES_KEY_SIZE)
 
@@ -73,55 +73,64 @@ def test_encrypt_then_mac():
     for fc in [1, 2, 100, 0xFFFFFFFF]:
         print(f"\n--- FC={fc} ---")
 
-        # === CMU side (encrypt-then-MAC) ===
-        iv = build_cbc_iv(fc)
-        ciphertext = aes_cbc_encrypt(session_key, iv, plaintext)
-        cmac_input = build_cmac_input(fc, ciphertext)  # CMAC over ciphertext
+        # === CMU side (MAC-then-encrypt) ===
+        # 1. CMAC over plaintext first: FC(4B) || Plaintext(48B)
+        cmac_input = build_cmac_input(fc, plaintext)  # CMAC over plaintext
         mac_tag = cmac_generate(session_key, cmac_input)
 
+        # 2. CBC encrypt the plaintext (after CMAC, MAC-then-encrypt)
+        iv = build_cbc_iv(fc)
+        ciphertext = aes_cbc_encrypt(session_key, iv, plaintext)
+
         # CAN FD frame: [ciphertext(48B) | CMAC(16B)] = 64B
+        # CMAC tag is transmitted in the clear (computed over plaintext)
         can_frame = ciphertext + mac_tag
         assert len(can_frame) == 64, f"CAN FD frame must be 64B, got {len(can_frame)}"
         print(f"  IV:         {iv.hex()}")
         print(f"  Ciphertext: {ciphertext[:16].hex()}...")
         print(f"  CMAC:       {mac_tag.hex()}")
 
-        # === BMU side (verify-then-decrypt) ===
+        # === BMU side (decrypt-then-verify) ===
         rx_cipher = can_frame[:BATTERY_DATA_SIZE]
         rx_mac = can_frame[BATTERY_DATA_SIZE:]
 
-        # 1. CMAC verify (on ciphertext)
-        verify_input = build_cmac_input(fc, rx_cipher)
-        assert cmac_verify(session_key, verify_input, rx_mac), "CMAC verify FAILED"
-        print(f"  CMAC verify: PASS")
-
-        # 2. CBC decrypt
+        # 1. CBC decrypt first (FC-derived IV)
         rx_iv = build_cbc_iv(fc)
         decrypted = aes_cbc_decrypt(session_key, rx_iv, rx_cipher)
         assert decrypted == plaintext, "Decrypt mismatch!"
         print(f"  Decrypted:  {decrypted[:16].hex()}... MATCH")
 
+        # 2. CMAC verify on recovered plaintext: FC(4B) || Plaintext(48B)
+        verify_input = build_cmac_input(fc, decrypted)
+        assert cmac_verify(session_key, verify_input, rx_mac), "CMAC verify FAILED"
+        print(f"  CMAC verify: PASS")
+
 
 def test_tamper_detection():
-    """Verify that tampered ciphertext is rejected by CMAC"""
+    """Verify that tampered ciphertext is rejected by plaintext CMAC after decrypt"""
     session_key = os.urandom(AES_KEY_SIZE)
     plaintext = os.urandom(BATTERY_DATA_SIZE)
     fc = 42
 
+    # CMU: MAC-then-encrypt
+    cmac_input = build_cmac_input(fc, plaintext)
+    mac_tag = cmac_generate(session_key, cmac_input)
     iv = build_cbc_iv(fc)
     ciphertext = aes_cbc_encrypt(session_key, iv, plaintext)
-    cmac_input = build_cmac_input(fc, ciphertext)
-    mac_tag = cmac_generate(session_key, cmac_input)
 
     # Tamper with 1 byte of ciphertext
     tampered = bytearray(ciphertext)
     tampered[0] ^= 0xFF
     tampered = bytes(tampered)
 
-    verify_input = build_cmac_input(fc, tampered)
+    # BMU: decrypt tampered ciphertext, then verify CMAC on recovered plaintext
+    rx_iv = build_cbc_iv(fc)
+    tampered_plaintext = aes_cbc_decrypt(session_key, rx_iv, tampered)
+    assert tampered_plaintext != plaintext, "Tampered ciphertext must decrypt differently"
+    verify_input = build_cmac_input(fc, tampered_plaintext)
     assert not cmac_verify(session_key, verify_input, mac_tag), \
         "Tampered data should FAIL CMAC"
-    print("\n--- Tamper detection: PASS (tampered ciphertext rejected) ---")
+    print("\n--- Tamper detection: PASS (tampered ciphertext → plaintext CMAC mismatch) ---")
 
 
 def test_iv_uniqueness():
@@ -163,7 +172,7 @@ if __name__ == "__main__":
     print("Payload Encryption - Protocol Verification")
     print("=" * 60)
 
-    test_encrypt_then_mac()
+    test_mac_then_encrypt()
     test_tamper_detection()
     test_iv_uniqueness()
     test_legacy_compatibility()

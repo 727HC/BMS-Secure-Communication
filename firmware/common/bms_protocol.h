@@ -69,6 +69,12 @@ extern "C" {
 #define BATTERY_DATA_BITS           (BATTERY_DATA_SIZE * 8U)        /* 384 bits  */
 
 /*============================================================================
+ *  Payload Encryption (KPI 10 — 3차년도 기밀성)
+ *  0 = plaintext + CMAC (기존), 1 = AES-128-CBC MAC-then-encrypt
+ *============================================================================*/
+#define PAYLOAD_ENCRYPTION_ENABLED  1
+
+/*============================================================================
  *  KDF Parameters (NIST SP 800-108 Counter Mode)
  *  SessionKey = CMAC(PSK, Label || UID || Seed || Counter)
  *============================================================================*/
@@ -81,7 +87,7 @@ extern "C" {
 /*============================================================================
  *  Timing
  *============================================================================*/
-#define CMU_TX_PERIOD_MS            50U     /* CMU data transmission period      */
+#define CMU_TX_PERIOD_MS            200U    /* CMU data transmission period (>54ms for 9600baud UART) */
 #define KEY_EXCHANGE_TIMEOUT_MS     3000U   /* Key exchange timeout              */
 #define RESYNC_TIMEOUT_MS           1000U   /* Resync timeout                    */
 
@@ -286,6 +292,22 @@ static inline void BMS_BuildCmacInput(uint8_t *output,
 
     memcpy(&output[FC_SIZE], data, BATTERY_DATA_SIZE);
 }
+
+#if PAYLOAD_ENCRYPTION_ENABLED
+/*============================================================================
+ *  Utility: Build AES-CBC IV from freshness counter
+ *  IV = FC(4B, big-endian) zero-padded to 16B
+ *  FC is monotonically increasing → IV never reused → CBC safe
+ *============================================================================*/
+static inline void BMS_BuildCbcIv(uint8_t *iv, uint32_t freshness_counter)
+{
+    memset(iv, 0, AES_KEY_SIZE);
+    iv[0] = (uint8_t)((freshness_counter >> 24U) & 0xFFU);
+    iv[1] = (uint8_t)((freshness_counter >> 16U) & 0xFFU);
+    iv[2] = (uint8_t)((freshness_counter >>  8U) & 0xFFU);
+    iv[3] = (uint8_t)((freshness_counter >>  0U) & 0xFFU);
+}
+#endif /* PAYLOAD_ENCRYPTION_ENABLED */
 
 /*============================================================================
  *  Utility: UART frame checksum (CRC-8/MAXIM, polynomial 0x31)

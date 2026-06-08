@@ -220,10 +220,7 @@ void UART_Callback(const uint8 HwInstance,
         {
             g_uart_tx_done = TRUE;
         }
-        else if (Event == LPUART_UART_IP_EVENT_RX_FULL)
-        {
-            g_uart_rx_complete = TRUE;
-        }
+        /* RX는 CMU_PollUartRx 폴링 전담 — RX_FULL 콜백 미사용 */
     }
 }
 
@@ -750,7 +747,10 @@ static void CMU_ProtocolTask(void *pvParameters)
 
                 /* Load session key into CSEc RAM (overwrites PSK) */
                 result = Csec_Ip_LoadPlainKey(g_session_key);
-                memset(g_session_key, 0, AES_KEY_SIZE);
+                /* g_session_key는 RAM에 보존한다: OPERATIONAL의 resync 검증은
+                 * CSEc RAM 키를 일시적으로 PSK로 덮어쓰므로, 검증 실패 후
+                 * RAM 키를 세션키로 복원하려면 평문 사본이 필요하다.
+                 * PSK(PreSharedKey)도 이미 RAM 상주이므로 위협모델상 수용 가능. */
 
                 if (result != CSEC_IP_ERC_NO_ERROR)
                 {
@@ -789,13 +789,24 @@ static void CMU_ProtocolTask(void *pvParameters)
                 Csec_Ip_ErrorCodeType pskResult = Csec_Ip_LoadPlainKey(PreSharedKey);
                 uint8 expected_mac[CMAC_TAG_SIZE];
                 Csec_Ip_ErrorCodeType macResult = CMU_GenerateCmac(rxMsg.data, CTRL_DATA_SIZE * 8U, expected_mac);
-                xSemaphoreGive(csecMutex);
-                if (pskResult == CSEC_IP_ERC_NO_ERROR &&
-                    macResult == CSEC_IP_ERC_NO_ERROR &&
-                    memcmp(expected_mac, &rxMsg.data[CTRL_DATA_SIZE], CMAC_TAG_SIZE) == 0)
+                boolean resyncOk = (pskResult == CSEC_IP_ERC_NO_ERROR &&
+                                    macResult == CSEC_IP_ERC_NO_ERROR &&
+                                    memcmp(expected_mac, &rxMsg.data[CTRL_DATA_SIZE], CMAC_TAG_SIZE) == 0);
+                if (resyncOk)
                 {
+                    /* 검증 성공: RESYNC가 PSK 기반 키교환을 새로 수행하므로
+                     * RAM 키는 PSK인 상태로 둔다. */
                     g_proto_state = PROTO_STATE_RESYNC;
                 }
+                else
+                {
+                    /* 검증 실패: OPERATIONAL 유지 — resync 검증용으로 PSK를
+                     * 덮어쓴 CSEc RAM 키를 세션키로 복원해야 이후
+                     * CMU_SendSecuredData가 올바른 세션키 CMAC을 생성한다.
+                     * (복원 누락 시 BMU가 전 프레임을 거부하는 DoS 발생) */
+                    (void)Csec_Ip_LoadPlainKey(g_session_key);
+                }
+                xSemaphoreGive(csecMutex);
                 break;
             }
             vTaskDelay(pdMS_TO_TICKS(TASK_PROTOCOL_DELAY_MS));

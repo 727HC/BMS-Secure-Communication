@@ -35,6 +35,9 @@ _HSE_FATAL_EPOCH_RE = re.compile(
     r'^\[FATAL\] HSE FC epoch advance failed status=0x([0-9A-Fa-f]+)')
 _HSE_WARN_INC_RE = re.compile(
     r'^\[WARN\] HSE counter increment failed status=0x([0-9A-Fa-f]+)')
+# FC_WRAP_NEAR (ADR-007 256-boot wrap warning; firmware-declared severity for MCP)
+_HSE_WRAP_NEAR_RE = re.compile(
+    r'^\[HSE\] FC_WRAP_NEAR=(YELLOW|RED)\s+epoch=0x([0-9A-Fa-f]+)')
 
 
 def parse_hse_event(line):
@@ -52,6 +55,16 @@ def parse_hse_event(line):
             'fc': fc_int,
             'fcHex': '0x' + fc_hex,
             'data': {'hi_hex': '0x' + hi_hex, 'epoch_nn': epoch_nn},
+            'message': line,
+        }
+    m = _HSE_WRAP_NEAR_RE.match(line)
+    if m:
+        severity = m.group(1)
+        epoch_nn = int(m.group(2), 16)
+        return {
+            'level': 'warn' if severity == 'YELLOW' else 'error',
+            'code': 'FC_WRAP_NEAR',
+            'data': {'epoch_nn': epoch_nn, 'severity': severity},
             'message': line,
         }
     m = _HSE_FATAL_READ_RE.match(line)
@@ -234,8 +247,13 @@ def post_event_to_agent(agent_url, event, auth=None, did=None):
         return False
 
 
-def post_to_agent(agent_url, payload, auth=None):
-    """POST payload to agent. Returns True on success."""
+def post_to_agent_status(agent_url, payload, auth=None):
+    """POST payload to agent. Returns 'ok' | 'transient' | 'permanent'.
+
+    'ok'        -> 200 accepted.
+    'permanent' -> 4xx (agent rejected this record; retrying won't help).
+    'transient' -> connection error / timeout / 5xx (agent down or busy).
+    """
     try:
         api_url = f"{agent_url}/api/bmu/data"
         hdrs = auth.headers() if auth else {}
@@ -243,7 +261,7 @@ def post_to_agent(agent_url, payload, auth=None):
         if resp.status_code == 200:
             result = resp.json()
             print(f"  -> Blockchain: {result.get('id', result.get('recordId', 'ok'))} OK", flush=True)
-            return True
+            return 'ok'
         elif resp.status_code == 401 and auth:
             # Token expired, force re-login
             auth.token = None
@@ -252,15 +270,24 @@ def post_to_agent(agent_url, payload, auth=None):
             if resp.status_code == 200:
                 result = resp.json()
                 print(f"  -> Blockchain: {result.get('id', result.get('recordId', 'ok'))} OK (re-auth)", flush=True)
-                return True
+                return 'ok'
         print(f"  -> Agent error: {resp.status_code} {resp.text[:100]}")
-        return False
+        if 400 <= resp.status_code < 500:
+            # 4xx (other than the 401 re-auth path above) = agent permanently
+            # rejects this record; don't let it block the spool queue.
+            return 'permanent'
+        return 'transient'
     except requests.exceptions.ConnectionError:
         print(f"  -> Agent not reachable at {agent_url}")
-        return False
+        return 'transient'
     except Exception as e:
         print(f"  -> Error: {e}")
-        return False
+        return 'transient'
+
+
+def post_to_agent(agent_url, payload, auth=None):
+    """POST payload to agent. Returns True on success."""
+    return post_to_agent_status(agent_url, payload, auth=auth) == "ok"
 
 
 def spool_insert(conn, fc, payload):
@@ -286,10 +313,21 @@ def spool_retry(conn, agent_url, auth=None, max_batch=10):
     success = 0
     for row_id, fc, payload_json, retry_count in rows:
         payload = json.loads(payload_json)
-        if post_to_agent(agent_url, payload, auth=auth):
+        status = post_to_agent_status(agent_url, payload, auth=auth)
+        if status == 'ok':
             conn.execute("DELETE FROM pending WHERE id = ?", (row_id,))
             success += 1
+        elif status == 'permanent':
+            # Agent permanently rejects this record (4xx). Bump retry_count and
+            # move on so one poison record can't block newer records (HOL block).
+            # retry_count >= 50 cap naturally dead-letters it.
+            conn.execute(
+                "UPDATE pending SET retry_count = ? WHERE id = ?",
+                (retry_count + 1, row_id)
+            )
+            continue
         else:
+            # transient (agent down / timeout / 5xx): stop this batch, try later.
             conn.execute(
                 "UPDATE pending SET retry_count = ? WHERE id = ?",
                 (retry_count + 1, row_id)
@@ -344,9 +382,14 @@ def main():
     pending_data_by_fc = {}
     sent_count = 0
     loop_count = 0
-    # BMU reboot detection: alert once per peak when FC regresses sharply
+    # BMU reboot detection: alert when FC drops sharply vs the previous SIGN
+    # frame. last_seen_fc tracks the monotonic peak (used by --min-fc etc);
+    # prev_fc tracks the directly-preceding frame so back-to-back reboots that
+    # never recover the prior peak are still detected. reboot_alerted suppresses
+    # repeat spam within the same low streak (re-armed once FC climbs again).
     last_seen_fc = 0
-    reboot_alerted_at_peak = 0
+    prev_fc = 0
+    reboot_alerted = False
 
     try:
         while True:
@@ -389,14 +432,21 @@ def main():
 
             elif parsed['type'] == 'sign':
                 fc = parsed['fc']
-                # BMU reboot detection: alert once per peak when FC regresses sharply
-                if last_seen_fc > 100 and fc < last_seen_fc - 100 and reboot_alerted_at_peak != last_seen_fc:
-                    print(f"  [ALERT] BMU FC regression: prev_max={last_seen_fc}, now={fc} - board likely rebooted", flush=True)
+                # BMU reboot detection: alert on a sharp drop vs the previous SIGN
+                # frame (prev_fc), not the monotonic peak — so consecutive reboots
+                # that never recover the prior peak are still caught. Suppress spam
+                # within the same low streak; re-arm once FC climbs back above prev.
+                if prev_fc > 100 and prev_fc - fc > 100 and not reboot_alerted:
+                    print(f"  [ALERT] BMU FC regression: prev={prev_fc}, now={fc} - board likely rebooted", flush=True)
                     if args.did:
                         print(f"          -> Manual recovery (if intentional): peer chaincode invoke ... ResetFCForDID '{args.did}' '<reason 10+ chars>'", flush=True)
                     else:
                         print(f"          -> Manual recovery: ResetFCForDID against this BMU's DID", flush=True)
-                    reboot_alerted_at_peak = last_seen_fc
+                    reboot_alerted = True
+                elif fc > prev_fc:
+                    # FC advancing again — re-arm so the next reboot is reported.
+                    reboot_alerted = False
+                prev_fc = fc
                 if fc > last_seen_fc:
                     last_seen_fc = fc
                 if args.min_fc > 0 and fc < args.min_fc:

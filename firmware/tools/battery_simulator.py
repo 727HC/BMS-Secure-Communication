@@ -161,6 +161,8 @@ class BatterySimulator:
         if abs(max(cell_socs) - min(cell_socs)) > 0.05:
             flags |= 0x02  # bit1: balancing needed
 
+        self.freshness_counter += 1
+
         return {
             "current_A": current,
             "voltage_V": total_voltage,
@@ -174,7 +176,6 @@ class BatterySimulator:
             "cell_count": self.num_cells,
             "freshness_counter": self.freshness_counter,
         }
-        self.freshness_counter += 1
 
 
 def pack_battery_data(state: dict, bms_binding_code: int = 0) -> bytes:
@@ -183,7 +184,7 @@ def pack_battery_data(state: dict, bms_binding_code: int = 0) -> bytes:
     data = struct.pack("<f", state["current_A"])                            # 4B
     data += struct.pack("<f", state["voltage_V"])                           # 4B
     data += struct.pack("<H", encode_soc(state["soc"]))                    # 2B
-    data += struct.pack("<H", state["cycles"])                              # 2B
+    data += struct.pack("<H", max(0, min(65535, int(state["cycles"]))))     # 2B
     data += struct.pack("<H", encode_temperature(state["temperature_C"]))  # 2B
 
     # Per-cell voltage (11 bytes)

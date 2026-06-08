@@ -129,7 +129,7 @@ def compress_to_battery_data(parsed: dict, timestamp_ms: int, bms_binding_code: 
     data = struct.pack("<f", float(parsed["current_A"]))                     # 4B
     data += struct.pack("<f", float(parsed["voltage_V"]))                    # 4B
     data += struct.pack("<H", encode_soc(parsed["soc"]))                     # 2B
-    data += struct.pack("<H", parsed["cycles"])                              # 2B
+    data += struct.pack("<H", max(0, min(65535, int(parsed["cycles"]))))     # 2B
     data += struct.pack("<H", encode_temperature(parsed["temperature_K"]))   # 2B
 
     # Per-cell voltage (11 bytes)

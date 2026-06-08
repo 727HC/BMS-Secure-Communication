@@ -71,7 +71,7 @@ extern "C" {
 
 /*============================================================================
  *  Payload Encryption (KPI 10 — 3차년도 기밀성)
- *  0 = plaintext + CMAC (기존), 1 = AES-128-CBC encrypt-then-MAC
+ *  0 = plaintext + CMAC (기존), 1 = AES-128-CBC MAC-then-encrypt
  *============================================================================*/
 #define PAYLOAD_ENCRYPTION_ENABLED  1
 

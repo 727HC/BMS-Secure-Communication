@@ -1187,6 +1187,24 @@ int main(void)
             { static const char hx[]="0123456789ABCDEF"; uint32 v=(uint32)(fc_initial >> 32);
               int i; for(i=28;i>=0;i-=4) UART_SendChar(hx[(v>>i)&0xF]); }
             UART_SendString("\r\n");
+            /* FC wrap-near alarm (ADR-007 known limit): g_chain_fc (uint32) wraps to 0
+             * at 256 boots (~85 days) since epoch occupies the high byte. Pure additive
+             * UART alarm — no control-flow change. Thresholds match MCP handoff convention
+             * (0xF8 yellow / 0xFE red). */
+            {
+                uint32 fc_epoch = (g_chain_fc >> 24) & 0xFFU;
+                if (fc_epoch >= 0xFEU) {
+                    UART_SendString("[HSE] FC_WRAP_NEAR=RED epoch=0x");
+                    { static const char hx[]="0123456789ABCDEF"; uint32 v=fc_epoch;
+                      int i; for(i=4;i>=0;i-=4) UART_SendChar(hx[(v>>i)&0xF]); }
+                    UART_SendString("\r\n");
+                } else if (fc_epoch >= 0xF8U) {
+                    UART_SendString("[HSE] FC_WRAP_NEAR=YELLOW epoch=0x");
+                    { static const char hx[]="0123456789ABCDEF"; uint32 v=fc_epoch;
+                      int i; for(i=4;i>=0;i-=4) UART_SendChar(hx[(v>>i)&0xF]); }
+                    UART_SendString("\r\n");
+                }
+            }
         }
 
         #ifdef BMS_MODE_EDDSA

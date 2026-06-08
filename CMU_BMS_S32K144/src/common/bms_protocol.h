@@ -24,8 +24,16 @@ extern "C" {
  *  BMS_MODE_CMAC        — AES-128 CMAC authentication
  *  BMS_MODE_EDDSA       — CMAC + Ed25519 signing
  *  Default: BMS_MODE_EDDSA (full security)
+ *
+ *  NOTE (CMU scope): The CMU (S32K144) firmware does NOT implement Ed25519
+ *  signing. On the CMU side the BMS_MODE_EDDSA build only performs AES-128
+ *  CMAC authentication plus AES-128-CBC encryption of the payload. The
+ *  Ed25519 blockchain signature is produced by the BMU (S32K344), not here.
+ *  The macro name is retained for build/interface compatibility with the BMU.
  *============================================================================*/
 #if !defined(BMS_MODE_PLAIN_CAN) && !defined(BMS_MODE_CMAC) && !defined(BMS_MODE_EDDSA)
+    /* Default mode. On the CMU this means CMAC + CBC only; Ed25519 signing is
+     * performed by the BMU (S32K344), so no signing code runs on the CMU. */
     #define BMS_MODE_EDDSA  /* Default: CMAC + Ed25519 signing for blockchain */
 #endif
 
@@ -70,7 +78,7 @@ extern "C" {
 
 /*============================================================================
  *  Payload Encryption (KPI 10 — 3차년도 기밀성)
- *  0 = plaintext + CMAC (기존), 1 = AES-128-CBC encrypt-then-MAC
+ *  0 = plaintext + CMAC (기존), 1 = AES-128-CBC MAC-then-encrypt
  *============================================================================*/
 #define PAYLOAD_ENCRYPTION_ENABLED  1
 
@@ -142,7 +150,10 @@ extern "C" {
  *============================================================================*/
 #define TASK_CANRX_STACK            512U    /* CAN RX task extra stack       */
 #define TASK_PROTOCOL_STACK         512U    /* Protocol task extra stack      */
-#define TASK_DATAPROC_STACK         2048U   /* Data process task extra stack (TweetNaCl needs ~4KB) */
+#define TASK_DATAPROC_STACK         2048U   /* Data process task extra stack. NOTE: the CMU does NOT run
+                                             * Ed25519/TweetNaCl signing (CMAC + CBC only); Ed25519 signing
+                                             * lives on the BMU (S32K344). The ~4KB TweetNaCl note applies to
+                                             * the BMU, not this CMU build. */
 #define TASK_MONITOR_STACK          128U    /* Monitor task extra stack       */
 #define TASK_CANRX_PRIORITY         3U      /* CAN RX task priority (highest) */
 #define TASK_PROTOCOL_PRIORITY      2U      /* Protocol task priority         */
