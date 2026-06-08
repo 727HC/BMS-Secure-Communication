@@ -110,12 +110,15 @@ node src/index.js
 | `latest` | 최신 BMU 데이터 | `passport_id`, `limit` |
 | `frequency` | 수신 빈도 분석 | `hours` |
 | `thresholds` | 임계값 조회/변경 | `set_thresholds` (soc/voltage/temp) |
-| `hse` | BMU HSE/boot UART 이벤트 분류 + epoch_nn 임계 | `hours` |
+| `hse` | BMU HSE/boot UART 이벤트 분류 + epoch_nn 임계 + FC_WRAP_NEAR wrap 경보 | `hours` |
 
 - **INVALIDATED 필터링**: `status !== 'INVALIDATED'` 레코드만 분석에 포함 (`invalidatedFiltered` 카운트 응답 포함)
 - **Cross-validation**: threshold 변경 시 `*_min < *_max` 검증
 - **query error**: 전체 passport scan 또는 passport별 BMU query 실패를 `fabricQuery.errors[]`에 노출
-- **HSE 이벤트 분류 (`action: 'hse'`)**: `category=hse` 로그를 eventType prefix 기반으로 info(`BOOT_FC`) / warn(`*_WARN`) / critical(`*_FAIL`, `FATAL_*`) 분류. 알 수 없는 eventType은 `unknown` severity로 보존(silent drop 금지). epoch_nn은 `data.epoch_nn` → `fcHex` top byte → `fc` top byte 순으로 추출. DID별 latest epoch에 임계 적용 — `>= 0xF8` yellow, `>= 0xFE` red. 응답 필드: `counts`, `currentEpochByDid`, `recentFatal[]`, `alerts[]`. 평상시 `counts.FATAL` baseline 0 기대.
+- **HSE 이벤트 분류 (`action: 'hse'`)**: `category=hse` 로그를 eventType 기반으로 info(`BOOT_FC`) / warn(`*_WARN`, `FC_WRAP_NEAR`) / critical(`*_FAIL`, `FATAL_*`) 분류. 알 수 없는 eventType은 `unknown` severity로 보존(silent drop 금지). epoch_nn은 `data.epoch_nn` → `fcHex` top byte → `fc` top byte 순으로 추출, DID별 latest epoch에 임계 적용 — `>= 0xF8` yellow, `>= 0xFE` red.
+- **FC_WRAP_NEAR boot-epoch wrap 경보**: 펌웨어가 256-boot wrap([ADR-007](../wiki/decisions/007-bmu-fc-nvm-persistence.md)) 전에 명시적으로 올리는 wrap 경고로 DID 회전을 트리거. bridge 계약(2026-06-08 cross-session) — `POST /api/bmu/event` `code="FC_WRAP_NEAR"`, `level` warn|error, `data.epoch_nn`(0–255 int), `data.severity` `"YELLOW"|"RED"`. 모니터는 펌웨어 선언값(`data.severity`)과 자체 계산값(`epoch_nn` 임계)을 **worse-of-two**로 화해 — 둘 다 알고 다르면 `severityMismatch` 노출, 명시 경보는 최소 yellow로 floor. DID 없어도 항상 경보(`did || '(no-did)'` 키, latest-per-key). 경보 시점 이후 `BOOT_FC`가 epoch를 더 올리면 `EPOCH_THRESHOLD`가 더 심한 값을 그대로 노출(severity-aware suppression — 무음 강등 없음).
+- **응답 필드 (`hse`)**: `counts`(`BOOT_FC`/`FC_WRAP_NEAR`/`WARN`/`FATAL`/`UNKNOWN`), `currentEpochByDid`, `fcWrapNear`, `recentFatal[]`, `alerts[]`(타입 `HSE_FATAL`/`EPOCH_THRESHOLD`/`FC_WRAP_NEAR`). 평상시 `counts.FATAL` baseline 0 기대.
+- **로그 dedup**: `hse` 이벤트의 `message`는 상수 리터럴이라(실제 UART는 `line`, epoch는 `data`) 중복제거 키에 `line`/`eventType`/`did`/`fcHex`를 포함 — 서로 다른 BMU가 같은 ms에 올린 이벤트가 합쳐져 한쪽 회전 경고가 silent drop되는 것을 방지(byte-identical 이중기록은 그대로 합침).
 
 ### 3. `monitor_vc` — VC 이벤트
 
