@@ -54,8 +54,9 @@ function readRecentLogs(count = 100, filter) {
     return { error: `Log file not found: ${LOG_PATH}`, logs: [] };
   }
 
-  // When filtering, read more lines to have enough after filtering
-  const readCount = filter ? count * 5 : count;
+  // When filtering, read more lines to have enough after filtering (capped to bound
+  // worst-case tail reads on a large/rotated log).
+  const readCount = filter ? Math.min(count * 5, 10000) : count;
   const lines = readTailLines(LOG_PATH, readCount);
 
   let logs = [];

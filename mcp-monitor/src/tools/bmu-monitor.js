@@ -332,6 +332,13 @@ async function execute(params) {
 
       const parseEpochNn = (entry) => {
         if (entry.data && Number.isInteger(entry.data.epoch_nn)) return entry.data.epoch_nn;
+        // fcHex is a uint32 hex string (bmu-agent toUint32Hex, max 0xFFFFFFFF < 2^53),
+        // so parseInt + (>>> 24) safely extracts the top byte. CONTRACT: if FC is promoted
+        // to 8-byte (ADR-007 FC width contract), firmware MUST populate data.epoch_nn (the
+        // primary path above) — this hex fallback would silently downgrade (parseInt of a
+        // >2^53 value loses precision; >>> 24 truncates to int32). An 8-byte fallback would
+        // require Number((BigInt(hex) >> 56n) & 0xFFn). TODO: add that BigInt path if any
+        // BOOT_FC / FC_WRAP_NEAR producer ever ships fcHex without data.epoch_nn.
         const hex = entry.fcHex || (entry.data && entry.data.fc_hex);
         if (typeof hex === 'string' && /^0x[0-9a-fA-F]+$/.test(hex)) {
           const v = parseInt(hex, 16);

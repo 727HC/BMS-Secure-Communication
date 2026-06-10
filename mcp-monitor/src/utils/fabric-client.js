@@ -81,6 +81,14 @@ async function evaluate(fcn, ...args) {
     if (err.message && err.message.includes('Expected: array, given: null')) {
       return { records: [], bookmark: '', count: 0 };
     }
+    // CA rotation / identity staleness: drop the cached singleton so the next call
+    // re-connects with refreshed wallet material instead of looping on a dead gateway.
+    // Code-level defense only — does NOT replace the CA-rotation SOP; if the wallet
+    // material itself is stale, reconnect also fails and the SOP wallet reset applies
+    // (connect() surfaces that with enrollment guidance).
+    if (err.message && /wallet identity|identity not found|access denied|TLS|handshake|MSP/i.test(err.message)) {
+      gateway = null; contract = null; network = null;
+    }
     throw err;
   }
 }
