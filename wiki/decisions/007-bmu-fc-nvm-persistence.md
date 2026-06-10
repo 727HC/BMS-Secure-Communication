@@ -128,6 +128,40 @@ N=256 (256 * 2^24 = 2^32) 시 low 32 bits가 0으로 wrap.
   → 권고: 8-byte 레이아웃이 기존 값에서 이어서 증가(상위바이트 0, 하위 연속)하도록
     설계하거나, active DID 일괄 lastFc repair를 전환 절차에 포함한다.
 
+- **MCP epoch_nn 추출 정합성 (8-byte 전환 필수 동반 변경):** MCP monitor의 wrap 경보는
+  `monitor_bmu hse`가 `data.epoch_nn`(primary) → `fcHex` 상위바이트(fallback) 순으로
+  epoch를 추출한다(`mcp-monitor/src/tools/bmu-monitor.js` `parseEpochNn`). fallback은
+  `parseInt(fcHex,16) >>> 24`로, 현재 uint32(`toUint32Hex`, ≤0xFFFFFFFF)에서는 정확하다.
+  그러나 FC를 8-byte로 확장하면:
+  - **(1a)** bmu-agent relay(`bmu-agent/routes/bmu.routes.js` `/api/bmu/event`)가
+    `data.epoch_nn`을 **항상** 채워야 한다 — fcHex 기반 `Number((BigInt(fcHex) >> 56n) & 0xFFn)`
+    산출(숫자 `fc`는 2^53 초과 정밀도 손실, 아래 carrier 계약 참조). 현재 relay
+    (`normalizeBmuEventBody`)는 펌웨어 전달 `data`를 통과만 하므로, 펌웨어가 epoch_nn을
+    누락하면 fallback이 발동한다.
+  - **(2)** MCP fallback이 `parseInt+>>>24` → `Number((BigInt(fcHex) >> 56n) & 0xFFn)`로
+    바뀌어야 한다. 8-byte 값에 `parseInt`는 2^53 초과 정밀도 손실 + `>>>`의 int32 절단으로
+    RED epoch가 0(green)으로 silent 강등된다 — anti-replay wrap 경보의 fail-open.
+
+- **(1b) bmu-agent 자체 FC wrap monitor도 uint32 bound (Passport 검증 회신 2026-06-10 반영):**
+  MCP 경로와 별개로 Passport 자체 wrap 경보(`bmu-agent/services/bmuOperations.service.js`)도
+  8-byte에서 silent break된다 — `toUint32`가 >0xFFFFFFFF에서 null을 반환하고
+  `analyzeFreshnessCounter`가 `wrapWarning:false` 고정 객체를 돌려주므로 `FC_WRAP_NEAR`가
+  `/api/bmu/operations/status`에서 영영 미발화된다(Passport 측 wrap 경보 fail-open).
+  `FC_WRAP_WARNING_THRESHOLD`(기본 `0xf8000000`)·`FC_BOOT_SLOT_SIZE=0x01000000`(256-boot-slot)
+  역시 uint32 전제라 BigInt 전환 + wrap 임계/boot-slot 의미 재정의가 필요하다. 즉 8-byte 전환
+  시 Passport 측 수정은 (1a) relay 한 건이 아니라 (1a)(1b) 두 건이다.
+
+- **64-bit FC canonical carrier = `fcHex`(16-hex 문자열):** 8-byte 전환 후 이벤트/와이어
+  계약의 canonical carrier는 `fcHex` 문자열로 못박는다. 숫자 `fc` 필드(JS Number)는 2^53
+  초과 시 lossy이므로 uint32 호환용으로만 유지하고, bmu-agent·MCP 모두 `BigInt(fcHex)`
+  파싱을 전제한다. (chaincode는 uint64 10진 문자열 인코딩이라 이미 폭-무관 — 상단 **계약**
+  항목 참조.)
+
+- **전환 PR 요구사항(요약):** 8-byte 전환 PR은 (1a)(1b)(2)를 같은 변경에 포함해야 하며,
+  누락 시 wrap 경보 silent drop이 발생한다. 분담 합의(2026-06-10): (1a)(1b)=Passport
+  (bmu-agent), (2)=MCP, 계약/ADR·chaincode(변경 0건)=블록체인, 와이어 8-byte 확장=임베디드
+  (보드 재개발로 전환 보류 중 — 본 계약은 전환 시점 가드레일).
+
 > 블록체인 세션 권위 검증 완료(2026-06-08). rollback 커맨드의 dev 플래그 처리(B)는 2026-06-08
 > 적용됨 — production reflash는 `-UBMS_WHITELIST_DISCOVERY`로 enforcement(아래 Rollback procedure).
 
