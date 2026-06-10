@@ -1,7 +1,7 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { readdir, readFile, stat } from 'fs/promises';
-import { join, relative, extname } from 'path';
+import { join, relative, extname, sep } from 'path';
 import { z } from 'zod';
 
 const WIKI_DIR = join(import.meta.dirname, '..', 'wiki');
@@ -28,9 +28,13 @@ server.tool('wiki_list', '위키 페이지 목록 조회', {}, async () => {
 });
 
 server.tool('wiki_read', '위키 페이지 읽기', { path: z.string().describe('위키 내 파일 경로 (예: passport/overview.md)') }, async ({ path: p }) => {
+  const target = join(WIKI_DIR, p);
+  if (!target.startsWith(WIKI_DIR + sep) && target !== WIKI_DIR) {
+    return { content: [{ type: 'text', text: `잘못된 경로: ${p}` }], isError: true };
+  }
   try {
-    const content = await readFile(join(WIKI_DIR, p), 'utf-8');
-    const st = await stat(join(WIKI_DIR, p));
+    const content = await readFile(target, 'utf-8');
+    const st = await stat(target);
     return { content: [{ type: 'text', text: `# ${p}\n(수정: ${st.mtime.toISOString()})\n\n${content}` }] };
   } catch {
     return { content: [{ type: 'text', text: `파일을 찾을 수 없습니다: ${p}` }], isError: true };
