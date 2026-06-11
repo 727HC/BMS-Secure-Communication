@@ -7,14 +7,15 @@
     "start": "node server.js"
   },
   "dependencies": {
+    "@grpc/grpc-js": "^1.9.16",
+    "dotenv": "^16.4.0",
     "express": "^4.22.2",
     "express-rate-limit": "^7.5.0",
+    "fabric-ca-client": "^2.2.20",
+    "fabric-network": "^2.2.20",
     "helmet": "^8.0.0",
     "long": "^5.2.3",
-    "mongodb": "^6.12.0",
-    "fabric-network": "^2.2.20",
-    "fabric-ca-client": "^2.2.20",
-    "dotenv": "^16.4.0"
+    "mongodb": "^6.12.0"
   },
   "overrides": {
     "jsrsasign": "11.1.3",
